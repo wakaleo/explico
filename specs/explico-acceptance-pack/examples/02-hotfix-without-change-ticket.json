@@ -1,0 +1,16 @@
+{
+  "name": "hotfix without change ticket",
+  "description": "An emergency production deployment attempted straight from a hotfix branch with no change ticket raised.",
+  "input": {
+    "deployment": { "id": "rel-1002", "environment": "production", "service": "payments-api", "timestamp": 1754060000 },
+    "change": {
+      "id": "chg-2002", "author": "asmith", "approver": "bjones",
+      "approvals": [ { "user": "bjones", "role": "release-manager" } ]
+    },
+    "pipeline": {
+      "stages": [ { "name": "build", "status": "passed" } ],
+      "checks": [ { "name": "unit-tests", "status": "passed" } ]
+    },
+    "artifact": { "source_branch": "hotfix/urgent-fix", "labels": { "signed-off-by": "bjones" } }
+  }
+}

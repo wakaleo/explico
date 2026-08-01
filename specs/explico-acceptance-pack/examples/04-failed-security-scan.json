@@ -1,0 +1,17 @@
+{
+  "name": "failed security scan",
+  "description": "A staging deployment where the security-scan pipeline stage failed.",
+  "input": {
+    "deployment": { "id": "rel-1004", "environment": "staging", "service": "payments-api", "timestamp": 1754060000 },
+    "change": {
+      "id": "chg-2004", "author": "asmith", "approver": "bjones",
+      "ticket": { "approved": true },
+      "approvals": [ { "user": "bjones", "role": "release-manager" } ]
+    },
+    "pipeline": {
+      "stages": [ { "name": "build", "status": "passed" }, { "name": "security-scan", "status": "failed" } ],
+      "checks": [ { "name": "unit-tests", "status": "passed" } ]
+    },
+    "artifact": { "source_branch": "release/2026.08", "labels": { "signed-off-by": "bjones" } }
+  }
+}

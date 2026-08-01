@@ -1,0 +1,17 @@
+{
+  "name": "self-approved change",
+  "description": "The change author approved their own change; everything else is in order.",
+  "input": {
+    "deployment": { "id": "rel-1003", "environment": "production", "service": "payments-api", "timestamp": 1754060000 },
+    "change": {
+      "id": "chg-2003", "author": "asmith", "approver": "asmith",
+      "ticket": { "approved": true },
+      "approvals": [ { "user": "cdavis", "role": "release-manager" } ]
+    },
+    "pipeline": {
+      "stages": [ { "name": "build", "status": "passed" } ],
+      "checks": [ { "name": "unit-tests", "status": "passed" } ]
+    },
+    "artifact": { "source_branch": "release/2026.08", "labels": { "signed-off-by": "cdavis" } }
+  }
+}
