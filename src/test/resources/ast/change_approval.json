@@ -1,0 +1,941 @@
+{
+  "package": {
+    "location": {
+      "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+          "row": 1,
+          "col": 9,
+          "text": "cmVsZWFzZQ=="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+          "row": 1,
+          "col": 9,
+          "text": "cmVsZWFzZQ=="
+        },
+        "type": "string",
+        "value": "release"
+      },
+      {
+        "location": {
+          "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+          "row": 1,
+          "col": 17,
+          "text": "YXBwcm92YWxz"
+        },
+        "type": "string",
+        "value": "approvals"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 3,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+          "row": 3,
+          "col": 8,
+          "text": "cmVnby52MQ=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+              "row": 3,
+              "col": 8,
+              "text": "cmVnbw=="
+            },
+            "type": "var",
+            "value": "rego"
+          },
+          {
+            "location": {
+              "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+              "row": 3,
+              "col": 13,
+              "text": "djE="
+            },
+            "type": "string",
+            "value": "v1"
+          }
+        ]
+      }
+    }
+  ],
+  "annotations": [
+    {
+      "custom": {
+        "control-id": "REL-001",
+        "frameworks": [
+          "SOC 2 CC8.1",
+          "ISO 27001 A.8.32"
+        ]
+      },
+      "description": "Production deployments must reference an approved change ticket,\nand the change author must not approve their own change.\n",
+      "location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 5,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBQcm9kdWN0aW9uIGNoYW5nZSBhcHByb3ZhbAojIGRlc2NyaXB0aW9uOiB8CiMgICBQcm9kdWN0aW9uIGRlcGxveW1lbnRzIG11c3QgcmVmZXJlbmNlIGFuIGFwcHJvdmVkIGNoYW5nZSB0aWNrZXQsCiMgICBhbmQgdGhlIGNoYW5nZSBhdXRob3IgbXVzdCBub3QgYXBwcm92ZSB0aGVpciBvd24gY2hhbmdlLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFJFTC0wMDEKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gU09DIDIgQ0M4LjEKIyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+      },
+      "scope": "document",
+      "title": "Production change approval"
+    }
+  ],
+  "rules": [
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "REL-001",
+            "frameworks": [
+              "SOC 2 CC8.1",
+              "ISO 27001 A.8.32"
+            ]
+          },
+          "description": "Production deployments must reference an approved change ticket,\nand the change author must not approve their own change.\n",
+          "location": {
+            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+            "row": 5,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBQcm9kdWN0aW9uIGNoYW5nZSBhcHByb3ZhbAojIGRlc2NyaXB0aW9uOiB8CiMgICBQcm9kdWN0aW9uIGRlcGxveW1lbnRzIG11c3QgcmVmZXJlbmNlIGFuIGFwcHJvdmVkIGNoYW5nZSB0aWNrZXQsCiMgICBhbmQgdGhlIGNoYW5nZSBhdXRob3IgbXVzdCBub3QgYXBwcm92ZSB0aGVpciBvd24gY2hhbmdlLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFJFTC0wMDEKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gU09DIDIgQ0M4LjEKIyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+          },
+          "scope": "document",
+          "title": "Production change approval"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+            "row": 17,
+            "col": 2,
+            "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCA9PSAicHJvZHVjdGlvbiI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 17,
+                "col": 31,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 17,
+                    "col": 31,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 17,
+                "col": 2,
+                "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 17,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 17,
+                    "col": 8,
+                    "text": "ZGVwbG95bWVudA=="
+                  },
+                  "type": "string",
+                  "value": "deployment"
+                },
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 17,
+                    "col": 19,
+                    "text": "ZW52aXJvbm1lbnQ="
+                  },
+                  "type": "string",
+                  "value": "environment"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 17,
+                "col": 34,
+                "text": "InByb2R1Y3Rpb24i"
+              },
+              "type": "string",
+              "value": "production"
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+            "row": 18,
+            "col": 2,
+            "text": "bm90IGlucHV0LmNoYW5nZS50aWNrZXQuYXBwcm92ZWQ="
+          },
+          "negated": true,
+          "terms": {
+            "location": {
+              "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+              "row": 18,
+              "col": 6,
+              "text": "aW5wdXQuY2hhbmdlLnRpY2tldC5hcHByb3ZlZA=="
+            },
+            "type": "ref",
+            "value": [
+              {
+                "location": {
+                  "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                  "row": 18,
+                  "col": 6,
+                  "text": "aW5wdXQ="
+                },
+                "type": "var",
+                "value": "input"
+              },
+              {
+                "location": {
+                  "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                  "row": 18,
+                  "col": 12,
+                  "text": "Y2hhbmdl"
+                },
+                "type": "string",
+                "value": "change"
+              },
+              {
+                "location": {
+                  "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                  "row": 18,
+                  "col": 19,
+                  "text": "dGlja2V0"
+                },
+                "type": "string",
+                "value": "ticket"
+              },
+              {
+                "location": {
+                  "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                  "row": 18,
+                  "col": 26,
+                  "text": "YXBwcm92ZWQ="
+                },
+                "type": "string",
+                "value": "approved"
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "location": {
+            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+            "row": 19,
+            "col": 2,
+            "text": "bXNnIDo9IHNwcmludGYoInJlbGVhc2UgJXYgaGFzIG5vIGFwcHJvdmVkIGNoYW5nZSB0aWNrZXQiLCBbaW5wdXQuZGVwbG95bWVudC5pZF0p"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 19,
+                "col": 6,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 19,
+                    "col": 6,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 19,
+                "col": 2,
+                "text": "bXNn"
+              },
+              "type": "var",
+              "value": "msg"
+            },
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 19,
+                "col": 9,
+                "text": "c3ByaW50ZigicmVsZWFzZSAldiBoYXMgbm8gYXBwcm92ZWQgY2hhbmdlIHRpY2tldCIsIFtpbnB1dC5kZXBsb3ltZW50LmlkXSk="
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 19,
+                    "col": 9,
+                    "text": "c3ByaW50Zg=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                        "row": 19,
+                        "col": 9,
+                        "text": "c3ByaW50Zg=="
+                      },
+                      "type": "var",
+                      "value": "sprintf"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 19,
+                    "col": 17,
+                    "text": "InJlbGVhc2UgJXYgaGFzIG5vIGFwcHJvdmVkIGNoYW5nZSB0aWNrZXQi"
+                  },
+                  "type": "string",
+                  "value": "release %v has no approved change ticket"
+                },
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 19,
+                    "col": 61,
+                    "text": "W2lucHV0LmRlcGxveW1lbnQuaWRd"
+                  },
+                  "type": "array",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                        "row": 19,
+                        "col": 62,
+                        "text": "aW5wdXQuZGVwbG95bWVudC5pZA=="
+                      },
+                      "type": "ref",
+                      "value": [
+                        {
+                          "location": {
+                            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                            "row": 19,
+                            "col": 62,
+                            "text": "aW5wdXQ="
+                          },
+                          "type": "var",
+                          "value": "input"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                            "row": 19,
+                            "col": 68,
+                            "text": "ZGVwbG95bWVudA=="
+                          },
+                          "type": "string",
+                          "value": "deployment"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                            "row": 19,
+                            "col": 79,
+                            "text": "aWQ="
+                          },
+                          "type": "string",
+                          "value": "id"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "deny",
+        "key": {
+          "location": {
+            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+            "row": 16,
+            "col": 15,
+            "text": "bXNn"
+          },
+          "type": "var",
+          "value": "msg"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+              "row": 16,
+              "col": 1,
+              "text": "ZGVueQ=="
+            },
+            "type": "var",
+            "value": "deny"
+          }
+        ],
+        "location": {
+          "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+          "row": 16,
+          "col": 1,
+          "text": "ZGVueSBjb250YWlucyBtc2c="
+        }
+      },
+      "location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 16,
+        "col": 1,
+        "text": "ZGVueSBjb250YWlucyBtc2cgaWYgewoJaW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCA9PSAicHJvZHVjdGlvbiIKCW5vdCBpbnB1dC5jaGFuZ2UudGlja2V0LmFwcHJvdmVkCgltc2cgOj0gc3ByaW50ZigicmVsZWFzZSAldiBoYXMgbm8gYXBwcm92ZWQgY2hhbmdlIHRpY2tldCIsIFtpbnB1dC5kZXBsb3ltZW50LmlkXSkKfQ=="
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "REL-001",
+            "frameworks": [
+              "SOC 2 CC8.1",
+              "ISO 27001 A.8.32"
+            ]
+          },
+          "description": "Production deployments must reference an approved change ticket,\nand the change author must not approve their own change.\n",
+          "location": {
+            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+            "row": 5,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBQcm9kdWN0aW9uIGNoYW5nZSBhcHByb3ZhbAojIGRlc2NyaXB0aW9uOiB8CiMgICBQcm9kdWN0aW9uIGRlcGxveW1lbnRzIG11c3QgcmVmZXJlbmNlIGFuIGFwcHJvdmVkIGNoYW5nZSB0aWNrZXQsCiMgICBhbmQgdGhlIGNoYW5nZSBhdXRob3IgbXVzdCBub3QgYXBwcm92ZSB0aGVpciBvd24gY2hhbmdlLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFJFTC0wMDEKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gU09DIDIgQ0M4LjEKIyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+          },
+          "scope": "document",
+          "title": "Production change approval"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+            "row": 23,
+            "col": 2,
+            "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCA9PSAicHJvZHVjdGlvbiI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 23,
+                "col": 31,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 23,
+                    "col": 31,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 23,
+                "col": 2,
+                "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 23,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 23,
+                    "col": 8,
+                    "text": "ZGVwbG95bWVudA=="
+                  },
+                  "type": "string",
+                  "value": "deployment"
+                },
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 23,
+                    "col": 19,
+                    "text": "ZW52aXJvbm1lbnQ="
+                  },
+                  "type": "string",
+                  "value": "environment"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 23,
+                "col": 34,
+                "text": "InByb2R1Y3Rpb24i"
+              },
+              "type": "string",
+              "value": "production"
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+            "row": 24,
+            "col": 2,
+            "text": "aW5wdXQuY2hhbmdlLmF1dGhvciA9PSBpbnB1dC5jaGFuZ2UuYXBwcm92ZXI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 24,
+                "col": 22,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 24,
+                    "col": 22,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 24,
+                "col": 2,
+                "text": "aW5wdXQuY2hhbmdlLmF1dGhvcg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 24,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 24,
+                    "col": 8,
+                    "text": "Y2hhbmdl"
+                  },
+                  "type": "string",
+                  "value": "change"
+                },
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 24,
+                    "col": 15,
+                    "text": "YXV0aG9y"
+                  },
+                  "type": "string",
+                  "value": "author"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 24,
+                "col": 25,
+                "text": "aW5wdXQuY2hhbmdlLmFwcHJvdmVy"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 24,
+                    "col": 25,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 24,
+                    "col": 31,
+                    "text": "Y2hhbmdl"
+                  },
+                  "type": "string",
+                  "value": "change"
+                },
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 24,
+                    "col": 38,
+                    "text": "YXBwcm92ZXI="
+                  },
+                  "type": "string",
+                  "value": "approver"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "location": {
+            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+            "row": 25,
+            "col": 2,
+            "text": "bXNnIDo9IHNwcmludGYoImNoYW5nZSAldiB3YXMgYXBwcm92ZWQgYnkgaXRzIGF1dGhvciIsIFtpbnB1dC5jaGFuZ2UuaWRdKQ=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 25,
+                "col": 6,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 25,
+                    "col": 6,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 25,
+                "col": 2,
+                "text": "bXNn"
+              },
+              "type": "var",
+              "value": "msg"
+            },
+            {
+              "location": {
+                "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                "row": 25,
+                "col": 9,
+                "text": "c3ByaW50ZigiY2hhbmdlICV2IHdhcyBhcHByb3ZlZCBieSBpdHMgYXV0aG9yIiwgW2lucHV0LmNoYW5nZS5pZF0p"
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 25,
+                    "col": 9,
+                    "text": "c3ByaW50Zg=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                        "row": 25,
+                        "col": 9,
+                        "text": "c3ByaW50Zg=="
+                      },
+                      "type": "var",
+                      "value": "sprintf"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 25,
+                    "col": 17,
+                    "text": "ImNoYW5nZSAldiB3YXMgYXBwcm92ZWQgYnkgaXRzIGF1dGhvciI="
+                  },
+                  "type": "string",
+                  "value": "change %v was approved by its author"
+                },
+                {
+                  "location": {
+                    "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                    "row": 25,
+                    "col": 57,
+                    "text": "W2lucHV0LmNoYW5nZS5pZF0="
+                  },
+                  "type": "array",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                        "row": 25,
+                        "col": 58,
+                        "text": "aW5wdXQuY2hhbmdlLmlk"
+                      },
+                      "type": "ref",
+                      "value": [
+                        {
+                          "location": {
+                            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                            "row": 25,
+                            "col": 58,
+                            "text": "aW5wdXQ="
+                          },
+                          "type": "var",
+                          "value": "input"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                            "row": 25,
+                            "col": 64,
+                            "text": "Y2hhbmdl"
+                          },
+                          "type": "string",
+                          "value": "change"
+                        },
+                        {
+                          "location": {
+                            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+                            "row": 25,
+                            "col": 71,
+                            "text": "aWQ="
+                          },
+                          "type": "string",
+                          "value": "id"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "deny",
+        "key": {
+          "location": {
+            "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+            "row": 22,
+            "col": 15,
+            "text": "bXNn"
+          },
+          "type": "var",
+          "value": "msg"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+              "row": 22,
+              "col": 1,
+              "text": "ZGVueQ=="
+            },
+            "type": "var",
+            "value": "deny"
+          }
+        ],
+        "location": {
+          "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+          "row": 22,
+          "col": 1,
+          "text": "ZGVueSBjb250YWlucyBtc2c="
+        }
+      },
+      "location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 22,
+        "col": 1,
+        "text": "ZGVueSBjb250YWlucyBtc2cgaWYgewoJaW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCA9PSAicHJvZHVjdGlvbiIKCWlucHV0LmNoYW5nZS5hdXRob3IgPT0gaW5wdXQuY2hhbmdlLmFwcHJvdmVyCgltc2cgOj0gc3ByaW50ZigiY2hhbmdlICV2IHdhcyBhcHByb3ZlZCBieSBpdHMgYXV0aG9yIiwgW2lucHV0LmNoYW5nZS5pZF0pCn0="
+      }
+    }
+  ],
+  "comments": [
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 5,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBQcm9kdWN0aW9uIGNoYW5nZSBhcHByb3ZhbAojIGRlc2NyaXB0aW9uOiB8CiMgICBQcm9kdWN0aW9uIGRlcGxveW1lbnRzIG11c3QgcmVmZXJlbmNlIGFuIGFwcHJvdmVkIGNoYW5nZSB0aWNrZXQsCiMgICBhbmQgdGhlIGNoYW5nZSBhdXRob3IgbXVzdCBub3QgYXBwcm92ZSB0aGVpciBvd24gY2hhbmdlLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFJFTC0wMDEKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gU09DIDIgQ0M4LjEKIyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 6,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBQcm9kdWN0aW9uIGNoYW5nZSBhcHByb3ZhbA==",
+      "Location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 7,
+        "col": 1,
+        "text": "IyB0aXRsZTogUHJvZHVjdGlvbiBjaGFuZ2UgYXBwcm92YWw="
+      }
+    },
+    {
+      "Text": "IGRlc2NyaXB0aW9uOiB8",
+      "Location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 8,
+        "col": 1,
+        "text": "IyBkZXNjcmlwdGlvbjogfA=="
+      }
+    },
+    {
+      "Text": "ICAgUHJvZHVjdGlvbiBkZXBsb3ltZW50cyBtdXN0IHJlZmVyZW5jZSBhbiBhcHByb3ZlZCBjaGFuZ2UgdGlja2V0LA==",
+      "Location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 9,
+        "col": 1,
+        "text": "IyAgIFByb2R1Y3Rpb24gZGVwbG95bWVudHMgbXVzdCByZWZlcmVuY2UgYW4gYXBwcm92ZWQgY2hhbmdlIHRpY2tldCw="
+      }
+    },
+    {
+      "Text": "ICAgYW5kIHRoZSBjaGFuZ2UgYXV0aG9yIG11c3Qgbm90IGFwcHJvdmUgdGhlaXIgb3duIGNoYW5nZS4=",
+      "Location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 10,
+        "col": 1,
+        "text": "IyAgIGFuZCB0aGUgY2hhbmdlIGF1dGhvciBtdXN0IG5vdCBhcHByb3ZlIHRoZWlyIG93biBjaGFuZ2Uu"
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 11,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogUkVMLTAwMQ==",
+      "Location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 12,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IFJFTC0wMDE="
+      }
+    },
+    {
+      "Text": "ICAgZnJhbWV3b3Jrczo=",
+      "Location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 13,
+        "col": 1,
+        "text": "IyAgIGZyYW1ld29ya3M6"
+      }
+    },
+    {
+      "Text": "ICAgICAtIFNPQyAyIENDOC4x",
+      "Location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 14,
+        "col": 1,
+        "text": "IyAgICAgLSBTT0MgMiBDQzguMQ=="
+      }
+    },
+    {
+      "Text": "ICAgICAtIElTTyAyNzAwMSBBLjguMzI=",
+      "Location": {
+        "file": "/Users/john/Projects/explico/src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 15,
+        "col": 1,
+        "text": "IyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+      }
+    }
+  ]
+}

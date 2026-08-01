@@ -17,9 +17,18 @@ prose standing in for logic the tool didn't actually check.
 ## Hard rules (never violate, never negotiate away to get to green)
 
 1. **No Rego parsing in Kotlin, ever.** All parsing goes through the `opa`
-   binary (`opa parse --format json`, `opa inspect --annotations --format
-   json`, `opa eval --format json`). Kotlin code only maps `opa`'s JSON output
-   into the domain model (`parse/AstMapper.kt`). See spec §4.
+   binary. **The exact invocation is `opa parse --format json --json-include
+   locations <file>`** — the `--json-include locations` flag is required and
+   is NOT in the original spec text; without it, `opa` silently omits every
+   `location` field (confirmed empirically against real `opa` output), which
+   breaks `SourceRef`, fallback source recovery, source-order sorting, and
+   diff's source-span extraction. `opa inspect --annotations --format json`
+   needs no such flag — it includes locations by default. A node's
+   `location.text` is base64-encoded verbatim source for that node; the
+   mapper decodes it directly rather than re-reading and slicing the file by
+   row/col. `opa eval --format json` is the third invocation (worked
+   examples, §6.7). Kotlin code only maps `opa`'s JSON output into the domain
+   model (`parse/AstMapper.kt`). See spec §4.
 2. **The fallback is sacred.** Any construct the mapper cannot classify —
    comprehensions, `every`, user-defined functions with parameters, `with`,
    `else` chains, anything unclassified — becomes `Condition.Unrendered` /
