@@ -1,0 +1,876 @@
+{
+  "package": {
+    "location": {
+      "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+          "row": 1,
+          "col": 9,
+          "text": "cmVsZWFzZQ=="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+          "row": 1,
+          "col": 9,
+          "text": "cmVsZWFzZQ=="
+        },
+        "type": "string",
+        "value": "release"
+      },
+      {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+          "row": 1,
+          "col": 17,
+          "text": "ZXZpZGVuY2U="
+        },
+        "type": "string",
+        "value": "evidence"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 3,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+          "row": 3,
+          "col": 8,
+          "text": "cmVnby52MQ=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+              "row": 3,
+              "col": 8,
+              "text": "cmVnbw=="
+            },
+            "type": "var",
+            "value": "rego"
+          },
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+              "row": 3,
+              "col": 13,
+              "text": "djE="
+            },
+            "type": "string",
+            "value": "v1"
+          }
+        ]
+      }
+    },
+    {
+      "location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 5,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+          "row": 5,
+          "col": 8,
+          "text": "ZGF0YS5yZWxlYXNlLmV4ZW1wdGlvbnM="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+              "row": 5,
+              "col": 8,
+              "text": "ZGF0YQ=="
+            },
+            "type": "var",
+            "value": "data"
+          },
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+              "row": 5,
+              "col": 13,
+              "text": "cmVsZWFzZQ=="
+            },
+            "type": "string",
+            "value": "release"
+          },
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+              "row": 5,
+              "col": 21,
+              "text": "ZXhlbXB0aW9ucw=="
+            },
+            "type": "string",
+            "value": "exemptions"
+          }
+        ]
+      }
+    }
+  ],
+  "annotations": [
+    {
+      "custom": {
+        "control-id": "REL-002",
+        "frameworks": [
+          "SOC 2 CC8.1"
+        ]
+      },
+      "description": "Every pipeline stage must have passed before a release candidate\nmay be deployed, unless the service is explicitly exempt.\n",
+      "location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 7,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBQaXBlbGluZSBldmlkZW5jZQojIGRlc2NyaXB0aW9uOiB8CiMgICBFdmVyeSBwaXBlbGluZSBzdGFnZSBtdXN0IGhhdmUgcGFzc2VkIGJlZm9yZSBhIHJlbGVhc2UgY2FuZGlkYXRlCiMgICBtYXkgYmUgZGVwbG95ZWQsIHVubGVzcyB0aGUgc2VydmljZSBpcyBleHBsaWNpdGx5IGV4ZW1wdC4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBSRUwtMDAyCiMgICBmcmFtZXdvcmtzOgojICAgICAtIFNPQyAyIENDOC4x"
+      },
+      "scope": "document",
+      "title": "Pipeline evidence"
+    },
+    {
+      "description": "Deployments to production or staging count as release candidates.",
+      "location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 25,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHRpdGxlOiBSZWxlYXNlIGNhbmRpZGF0ZSBlbnZpcm9ubWVudHMKIyBkZXNjcmlwdGlvbjogRGVwbG95bWVudHMgdG8gcHJvZHVjdGlvbiBvciBzdGFnaW5nIGNvdW50IGFzIHJlbGVhc2UgY2FuZGlkYXRlcy4="
+      },
+      "scope": "rule",
+      "title": "Release candidate environments"
+    }
+  ],
+  "rules": [
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "REL-002",
+            "frameworks": [
+              "SOC 2 CC8.1"
+            ]
+          },
+          "description": "Every pipeline stage must have passed before a release candidate\nmay be deployed, unless the service is explicitly exempt.\n",
+          "location": {
+            "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+            "row": 7,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBQaXBlbGluZSBldmlkZW5jZQojIGRlc2NyaXB0aW9uOiB8CiMgICBFdmVyeSBwaXBlbGluZSBzdGFnZSBtdXN0IGhhdmUgcGFzc2VkIGJlZm9yZSBhIHJlbGVhc2UgY2FuZGlkYXRlCiMgICBtYXkgYmUgZGVwbG95ZWQsIHVubGVzcyB0aGUgc2VydmljZSBpcyBleHBsaWNpdGx5IGV4ZW1wdC4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBSRUwtMDAyCiMgICBmcmFtZXdvcmtzOgojICAgICAtIFNPQyAyIENDOC4x"
+          },
+          "scope": "document",
+          "title": "Pipeline evidence"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+            "row": 18,
+            "col": 2,
+            "text": "aXNfcmVsZWFzZV9jYW5kaWRhdGU="
+          },
+          "terms": {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+              "row": 18,
+              "col": 2,
+              "text": "aXNfcmVsZWFzZV9jYW5kaWRhdGU="
+            },
+            "type": "var",
+            "value": "is_release_candidate"
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+            "row": 19,
+            "col": 2,
+            "text": "bm90IGV4ZW1wdGlvbnMuZXhlbXB0X3NlcnZpY2U="
+          },
+          "negated": true,
+          "terms": {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+              "row": 19,
+              "col": 6,
+              "text": "ZXhlbXB0aW9ucy5leGVtcHRfc2VydmljZQ=="
+            },
+            "type": "ref",
+            "value": [
+              {
+                "location": {
+                  "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                  "row": 19,
+                  "col": 6,
+                  "text": "ZXhlbXB0aW9ucw=="
+                },
+                "type": "var",
+                "value": "exemptions"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                  "row": 19,
+                  "col": 17,
+                  "text": "ZXhlbXB0X3NlcnZpY2U="
+                },
+                "type": "string",
+                "value": "exempt_service"
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+            "row": 20,
+            "col": 2,
+            "text": "c29tZSBzdGFnZSBpbiBpbnB1dC5waXBlbGluZS5zdGFnZXM="
+          },
+          "terms": {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+              "row": 20,
+              "col": 2,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                  "row": 20,
+                  "col": 7,
+                  "text": "c3RhZ2UgaW4gaW5wdXQucGlwZWxpbmUuc3RhZ2Vz"
+                },
+                "type": "call",
+                "value": [
+                  {
+                    "location": {
+                      "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                      "row": 20,
+                      "col": 13,
+                      "text": "aW4="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                          "row": 20,
+                          "col": 13,
+                          "text": "aW4="
+                        },
+                        "type": "var",
+                        "value": "internal"
+                      },
+                      {
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                          "row": 20,
+                          "col": 13,
+                          "text": "aW4="
+                        },
+                        "type": "string",
+                        "value": "member_2"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                      "row": 20,
+                      "col": 7,
+                      "text": "c3RhZ2U="
+                    },
+                    "type": "var",
+                    "value": "stage"
+                  },
+                  {
+                    "location": {
+                      "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                      "row": 20,
+                      "col": 16,
+                      "text": "aW5wdXQucGlwZWxpbmUuc3RhZ2Vz"
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                          "row": 20,
+                          "col": 16,
+                          "text": "aW5wdXQ="
+                        },
+                        "type": "var",
+                        "value": "input"
+                      },
+                      {
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                          "row": 20,
+                          "col": 22,
+                          "text": "cGlwZWxpbmU="
+                        },
+                        "type": "string",
+                        "value": "pipeline"
+                      },
+                      {
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                          "row": 20,
+                          "col": 31,
+                          "text": "c3RhZ2Vz"
+                        },
+                        "type": "string",
+                        "value": "stages"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+            "row": 21,
+            "col": 2,
+            "text": "c3RhZ2Uuc3RhdHVzICE9ICJwYXNzZWQi"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                "row": 21,
+                "col": 15,
+                "text": "IT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                    "row": 21,
+                    "col": 15,
+                    "text": "IT0="
+                  },
+                  "type": "var",
+                  "value": "neq"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                "row": 21,
+                "col": 2,
+                "text": "c3RhZ2Uuc3RhdHVz"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                    "row": 21,
+                    "col": 2,
+                    "text": "c3RhZ2U="
+                  },
+                  "type": "var",
+                  "value": "stage"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                    "row": 21,
+                    "col": 8,
+                    "text": "c3RhdHVz"
+                  },
+                  "type": "string",
+                  "value": "status"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                "row": 21,
+                "col": 18,
+                "text": "InBhc3NlZCI="
+              },
+              "type": "string",
+              "value": "passed"
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+            "row": 22,
+            "col": 2,
+            "text": "bXNnIDo9IHNwcmludGYoInBpcGVsaW5lIHN0YWdlICV2IGRpZCBub3QgcGFzcyIsIFtzdGFnZS5uYW1lXSk="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                "row": 22,
+                "col": 6,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                    "row": 22,
+                    "col": 6,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                "row": 22,
+                "col": 2,
+                "text": "bXNn"
+              },
+              "type": "var",
+              "value": "msg"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                "row": 22,
+                "col": 9,
+                "text": "c3ByaW50ZigicGlwZWxpbmUgc3RhZ2UgJXYgZGlkIG5vdCBwYXNzIiwgW3N0YWdlLm5hbWVdKQ=="
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                    "row": 22,
+                    "col": 9,
+                    "text": "c3ByaW50Zg=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                        "row": 22,
+                        "col": 9,
+                        "text": "c3ByaW50Zg=="
+                      },
+                      "type": "var",
+                      "value": "sprintf"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                    "row": 22,
+                    "col": 17,
+                    "text": "InBpcGVsaW5lIHN0YWdlICV2IGRpZCBub3QgcGFzcyI="
+                  },
+                  "type": "string",
+                  "value": "pipeline stage %v did not pass"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                    "row": 22,
+                    "col": 51,
+                    "text": "W3N0YWdlLm5hbWVd"
+                  },
+                  "type": "array",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                        "row": 22,
+                        "col": 52,
+                        "text": "c3RhZ2UubmFtZQ=="
+                      },
+                      "type": "ref",
+                      "value": [
+                        {
+                          "location": {
+                            "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                            "row": 22,
+                            "col": 52,
+                            "text": "c3RhZ2U="
+                          },
+                          "type": "var",
+                          "value": "stage"
+                        },
+                        {
+                          "location": {
+                            "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                            "row": 22,
+                            "col": 58,
+                            "text": "bmFtZQ=="
+                          },
+                          "type": "string",
+                          "value": "name"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "deny",
+        "key": {
+          "location": {
+            "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+            "row": 17,
+            "col": 15,
+            "text": "bXNn"
+          },
+          "type": "var",
+          "value": "msg"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+              "row": 17,
+              "col": 1,
+              "text": "ZGVueQ=="
+            },
+            "type": "var",
+            "value": "deny"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+          "row": 17,
+          "col": 1,
+          "text": "ZGVueSBjb250YWlucyBtc2c="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 17,
+        "col": 1,
+        "text": "ZGVueSBjb250YWlucyBtc2cgaWYgewoJaXNfcmVsZWFzZV9jYW5kaWRhdGUKCW5vdCBleGVtcHRpb25zLmV4ZW1wdF9zZXJ2aWNlCglzb21lIHN0YWdlIGluIGlucHV0LnBpcGVsaW5lLnN0YWdlcwoJc3RhZ2Uuc3RhdHVzICE9ICJwYXNzZWQiCgltc2cgOj0gc3ByaW50ZigicGlwZWxpbmUgc3RhZ2UgJXYgZGlkIG5vdCBwYXNzIiwgW3N0YWdlLm5hbWVdKQp9"
+      }
+    },
+    {
+      "annotations": [
+        {
+          "description": "Deployments to production or staging count as release candidates.",
+          "location": {
+            "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+            "row": 25,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHRpdGxlOiBSZWxlYXNlIGNhbmRpZGF0ZSBlbnZpcm9ubWVudHMKIyBkZXNjcmlwdGlvbjogRGVwbG95bWVudHMgdG8gcHJvZHVjdGlvbiBvciBzdGFnaW5nIGNvdW50IGFzIHJlbGVhc2UgY2FuZGlkYXRlcy4="
+          },
+          "scope": "rule",
+          "title": "Release candidate environments"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+            "row": 29,
+            "col": 2,
+            "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCBpbiB7InByb2R1Y3Rpb24iLCAic3RhZ2luZyJ9"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                "row": 29,
+                "col": 31,
+                "text": "aW4="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                    "row": 29,
+                    "col": 31,
+                    "text": "aW4="
+                  },
+                  "type": "var",
+                  "value": "internal"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                    "row": 29,
+                    "col": 31,
+                    "text": "aW4="
+                  },
+                  "type": "string",
+                  "value": "member_2"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                "row": 29,
+                "col": 2,
+                "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                    "row": 29,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                    "row": 29,
+                    "col": 8,
+                    "text": "ZGVwbG95bWVudA=="
+                  },
+                  "type": "string",
+                  "value": "deployment"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                    "row": 29,
+                    "col": 19,
+                    "text": "ZW52aXJvbm1lbnQ="
+                  },
+                  "type": "string",
+                  "value": "environment"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                "row": 29,
+                "col": 34,
+                "text": "eyJwcm9kdWN0aW9uIiwgInN0YWdpbmcifQ=="
+              },
+              "type": "set",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                    "row": 29,
+                    "col": 35,
+                    "text": "InByb2R1Y3Rpb24i"
+                  },
+                  "type": "string",
+                  "value": "production"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+                    "row": 29,
+                    "col": 49,
+                    "text": "InN0YWdpbmci"
+                  },
+                  "type": "string",
+                  "value": "staging"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "is_release_candidate",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+              "row": 28,
+              "col": 1,
+              "text": "aXNfcmVsZWFzZV9jYW5kaWRhdGU="
+            },
+            "type": "var",
+            "value": "is_release_candidate"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+          "row": 28,
+          "col": 1,
+          "text": "aXNfcmVsZWFzZV9jYW5kaWRhdGU="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 28,
+        "col": 1,
+        "text": "aXNfcmVsZWFzZV9jYW5kaWRhdGUgaWYgewoJaW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCBpbiB7InByb2R1Y3Rpb24iLCAic3RhZ2luZyJ9Cn0="
+      }
+    }
+  ],
+  "comments": [
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 7,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBQaXBlbGluZSBldmlkZW5jZQojIGRlc2NyaXB0aW9uOiB8CiMgICBFdmVyeSBwaXBlbGluZSBzdGFnZSBtdXN0IGhhdmUgcGFzc2VkIGJlZm9yZSBhIHJlbGVhc2UgY2FuZGlkYXRlCiMgICBtYXkgYmUgZGVwbG95ZWQsIHVubGVzcyB0aGUgc2VydmljZSBpcyBleHBsaWNpdGx5IGV4ZW1wdC4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBSRUwtMDAyCiMgICBmcmFtZXdvcmtzOgojICAgICAtIFNPQyAyIENDOC4x"
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 8,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBQaXBlbGluZSBldmlkZW5jZQ==",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 9,
+        "col": 1,
+        "text": "IyB0aXRsZTogUGlwZWxpbmUgZXZpZGVuY2U="
+      }
+    },
+    {
+      "Text": "IGRlc2NyaXB0aW9uOiB8",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 10,
+        "col": 1,
+        "text": "IyBkZXNjcmlwdGlvbjogfA=="
+      }
+    },
+    {
+      "Text": "ICAgRXZlcnkgcGlwZWxpbmUgc3RhZ2UgbXVzdCBoYXZlIHBhc3NlZCBiZWZvcmUgYSByZWxlYXNlIGNhbmRpZGF0ZQ==",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 11,
+        "col": 1,
+        "text": "IyAgIEV2ZXJ5IHBpcGVsaW5lIHN0YWdlIG11c3QgaGF2ZSBwYXNzZWQgYmVmb3JlIGEgcmVsZWFzZSBjYW5kaWRhdGU="
+      }
+    },
+    {
+      "Text": "ICAgbWF5IGJlIGRlcGxveWVkLCB1bmxlc3MgdGhlIHNlcnZpY2UgaXMgZXhwbGljaXRseSBleGVtcHQu",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 12,
+        "col": 1,
+        "text": "IyAgIG1heSBiZSBkZXBsb3llZCwgdW5sZXNzIHRoZSBzZXJ2aWNlIGlzIGV4cGxpY2l0bHkgZXhlbXB0Lg=="
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 13,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogUkVMLTAwMg==",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 14,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IFJFTC0wMDI="
+      }
+    },
+    {
+      "Text": "ICAgZnJhbWV3b3Jrczo=",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 15,
+        "col": 1,
+        "text": "IyAgIGZyYW1ld29ya3M6"
+      }
+    },
+    {
+      "Text": "ICAgICAtIFNPQyAyIENDOC4x",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 16,
+        "col": 1,
+        "text": "IyAgICAgLSBTT0MgMiBDQzguMQ=="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 25,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHRpdGxlOiBSZWxlYXNlIGNhbmRpZGF0ZSBlbnZpcm9ubWVudHMKIyBkZXNjcmlwdGlvbjogRGVwbG95bWVudHMgdG8gcHJvZHVjdGlvbiBvciBzdGFnaW5nIGNvdW50IGFzIHJlbGVhc2UgY2FuZGlkYXRlcy4="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBSZWxlYXNlIGNhbmRpZGF0ZSBlbnZpcm9ubWVudHM=",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 26,
+        "col": 1,
+        "text": "IyB0aXRsZTogUmVsZWFzZSBjYW5kaWRhdGUgZW52aXJvbm1lbnRz"
+      }
+    },
+    {
+      "Text": "IGRlc2NyaXB0aW9uOiBEZXBsb3ltZW50cyB0byBwcm9kdWN0aW9uIG9yIHN0YWdpbmcgY291bnQgYXMgcmVsZWFzZSBjYW5kaWRhdGVzLg==",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 27,
+        "col": 1,
+        "text": "IyBkZXNjcmlwdGlvbjogRGVwbG95bWVudHMgdG8gcHJvZHVjdGlvbiBvciBzdGFnaW5nIGNvdW50IGFzIHJlbGVhc2UgY2FuZGlkYXRlcy4="
+      }
+    }
+  ]
+}

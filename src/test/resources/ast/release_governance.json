@@ -1,0 +1,1709 @@
+{
+  "package": {
+    "location": {
+      "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+          "row": 1,
+          "col": 9,
+          "text": "cmVsZWFzZQ=="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+          "row": 1,
+          "col": 9,
+          "text": "cmVsZWFzZQ=="
+        },
+        "type": "string",
+        "value": "release"
+      },
+      {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+          "row": 1,
+          "col": 17,
+          "text": "Z292ZXJuYW5jZQ=="
+        },
+        "type": "string",
+        "value": "governance"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 3,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+          "row": 3,
+          "col": 8,
+          "text": "cmVnby52MQ=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+              "row": 3,
+              "col": 8,
+              "text": "cmVnbw=="
+            },
+            "type": "var",
+            "value": "rego"
+          },
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+              "row": 3,
+              "col": 13,
+              "text": "djE="
+            },
+            "type": "string",
+            "value": "v1"
+          }
+        ]
+      }
+    }
+  ],
+  "annotations": [
+    {
+      "custom": {
+        "control-id": "REL-004",
+        "frameworks": [
+          "SOC 2 CC8.1",
+          "DORA Art. 9"
+        ]
+      },
+      "description": "Production releases require a release manager approval, must not fall\ninside a freeze window, and all mandatory checks must have passed.\n",
+      "location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 5,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBSZWxlYXNlIGdvdmVybmFuY2UgZXZpZGVuY2UKIyBkZXNjcmlwdGlvbjogfAojICAgUHJvZHVjdGlvbiByZWxlYXNlcyByZXF1aXJlIGEgcmVsZWFzZSBtYW5hZ2VyIGFwcHJvdmFsLCBtdXN0IG5vdCBmYWxsCiMgICBpbnNpZGUgYSBmcmVlemUgd2luZG93LCBhbmQgYWxsIG1hbmRhdG9yeSBjaGVja3MgbXVzdCBoYXZlIHBhc3NlZC4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBSRUwtMDA0CiMgICBmcmFtZXdvcmtzOgojICAgICAtIFNPQyAyIENDOC4xCiMgICAgIC0gRE9SQSBBcnQuIDk="
+      },
+      "scope": "document",
+      "title": "Release governance evidence"
+    },
+    {
+      "location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 36,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHRpdGxlOiBNYW5kYXRvcnkgY2hlY2sgY29tcGxldGVuZXNz"
+      },
+      "scope": "rule",
+      "title": "Mandatory check completeness"
+    }
+  ],
+  "rules": [
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "REL-004",
+            "frameworks": [
+              "SOC 2 CC8.1",
+              "DORA Art. 9"
+            ]
+          },
+          "description": "Production releases require a release manager approval, must not fall\ninside a freeze window, and all mandatory checks must have passed.\n",
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 5,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBSZWxlYXNlIGdvdmVybmFuY2UgZXZpZGVuY2UKIyBkZXNjcmlwdGlvbjogfAojICAgUHJvZHVjdGlvbiByZWxlYXNlcyByZXF1aXJlIGEgcmVsZWFzZSBtYW5hZ2VyIGFwcHJvdmFsLCBtdXN0IG5vdCBmYWxsCiMgICBpbnNpZGUgYSBmcmVlemUgd2luZG93LCBhbmQgYWxsIG1hbmRhdG9yeSBjaGVja3MgbXVzdCBoYXZlIHBhc3NlZC4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBSRUwtMDA0CiMgICBmcmFtZXdvcmtzOgojICAgICAtIFNPQyAyIENDOC4xCiMgICAgIC0gRE9SQSBBcnQuIDk="
+          },
+          "scope": "document",
+          "title": "Release governance evidence"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 17,
+            "col": 2,
+            "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCA9PSAicHJvZHVjdGlvbiI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 17,
+                "col": 31,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 17,
+                    "col": 31,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 17,
+                "col": 2,
+                "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 17,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 17,
+                    "col": 8,
+                    "text": "ZGVwbG95bWVudA=="
+                  },
+                  "type": "string",
+                  "value": "deployment"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 17,
+                    "col": 19,
+                    "text": "ZW52aXJvbm1lbnQ="
+                  },
+                  "type": "string",
+                  "value": "environment"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 17,
+                "col": 34,
+                "text": "InByb2R1Y3Rpb24i"
+              },
+              "type": "string",
+              "value": "production"
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 18,
+            "col": 2,
+            "text": "Y291bnQoe2EgfCBzb21lIGEgaW4gaW5wdXQuY2hhbmdlLmFwcHJvdmFsczsgYS5yb2xlID09ICJyZWxlYXNlLW1hbmFnZXIifSkgPT0gMA=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 18,
+                "col": 77,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 18,
+                    "col": 77,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 18,
+                "col": 2,
+                "text": "Y291bnQoe2EgfCBzb21lIGEgaW4gaW5wdXQuY2hhbmdlLmFwcHJvdmFsczsgYS5yb2xlID09ICJyZWxlYXNlLW1hbmFnZXIifSk="
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 18,
+                    "col": 2,
+                    "text": "Y291bnQ="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                        "row": 18,
+                        "col": 2,
+                        "text": "Y291bnQ="
+                      },
+                      "type": "var",
+                      "value": "count"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 18,
+                    "col": 8,
+                    "text": "e2EgfCBzb21lIGEgaW4gaW5wdXQuY2hhbmdlLmFwcHJvdmFsczsgYS5yb2xlID09ICJyZWxlYXNlLW1hbmFnZXIifQ=="
+                  },
+                  "type": "setcomprehension",
+                  "value": {
+                    "term": {
+                      "location": {
+                        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                        "row": 18,
+                        "col": 9,
+                        "text": "YQ=="
+                      },
+                      "type": "var",
+                      "value": "a"
+                    },
+                    "body": [
+                      {
+                        "index": 0,
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                          "row": 18,
+                          "col": 13,
+                          "text": "c29tZSBhIGluIGlucHV0LmNoYW5nZS5hcHByb3ZhbHM="
+                        },
+                        "terms": {
+                          "location": {
+                            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                            "row": 18,
+                            "col": 13,
+                            "text": "c29tZQ=="
+                          },
+                          "symbols": [
+                            {
+                              "location": {
+                                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                                "row": 18,
+                                "col": 18,
+                                "text": "YSBpbiBpbnB1dC5jaGFuZ2UuYXBwcm92YWxz"
+                              },
+                              "type": "call",
+                              "value": [
+                                {
+                                  "location": {
+                                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                                    "row": 18,
+                                    "col": 20,
+                                    "text": "aW4="
+                                  },
+                                  "type": "ref",
+                                  "value": [
+                                    {
+                                      "location": {
+                                        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                                        "row": 18,
+                                        "col": 20,
+                                        "text": "aW4="
+                                      },
+                                      "type": "var",
+                                      "value": "internal"
+                                    },
+                                    {
+                                      "location": {
+                                        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                                        "row": 18,
+                                        "col": 20,
+                                        "text": "aW4="
+                                      },
+                                      "type": "string",
+                                      "value": "member_2"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "location": {
+                                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                                    "row": 18,
+                                    "col": 18,
+                                    "text": "YQ=="
+                                  },
+                                  "type": "var",
+                                  "value": "a"
+                                },
+                                {
+                                  "location": {
+                                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                                    "row": 18,
+                                    "col": 23,
+                                    "text": "aW5wdXQuY2hhbmdlLmFwcHJvdmFscw=="
+                                  },
+                                  "type": "ref",
+                                  "value": [
+                                    {
+                                      "location": {
+                                        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                                        "row": 18,
+                                        "col": 23,
+                                        "text": "aW5wdXQ="
+                                      },
+                                      "type": "var",
+                                      "value": "input"
+                                    },
+                                    {
+                                      "location": {
+                                        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                                        "row": 18,
+                                        "col": 29,
+                                        "text": "Y2hhbmdl"
+                                      },
+                                      "type": "string",
+                                      "value": "change"
+                                    },
+                                    {
+                                      "location": {
+                                        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                                        "row": 18,
+                                        "col": 36,
+                                        "text": "YXBwcm92YWxz"
+                                      },
+                                      "type": "string",
+                                      "value": "approvals"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                          "row": 18,
+                          "col": 47,
+                          "text": "YS5yb2xlID09ICJyZWxlYXNlLW1hbmFnZXIi"
+                        },
+                        "terms": [
+                          {
+                            "location": {
+                              "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                              "row": 18,
+                              "col": 54,
+                              "text": "PT0="
+                            },
+                            "type": "ref",
+                            "value": [
+                              {
+                                "location": {
+                                  "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                                  "row": 18,
+                                  "col": 54,
+                                  "text": "PT0="
+                                },
+                                "type": "var",
+                                "value": "equal"
+                              }
+                            ]
+                          },
+                          {
+                            "location": {
+                              "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                              "row": 18,
+                              "col": 47,
+                              "text": "YS5yb2xl"
+                            },
+                            "type": "ref",
+                            "value": [
+                              {
+                                "location": {
+                                  "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                                  "row": 18,
+                                  "col": 47,
+                                  "text": "YQ=="
+                                },
+                                "type": "var",
+                                "value": "a"
+                              },
+                              {
+                                "location": {
+                                  "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                                  "row": 18,
+                                  "col": 49,
+                                  "text": "cm9sZQ=="
+                                },
+                                "type": "string",
+                                "value": "role"
+                              }
+                            ]
+                          },
+                          {
+                            "location": {
+                              "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                              "row": 18,
+                              "col": 57,
+                              "text": "InJlbGVhc2UtbWFuYWdlciI="
+                            },
+                            "type": "string",
+                            "value": "release-manager"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 18,
+                "col": 80,
+                "text": "MA=="
+              },
+              "type": "number",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 19,
+            "col": 2,
+            "text": "bXNnIDo9ICJubyByZWxlYXNlIG1hbmFnZXIgYXBwcm92YWwgaXMgcmVjb3JkZWQi"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 19,
+                "col": 6,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 19,
+                    "col": 6,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 19,
+                "col": 2,
+                "text": "bXNn"
+              },
+              "type": "var",
+              "value": "msg"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 19,
+                "col": 9,
+                "text": "Im5vIHJlbGVhc2UgbWFuYWdlciBhcHByb3ZhbCBpcyByZWNvcmRlZCI="
+              },
+              "type": "string",
+              "value": "no release manager approval is recorded"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "deny",
+        "key": {
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 16,
+            "col": 15,
+            "text": "bXNn"
+          },
+          "type": "var",
+          "value": "msg"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+              "row": 16,
+              "col": 1,
+              "text": "ZGVueQ=="
+            },
+            "type": "var",
+            "value": "deny"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+          "row": 16,
+          "col": 1,
+          "text": "ZGVueSBjb250YWlucyBtc2c="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 16,
+        "col": 1,
+        "text": "ZGVueSBjb250YWlucyBtc2cgaWYgewoJaW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCA9PSAicHJvZHVjdGlvbiIKCWNvdW50KHthIHwgc29tZSBhIGluIGlucHV0LmNoYW5nZS5hcHByb3ZhbHM7IGEucm9sZSA9PSAicmVsZWFzZS1tYW5hZ2VyIn0pID09IDAKCW1zZyA6PSAibm8gcmVsZWFzZSBtYW5hZ2VyIGFwcHJvdmFsIGlzIHJlY29yZGVkIgp9"
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "REL-004",
+            "frameworks": [
+              "SOC 2 CC8.1",
+              "DORA Art. 9"
+            ]
+          },
+          "description": "Production releases require a release manager approval, must not fall\ninside a freeze window, and all mandatory checks must have passed.\n",
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 5,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBSZWxlYXNlIGdvdmVybmFuY2UgZXZpZGVuY2UKIyBkZXNjcmlwdGlvbjogfAojICAgUHJvZHVjdGlvbiByZWxlYXNlcyByZXF1aXJlIGEgcmVsZWFzZSBtYW5hZ2VyIGFwcHJvdmFsLCBtdXN0IG5vdCBmYWxsCiMgICBpbnNpZGUgYSBmcmVlemUgd2luZG93LCBhbmQgYWxsIG1hbmRhdG9yeSBjaGVja3MgbXVzdCBoYXZlIHBhc3NlZC4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBSRUwtMDA0CiMgICBmcmFtZXdvcmtzOgojICAgICAtIFNPQyAyIENDOC4xCiMgICAgIC0gRE9SQSBBcnQuIDk="
+          },
+          "scope": "document",
+          "title": "Release governance evidence"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 23,
+            "col": 2,
+            "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCA9PSAicHJvZHVjdGlvbiI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 23,
+                "col": 31,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 23,
+                    "col": 31,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 23,
+                "col": 2,
+                "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 23,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 23,
+                    "col": 8,
+                    "text": "ZGVwbG95bWVudA=="
+                  },
+                  "type": "string",
+                  "value": "deployment"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 23,
+                    "col": 19,
+                    "text": "ZW52aXJvbm1lbnQ="
+                  },
+                  "type": "string",
+                  "value": "environment"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 23,
+                "col": 34,
+                "text": "InByb2R1Y3Rpb24i"
+              },
+              "type": "string",
+              "value": "production"
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 24,
+            "col": 2,
+            "text": "c29tZSB3aW5kb3cgaW4gZGF0YS5yZWxlYXNlLmZyZWV6ZV93aW5kb3dz"
+          },
+          "terms": {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+              "row": 24,
+              "col": 2,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                  "row": 24,
+                  "col": 7,
+                  "text": "d2luZG93IGluIGRhdGEucmVsZWFzZS5mcmVlemVfd2luZG93cw=="
+                },
+                "type": "call",
+                "value": [
+                  {
+                    "location": {
+                      "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                      "row": 24,
+                      "col": 14,
+                      "text": "aW4="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                          "row": 24,
+                          "col": 14,
+                          "text": "aW4="
+                        },
+                        "type": "var",
+                        "value": "internal"
+                      },
+                      {
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                          "row": 24,
+                          "col": 14,
+                          "text": "aW4="
+                        },
+                        "type": "string",
+                        "value": "member_2"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                      "row": 24,
+                      "col": 7,
+                      "text": "d2luZG93"
+                    },
+                    "type": "var",
+                    "value": "window"
+                  },
+                  {
+                    "location": {
+                      "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                      "row": 24,
+                      "col": 17,
+                      "text": "ZGF0YS5yZWxlYXNlLmZyZWV6ZV93aW5kb3dz"
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                          "row": 24,
+                          "col": 17,
+                          "text": "ZGF0YQ=="
+                        },
+                        "type": "var",
+                        "value": "data"
+                      },
+                      {
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                          "row": 24,
+                          "col": 22,
+                          "text": "cmVsZWFzZQ=="
+                        },
+                        "type": "string",
+                        "value": "release"
+                      },
+                      {
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                          "row": 24,
+                          "col": 30,
+                          "text": "ZnJlZXplX3dpbmRvd3M="
+                        },
+                        "type": "string",
+                        "value": "freeze_windows"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 25,
+            "col": 2,
+            "text": "aW5wdXQuZGVwbG95bWVudC50aW1lc3RhbXAgPj0gd2luZG93LnN0YXJ0"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 25,
+                "col": 29,
+                "text": "Pj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 25,
+                    "col": 29,
+                    "text": "Pj0="
+                  },
+                  "type": "var",
+                  "value": "gte"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 25,
+                "col": 2,
+                "text": "aW5wdXQuZGVwbG95bWVudC50aW1lc3RhbXA="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 25,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 25,
+                    "col": 8,
+                    "text": "ZGVwbG95bWVudA=="
+                  },
+                  "type": "string",
+                  "value": "deployment"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 25,
+                    "col": 19,
+                    "text": "dGltZXN0YW1w"
+                  },
+                  "type": "string",
+                  "value": "timestamp"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 25,
+                "col": 32,
+                "text": "d2luZG93LnN0YXJ0"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 25,
+                    "col": 32,
+                    "text": "d2luZG93"
+                  },
+                  "type": "var",
+                  "value": "window"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 25,
+                    "col": 39,
+                    "text": "c3RhcnQ="
+                  },
+                  "type": "string",
+                  "value": "start"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 26,
+            "col": 2,
+            "text": "aW5wdXQuZGVwbG95bWVudC50aW1lc3RhbXAgPD0gd2luZG93LmZpbmlzaA=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 26,
+                "col": 29,
+                "text": "PD0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 26,
+                    "col": 29,
+                    "text": "PD0="
+                  },
+                  "type": "var",
+                  "value": "lte"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 26,
+                "col": 2,
+                "text": "aW5wdXQuZGVwbG95bWVudC50aW1lc3RhbXA="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 26,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 26,
+                    "col": 8,
+                    "text": "ZGVwbG95bWVudA=="
+                  },
+                  "type": "string",
+                  "value": "deployment"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 26,
+                    "col": 19,
+                    "text": "dGltZXN0YW1w"
+                  },
+                  "type": "string",
+                  "value": "timestamp"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 26,
+                "col": 32,
+                "text": "d2luZG93LmZpbmlzaA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 26,
+                    "col": 32,
+                    "text": "d2luZG93"
+                  },
+                  "type": "var",
+                  "value": "window"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 26,
+                    "col": 39,
+                    "text": "ZmluaXNo"
+                  },
+                  "type": "string",
+                  "value": "finish"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 27,
+            "col": 2,
+            "text": "bXNnIDo9IHNwcmludGYoImRlcGxveW1lbnQgZmFsbHMgaW5zaWRlIGZyZWV6ZSB3aW5kb3cgJXYiLCBbd2luZG93Lm5hbWVdKQ=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 27,
+                "col": 6,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 27,
+                    "col": 6,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 27,
+                "col": 2,
+                "text": "bXNn"
+              },
+              "type": "var",
+              "value": "msg"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 27,
+                "col": 9,
+                "text": "c3ByaW50ZigiZGVwbG95bWVudCBmYWxscyBpbnNpZGUgZnJlZXplIHdpbmRvdyAldiIsIFt3aW5kb3cubmFtZV0p"
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 27,
+                    "col": 9,
+                    "text": "c3ByaW50Zg=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                        "row": 27,
+                        "col": 9,
+                        "text": "c3ByaW50Zg=="
+                      },
+                      "type": "var",
+                      "value": "sprintf"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 27,
+                    "col": 17,
+                    "text": "ImRlcGxveW1lbnQgZmFsbHMgaW5zaWRlIGZyZWV6ZSB3aW5kb3cgJXYi"
+                  },
+                  "type": "string",
+                  "value": "deployment falls inside freeze window %v"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 27,
+                    "col": 61,
+                    "text": "W3dpbmRvdy5uYW1lXQ=="
+                  },
+                  "type": "array",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                        "row": 27,
+                        "col": 62,
+                        "text": "d2luZG93Lm5hbWU="
+                      },
+                      "type": "ref",
+                      "value": [
+                        {
+                          "location": {
+                            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                            "row": 27,
+                            "col": 62,
+                            "text": "d2luZG93"
+                          },
+                          "type": "var",
+                          "value": "window"
+                        },
+                        {
+                          "location": {
+                            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                            "row": 27,
+                            "col": 69,
+                            "text": "bmFtZQ=="
+                          },
+                          "type": "string",
+                          "value": "name"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "deny",
+        "key": {
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 22,
+            "col": 15,
+            "text": "bXNn"
+          },
+          "type": "var",
+          "value": "msg"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+              "row": 22,
+              "col": 1,
+              "text": "ZGVueQ=="
+            },
+            "type": "var",
+            "value": "deny"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+          "row": 22,
+          "col": 1,
+          "text": "ZGVueSBjb250YWlucyBtc2c="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 22,
+        "col": 1,
+        "text": "ZGVueSBjb250YWlucyBtc2cgaWYgewoJaW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCA9PSAicHJvZHVjdGlvbiIKCXNvbWUgd2luZG93IGluIGRhdGEucmVsZWFzZS5mcmVlemVfd2luZG93cwoJaW5wdXQuZGVwbG95bWVudC50aW1lc3RhbXAgPj0gd2luZG93LnN0YXJ0CglpbnB1dC5kZXBsb3ltZW50LnRpbWVzdGFtcCA8PSB3aW5kb3cuZmluaXNoCgltc2cgOj0gc3ByaW50ZigiZGVwbG95bWVudCBmYWxscyBpbnNpZGUgZnJlZXplIHdpbmRvdyAldiIsIFt3aW5kb3cubmFtZV0pCn0="
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "REL-004",
+            "frameworks": [
+              "SOC 2 CC8.1",
+              "DORA Art. 9"
+            ]
+          },
+          "description": "Production releases require a release manager approval, must not fall\ninside a freeze window, and all mandatory checks must have passed.\n",
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 5,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBSZWxlYXNlIGdvdmVybmFuY2UgZXZpZGVuY2UKIyBkZXNjcmlwdGlvbjogfAojICAgUHJvZHVjdGlvbiByZWxlYXNlcyByZXF1aXJlIGEgcmVsZWFzZSBtYW5hZ2VyIGFwcHJvdmFsLCBtdXN0IG5vdCBmYWxsCiMgICBpbnNpZGUgYSBmcmVlemUgd2luZG93LCBhbmQgYWxsIG1hbmRhdG9yeSBjaGVja3MgbXVzdCBoYXZlIHBhc3NlZC4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBSRUwtMDA0CiMgICBmcmFtZXdvcmtzOgojICAgICAtIFNPQyAyIENDOC4xCiMgICAgIC0gRE9SQSBBcnQuIDk="
+          },
+          "scope": "document",
+          "title": "Release governance evidence"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 31,
+            "col": 2,
+            "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCA9PSAicHJvZHVjdGlvbiI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 31,
+                "col": 31,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 31,
+                    "col": 31,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 31,
+                "col": 2,
+                "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 31,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 31,
+                    "col": 8,
+                    "text": "ZGVwbG95bWVudA=="
+                  },
+                  "type": "string",
+                  "value": "deployment"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 31,
+                    "col": 19,
+                    "text": "ZW52aXJvbm1lbnQ="
+                  },
+                  "type": "string",
+                  "value": "environment"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 31,
+                "col": 34,
+                "text": "InByb2R1Y3Rpb24i"
+              },
+              "type": "string",
+              "value": "production"
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 32,
+            "col": 2,
+            "text": "bm90IGFsbF9jaGVja3NfcGFzc2Vk"
+          },
+          "negated": true,
+          "terms": {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+              "row": 32,
+              "col": 6,
+              "text": "YWxsX2NoZWNrc19wYXNzZWQ="
+            },
+            "type": "var",
+            "value": "all_checks_passed"
+          }
+        },
+        {
+          "index": 2,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 33,
+            "col": 2,
+            "text": "bXNnIDo9ICJub3QgYWxsIG1hbmRhdG9yeSBjaGVja3MgcGFzc2VkIg=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 33,
+                "col": 6,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 33,
+                    "col": 6,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 33,
+                "col": 2,
+                "text": "bXNn"
+              },
+              "type": "var",
+              "value": "msg"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 33,
+                "col": 9,
+                "text": "Im5vdCBhbGwgbWFuZGF0b3J5IGNoZWNrcyBwYXNzZWQi"
+              },
+              "type": "string",
+              "value": "not all mandatory checks passed"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "deny",
+        "key": {
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 30,
+            "col": 15,
+            "text": "bXNn"
+          },
+          "type": "var",
+          "value": "msg"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+              "row": 30,
+              "col": 1,
+              "text": "ZGVueQ=="
+            },
+            "type": "var",
+            "value": "deny"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+          "row": 30,
+          "col": 1,
+          "text": "ZGVueSBjb250YWlucyBtc2c="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 30,
+        "col": 1,
+        "text": "ZGVueSBjb250YWlucyBtc2cgaWYgewoJaW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCA9PSAicHJvZHVjdGlvbiIKCW5vdCBhbGxfY2hlY2tzX3Bhc3NlZAoJbXNnIDo9ICJub3QgYWxsIG1hbmRhdG9yeSBjaGVja3MgcGFzc2VkIgp9"
+      }
+    },
+    {
+      "annotations": [
+        {
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 36,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHRpdGxlOiBNYW5kYXRvcnkgY2hlY2sgY29tcGxldGVuZXNz"
+          },
+          "scope": "rule",
+          "title": "Mandatory check completeness"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+            "row": 39,
+            "col": 2,
+            "text": "ZXZlcnkgY2hlY2sgaW4gaW5wdXQucGlwZWxpbmUuY2hlY2tzIHsKCQljaGVjay5zdGF0dXMgPT0gInBhc3NlZCIKCX0="
+          },
+          "terms": {
+            "body": [
+              {
+                "index": 0,
+                "location": {
+                  "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                  "row": 40,
+                  "col": 3,
+                  "text": "Y2hlY2suc3RhdHVzID09ICJwYXNzZWQi"
+                },
+                "terms": [
+                  {
+                    "location": {
+                      "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                      "row": 40,
+                      "col": 16,
+                      "text": "PT0="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                          "row": 40,
+                          "col": 16,
+                          "text": "PT0="
+                        },
+                        "type": "var",
+                        "value": "equal"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                      "row": 40,
+                      "col": 3,
+                      "text": "Y2hlY2suc3RhdHVz"
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                          "row": 40,
+                          "col": 3,
+                          "text": "Y2hlY2s="
+                        },
+                        "type": "var",
+                        "value": "check"
+                      },
+                      {
+                        "location": {
+                          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                          "row": 40,
+                          "col": 9,
+                          "text": "c3RhdHVz"
+                        },
+                        "type": "string",
+                        "value": "status"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                      "row": 40,
+                      "col": 19,
+                      "text": "InBhc3NlZCI="
+                    },
+                    "type": "string",
+                    "value": "passed"
+                  }
+                ]
+              }
+            ],
+            "domain": {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 39,
+                "col": 17,
+                "text": "aW5wdXQucGlwZWxpbmUuY2hlY2tz"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 39,
+                    "col": 17,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 39,
+                    "col": 23,
+                    "text": "cGlwZWxpbmU="
+                  },
+                  "type": "string",
+                  "value": "pipeline"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                    "row": 39,
+                    "col": 32,
+                    "text": "Y2hlY2tz"
+                  },
+                  "type": "string",
+                  "value": "checks"
+                }
+              ]
+            },
+            "key": null,
+            "location": {
+              "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+              "row": 39,
+              "col": 2,
+              "text": "ZXZlcnk="
+            },
+            "value": {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+                "row": 39,
+                "col": 8,
+                "text": "Y2hlY2s="
+              },
+              "type": "var",
+              "value": "check"
+            }
+          }
+        }
+      ],
+      "head": {
+        "name": "all_checks_passed",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+              "row": 38,
+              "col": 1,
+              "text": "YWxsX2NoZWNrc19wYXNzZWQ="
+            },
+            "type": "var",
+            "value": "all_checks_passed"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+          "row": 38,
+          "col": 1,
+          "text": "YWxsX2NoZWNrc19wYXNzZWQ="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 38,
+        "col": 1,
+        "text": "YWxsX2NoZWNrc19wYXNzZWQgaWYgewoJZXZlcnkgY2hlY2sgaW4gaW5wdXQucGlwZWxpbmUuY2hlY2tzIHsKCQljaGVjay5zdGF0dXMgPT0gInBhc3NlZCIKCX0KfQ=="
+      }
+    }
+  ],
+  "comments": [
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 5,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBSZWxlYXNlIGdvdmVybmFuY2UgZXZpZGVuY2UKIyBkZXNjcmlwdGlvbjogfAojICAgUHJvZHVjdGlvbiByZWxlYXNlcyByZXF1aXJlIGEgcmVsZWFzZSBtYW5hZ2VyIGFwcHJvdmFsLCBtdXN0IG5vdCBmYWxsCiMgICBpbnNpZGUgYSBmcmVlemUgd2luZG93LCBhbmQgYWxsIG1hbmRhdG9yeSBjaGVja3MgbXVzdCBoYXZlIHBhc3NlZC4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBSRUwtMDA0CiMgICBmcmFtZXdvcmtzOgojICAgICAtIFNPQyAyIENDOC4xCiMgICAgIC0gRE9SQSBBcnQuIDk="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 6,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBSZWxlYXNlIGdvdmVybmFuY2UgZXZpZGVuY2U=",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 7,
+        "col": 1,
+        "text": "IyB0aXRsZTogUmVsZWFzZSBnb3Zlcm5hbmNlIGV2aWRlbmNl"
+      }
+    },
+    {
+      "Text": "IGRlc2NyaXB0aW9uOiB8",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 8,
+        "col": 1,
+        "text": "IyBkZXNjcmlwdGlvbjogfA=="
+      }
+    },
+    {
+      "Text": "ICAgUHJvZHVjdGlvbiByZWxlYXNlcyByZXF1aXJlIGEgcmVsZWFzZSBtYW5hZ2VyIGFwcHJvdmFsLCBtdXN0IG5vdCBmYWxs",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 9,
+        "col": 1,
+        "text": "IyAgIFByb2R1Y3Rpb24gcmVsZWFzZXMgcmVxdWlyZSBhIHJlbGVhc2UgbWFuYWdlciBhcHByb3ZhbCwgbXVzdCBub3QgZmFsbA=="
+      }
+    },
+    {
+      "Text": "ICAgaW5zaWRlIGEgZnJlZXplIHdpbmRvdywgYW5kIGFsbCBtYW5kYXRvcnkgY2hlY2tzIG11c3QgaGF2ZSBwYXNzZWQu",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 10,
+        "col": 1,
+        "text": "IyAgIGluc2lkZSBhIGZyZWV6ZSB3aW5kb3csIGFuZCBhbGwgbWFuZGF0b3J5IGNoZWNrcyBtdXN0IGhhdmUgcGFzc2VkLg=="
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 11,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogUkVMLTAwNA==",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 12,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IFJFTC0wMDQ="
+      }
+    },
+    {
+      "Text": "ICAgZnJhbWV3b3Jrczo=",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 13,
+        "col": 1,
+        "text": "IyAgIGZyYW1ld29ya3M6"
+      }
+    },
+    {
+      "Text": "ICAgICAtIFNPQyAyIENDOC4x",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 14,
+        "col": 1,
+        "text": "IyAgICAgLSBTT0MgMiBDQzguMQ=="
+      }
+    },
+    {
+      "Text": "ICAgICAtIERPUkEgQXJ0LiA5",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 15,
+        "col": 1,
+        "text": "IyAgICAgLSBET1JBIEFydC4gOQ=="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 36,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHRpdGxlOiBNYW5kYXRvcnkgY2hlY2sgY29tcGxldGVuZXNz"
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBNYW5kYXRvcnkgY2hlY2sgY29tcGxldGVuZXNz",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 37,
+        "col": 1,
+        "text": "IyB0aXRsZTogTWFuZGF0b3J5IGNoZWNrIGNvbXBsZXRlbmVzcw=="
+      }
+    }
+  ]
+}

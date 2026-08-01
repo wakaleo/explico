@@ -1,0 +1,827 @@
+{
+  "package": {
+    "location": {
+      "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+          "row": 1,
+          "col": 9,
+          "text": "cmVsZWFzZQ=="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+          "row": 1,
+          "col": 9,
+          "text": "cmVsZWFzZQ=="
+        },
+        "type": "string",
+        "value": "release"
+      },
+      {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+          "row": 1,
+          "col": 17,
+          "text": "cHJvdmVuYW5jZQ=="
+        },
+        "type": "string",
+        "value": "provenance"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 3,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+          "row": 3,
+          "col": 8,
+          "text": "cmVnby52MQ=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+              "row": 3,
+              "col": 8,
+              "text": "cmVnbw=="
+            },
+            "type": "var",
+            "value": "rego"
+          },
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+              "row": 3,
+              "col": 13,
+              "text": "djE="
+            },
+            "type": "string",
+            "value": "v1"
+          }
+        ]
+      }
+    }
+  ],
+  "annotations": [
+    {
+      "custom": {
+        "control-id": "REL-003",
+        "frameworks": [
+          "ISO 27001 A.8.32",
+          "SLSA v1.0 L2"
+        ]
+      },
+      "description": "Production artifacts must be built from a release branch and carry\na sign-off label identifying who approved the build.\n",
+      "location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 5,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBBcnRpZmFjdCBwcm92ZW5hbmNlCiMgZGVzY3JpcHRpb246IHwKIyAgIFByb2R1Y3Rpb24gYXJ0aWZhY3RzIG11c3QgYmUgYnVpbHQgZnJvbSBhIHJlbGVhc2UgYnJhbmNoIGFuZCBjYXJyeQojICAgYSBzaWduLW9mZiBsYWJlbCBpZGVudGlmeWluZyB3aG8gYXBwcm92ZWQgdGhlIGJ1aWxkLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFJFTC0wMDMKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMgojICAgICAtIFNMU0EgdjEuMCBMMg=="
+      },
+      "scope": "document",
+      "title": "Artifact provenance"
+    }
+  ],
+  "rules": [
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "REL-003",
+            "frameworks": [
+              "ISO 27001 A.8.32",
+              "SLSA v1.0 L2"
+            ]
+          },
+          "description": "Production artifacts must be built from a release branch and carry\na sign-off label identifying who approved the build.\n",
+          "location": {
+            "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+            "row": 5,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBBcnRpZmFjdCBwcm92ZW5hbmNlCiMgZGVzY3JpcHRpb246IHwKIyAgIFByb2R1Y3Rpb24gYXJ0aWZhY3RzIG11c3QgYmUgYnVpbHQgZnJvbSBhIHJlbGVhc2UgYnJhbmNoIGFuZCBjYXJyeQojICAgYSBzaWduLW9mZiBsYWJlbCBpZGVudGlmeWluZyB3aG8gYXBwcm92ZWQgdGhlIGJ1aWxkLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFJFTC0wMDMKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMgojICAgICAtIFNMU0EgdjEuMCBMMg=="
+          },
+          "scope": "document",
+          "title": "Artifact provenance"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+            "row": 17,
+            "col": 2,
+            "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCA9PSAicHJvZHVjdGlvbiI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 17,
+                "col": 31,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 17,
+                    "col": 31,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 17,
+                "col": 2,
+                "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 17,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 17,
+                    "col": 8,
+                    "text": "ZGVwbG95bWVudA=="
+                  },
+                  "type": "string",
+                  "value": "deployment"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 17,
+                    "col": 19,
+                    "text": "ZW52aXJvbm1lbnQ="
+                  },
+                  "type": "string",
+                  "value": "environment"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 17,
+                "col": 34,
+                "text": "InByb2R1Y3Rpb24i"
+              },
+              "type": "string",
+              "value": "production"
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+            "row": 18,
+            "col": 2,
+            "text": "bm90IHN0YXJ0c3dpdGgoaW5wdXQuYXJ0aWZhY3Quc291cmNlX2JyYW5jaCwgInJlbGVhc2UvIik="
+          },
+          "negated": true,
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 18,
+                "col": 6,
+                "text": "c3RhcnRzd2l0aA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 18,
+                    "col": 6,
+                    "text": "c3RhcnRzd2l0aA=="
+                  },
+                  "type": "var",
+                  "value": "startswith"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 18,
+                "col": 17,
+                "text": "aW5wdXQuYXJ0aWZhY3Quc291cmNlX2JyYW5jaA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 18,
+                    "col": 17,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 18,
+                    "col": 23,
+                    "text": "YXJ0aWZhY3Q="
+                  },
+                  "type": "string",
+                  "value": "artifact"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 18,
+                    "col": 32,
+                    "text": "c291cmNlX2JyYW5jaA=="
+                  },
+                  "type": "string",
+                  "value": "source_branch"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 18,
+                "col": 47,
+                "text": "InJlbGVhc2UvIg=="
+              },
+              "type": "string",
+              "value": "release/"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+            "row": 19,
+            "col": 2,
+            "text": "bXNnIDo9IHNwcmludGYoImFydGlmYWN0IHdhcyBidWlsdCBmcm9tIGJyYW5jaCAldiwgbm90IGEgcmVsZWFzZSBicmFuY2giLCBbaW5wdXQuYXJ0aWZhY3Quc291cmNlX2JyYW5jaF0p"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 19,
+                "col": 6,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 19,
+                    "col": 6,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 19,
+                "col": 2,
+                "text": "bXNn"
+              },
+              "type": "var",
+              "value": "msg"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 19,
+                "col": 9,
+                "text": "c3ByaW50ZigiYXJ0aWZhY3Qgd2FzIGJ1aWx0IGZyb20gYnJhbmNoICV2LCBub3QgYSByZWxlYXNlIGJyYW5jaCIsIFtpbnB1dC5hcnRpZmFjdC5zb3VyY2VfYnJhbmNoXSk="
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 19,
+                    "col": 9,
+                    "text": "c3ByaW50Zg=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                        "row": 19,
+                        "col": 9,
+                        "text": "c3ByaW50Zg=="
+                      },
+                      "type": "var",
+                      "value": "sprintf"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 19,
+                    "col": 17,
+                    "text": "ImFydGlmYWN0IHdhcyBidWlsdCBmcm9tIGJyYW5jaCAldiwgbm90IGEgcmVsZWFzZSBicmFuY2gi"
+                  },
+                  "type": "string",
+                  "value": "artifact was built from branch %v, not a release branch"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 19,
+                    "col": 76,
+                    "text": "W2lucHV0LmFydGlmYWN0LnNvdXJjZV9icmFuY2hd"
+                  },
+                  "type": "array",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                        "row": 19,
+                        "col": 77,
+                        "text": "aW5wdXQuYXJ0aWZhY3Quc291cmNlX2JyYW5jaA=="
+                      },
+                      "type": "ref",
+                      "value": [
+                        {
+                          "location": {
+                            "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                            "row": 19,
+                            "col": 77,
+                            "text": "aW5wdXQ="
+                          },
+                          "type": "var",
+                          "value": "input"
+                        },
+                        {
+                          "location": {
+                            "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                            "row": 19,
+                            "col": 83,
+                            "text": "YXJ0aWZhY3Q="
+                          },
+                          "type": "string",
+                          "value": "artifact"
+                        },
+                        {
+                          "location": {
+                            "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                            "row": 19,
+                            "col": 92,
+                            "text": "c291cmNlX2JyYW5jaA=="
+                          },
+                          "type": "string",
+                          "value": "source_branch"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "deny",
+        "key": {
+          "location": {
+            "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+            "row": 16,
+            "col": 15,
+            "text": "bXNn"
+          },
+          "type": "var",
+          "value": "msg"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+              "row": 16,
+              "col": 1,
+              "text": "ZGVueQ=="
+            },
+            "type": "var",
+            "value": "deny"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+          "row": 16,
+          "col": 1,
+          "text": "ZGVueSBjb250YWlucyBtc2c="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 16,
+        "col": 1,
+        "text": "ZGVueSBjb250YWlucyBtc2cgaWYgewoJaW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCA9PSAicHJvZHVjdGlvbiIKCW5vdCBzdGFydHN3aXRoKGlucHV0LmFydGlmYWN0LnNvdXJjZV9icmFuY2gsICJyZWxlYXNlLyIpCgltc2cgOj0gc3ByaW50ZigiYXJ0aWZhY3Qgd2FzIGJ1aWx0IGZyb20gYnJhbmNoICV2LCBub3QgYSByZWxlYXNlIGJyYW5jaCIsIFtpbnB1dC5hcnRpZmFjdC5zb3VyY2VfYnJhbmNoXSkKfQ=="
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "REL-003",
+            "frameworks": [
+              "ISO 27001 A.8.32",
+              "SLSA v1.0 L2"
+            ]
+          },
+          "description": "Production artifacts must be built from a release branch and carry\na sign-off label identifying who approved the build.\n",
+          "location": {
+            "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+            "row": 5,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBBcnRpZmFjdCBwcm92ZW5hbmNlCiMgZGVzY3JpcHRpb246IHwKIyAgIFByb2R1Y3Rpb24gYXJ0aWZhY3RzIG11c3QgYmUgYnVpbHQgZnJvbSBhIHJlbGVhc2UgYnJhbmNoIGFuZCBjYXJyeQojICAgYSBzaWduLW9mZiBsYWJlbCBpZGVudGlmeWluZyB3aG8gYXBwcm92ZWQgdGhlIGJ1aWxkLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFJFTC0wMDMKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMgojICAgICAtIFNMU0EgdjEuMCBMMg=="
+          },
+          "scope": "document",
+          "title": "Artifact provenance"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+            "row": 23,
+            "col": 2,
+            "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCA9PSAicHJvZHVjdGlvbiI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 23,
+                "col": 31,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 23,
+                    "col": 31,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 23,
+                "col": 2,
+                "text": "aW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 23,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 23,
+                    "col": 8,
+                    "text": "ZGVwbG95bWVudA=="
+                  },
+                  "type": "string",
+                  "value": "deployment"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 23,
+                    "col": 19,
+                    "text": "ZW52aXJvbm1lbnQ="
+                  },
+                  "type": "string",
+                  "value": "environment"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 23,
+                "col": 34,
+                "text": "InByb2R1Y3Rpb24i"
+              },
+              "type": "string",
+              "value": "production"
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+            "row": 24,
+            "col": 2,
+            "text": "bm90IGlucHV0LmFydGlmYWN0LmxhYmVsc1sic2lnbmVkLW9mZi1ieSJd"
+          },
+          "negated": true,
+          "terms": {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+              "row": 24,
+              "col": 6,
+              "text": "aW5wdXQuYXJ0aWZhY3QubGFiZWxzWyJzaWduZWQtb2ZmLWJ5Il0="
+            },
+            "type": "ref",
+            "value": [
+              {
+                "location": {
+                  "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                  "row": 24,
+                  "col": 6,
+                  "text": "aW5wdXQ="
+                },
+                "type": "var",
+                "value": "input"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                  "row": 24,
+                  "col": 12,
+                  "text": "YXJ0aWZhY3Q="
+                },
+                "type": "string",
+                "value": "artifact"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                  "row": 24,
+                  "col": 21,
+                  "text": "bGFiZWxz"
+                },
+                "type": "string",
+                "value": "labels"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                  "row": 24,
+                  "col": 28,
+                  "text": "InNpZ25lZC1vZmYtYnki"
+                },
+                "type": "string",
+                "value": "signed-off-by"
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+            "row": 25,
+            "col": 2,
+            "text": "bXNnIDo9ICJhcnRpZmFjdCBjYXJyaWVzIG5vIHNpZ25lZC1vZmYtYnkgbGFiZWwi"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 25,
+                "col": 6,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                    "row": 25,
+                    "col": 6,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 25,
+                "col": 2,
+                "text": "bXNn"
+              },
+              "type": "var",
+              "value": "msg"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+                "row": 25,
+                "col": 9,
+                "text": "ImFydGlmYWN0IGNhcnJpZXMgbm8gc2lnbmVkLW9mZi1ieSBsYWJlbCI="
+              },
+              "type": "string",
+              "value": "artifact carries no signed-off-by label"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "deny",
+        "key": {
+          "location": {
+            "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+            "row": 22,
+            "col": 15,
+            "text": "bXNn"
+          },
+          "type": "var",
+          "value": "msg"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+              "row": 22,
+              "col": 1,
+              "text": "ZGVueQ=="
+            },
+            "type": "var",
+            "value": "deny"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+          "row": 22,
+          "col": 1,
+          "text": "ZGVueSBjb250YWlucyBtc2c="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 22,
+        "col": 1,
+        "text": "ZGVueSBjb250YWlucyBtc2cgaWYgewoJaW5wdXQuZGVwbG95bWVudC5lbnZpcm9ubWVudCA9PSAicHJvZHVjdGlvbiIKCW5vdCBpbnB1dC5hcnRpZmFjdC5sYWJlbHNbInNpZ25lZC1vZmYtYnkiXQoJbXNnIDo9ICJhcnRpZmFjdCBjYXJyaWVzIG5vIHNpZ25lZC1vZmYtYnkgbGFiZWwiCn0="
+      }
+    }
+  ],
+  "comments": [
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 5,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBBcnRpZmFjdCBwcm92ZW5hbmNlCiMgZGVzY3JpcHRpb246IHwKIyAgIFByb2R1Y3Rpb24gYXJ0aWZhY3RzIG11c3QgYmUgYnVpbHQgZnJvbSBhIHJlbGVhc2UgYnJhbmNoIGFuZCBjYXJyeQojICAgYSBzaWduLW9mZiBsYWJlbCBpZGVudGlmeWluZyB3aG8gYXBwcm92ZWQgdGhlIGJ1aWxkLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFJFTC0wMDMKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMgojICAgICAtIFNMU0EgdjEuMCBMMg=="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 6,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBBcnRpZmFjdCBwcm92ZW5hbmNl",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 7,
+        "col": 1,
+        "text": "IyB0aXRsZTogQXJ0aWZhY3QgcHJvdmVuYW5jZQ=="
+      }
+    },
+    {
+      "Text": "IGRlc2NyaXB0aW9uOiB8",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 8,
+        "col": 1,
+        "text": "IyBkZXNjcmlwdGlvbjogfA=="
+      }
+    },
+    {
+      "Text": "ICAgUHJvZHVjdGlvbiBhcnRpZmFjdHMgbXVzdCBiZSBidWlsdCBmcm9tIGEgcmVsZWFzZSBicmFuY2ggYW5kIGNhcnJ5",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 9,
+        "col": 1,
+        "text": "IyAgIFByb2R1Y3Rpb24gYXJ0aWZhY3RzIG11c3QgYmUgYnVpbHQgZnJvbSBhIHJlbGVhc2UgYnJhbmNoIGFuZCBjYXJyeQ=="
+      }
+    },
+    {
+      "Text": "ICAgYSBzaWduLW9mZiBsYWJlbCBpZGVudGlmeWluZyB3aG8gYXBwcm92ZWQgdGhlIGJ1aWxkLg==",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 10,
+        "col": 1,
+        "text": "IyAgIGEgc2lnbi1vZmYgbGFiZWwgaWRlbnRpZnlpbmcgd2hvIGFwcHJvdmVkIHRoZSBidWlsZC4="
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 11,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogUkVMLTAwMw==",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 12,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IFJFTC0wMDM="
+      }
+    },
+    {
+      "Text": "ICAgZnJhbWV3b3Jrczo=",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 13,
+        "col": 1,
+        "text": "IyAgIGZyYW1ld29ya3M6"
+      }
+    },
+    {
+      "Text": "ICAgICAtIElTTyAyNzAwMSBBLjguMzI=",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 14,
+        "col": 1,
+        "text": "IyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+      }
+    },
+    {
+      "Text": "ICAgICAtIFNMU0EgdjEuMCBMMg==",
+      "Location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 15,
+        "col": 1,
+        "text": "IyAgICAgLSBTTFNBIHYxLjAgTDI="
+      }
+    }
+  ]
+}

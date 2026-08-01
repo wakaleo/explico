@@ -1,0 +1,244 @@
+{
+  "package": {
+    "location": {
+      "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+          "row": 1,
+          "col": 9,
+          "text": "cmVsZWFzZQ=="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+          "row": 1,
+          "col": 9,
+          "text": "cmVsZWFzZQ=="
+        },
+        "type": "string",
+        "value": "release"
+      },
+      {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+          "row": 1,
+          "col": 17,
+          "text": "ZXhlbXB0aW9ucw=="
+        },
+        "type": "string",
+        "value": "exemptions"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+        "row": 3,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+          "row": 3,
+          "col": 8,
+          "text": "cmVnby52MQ=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+              "row": 3,
+              "col": 8,
+              "text": "cmVnbw=="
+            },
+            "type": "var",
+            "value": "rego"
+          },
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+              "row": 3,
+              "col": 13,
+              "text": "djE="
+            },
+            "type": "string",
+            "value": "v1"
+          }
+        ]
+      }
+    }
+  ],
+  "rules": [
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+            "row": 6,
+            "col": 2,
+            "text": "aW5wdXQuZGVwbG95bWVudC5zZXJ2aWNlIGluIGRhdGEucmVsZWFzZS5leGVtcHRfc2VydmljZXM="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+                "row": 6,
+                "col": 27,
+                "text": "aW4="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+                    "row": 6,
+                    "col": 27,
+                    "text": "aW4="
+                  },
+                  "type": "var",
+                  "value": "internal"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+                    "row": 6,
+                    "col": 27,
+                    "text": "aW4="
+                  },
+                  "type": "string",
+                  "value": "member_2"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+                "row": 6,
+                "col": 2,
+                "text": "aW5wdXQuZGVwbG95bWVudC5zZXJ2aWNl"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+                    "row": 6,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+                    "row": 6,
+                    "col": 8,
+                    "text": "ZGVwbG95bWVudA=="
+                  },
+                  "type": "string",
+                  "value": "deployment"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+                    "row": 6,
+                    "col": 19,
+                    "text": "c2VydmljZQ=="
+                  },
+                  "type": "string",
+                  "value": "service"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+                "row": 6,
+                "col": 30,
+                "text": "ZGF0YS5yZWxlYXNlLmV4ZW1wdF9zZXJ2aWNlcw=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+                    "row": 6,
+                    "col": 30,
+                    "text": "ZGF0YQ=="
+                  },
+                  "type": "var",
+                  "value": "data"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+                    "row": 6,
+                    "col": 35,
+                    "text": "cmVsZWFzZQ=="
+                  },
+                  "type": "string",
+                  "value": "release"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+                    "row": 6,
+                    "col": 43,
+                    "text": "ZXhlbXB0X3NlcnZpY2Vz"
+                  },
+                  "type": "string",
+                  "value": "exempt_services"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "exempt_service",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+              "row": 5,
+              "col": 1,
+              "text": "ZXhlbXB0X3NlcnZpY2U="
+            },
+            "type": "var",
+            "value": "exempt_service"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+          "row": 5,
+          "col": 1,
+          "text": "ZXhlbXB0X3NlcnZpY2U="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/exemptions/exemptions.rego",
+        "row": 5,
+        "col": 1,
+        "text": "ZXhlbXB0X3NlcnZpY2UgaWYgewoJaW5wdXQuZGVwbG95bWVudC5zZXJ2aWNlIGluIGRhdGEucmVsZWFzZS5leGVtcHRfc2VydmljZXMKfQ=="
+      }
+    }
+  ]
+}
