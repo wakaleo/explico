@@ -6,3 +6,4 @@ out/
 *.iml
 .idea/
 .DS_Store
+.claude/scheduled_tasks.lock

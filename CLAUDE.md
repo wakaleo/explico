@@ -114,3 +114,35 @@ document.
   captures for unit tests that must not require the `opa` binary.
 - `samples/` — mirrors the acceptance pack's policies/examples/data, referenced
   from the README as the worked CLI example.
+
+## AstMapper: known gaps (deliberate, disclosed — not bugs)
+
+`AstMapper` (built session 2, driven from `src/test/resources/ast/*.json`) does
+NOT yet do the following. Each is a scoping decision, not an oversight:
+
+- **`RuleGroup.metadata` and `.default` are always null.** Metadata attachment
+  needs `opa inspect` + file/row-proximity matching (§5), and no policy in the
+  acceptance pack declares a `default` rule — both are deferred to their own
+  later `/tdd` pass rather than being built untested.
+- **No `Operand` variant exists for an operand-position builtin call**
+  (`count`, `lower`, `upper`, `object.get`, `time.now_ns`). Spec's `Operand`
+  sealed interface only has `Path`/`Literal`/`Variable`/`Unrendered` — there's
+  nowhere to put "the number of `X`". AstMapper maps these to
+  `Operand.Unrendered` unconditionally for now. Revisit when
+  `ExpressionRenderer` is built: either add a variant, or confirm the
+  spec intends these to only ever appear as fallback anyway.
+- **`producesValue`'s placeholder humanisation is minimal, not `PathHumanizer`.**
+  It only handles a plain `input.`-rooted field chain (drop `input`, split
+  camelCase/snake_case/kebab-case, lowercase, join with spaces, wrap in
+  brackets) — approved for this session specifically to fulfil §5's own
+  mapping notes without building §6.4's breadcrumb renderer early. A
+  var-rooted, key-literal, or any-index sprintf argument (e.g. REL-002's
+  `stage.name`, REL-004's `window.name`) makes `producesValue` null rather
+  than guessing a format spec never gave an example for.
+- **The general "assign a local var to a plain path, substitute inline later"
+  rule (§5) isn't implemented.** No rule in the acceptance pack exercises it
+  (the only assignments present are the message-producing `msg := ...`, which
+  IS handled). Don't assume it works until it has a driving test.
+- **`PathSegment.AnyIndex` (`[_]`) has minimal, untested-by-fixture handling.**
+  No pack policy uses `[_]`; the code path exists per spec but has no real
+  captured JSON exercising it.
