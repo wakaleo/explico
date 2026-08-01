@@ -1,0 +1,12 @@
+{
+  "release": {
+    "exempt_services": ["legacy-batch"],
+    "freeze_windows": [
+      {
+        "name": "year-end change freeze",
+        "start": 1766966400,
+        "finish": 1767657600
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "approved standard release",
+  "description": "A production release with an approved change ticket, an independent approver, a release manager sign-off, a fully passing pipeline, and a signed artifact built from a release branch.",
+  "input": {
+    "deployment": { "id": "rel-1001", "environment": "production", "service": "payments-api", "timestamp": 1754060000 },
+    "change": {
+      "id": "chg-2001", "author": "asmith", "approver": "bjones",
+      "ticket": { "approved": true },
+      "approvals": [ { "user": "bjones", "role": "release-manager" } ]
+    },
+    "pipeline": {
+      "stages": [ { "name": "build", "status": "passed" }, { "name": "security-scan", "status": "passed" } ],
+      "checks": [ { "name": "unit-tests", "status": "passed" }, { "name": "sast", "status": "passed" } ]
+    },
+    "artifact": { "source_branch": "release/2026.08", "labels": { "signed-off-by": "bjones" } }
+  }
+}

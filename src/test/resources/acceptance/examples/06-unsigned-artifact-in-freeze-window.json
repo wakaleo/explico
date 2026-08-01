@@ -1,0 +1,17 @@
+{
+  "name": "unsigned artifact in freeze window",
+  "description": "A production deployment during the year-end change freeze, using an artifact with no sign-off label and no release manager approval.",
+  "input": {
+    "deployment": { "id": "rel-1006", "environment": "production", "service": "payments-api", "timestamp": 1767000000 },
+    "change": {
+      "id": "chg-2006", "author": "asmith", "approver": "bjones",
+      "ticket": { "approved": true },
+      "approvals": [ { "user": "bjones", "role": "developer" } ]
+    },
+    "pipeline": {
+      "stages": [ { "name": "build", "status": "passed" } ],
+      "checks": [ { "name": "unit-tests", "status": "passed" } ]
+    },
+    "artifact": { "source_branch": "release/2026.08", "labels": {} }
+  }
+}

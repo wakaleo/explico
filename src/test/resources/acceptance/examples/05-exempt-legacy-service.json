@@ -1,0 +1,17 @@
+{
+  "name": "exempt legacy service",
+  "description": "A failing pipeline on a service listed in the exemptions data document — pipeline evidence is waived, other controls still apply.",
+  "input": {
+    "deployment": { "id": "rel-1005", "environment": "production", "service": "legacy-batch", "timestamp": 1754060000 },
+    "change": {
+      "id": "chg-2005", "author": "asmith", "approver": "bjones",
+      "ticket": { "approved": true },
+      "approvals": [ { "user": "bjones", "role": "release-manager" } ]
+    },
+    "pipeline": {
+      "stages": [ { "name": "build", "status": "failed" } ],
+      "checks": [ { "name": "unit-tests", "status": "passed" } ]
+    },
+    "artifact": { "source_branch": "release/2026.08", "labels": { "signed-off-by": "bjones" } }
+  }
+}
