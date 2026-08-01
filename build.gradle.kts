@@ -32,6 +32,24 @@ application {
 
 tasks.test {
     useJUnitPlatform()
+    filter {
+        excludeTestsMatching("*IT")
+        isFailOnNoMatchingTests = false
+    }
+}
+
+// Tier-1 acceptance tests (spec §9): require the `opa` binary, guarded by
+// Assumptions.assumeTrue(OpaRunner.isAvailable()). Kept out of `check` so the
+// default build stays green while they are red during TDD; run explicitly.
+val acceptanceTest by tasks.registering(Test::class) {
+    description = "Runs Tier-1 acceptance tests (*IT classes)."
+    group = "verification"
+    useJUnitPlatform()
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    filter {
+        includeTestsMatching("*IT")
+    }
 }
 
 publishing {

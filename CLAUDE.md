@@ -66,7 +66,12 @@ prose standing in for logic the tool didn't actually check.
    regeneration is a deliberate, reviewed act, never a side effect of getting
    a build green.
 
-Run everything via `./gradlew check`.
+`./gradlew check` runs unit tests only (`*Test`, excludes `*IT`) and must stay
+green throughout — it is the fast, opa-independent build gate.
+`./gradlew acceptanceTest` runs the Tier-1 `*IT` classes; they are allowed to
+be red while the renderer is being built, but must never be excluded from CI
+long-term. Wire `acceptanceTest` back into the default build once the
+renderer they pin exists and passes.
 
 ## The development cycle
 
