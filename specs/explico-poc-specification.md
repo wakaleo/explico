@@ -116,10 +116,18 @@ Package base: `io.explico` (adjust to taste; keep it consistent).
   (i.e. ≥ 1.0.0). If missing or too old, exit with code 3 and a message that
   names the required version and how to set `OPA_BIN`.
 - **Commands used:**
-  1. `opa parse --format json <file.rego>` — one invocation per file. Produces the
-     module AST (package, imports, rules, expressions, terms, with source locations).
+  1. `opa parse --format json --json-include locations <file.rego>` — one
+     invocation per file. Produces the module AST (package, imports, rules,
+     expressions, terms, with source locations). **The `--json-include
+     locations` flag is required** — without it `opa` silently omits every
+     `location` field (confirmed empirically against real `opa` output; not
+     an assumption), which would break `SourceRef`, fallback source recovery,
+     source-order sorting, and diff's source-span extraction. Each node's
+     `location.text` is base64-encoded verbatim source for that node (see §5).
   2. `opa inspect --annotations --format json <dir>` — one invocation per policy
      directory. Produces METADATA annotations with their scopes and locations.
+     No extra flag needed: unlike `opa parse`, this command includes locations
+     by default.
   3. `opa eval --format json --input <file> [--data <dir>] "data.<package>"` —
      one invocation per fixture per package, for worked examples (§6.7).
 - **Invocation:** `ProcessBuilder`, capture stdout/stderr separately, 30s timeout
@@ -219,9 +227,12 @@ Mapping notes (`parse/AstMapper.kt`):
   imported package) → `RuleReference`.
 - Everything else → `Condition.Unrendered` with `reason` set to a short machine
   category (`"comprehension"`, `"every"`, `"function-call"`, `"with"`, `"else"`,
-  `"unclassified"`). `sourceText` is recovered from the original file using the
-  AST location (row/col span) — read the file, slice the lines. Do not attempt to
-  pretty-print from the AST.
+  `"unclassified"`). `sourceText` is recovered by base64-decoding the AST
+  node's own `location.text` — **not** by re-reading the source file and
+  slicing by row/col span. `opa parse --json-include locations` already
+  returns the exact verbatim source for every node this way, so a second file
+  read is unnecessary; it's also guaranteed byte-for-byte consistent with what
+  `opa` actually parsed. Do not attempt to pretty-print from the AST.
 - Metadata: match `opa inspect` annotations to rules by file + row proximity
   (annotation location immediately precedes the rule) and by scope
   (`rule` applies to the following rule; `document` applies to all bodies of that
@@ -491,8 +502,12 @@ Single Markdown file:
   - `REMOVED`: the old control card, prefixed with a removal notice.
   - `ADDED`: the new control card.
   - `LOGIC_CHANGED`: the **new** control card, plus a `rego` fenced unified text
-    diff of the two rule sources (extract via `SourceRef` spans; use a simple
-    line-based diff — implement Myers or plain LCS in ~60 lines, no dependency).
+    diff of the two rule sources. Extraction uses the same mechanism as §5's
+    fallback source recovery — the rule's own AST node `location.text`
+    (base64-decoded), not a second file read sliced by `SourceRef`'s row —
+    since it is already the exact verbatim source for that rule, spanning its
+    full body. Use a simple line-based diff — implement Myers or plain LCS in
+    ~60 lines, no dependency.
   - `DOCS_CHANGED`: old vs new title/description/frameworks as a two-column table.
 - A closing warning if any changed control has coverage < 100%:
   `⚠ N changed controls contain conditions that could not be rendered; review source diffs directly.`
