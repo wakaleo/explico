@@ -237,11 +237,20 @@ Mapping notes (`parse/AstMapper.kt`):
   returns the exact verbatim source for every node this way, so a second file
   read is unnecessary; it's also guaranteed byte-for-byte consistent with what
   `opa` actually parsed. Do not attempt to pretty-print from the AST.
-- Metadata: match `opa inspect` annotations to rules by file + row proximity
-  (annotation location immediately precedes the rule) and by scope
-  (`rule` applies to the following rule; `document` applies to all bodies of that
-  rule name; `package` metadata attaches to the package, used only for the page
-  header). `custom.control-id` and `custom.frameworks` are read if present.
+- Metadata: match `opa inspect` annotations to rules **by `opa inspect`'s own
+  `path` field** (packagePath + ruleName, exact match) — **not** file + row
+  proximity as originally planned. `opa` has already resolved which rule each
+  annotation belongs to, including correctly deduplicating a document-scoped
+  annotation across a rule's multiple bodies (confirmed empirically:
+  `release.approvals.deny` has 2 bodies but exactly 1 `opa inspect` entry, at
+  the row of the first). Re-deriving that resolution ourselves via row
+  proximity would risk disagreeing with `opa`'s own answer for no benefit.
+  Scope still matters for what a `path`-matched entry means (`rule` applies to
+  the following rule; `document` applies to all bodies of that rule name), but
+  not for the matching mechanism itself. `package`-scoped annotations are
+  skipped — the domain model has no attachment point for package-level
+  metadata, and no acceptance-pack policy uses that scope. `custom.control-id`
+  and `custom.frameworks` are read if present.
 
 ---
 
