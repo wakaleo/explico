@@ -24,9 +24,18 @@ public data class RenderedDocs(val files: Map<String, String>, val coverage: Cov
 /** The classified change entries between two policy versions, plus the rendered change report (spec §7). */
 public data class DiffReport(val entries: List<DiffEntry>, val markdown: String)
 
-/** Renders `.rego` policy directories into Markdown and reports rendering coverage. */
+/**
+ * Renders `.rego` policy directories into Markdown and reports rendering coverage.
+ *
+ * Every member is `@JvmStatic` (spec §13.5): from Java, this is `Explico.load(dir)`, not
+ * `Explico.INSTANCE.load(dir)` -- a Kotlin `object`'s members are otherwise only reachable through
+ * the singleton instance from Java's side. [render]'s two optional trailing parameters are also
+ * `@JvmOverloads`, so a Java caller can write `Explico.render(policySet, policyDir)` without
+ * passing explicit `null`s Kotlin's default-parameter syntax doesn't generate for Java.
+ */
 public object Explico {
     /** Parses every `.rego` file under [policyDir] (via the `opa` binary) into a [PolicySet]. */
+    @JvmStatic
     public fun load(policyDir: Path): PolicySet {
         val regoFiles = Files.walk(policyDir).use { paths ->
             paths.filter { it.toString().endsWith(".rego") }.sorted().toList()
@@ -44,6 +53,7 @@ public object Explico {
      * filename order. Throws [io.explico.render.DuplicateFixtureNameException] if two fixtures
      * share a `name`.
      */
+    @JvmStatic
     public fun loadExamples(dir: Path): ExampleSet {
         val jsonFiles = Files.list(dir).use { paths ->
             paths.filter { it.toString().endsWith(".json") }.sorted().toList()
@@ -58,6 +68,8 @@ public object Explico {
      * [examples] is supplied, control cards gain a worked-examples section evaluated via `opa
      * eval` against [dataDir]; a fixture whose evaluation fails is skipped with a stderr warning.
      */
+    @JvmStatic
+    @JvmOverloads
     public fun render(policySet: PolicySet, policyDir: Path, examples: ExampleSet? = null, dataDir: Path? = null): RenderedDocs {
         val examplesByPackage = evaluateWorkedExamples(policySet, policyDir, examples, dataDir)
 
@@ -75,6 +87,7 @@ public object Explico {
      * (spec §7.3). Throws [io.explico.diff.DuplicateControlIdException] if either side has two
      * rules sharing a control-id.
      */
+    @JvmStatic
     public fun diff(old: PolicySet, new: PolicySet): DiffReport {
         val entries = PolicyDiff.diff(old, new)
         return DiffReport(entries, DiffRenderer.render(entries, old, new))

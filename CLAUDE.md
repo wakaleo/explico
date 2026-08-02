@@ -724,3 +724,23 @@ fixed, all in the Quick demo section itself, none in the tool's behavior:
 - The two-line pointer names `release-approvals.md` specifically but never
   mentions `index.md` — arguably the better first stop (a table across all
   6 documents). Now mentioned alongside it.
+
+## §13.5 Java-interop ergonomics (session 9)
+
+- **`@JvmStatic` on every `Explico` member, `@JvmOverloads` on `render`
+  only** (the one function with optional trailing parameters). Nothing
+  else in the codebase gets these -- `OpaRunner` and every other
+  `internal` type stay exactly as they were, since Java-ergonomics scope
+  (spec §13.5) is specifically about the public facade a Java library
+  consumer actually calls, not internal implementation types no external
+  Java caller ever touches.
+- **`src/test/java/io/explico/ExplicoJavaInteropTest.java`** is a real
+  Java file, compiled by Gradle's already-present Java source set wiring
+  (the `kotlin("jvm")` plugin sets this up automatically -- no build
+  config change was needed for `compileTestJava` to pick it up). It
+  caught the interop gotcha immediately: the test's own `OpaRunner`
+  reference needed `.INSTANCE` (confirming `OpaRunner` correctly has
+  *no* `@JvmStatic`, since it's internal and out of scope), while every
+  `Explico.*` call needed no such qualifier and `render` needed no
+  explicit `null`s -- proving the annotations actually work from Java,
+  not just that they're present in the source.
