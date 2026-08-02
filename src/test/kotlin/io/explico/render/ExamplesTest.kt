@@ -55,7 +55,7 @@ class ExamplesTest {
     @Nested
     inner class EvaluationAndFailureHandling {
 
-        private val denyRule = RuleGroup("deny", null, null, listOf(RuleBody(emptyList(), "msg", "some message", SourceRef("f.rego", 1))))
+        private val denyRule = RuleGroup("deny", null, null, listOf(RuleBody(emptyList(), "msg", "some message", SourceRef("f.rego", 1), "")))
         private val pkg = io.explico.model.PolicyPackage("pkg", listOf(denyRule), listOf("f.rego"))
 
         @Test
@@ -109,7 +109,7 @@ class ExamplesTest {
 
         @Test
         fun booleanRuleTrueIsMatchedFalseAndUndefinedAreNotMatched() {
-            val boolRule = RuleGroup("exempt_service", null, null, listOf(RuleBody(emptyList(), null, null, SourceRef("f.rego", 1))))
+            val boolRule = RuleGroup("exempt_service", null, null, listOf(RuleBody(emptyList(), null, null, SourceRef("f.rego", 1), "")))
             val boolPkg = io.explico.model.PolicyPackage("pkg", listOf(boolRule), listOf("f.rego"))
             val fixture = Fixture("f", null, buildJsonObject { })
 
@@ -136,8 +136,8 @@ class ExamplesTest {
             val rule = RuleGroup(
                 "deny", null, null,
                 bodies = listOf(
-                    RuleBody(emptyList(), "no release manager approval is recorded", "no release manager approval is recorded", SourceRef("f.rego", 1)),
-                    RuleBody(emptyList(), null, "deployment falls inside freeze window %v", SourceRef("f.rego", 2)),
+                    RuleBody(emptyList(), "no release manager approval is recorded", "no release manager approval is recorded", SourceRef("f.rego", 1), ""),
+                    RuleBody(emptyList(), null, "deployment falls inside freeze window %v", SourceRef("f.rego", 2), ""),
                 ),
             )
             val pkgWithRule = io.explico.model.PolicyPackage("pkg", listOf(rule), listOf("f.rego"))
@@ -163,8 +163,8 @@ class ExamplesTest {
             val rule = RuleGroup(
                 "deny", null, null,
                 bodies = listOf(
-                    RuleBody(emptyList(), "a", "a", SourceRef("f.rego", 1)),
-                    RuleBody(emptyList(), null, null, SourceRef("f.rego", 2)), // var-rooted, unhumanisable AND no template
+                    RuleBody(emptyList(), "a", "a", SourceRef("f.rego", 1), ""),
+                    RuleBody(emptyList(), null, null, SourceRef("f.rego", 2), ""), // var-rooted, unhumanisable AND no template
                 ),
             )
             val pkgWithRule = io.explico.model.PolicyPackage("pkg", listOf(rule), listOf("f.rego"))
@@ -180,8 +180,8 @@ class ExamplesTest {
             val rule = RuleGroup(
                 "deny", null, null,
                 bodies = listOf(
-                    RuleBody(emptyList(), "a", "same text", SourceRef("f.rego", 1)),
-                    RuleBody(emptyList(), "a", "same text", SourceRef("f.rego", 2)),
+                    RuleBody(emptyList(), "a", "same text", SourceRef("f.rego", 1), ""),
+                    RuleBody(emptyList(), "a", "same text", SourceRef("f.rego", 2), ""),
                 ),
             )
             val pkgWithRule = io.explico.model.PolicyPackage("pkg", listOf(rule), listOf("f.rego"))
@@ -196,7 +196,7 @@ class ExamplesTest {
         fun sprintfTemplateMatchesTheSubstitutedRealMessage() {
             val rule = RuleGroup(
                 "deny", null, null,
-                bodies = listOf(RuleBody(emptyList(), "release [deployment id] has no approved change ticket", "release %v has no approved change ticket", SourceRef("f.rego", 1))),
+                bodies = listOf(RuleBody(emptyList(), "release [deployment id] has no approved change ticket", "release %v has no approved change ticket", SourceRef("f.rego", 1), "")),
             )
             val pkgWithRule = io.explico.model.PolicyPackage("pkg", listOf(rule), listOf("f.rego"))
             val fixture = Fixture("f", null, buildJsonObject { })
@@ -259,13 +259,13 @@ class ExamplesTest {
             val rule = RuleGroup(
                 "deny", null, null,
                 bodies = listOf(
-                    RuleBody(listOf(Condition.Comparison(envPath, Operator.EQ, Operand.Literal("\"production\""))), null, null, SourceRef("f.rego", 1)),
+                    RuleBody(listOf(Condition.Comparison(envPath, Operator.EQ, Operand.Literal("\"production\""))), null, null, SourceRef("f.rego", 1), ""),
                     RuleBody(
                         listOf(
                             Condition.Membership(false, envPath, dataPath), // envPath repeats -- should not duplicate
                             Condition.Truthy(approvedPath, true),
                         ),
-                        null, null, SourceRef("f.rego", 2),
+                        null, null, SourceRef("f.rego", 2), "",
                     ),
                 ),
             )
@@ -287,7 +287,7 @@ class ExamplesTest {
                             Condition.SomeIn("stage", collectionPath),
                             Condition.Comparison(statusPath, Operator.NEQ, Operand.Literal("\"passed\"")),
                         ),
-                        null, null, SourceRef("f.rego", 1),
+                        null, null, SourceRef("f.rego", 1), "",
                     ),
                 ),
             )

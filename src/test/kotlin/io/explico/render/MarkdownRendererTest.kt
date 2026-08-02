@@ -36,7 +36,7 @@ class MarkdownRendererTest {
     )
 
     private fun body(conditions: List<Condition>, producesValue: String? = null, messageTemplate: String? = null, row: Int = 16, file: String = "approvals/change_approval.rego") =
-        RuleBody(conditions, producesValue, messageTemplate, SourceRef(file, row))
+        RuleBody(conditions, producesValue, messageTemplate, SourceRef(file, row), "")
 
     @Nested
     inner class ControlCard {

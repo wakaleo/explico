@@ -56,8 +56,20 @@ prose standing in for logic the tool didn't actually check.
 ## Test tiers (spec §9)
 
 1. **Unit tests** — no `opa` needed. `PathHumanizer`, `ExpressionRenderer`,
-   `Canonicalizer` (hash stability), the line differ, `AstMapper` driven from
-   checked-in `opa parse` JSON captures in `src/test/resources/ast/*.json`.
+   the line differ (`LineDifferTest`, pure LCS algorithm), `AstMapper` driven
+   from checked-in `opa parse` JSON captures in `src/test/resources/ast/*.json`.
+   **Deviation (session 6):** `Canonicalizer`, `PolicyDiff`, and `DiffRenderer`
+   are instead driven by real `.rego` variants parsed through the actual `opa`
+   binary at test time (`CanonicalizerTest`/`PolicyDiffTest`/`DiffRendererTest`,
+   guarded by `assumeTrue(OpaRunner.isAvailable())`, same pattern as the
+   pre-existing `OpaRunnerSmokeTest`) — an explicit operator instruction,
+   overriding this list's original "no opa needed" framing for these three,
+   because hash-stability and category-classification invariants are only
+   trustworthy against real parser output, not a hand-built domain model that
+   might not match what `opa` actually produces. Still named `*Test` (not
+   `*IT`) since they're not Tier-1/Tier-2 acceptance-pack transcriptions; they
+   just happen to need `opa`. `./gradlew check` stays green without `opa`
+   installed because `assumeTrue` skips (not fails) them.
 2. **Tier-1 acceptance tests** (`*IT`, guarded by
    `Assumptions.assumeTrue(OpaRunner.isAvailable())`) — JUnit transcriptions,
    verbatim, of the "Tier 1 assertions" tables in the acceptance pack README.
@@ -81,11 +93,12 @@ prose standing in for logic the tool didn't actually check.
 `./gradlew check` runs unit tests only (`*Test`, excludes `*IT`) and must stay
 green throughout — it is the fast, opa-independent build gate.
 `./gradlew acceptanceTest` runs the Tier-1 `*IT` classes and the Tier-2 golden
-`*IT` class; **as of session 5 they are all green** (25 Tier-1 + 6 golden).
-Kept as a separate Gradle task rather than folded into `check`'s dependency
-graph, since `check` is meant to stay usable without `opa` installed at all
-(the `assumeTrue` guard would just skip them) — but CI must run both `check`
-and `acceptanceTest`, not `check` alone, and must install `opa` first.
+`*IT` classes; **as of session 6 they are all green** (25 Tier-1 + 7 golden,
+the 7th being `DiffAllCategoriesGoldenIT`). Kept as a separate Gradle task
+rather than folded into `check`'s dependency graph, since `check` is meant to
+stay usable without `opa` installed at all (the `assumeTrue` guard would just
+skip them) — but CI must run both `check` and `acceptanceTest`, not `check`
+alone, and must install `opa` first.
 
 ## The development cycle
 
@@ -288,3 +301,98 @@ checked-in shape, not just "reasonable," though still not literally spec-pinned:
   rule. `WorkedExamples`'s handling of a genuinely different value type
   (rendering it verbatim as a single "message") is a minimal, disclosed
   simplification with no real-data test behind it.
+
+## §7 Diff (`diff/`, session 6)
+
+The final POC feature. `Canonicalizer.kt`, `PolicyDiff.kt`, `LineDiffer.kt`,
+`DiffRenderer.kt`; `Explico.diff(old, new): DiffReport` wires them together.
+All driven by real `.rego` variants under `src/test/resources/diff/{canonicalizer,
+policydiff,diffrenderer,diff-all-categories}/`, parsed through the actual `opa`
+binary — see the Test tiers section above for why this deviates from the
+spec's "no opa needed" framing for these three files specifically.
+
+- **`RuleGroup.name` is deliberately excluded from the canonical logic hash** —
+  caught by the rename test itself: including it made a pure control-id-
+  preserving rename hash as `LOGIC_CHANGED` instead of `UNCHANGED`, which
+  directly contradicts spec §7.1's own acceptance criterion. Recorded as a
+  spec amendment (§7.1 step 2 now says so explicitly) rather than left as a
+  silent implementation detail, since the spec's literal step list didn't
+  mention it and a future reader could easily reintroduce the bug.
+- **The canonical JSON is hand-built** (`buildJsonObject`/`buildJsonArray`,
+  not `kotlinx.serialization`'s automatic derivation — the domain model has no
+  `@Serializable` annotations). Every object's keys are inserted in a fixed
+  alphabetical order per type, with an explicit `"type"` discriminator field
+  for each `Condition`/`Operand`/`PathSegment` subtype — this satisfies spec
+  §7.1's "serialise to JSON with sorted keys" without needing a runtime sort
+  step, since the insertion order IS the sorted order by construction.
+- **Body attribution's `messageTemplate` (spec §6.7) is included in the logic
+  hash; `producesValue` is not.** A produced message's text is part of a
+  rule's logic — changing "artifact was built from..." to different wording
+  with identical conditions must be `LOGIC_CHANGED`, never `DOCS_CHANGED`
+  (which is specifically about `RuleMetadata`) or `UNCHANGED`. Tested directly
+  (`aProducedMessageChangeYieldsADifferentLogicHashEvenWithIdenticalConditions`).
+- **Reformatting *inside* a `Condition.Unrendered`/`Operand.Unrendered` fallback
+  span changes the hash — deliberate, disclosed, not a bug.** The tool can't
+  verify two differently-formatted fallback spans mean the same thing, since
+  by definition it didn't understand the construct; only a classified
+  construct's formatting is invisible to the hash (because only its *parsed
+  structure* is hashed, never its source text). Proven with a real fixture
+  pair reformatting whitespace inside `count({a | some a in ...})` (REL-004's
+  own comprehension-fallback shape) — the reformatted version's hash legitimately
+  differs, confirming the caveat is real, not hypothetical.
+  (`reformattingInsideAnUnrenderedFallbackSpanYieldsADifferentLogicHash`).
+- **`RuleBody.sourceText` added to the domain model** (spec §5 amendment): the
+  whole body's verbatim source, base64-decoded from the rule's own AST
+  `location.text` — the same mechanism `Condition.Unrendered.sourceText`
+  already used, just applied one level up (the whole rule, not one
+  expression). Needed because §7.3's `LOGIC_CHANGED` unified diff needs the
+  full old/new rule source, and the architecture never lets anything past
+  `AstMapper` touch raw `opa` JSON again — so this has to live in the domain
+  model, not be re-derived from a second file read or a raw-AST lookup inside
+  `DiffRenderer`.
+- **`DiffEntry`/`DiffCategory`/`DuplicateControlIdException` are `public`**,
+  living in `diff/PolicyDiff.kt` rather than `model/Model.kt` or `Explico.kt`
+  — same precedent as `Fixture`/`ExampleSet` (`render/Examples.kt`) and
+  `CoverageSummary` (`render/Coverage.kt`): public because they're part of a
+  public facade's return type (`Explico.diff`'s `DiffReport`), not because
+  they belong in the two canonically-public files.
+- **Identity resolution is a single map** keyed by `controlId ?: "$package.$name"`
+  built independently for `old` and `new`; matching old/new by this one key is
+  what makes a control-id-preserving rename fall out "for free" as the same
+  identity, with no separate rename-detection pass needed. A rule with no
+  control-id whose package or name changes is genuinely a different identity
+  (correctly `REMOVED`+`ADDED`, not a detected rename) — the spec never asks
+  for name-similarity heuristics, and adding one would be exactly the kind of
+  guess rule 2 (fallback honesty) forbids in spirit.
+- **`DiffRenderer`'s exact section format is this session's own choice**, spec
+  §7.3 not being literally prescriptive beyond "one section per non-UNCHANGED
+  control" and the four per-category content shapes:
+  - A bold `**CATEGORY**` label line opens every section (not spec-pinned;
+    needed because `ADDED`'s section would otherwise be visually identical to
+    a plain render-page card, with no way to tell it apart from `LOGIC_CHANGED`
+    minus its diff block at a glance).
+  - `REMOVED`'s removal notice is the literal bold line `**⚠ This control has
+    been removed.**` immediately before the reused old card.
+  - `DOCS_CHANGED`'s two-column table renders a multi-line description with
+    literal `<br>` in place of `\n` (Markdown table cells can't contain raw
+    newlines); a missing title/description/frameworks list renders `—`.
+  - The coverage warning counts *any* non-`UNCHANGED` entry whose displayed
+    side (`newRule ?: oldRule`) has condition-level coverage below 100% —
+    including `DOCS_CHANGED` entries, since the exact wording ("N changed
+    controls") doesn't restrict itself to `LOGIC_CHANGED` only, and REL-004's
+    own real coverage gap (7 of 8, from its `count({a | ...})` comprehension
+    fallback) is exactly the case the `diff-all-categories` golden exercises.
+  None of this is confirmed by more than one golden yet (only
+  `diff-all-categories` exists) — reasonable-but-not-battle-tested, same
+  status MarkdownRenderer's own choices had after session 4, before session
+  5's multi-package goldens confirmed them.
+- **`diff-all-categories` golden** (`src/test/resources/diff/diff-all-categories/`)
+  uses real acceptance-pack policies, not synthetic ones: `old/` is an exact
+  copy of all 5 pack policies; `new/` removes REL-001 entirely (`REMOVED`),
+  adds a brand-new REL-005 control (`ADDED`), changes one condition in REL-003
+  (`LOGIC_CHANGED`), changes only REL-004's title/description
+  (`DOCS_CHANGED`), renames REL-002's rule `deny` → `deny_stage` with logic
+  and package path otherwise untouched (`UNCHANGED` via the control-id-
+  preserving rename), and leaves `exempt_service` byte-identical (`UNCHANGED`,
+  plain case). All 5 categories plus the rename in one golden, exactly as
+  instructed.

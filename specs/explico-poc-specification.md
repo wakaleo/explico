@@ -176,6 +176,7 @@ data class RuleBody(
     val producesValue: String?,       // rendered head value/key if present (e.g. the msg), else null
     val messageTemplate: String?,     // raw string literal / sprintf template, unhumanised; see §6.7
     val sourceLocation: SourceRef,
+    val sourceText: String,           // whole body's verbatim source (base64-decoded rule-level location.text); see §7.3
 )
 
 sealed interface Condition {
@@ -501,7 +502,11 @@ This makes corpus thinness visible instead of implying completeness.
 - **Canonical hash** of a rule group's logic (`Canonicalizer.kt`):
   1. Take the mapped `RuleGroup` (domain model, not raw AST — locations are
      already absent from everything except `SourceRef`).
-  2. Strip all `SourceRef`s and `RuleMetadata`.
+  2. Strip all `SourceRef`s and `RuleMetadata`, and the `RuleGroup.name` itself —
+     the rule's own name is identity, not logic, and a control-id-preserving
+     rename (this section, above) must hash identically to its pre-rename
+     logic when nothing else changed, which is only possible if the name
+     doesn't feed the hash.
   3. Rename local variables positionally per body (`v1`, `v2`, … in order of first
      occurrence) — applied during mapping via the symbol table, affects
      `Variable`/`VarIndex`/`SomeIn` names.

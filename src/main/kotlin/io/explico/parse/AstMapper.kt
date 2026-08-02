@@ -166,6 +166,7 @@ internal object AstMapper {
             producesValue = producesValue,
             messageTemplate = messageTemplate,
             sourceLocation = SourceRef(ctx.sourceFile, rule.location?.row ?: 0),
+            sourceText = sourceText(rule.location),
         )
     }
 

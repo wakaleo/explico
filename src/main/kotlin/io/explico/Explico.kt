@@ -1,6 +1,9 @@
 /** Public library facade (spec §8.1). Everything else in this library is internal. */
 package io.explico
 
+import io.explico.diff.DiffEntry
+import io.explico.diff.DiffRenderer
+import io.explico.diff.PolicyDiff
 import io.explico.model.PolicySet
 import io.explico.opa.OpaRunner
 import io.explico.parse.AstMapper
@@ -17,6 +20,9 @@ import java.nio.file.Path
 
 /** The rendered Markdown documents for a policy set, keyed by output filename, plus overall coverage. */
 public data class RenderedDocs(val files: Map<String, String>, val coverage: CoverageSummary)
+
+/** The classified change entries between two policy versions, plus the rendered change report (spec §7). */
+public data class DiffReport(val entries: List<DiffEntry>, val markdown: String)
 
 /** Renders `.rego` policy directories into Markdown and reports rendering coverage. */
 public object Explico {
@@ -62,6 +68,16 @@ public object Explico {
         val packageCoverages = policySet.packages.map { Coverage.of(it) }
         val overallCoverage = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })
         return RenderedDocs(files = files, coverage = overallCoverage)
+    }
+
+    /**
+     * Classifies every control across [old] -> [new] (spec §7.2) and renders the change report
+     * (spec §7.3). Throws [io.explico.diff.DuplicateControlIdException] if either side has two
+     * rules sharing a control-id.
+     */
+    public fun diff(old: PolicySet, new: PolicySet): DiffReport {
+        val entries = PolicyDiff.diff(old, new)
+        return DiffReport(entries, DiffRenderer.render(entries, old, new))
     }
 
     private fun evaluateWorkedExamples(

@@ -59,8 +59,8 @@ class CoverageTest {
         val rule = RuleGroup(
             "deny", metadata = null, default = null,
             bodies = listOf(
-                RuleBody(listOf(Condition.Comparison(path, Operator.EQ, literal)), null, null, SourceRef("f.rego", 1)),
-                RuleBody(listOf(Condition.Unrendered("x", "unclassified")), null, null, SourceRef("f.rego", 5)),
+                RuleBody(listOf(Condition.Comparison(path, Operator.EQ, literal)), null, null, SourceRef("f.rego", 1), ""),
+                RuleBody(listOf(Condition.Unrendered("x", "unclassified")), null, null, SourceRef("f.rego", 5), ""),
             ),
         )
         val coverage = Coverage.of(rule)
@@ -70,8 +70,8 @@ class CoverageTest {
 
     @Test
     fun ofPolicyPackageSumsAcrossAllItsRules() {
-        val ruleA = RuleGroup("a", null, null, listOf(RuleBody(listOf(Condition.Comparison(path, Operator.EQ, literal)), null, null, SourceRef("f.rego", 1))))
-        val ruleB = RuleGroup("b", null, null, listOf(RuleBody(listOf(Condition.Unrendered("x", "unclassified")), null, null, SourceRef("f.rego", 5))))
+        val ruleA = RuleGroup("a", null, null, listOf(RuleBody(listOf(Condition.Comparison(path, Operator.EQ, literal)), null, null, SourceRef("f.rego", 1), "")))
+        val ruleB = RuleGroup("b", null, null, listOf(RuleBody(listOf(Condition.Unrendered("x", "unclassified")), null, null, SourceRef("f.rego", 5), "")))
         val pkg = PolicyPackage("pkg", listOf(ruleA, ruleB), listOf("f.rego"))
 
         val coverage = Coverage.of(pkg)

@@ -127,6 +127,17 @@ class AstMapperTest {
             )
 
             assertThat(body.producesValue).isEqualTo("release [deployment id] has no approved change ticket")
+
+            // spec §7.3: the whole rule's verbatim source, base64-decoded from the AST's own
+            // rule-level location.text -- the same mechanism as a fallback's sourceText, never a
+            // second file read sliced by SourceRef's row.
+            assertThat(body.sourceText).isEqualTo(
+                "deny contains msg if {\n" +
+                    "\tinput.deployment.environment == \"production\"\n" +
+                    "\tnot input.change.ticket.approved\n" +
+                    "\tmsg := sprintf(\"release %v has no approved change ticket\", [input.deployment.id])\n" +
+                    "}",
+            )
         }
 
         @Test

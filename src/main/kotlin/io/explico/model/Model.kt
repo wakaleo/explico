@@ -48,6 +48,13 @@ public data class RuleBody(
      */
     val messageTemplate: String?,
     val sourceLocation: SourceRef,
+    /**
+     * The whole body's verbatim source (spec §7.3): base64-decoded from the rule's own AST
+     * `location.text`, the same mechanism as a [Condition.Unrendered]'s fallback text -- never a
+     * second file read sliced by [sourceLocation]'s row. Used only by the diff report's
+     * LOGIC_CHANGED unified text diff.
+     */
+    val sourceText: String,
 )
 
 /** A single leaf condition within a rule body. */
