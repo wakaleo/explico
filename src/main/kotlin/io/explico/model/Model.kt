@@ -38,6 +38,15 @@ public data class DefaultValue(val rendered: String)
 public data class RuleBody(
     val conditions: List<Condition>,
     val producesValue: String?,
+    /**
+     * The raw message source used for worked-example body attribution (spec §6.7): a string
+     * literal verbatim, or an sprintf format string with `%v`/`%s` placeholders left untouched
+     * (not humanised). Distinct from [producesValue] -- that one is display text and is null
+     * whenever a placeholder can't be confidently humanised (e.g. a var-rooted path), but
+     * attribution only needs the template's literal/wildcard shape, not a display rendering of
+     * its arguments, so this stays populated even when [producesValue] is null.
+     */
+    val messageTemplate: String?,
     val sourceLocation: SourceRef,
 )
 

@@ -20,14 +20,18 @@ class ReleaseApprovalsAcceptanceIT {
 
     companion object {
         private const val POLICIES_DIR = "src/test/resources/acceptance/policies"
+        private const val EXAMPLES_DIR = "src/test/resources/acceptance/examples"
+        private const val DATA_FILE = "src/test/resources/acceptance/data/release/data.json"
         private lateinit var markdown: String
 
         @JvmStatic
         @BeforeAll
         fun renderDocument() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
-            val policySet = Explico.load(Path.of(POLICIES_DIR))
-            val rendered = Explico.render(policySet)
+            val policyDir = Path.of(POLICIES_DIR)
+            val policySet = Explico.load(policyDir)
+            val examples = Explico.loadExamples(Path.of(EXAMPLES_DIR))
+            val rendered = Explico.render(policySet, policyDir, examples, Path.of(DATA_FILE))
             markdown = rendered.files["release-approvals.md"] ?: ""
         }
     }

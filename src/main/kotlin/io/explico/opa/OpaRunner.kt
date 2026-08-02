@@ -3,6 +3,8 @@
  */
 package io.explico.opa
 
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
@@ -43,6 +45,22 @@ internal object OpaRunner {
     fun inspect(dir: Path): OpaInspectResult {
         val stdout = run("inspect", "--annotations", "--format", "json", dir.toString())
         return opaJson.decodeFromString(OpaInspectResult.serializer(), stdout)
+    }
+
+    /**
+     * Runs `opa eval --format json --input <inputFile> [--data <dir>]... <query>` (spec §6.7) and
+     * returns the query's evaluated value (e.g. `data.<package>`'s rule-name -> value object), or
+     * an empty object if the query was undefined.
+     */
+    fun eval(inputFile: Path, dataDirs: List<Path>, query: String): JsonElement {
+        val args = buildList {
+            add("eval"); add("--format"); add("json"); add("--input"); add(inputFile.toString())
+            dataDirs.forEach { add("--data"); add(it.toString()) }
+            add(query)
+        }
+        val stdout = run(*args.toTypedArray())
+        val decoded = opaJson.decodeFromString(OpaEvalResult.serializer(), stdout)
+        return decoded.result.firstOrNull()?.expressions?.firstOrNull()?.value ?: JsonObject(emptyMap())
     }
 
     private fun detectedMajorVersion(): Int? {

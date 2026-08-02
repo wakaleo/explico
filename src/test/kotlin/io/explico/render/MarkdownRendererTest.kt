@@ -17,6 +17,8 @@ import io.explico.model.RuleBody
 import io.explico.model.RuleGroup
 import io.explico.model.RuleMetadata
 import io.explico.model.SourceRef
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -33,8 +35,8 @@ class MarkdownRendererTest {
         negated = true,
     )
 
-    private fun body(conditions: List<Condition>, producesValue: String? = null, row: Int = 16, file: String = "approvals/change_approval.rego") =
-        RuleBody(conditions, producesValue, SourceRef(file, row))
+    private fun body(conditions: List<Condition>, producesValue: String? = null, messageTemplate: String? = null, row: Int = 16, file: String = "approvals/change_approval.rego") =
+        RuleBody(conditions, producesValue, messageTemplate, SourceRef(file, row))
 
     @Nested
     inner class ControlCard {
@@ -97,6 +99,18 @@ class MarkdownRendererTest {
             val markdown = MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
 
             assertThat(markdown).contains("Production deployments must reference an approved change ticket.")
+        }
+
+        @Test
+        fun descriptionTrailingNewlineFromAYamlBlockLiteralDoesNotProduceAnExtraBlankLine() {
+            // "description: |" YAML block literals preserve their own trailing "\n" -- Tier-2
+            // reconciliation (session 5): trimEnd it so it doesn't double up with appendLine's own.
+            val rule = RuleGroup("deny", metadata = RuleMetadata("Title", "Line one.\nLine two.\n", "REL-001", emptyList()), default = null, bodies = listOf(body(listOf(envIsProd))))
+            val pkg = PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
+
+            assertThat(markdown).doesNotContain("Line two.\n\n\n")
+            assertThat(markdown).contains("Line two.\n\n**All of the following are true:**")
         }
 
         @Test
@@ -343,6 +357,80 @@ class MarkdownRendererTest {
 
             assertThat(markdown).contains("| Control ID | Title | Package | Rule | Coverage | Source file |")
             assertThat(markdown).contains("Overall rendering coverage: 0 of 0 conditions (100%)")
+        }
+
+        @Test
+        fun exampleCoverageColumnAndCorpusGapsLineOnlyAppearWhenExamplesAreSupplied() {
+            val rule = RuleGroup("deny", metadata = RuleMetadata("Title", "d", "REL-001", emptyList()), default = null, bodies = listOf(body(listOf(envIsProd))))
+            val policySet = PolicySet(listOf(PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))))
+
+            val withoutExamples = MarkdownRenderer.renderIndex(policySet)
+            assertThat(withoutExamples).doesNotContain("Example coverage")
+            assertThat(withoutExamples).doesNotContain("corpus has gaps")
+
+            val matchedOnly = WorkedExample(Fixture("f", null, buildJsonObject { }), matched = true, messages = listOf("x"), situationLabels = listOf(null))
+            val withExamplesNoGap = MarkdownRenderer.renderIndex(policySet, mapOf("release.approvals" to mapOf("deny" to listOf(matchedOnly))))
+            assertThat(withExamplesNoGap).contains("Example coverage")
+            assertThat(withExamplesNoGap).contains("✓ / –")
+            assertThat(withExamplesNoGap).doesNotContain("corpus has gaps") // this control HAS a matching example, so it's not a gap
+        }
+
+        @Test
+        fun corpusGapsLineListsControlsWithNoMatchingExampleAtAll() {
+            val rule = RuleGroup("deny", metadata = RuleMetadata("Title", "d", "REL-001", emptyList()), default = null, bodies = listOf(body(listOf(envIsProd))))
+            val policySet = PolicySet(listOf(PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))))
+
+            val notMatchedOnly = WorkedExample(Fixture("f", null, buildJsonObject { }), matched = false, messages = emptyList(), situationLabels = emptyList())
+            val markdown = MarkdownRenderer.renderIndex(policySet, mapOf("release.approvals" to mapOf("deny" to listOf(notMatchedOnly))))
+
+            assertThat(markdown).contains("– / ✓")
+            assertThat(markdown).contains("*1 controls have no fixture demonstrating them — the corpus has gaps.*")
+        }
+    }
+
+    @Nested
+    inner class WorkedExamplesSection {
+
+        private val rule = RuleGroup(
+            "deny", metadata = null, default = null,
+            bodies = listOf(body(listOf(envIsProd, approvedAbsent), "release [deployment id] has no approved change ticket")),
+        )
+        private val pkg = PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))
+        private val policySet = PolicySet(listOf(pkg))
+
+        @Test
+        fun noWorkedExamplesSectionWhenNoOutcomesSupplied() {
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, policySet, emptyList())
+            assertThat(markdown).doesNotContain("Worked examples")
+        }
+
+        @Test
+        fun matchedExampleShowsOutcomeSituationLabelMessageAndReferencedPathValues() {
+            val fixtureInput = buildJsonObject {
+                put("deployment", buildJsonObject { put("environment", "production") })
+            }
+            val outcome = WorkedExample(
+                fixture = Fixture("hotfix without change ticket", null, fixtureInput),
+                matched = true,
+                messages = listOf("release rel-1002 has no approved change ticket"),
+                situationLabels = listOf(1),
+            )
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, policySet, listOf(outcome))
+
+            assertThat(markdown).contains("**Worked examples**")
+            assertThat(markdown).contains("- **hotfix without change ticket** — ❌ denied *(Situation 1)*")
+            assertThat(markdown).contains("  *\"release rel-1002 has no approved change ticket\"*")
+            assertThat(markdown).contains("`deployment ▸ environment`: `\"production\"`")
+            assertThat(markdown).contains("`change ▸ ticket ▸ approved`: absent")
+        }
+
+        @Test
+        fun notMatchedExampleShowsOutcomeWordWithNoMessageLine() {
+            val outcome = WorkedExample(Fixture("approved standard release", null, buildJsonObject { }), matched = false, messages = emptyList(), situationLabels = emptyList())
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, policySet, listOf(outcome))
+
+            assertThat(markdown).contains("- **approved standard release** — ✅ allowed")
+            assertThat(markdown).doesNotContain("*\"")
         }
     }
 }

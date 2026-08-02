@@ -32,7 +32,8 @@ internal object Coverage {
 
     private fun conditionsOf(rule: RuleGroup): List<Condition> = rule.bodies.flatMap { it.conditions }
 
-    private fun operandsOf(condition: Condition): List<Operand> = when (condition) {
+    /** Exposed (not private) so §6.7's referenced-path collection can reuse this instead of a third copy. */
+    fun operandsOf(condition: Condition): List<Operand> = when (condition) {
         is Condition.Comparison -> listOf(condition.left, condition.right)
         is Condition.Membership -> listOf(condition.member, condition.collection)
         is Condition.Truthy -> listOf(condition.operand)

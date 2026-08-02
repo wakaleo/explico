@@ -67,20 +67,25 @@ prose standing in for logic the tool didn't actually check.
    implementation pass.** If a Tier-1 assertion looks wrong: stop, raise it,
    do not edit the test. The fixture verdict matrix (produced by `opa eval`,
    not by hand) is the oracle for worked-example assertions.
-3. **Tier-2 golden tests** — byte-exact, approval-style.
-   `expected/release-approvals.md` is the ahead-of-time proposal; cosmetic
-   details may be reconciled **once**, at first successful render, then it is
-   frozen. Remaining packages and the diff report get goldens generated from
-   the approved renderer. `-Dexplico.updateGolden=true` regenerates goldens —
-   regeneration is a deliberate, reviewed act, never a side effect of getting
-   a build green.
+3. **Tier-2 golden tests** — byte-exact, approval-style, in the same `*IT`
+   classes as Tier-1 (`AcceptancePackGoldenIT`). `expected/release-approvals.md`
+   was the ahead-of-time proposal; reconciled **once** (session 5) — the only
+   difference was a stray blank line from a YAML block-literal's trailing
+   newline, fixed in `MarkdownRenderer` (cosmetic, confirmed byte-for-byte
+   afterward), now frozen. The other five documents' goldens were generated
+   from that approved renderer, not authored ahead of time.
+   `-Dexplico.updateGolden=true` (wired into the `acceptanceTest` Gradle task)
+   regenerates every golden instead of comparing — a deliberate, reviewed act,
+   never a side effect of getting a build green.
 
 `./gradlew check` runs unit tests only (`*Test`, excludes `*IT`) and must stay
 green throughout — it is the fast, opa-independent build gate.
-`./gradlew acceptanceTest` runs the Tier-1 `*IT` classes; they are allowed to
-be red while the renderer is being built, but must never be excluded from CI
-long-term. Wire `acceptanceTest` back into the default build once the
-renderer they pin exists and passes.
+`./gradlew acceptanceTest` runs the Tier-1 `*IT` classes and the Tier-2 golden
+`*IT` class; **as of session 5 they are all green** (25 Tier-1 + 6 golden).
+Kept as a separate Gradle task rather than folded into `check`'s dependency
+graph, since `check` is meant to stay usable without `opa` installed at all
+(the `assumeTrue` guard would just skip them) — but CI must run both `check`
+and `acceptanceTest`, not `check` alone, and must install `opa` first.
 
 ## The development cycle
 
@@ -207,11 +212,13 @@ NOT yet do the following. Each is a scoping decision, not an oversight:
   wrapper text around whatever `anchorFor` callback it's given -- the
   callback is now `MarkdownRenderer`'s real implementation, not a test stub.
 
-## MarkdownRenderer: interpretation choices not pinned by spec (session 4)
+## MarkdownRenderer: interpretation choices (session 4, confirmed by golden freeze session 5)
 
-`release-approvals.md`'s golden only has ONE control card, so it can't confirm
-these choices; they're this session's own, reasonable-but-not-frozen decisions
-until Tier-2 goldens for a multi-card package exist:
+`release-approvals.md`'s golden only has ONE control card, so session 4 couldn't
+confirm these against a real multi-card package. Session 5 generated Tier-2
+goldens for the other five documents (all multi-rule or multi-body packages)
+from this exact behavior and froze them — these choices are now the approved,
+checked-in shape, not just "reasonable," though still not literally spec-pinned:
 
 - **No "*(referenced rule)*" suffix after a `RuleReference` bullet.** Spec
   §6.2's worked example shows one (`...does not match *(referenced rule)*`),
@@ -221,11 +228,63 @@ until Tier-2 goldens for a multi-card package exist:
   already-tested contract (27 tests) doesn't produce it, and adding it would
   mean splitting the responsibility for one bullet's text across two files.
 - **`---` separates every card, including the last one before the package
-  footer** (not just once at the very end). Consistent, but unconfirmed for
-  a real multi-card package.
+  footer** (not just once at the very end). Confirmed against
+  `release-evidence.md` and `release-governance.md`'s frozen goldens, both
+  multi-card packages.
 - **Combined coverage footer format**: `*Rendering coverage: X of Y
   conditions; contains N unrendered value(s)*` — spec gives the two pieces
-  separately (§6.6) but never shows them combined in one footer line.
+  separately (§6.6) but never shows them combined in one footer line. Not
+  exercised by any frozen golden either (no pack rule both falls short of
+  100% coverage AND has an unrendered operand at the same time) — still
+  genuinely unconfirmed.
 - **`index.md`'s exact shape** (the `# Control index` heading, the table's
-  column order, `—` for a missing control id) is entirely this session's own
+  column order, `—` for a missing control id, plus session 5's
+  example-coverage column and corpus-gaps line) was this session's own
   design — spec describes the columns to include, not the literal format.
+  Now confirmed by `index.md`'s frozen golden (session 5).
+
+## §6.7 Worked examples (session 5)
+
+- **`RuleBody.messageTemplate` added** (distinct from `producesValue`) —
+  carries the raw `sprintf` format string (`%v`/`%s` untouched) or the
+  literal string verbatim, used only for worked-examples body attribution.
+  `producesValue` stays display-only and null whenever a placeholder can't
+  be humanised (session 2/3, unchanged); `messageTemplate` stays populated
+  regardless, since attribution only needs the template's literal/wildcard
+  shape to match a real evaluated message, not a display rendering of the
+  argument. This is what lets REL-004's var-rooted body 2 (`window.name`)
+  still get a *(Situation 2)* label despite `producesValue = null` — the
+  only way found to satisfy both the display rule and the acceptance
+  README's own note that all 3 of REL-004's bodies are distinct enough to
+  need labels.
+- **`Explico.render()` signature changed** to
+  `render(policySet, policyDir, examples, dataDir)` — added `policyDir`
+  (approved by the operator; spec §8.1's literal signature omits it). Needed
+  because `opa eval` must re-read the actual `.rego` files for worked
+  examples, and the domain model only carries relative `sourceFiles` paths
+  with no base directory to resolve them against.
+- **A `SomeIn`'s own collection `Path`** (e.g. `pipeline ▸ stages`) is
+  excluded from the worked-examples referenced-path listing — it resolves to
+  a raw array of objects, not a scalar, and rendering it as a JSON dump
+  looked wrong on the first real render. The per-element access via
+  `VarIndex` (`pipeline ▸ stages ▸ [each stage] ▸ status`) is what's
+  actually useful and stays included. Not spec-pinned; a quality fix made
+  after seeing real output.
+- **Verified against the full fixture verdict matrix, not just the Tier-1
+  assertions.** Generated all 6 documents and manually diffed every
+  worked-examples section (verdicts, messages, situation labels, referenced
+  path values) against the acceptance README's matrix directly. Zero
+  disagreements across all 6 fixtures × 5 packages, including the exemption
+  path (fixture 05) and the multi-message/multi-situation case (fixture 06
+  → REL-004 S1+S2 in one card entry).
+- **Multi-message-per-fixture card format is this session's own choice**:
+  the summary line's `*(Situation N)*` label is used only when exactly one
+  message is produced; when a fixture matches more than one body at once,
+  each message gets its own line with its own label instead. Not
+  spec-pinned (no worked example shows this combination), but exercised by
+  real data (fixture 06 on REL-004) and matches the fixture verdict matrix.
+- **The "any other value type" verdict case (spec §6.7) is unexercised** —
+  every pack rule is a set rule (`deny contains msg`) or a boolean/complete
+  rule. `WorkedExamples`'s handling of a genuinely different value type
+  (rendering it verbatim as a single "message") is a minimal, disclosed
+  simplification with no real-data test behind it.

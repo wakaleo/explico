@@ -2,9 +2,6 @@
  * Tier-1 acceptance tests for `index.md`, transcribed verbatim from
  * `src/test/resources/acceptance/README.md` ("### index.md"). These assertions
  * are frozen: never weaken them to make an implementation pass.
- *
- * The example-coverage column assertions require §6.7 (worked examples),
- * which is not built yet -- expected to fail for that reason this session.
  */
 package io.explico.acceptance
 
@@ -22,14 +19,18 @@ class IndexAcceptanceIT {
 
     companion object {
         private const val POLICIES_DIR = "src/test/resources/acceptance/policies"
+        private const val EXAMPLES_DIR = "src/test/resources/acceptance/examples"
+        private const val DATA_FILE = "src/test/resources/acceptance/data/release/data.json"
         private lateinit var markdown: String
 
         @JvmStatic
         @BeforeAll
         fun renderDocument() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
-            val policySet = Explico.load(Path.of(POLICIES_DIR))
-            val rendered = Explico.render(policySet)
+            val policyDir = Path.of(POLICIES_DIR)
+            val policySet = Explico.load(policyDir)
+            val examples = Explico.loadExamples(Path.of(EXAMPLES_DIR))
+            val rendered = Explico.render(policySet, policyDir, examples, Path.of(DATA_FILE))
             markdown = rendered.files["index.md"] ?: ""
         }
     }
@@ -50,8 +51,11 @@ class IndexAcceptanceIT {
     @Test
     @DisplayName("Example-coverage column: REL-001 ✓/✓; REL-002 ✓/✓; REL-003 ✓/✓; REL-004 ✓/✓; exempt_service ✓/✓")
     fun exampleCoverageColumnPresentForEveryControl() {
-        // Requires §6.7 (worked examples / example-coverage column) -- not built this session.
-        assertThat(markdown).contains("✓ / ✓")
+        for (control in listOf("REL-001", "REL-002", "REL-003", "REL-004", "exempt_service")) {
+            val row = markdown.lines().firstOrNull { it.contains(control) }
+            assertThat(row).describedAs("index.md row for %s", control).isNotNull()
+            assertThat(row).describedAs("example-coverage column for %s", control).contains("✓ / ✓")
+        }
     }
 
     @Test

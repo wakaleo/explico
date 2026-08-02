@@ -38,11 +38,14 @@ tasks.test {
     }
 }
 
-// Tier-1 acceptance tests (spec §9): require the `opa` binary, guarded by
-// Assumptions.assumeTrue(OpaRunner.isAvailable()). Kept out of `check` so the
-// default build stays green while they are red during TDD; run explicitly.
+// Tier-1 acceptance tests and Tier-2 golden tests (spec §9): require the `opa`
+// binary, guarded by Assumptions.assumeTrue(OpaRunner.isAvailable()). Kept out
+// of `check` so the default build stays green while they are red during TDD;
+// run explicitly. `-Dexplico.updateGolden=true` regenerates the Tier-2 goldens
+// instead of comparing against them -- a deliberate, reviewed act, never a
+// side effect of getting a build green.
 val acceptanceTest by tasks.registering(Test::class) {
-    description = "Runs Tier-1 acceptance tests (*IT classes)."
+    description = "Runs Tier-1 acceptance tests and Tier-2 golden tests (*IT classes)."
     group = "verification"
     useJUnitPlatform()
     testClassesDirs = sourceSets.test.get().output.classesDirs
@@ -50,6 +53,7 @@ val acceptanceTest by tasks.registering(Test::class) {
     filter {
         includeTestsMatching("*IT")
     }
+    systemProperty("explico.updateGolden", System.getProperty("explico.updateGolden", "false"))
 }
 
 publishing {

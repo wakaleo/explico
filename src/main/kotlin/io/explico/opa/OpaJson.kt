@@ -119,3 +119,19 @@ internal data class OpaInspectAnnotationEntry(
 internal data class OpaInspectResult(
     val annotations: List<OpaInspectAnnotationEntry> = emptyList(),
 )
+
+@Serializable
+internal data class OpaEvalExpression(
+    val value: JsonElement? = null,
+)
+
+@Serializable
+internal data class OpaEvalResultEntry(
+    val expressions: List<OpaEvalExpression> = emptyList(),
+)
+
+/** Top-level result of `opa eval --format json --input <file> [--data <dir>]... "data.<package>"` (spec §6.7). */
+@Serializable
+internal data class OpaEvalResult(
+    val result: List<OpaEvalResultEntry> = emptyList(),
+)

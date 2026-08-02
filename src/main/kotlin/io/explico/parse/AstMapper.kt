@@ -148,12 +148,14 @@ internal object AstMapper {
         val symbolTable = mutableMapOf<String, Operand.Path>()
         val messageVar = rule.head.key?.takeIf { it.type == "var" }?.let { stringValueOf(it) }
         var producesValue: String? = null
+        var messageTemplate: String? = null
         val conditions = mutableListOf<Condition>()
 
         for (expr in rule.body) {
             val assignedMessage = messageVar?.let { matchMessageAssignment(expr, it) }
             if (assignedMessage != null) {
                 producesValue = renderProducesValue(assignedMessage, symbolTable)
+                messageTemplate = computeMessageTemplate(assignedMessage)
                 continue
             }
             conditions += mapCondition(expr, symbolTable, ctx)
@@ -162,6 +164,7 @@ internal object AstMapper {
         return RuleBody(
             conditions = conditions,
             producesValue = producesValue,
+            messageTemplate = messageTemplate,
             sourceLocation = SourceRef(ctx.sourceFile, rule.location?.row ?: 0),
         )
     }
@@ -376,6 +379,20 @@ internal object AstMapper {
     }
 
     // --- producesValue (spec §5's minimal placeholder formatting, approved for this session) ---
+
+    /**
+     * The raw message template for §6.7 body attribution: a string literal verbatim, or an
+     * sprintf format string with `%v`/`%s` left untouched. Unlike [renderProducesValue], this
+     * never fails on an unhumanisable placeholder -- it doesn't try to render the arguments at
+     * all, just identify the template's literal/wildcard shape.
+     */
+    private fun computeMessageTemplate(valueTerm: OpaTerm): String? {
+        if (valueTerm.type == "string") return stringValueOf(valueTerm)
+        if (valueTerm.type != "call") return null
+        val (name, args) = decodeCallShape(decodeTermList(valueTerm.value)) ?: return null
+        if (name != "sprintf" || args.size != 2) return null
+        return args[0].takeIf { it.type == "string" }?.let { stringValueOf(it) }
+    }
 
     private fun renderProducesValue(valueTerm: OpaTerm, symbolTable: Map<String, Operand.Path>): String? {
         if (valueTerm.type == "string") return stringValueOf(valueTerm)

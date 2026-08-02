@@ -190,6 +190,8 @@ class AstMapperTest {
             // stage.name is var-rooted; the minimal placeholder helper only handles plain input.-rooted chains.
             val body = wholePack().packages.first { it.path == "release.evidence" }.rules.first { it.name == "deny" }.bodies.single()
             assertThat(body.producesValue).isNull()
+            // messageTemplate stays populated regardless -- it doesn't try to render the arguments (spec §6.7).
+            assertThat(body.messageTemplate).isEqualTo("pipeline stage %v did not pass")
         }
 
         @Test
@@ -264,6 +266,8 @@ class AstMapperTest {
         fun stringLiteralMessageForTheComprehensionBody() {
             val body = onlyFile("release_governance", "governance/release_governance.rego").packages[0].rules.single { it.name == "deny" }.bodies[0]
             assertThat(body.producesValue).isEqualTo("no release manager approval is recorded")
+            // A plain string literal needs no humanisation, so messageTemplate equals producesValue.
+            assertThat(body.messageTemplate).isEqualTo("no release manager approval is recorded")
         }
 
         @Test
@@ -289,6 +293,12 @@ class AstMapperTest {
                 PathSegment.Field("data"), PathSegment.Field("release"), PathSegment.Field("freeze_windows"),
                 PathSegment.VarIndex("window"), PathSegment.Field("finish"),
             )
+
+            // producesValue is null (window.name is var-rooted, can't be humanised for display -- session 2/3)
+            // but messageTemplate stays populated: body attribution (§6.7) needs the template's
+            // literal/wildcard shape, not a display rendering of the argument.
+            assertThat(body.producesValue).isNull()
+            assertThat(body.messageTemplate).isEqualTo("deployment falls inside freeze window %v")
         }
 
         @Test
