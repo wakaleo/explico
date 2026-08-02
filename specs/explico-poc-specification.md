@@ -759,7 +759,7 @@ Each milestone ends green (`./gradlew check`) and committed.
 
 ---
 
-## 13. Post-POC increment 1: distribution & documentation
+## 13. Post-POC increment 1: distribution, documentation, API ergonomics
 
 Scope decided before implementation, recorded here per this project's own
 convention (design decisions get written down before, or as, they're made —
@@ -851,7 +851,7 @@ Install/CLI-usage sections: download the release jar (§13.1), run `explico
 demo`, see a real rendered card, in as few steps as possible. Links out to
 the three `docs/` files instead of duplicating their content.
 
-### 13.4 Cold-start demo test
+### 13.4 Cold-start demo test (jar-only path)
 
 Same method as session 7's README cold-start test, narrower scope: a fresh
 subagent with *only* the built jar, `opa` on `PATH`, and the README's Quick
@@ -859,4 +859,121 @@ demo section — explicitly no repository checkout, no other file in this
 project visible to it. Must reach a rendered control card. Exactly like
 session 7: fix what it stumbles on, fix the docs (or the demo command's own
 behavior) — never the tester, never chalk a finding up to "well, a real user
-would know better."
+would know better." (§13.9 extends this to a second, programmatic-path test.)
+
+### 13.5 Java-interop ergonomics
+
+`Explico` (the public facade, §8.1) is meant to be usable from Java, not
+just Kotlin (§1.1 G4: "usable both as a CLI and as a JVM library") — but a
+Kotlin `object`'s members are, by default, only reachable from Java via
+`Explico.INSTANCE.load(...)`, and a function with default parameter values
+(`render`'s trailing `examples`/`dataDir`) requires a Java caller to supply
+every argument explicitly, since Java has no concept of Kotlin default
+parameters. Neither is how the facade is documented or intended to be
+called from Java.
+
+- **`@JvmStatic`** on every `Explico` member function makes them plain
+  static methods from Java's perspective: `Explico.load(dir)`, not
+  `Explico.INSTANCE.load(dir)`.
+- **`@JvmOverloads`** on `render` generates the overloads a Java caller
+  needs to write `Explico.render(policySet, policyDir)` without passing
+  explicit `null`s for `examples`/`dataDir`.
+- Proven by a real Java test file, compiled and run against the facade —
+  not inferred from the annotations' mere presence, the same standard
+  every other cross-boundary claim in this project is held to.
+
+### 13.6 Worked-examples provenance footer
+
+One additional line on every rendered **Worked examples** section: *"Examples
+are evaluated against this policy version by OPA at generation time."* — a
+muted, explicit restatement of §6.7's own invariant (worked examples are
+never predicted, always freshly evaluated) directly in the artefact a
+reader is looking at, not only in this spec and `CLAUDE.md`. A wording and
+placement decision, not a behavior change — regenerating the Tier-2 goldens
+for it is its own deliberate, reviewed act (`-Dexplico.updateGolden=true`),
+never a side effect of an unrelated change.
+
+### 13.7 Dogfooding: `generateSampleDocs`
+
+A Gradle task rendering `samples/` (with its examples and data) into
+`docs/sample-output/`, through the exact same `Explico.render` path every
+other consumer uses — no injected banners, no divergence from what
+`Explico.render`'s own output actually is. A `README.md` inside
+`docs/sample-output/` states plainly that the directory is generated and
+should not be hand-edited. The generated output is committed, so a
+browsing reader on GitHub sees real rendered cards without running
+anything, and `ci.yml` runs the task and fails the build on `git diff
+--exit-code` over `docs/sample-output/` if the committed output has
+drifted from what a fresh render actually produces — the identical
+drift-check recipe `docs/user-guide.md` documents for a consumer's own CI
+(§13.8), applied to this repository's own generated docs, so the two can
+never silently diverge from each other. The README's own worked-example
+section links directly to a real card inside this directory, rather than
+only showing an inline excerpt.
+
+### 13.8 Documentation, expanded scope
+
+Beyond §13.3's original three files:
+
+- **`docs/user-guide.md`** gains: Java *and* Kotlin snippets for the
+  load→render→write-files path (not Kotlin only); the two resource-loading
+  patterns a real consumer needs — build-time generation from a project's
+  own policy files (the primary, recommended pattern; §13.7 is this
+  project's own working example of it) versus extracting embedded jar
+  resources to a temp directory at runtime (needed when the policies
+  themselves are shipped inside a jar) — stated plainly that jar resources
+  aren't filesystem paths and can't be passed directly to `Explico.load`,
+  which needs a real directory; guidance on choosing an output directory
+  (a dedicated directory is recommended; writing alongside source is
+  possible, but the output is organised per-*package*, not per source
+  file, so it doesn't map onto a `.rego` tree 1:1); a Gradle `JavaExec`
+  task recipe for wiring `explico render` into another project's own
+  build; and the CI drift-check recipe §13.7 itself uses (render to a
+  temp directory, diff against committed output, fail the build on
+  divergence).
+- **`docs/policy-authoring.md`**'s METADATA section (§10.1's own
+  cross-reference notwithstanding, this was written directly against this
+  section) is joined by an expanded fixtures section: the fixture `name`
+  as the displayed title, uniqueness and filename ordering, a naming
+  *principle* (name the business scenario, not the data — violation-
+  phrased names for a fixture expected to be denied, in-order-or-near-miss
+  phrasing for one expected to be allowed), `description` as
+  captured-but-never-rendered, and a full "Where examples come from"
+  treatment: the committed-vs-computed invariants, the manual sourcing
+  ladder (harvest from existing `*_test.rego` `with input as` blocks,
+  hand-author flagship scenarios, capture sanitised real traffic),
+  selection guidance (one example per Situation plus a near-miss), and
+  the corpus's dual role as a future change-impact seed. Explicitly never
+  documents fixture-generation tooling, since none exists.
+- **`docs/tutorial.md`** gains a fourth stage: after render → worked
+  examples → diff, a walkthrough of the same scenario invoked
+  programmatically (not just via the CLI), with real output.
+- **README.md** opens with the name-origin paragraph (sourced from §1's
+  own opening sentence) and gains a "Relationship to OPA and Rego" section
+  (drives the real `opa` binary rather than reimplementing Rego, reads
+  standard METADATA only, targets OPA 1.x, positioning vs. Regal and
+  Konstraint, an explicit independence disclaimer) and a Quick demo
+  section (§13.2), linking out to `docs/` rather than duplicating it.
+- **Every code snippet shown in any of the above lives in a compiled test
+  source set** (`docsSnippets`), not just an inline fenced code block
+  copied by hand into the Markdown — a snippet that doesn't actually
+  compile fails the build, the same "verified, not assumed" standard
+  every empirical claim in this project is held to, extended to cover
+  documentation's own code examples.
+
+### 13.9 Cold-start tests, extended
+
+Two, both per §13.4/session 7's established method (a fresh subagent, no
+context from the authoring session, told exactly what a real newcomer
+would have and nothing else):
+
+1. **The jar-only path** (§13.4, already run once): only the built shadow
+   jar, `opa` on `PATH`, and the README's Quick demo section. Must reach a
+   rendered control card.
+2. **The programmatic path**: only `docs/user-guide.md`'s Kotlin
+   load→render→write-files snippet, followed in a throwaway Gradle
+   project with no other access to this repository. Must produce real
+   rendered output.
+
+Both: fix what the agent stumbles on in the docs or the tool's own
+behavior — never dismiss a finding as "a real reader would know better."
