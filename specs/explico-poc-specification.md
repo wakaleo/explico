@@ -216,7 +216,11 @@ Mapping notes (`parse/AstMapper.kt`):
   capture the assigned string (if it is a string literal or a `sprintf` call, render
   the format string with `%v`/`%s` placeholders replaced by the humanised operand
   path in brackets, e.g. `"release [deployment id] has no approved change ticket"`).
-  If it is anything else, `producesValue = null` — do not guess.
+  If it is anything else, `producesValue = null` — do not guess. **This also covers
+  the case where a `sprintf` argument itself cannot be humanised** — a var-rooted,
+  key-literal, or any-index path (e.g. a message built from `stage.name` after
+  `some stage in ...`). The whole `producesValue` is null in that case, never a
+  phrase with some placeholders humanised and others raw or guessed.
 - Assignments (`:=`, `=` used as binding) whose left side is a local variable and
   whose right side is a plain path: record the binding in a per-body symbol table
   and **substitute the path inline** wherever the variable is used later in the
