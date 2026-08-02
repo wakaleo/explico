@@ -133,6 +133,11 @@ internal object MarkdownRenderer {
             }
         }
         sb.appendLine()
+        // Provenance footer (spec §13.6): a muted, explicit restatement, directly in the rendered
+        // artefact, of spec §6.7's own invariant that worked examples are never predicted -- always
+        // freshly evaluated by opa against whatever policy version is being rendered right now.
+        sb.appendLine("*Examples are evaluated against this policy version by OPA at generation time.*")
+        sb.appendLine()
     }
 
     private fun appendCoverageFooter(sb: StringBuilder, rule: RuleGroup) {

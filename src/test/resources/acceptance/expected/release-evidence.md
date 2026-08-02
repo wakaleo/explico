@@ -27,6 +27,8 @@ may be deployed, unless the service is explicitly exempt.
 - **hotfix without change ticket** — ✅ allowed
   - `pipeline ▸ stages ▸ [each stage] ▸ status`: `"passed"`
 
+*Examples are evaluated against this policy version by OPA at generation time.*
+
 *Rendering coverage: 4 of 4 conditions*
 
 ---
@@ -49,6 +51,8 @@ Deployments to production or staging count as release candidates.
   - `deployment ▸ environment`: `"production"`
 - **self-approved change** — matched
   - `deployment ▸ environment`: `"production"`
+
+*Examples are evaluated against this policy version by OPA at generation time.*
 
 *Rendering coverage: 1 of 1 conditions*
 

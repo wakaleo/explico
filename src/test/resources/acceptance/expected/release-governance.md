@@ -24,6 +24,8 @@
 - **hotfix without change ticket** — matched
 - **self-approved change** — matched
 
+*Examples are evaluated against this policy version by OPA at generation time.*
+
 *Rendering coverage: 0 of 1 conditions*
 
 ---
@@ -76,6 +78,8 @@ inside a freeze window, and all mandatory checks must have passed.
 - **hotfix without change ticket** — ✅ allowed
   - `deployment ▸ environment`: `"production"`
   - `deployment ▸ timestamp`: `1754060000`
+
+*Examples are evaluated against this policy version by OPA at generation time.*
 
 *Rendering coverage: 7 of 8 conditions*
 

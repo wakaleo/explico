@@ -432,5 +432,24 @@ class MarkdownRendererTest {
             assertThat(markdown).contains("- **approved standard release** — ✅ allowed")
             assertThat(markdown).doesNotContain("*\"")
         }
+
+        @Test
+        fun workedExamplesSectionEndsWithTheProvenanceFooter() {
+            // spec §13.6: a muted line restating that verdicts are freshly opa-evaluated, never
+            // predicted, directly in the rendered artefact -- with a blank line on each side,
+            // separating it from the fixture list above and the coverage footer below.
+            val outcome = WorkedExample(Fixture("approved standard release", null, buildJsonObject { }), matched = false, messages = emptyList(), situationLabels = emptyList())
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, policySet, listOf(outcome))
+
+            assertThat(markdown).contains(
+                "\n\n*Examples are evaluated against this policy version by OPA at generation time.*\n\n*Rendering coverage:",
+            )
+        }
+
+        @Test
+        fun provenanceFooterIsAbsentWhenThereAreNoWorkedExamples() {
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, policySet, emptyList())
+            assertThat(markdown).doesNotContain("evaluated against this policy version")
+        }
     }
 }

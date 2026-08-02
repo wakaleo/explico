@@ -21,6 +21,8 @@
 - **hotfix without change ticket** — not matched
   - `deployment ▸ service`: `"payments-api"`
 
+*Examples are evaluated against this policy version by OPA at generation time.*
+
 *Rendering coverage: 1 of 1 conditions*
 
 ---

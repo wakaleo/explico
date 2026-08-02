@@ -51,6 +51,8 @@ and the change author must not approve their own change.
   - `change ▸ author`: `"asmith"`
   - `change ▸ approver`: `"bjones"`
 
+*Examples are evaluated against this policy version by OPA at generation time.*
+
 *Rendering coverage: 4 of 4 conditions*
 
 ---

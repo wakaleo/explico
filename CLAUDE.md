@@ -744,3 +744,21 @@ fixed, all in the Quick demo section itself, none in the tool's behavior:
   `Explico.*` call needed no such qualifier and `render` needed no
   explicit `null`s -- proving the annotations actually work from Java,
   not just that they're present in the source.
+
+## §13.6 Worked-examples provenance footer (session 9)
+
+- **One line, exact wording**: `*Examples are evaluated against this
+  policy version by OPA at generation time.*`, with a blank line on each
+  side, placed after the fixture list and before the coverage footer in
+  `appendWorkedExamples` (`MarkdownRenderer.kt`) -- absent entirely when
+  there's no worked-examples section at all (no fixtures supplied), same
+  as the section itself.
+- **Golden regeneration was genuinely deliberate, not incidental**: ran
+  `acceptanceTest` first to see exactly which 5 of the 6 documents broke
+  (every one with a worked-examples section; `index.md` and the diff
+  golden don't render worked examples at all -- confirmed `DiffRenderer`
+  never passes `workedExamples` to `renderCard`, always the empty-list
+  default), regenerated with `-Dexplico.updateGolden=true`, then reviewed
+  the full diff before accepting it: exactly the 2-line footer inserted
+  once per worked-examples section (7 total insertion points across the 5
+  files), nothing else changed anywhere.
