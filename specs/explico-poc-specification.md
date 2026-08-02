@@ -174,6 +174,7 @@ data class DefaultValue(val rendered: String)   // e.g. "false"
 data class RuleBody(
     val conditions: List<Condition>,
     val producesValue: String?,       // rendered head value/key if present (e.g. the msg), else null
+    val messageTemplate: String?,     // raw string literal / sprintf template, unhumanised; see §6.7
     val sourceLocation: SourceRef,
 )
 
@@ -221,6 +222,14 @@ Mapping notes (`parse/AstMapper.kt`):
   key-literal, or any-index path (e.g. a message built from `stage.name` after
   `some stage in ...`). The whole `producesValue` is null in that case, never a
   phrase with some placeholders humanised and others raw or guessed.
+  Alongside `producesValue`, also capture `messageTemplate`: the same string
+  literal or `sprintf` format string, but with `%v`/`%s` left untouched — no
+  attempt to humanise the arguments. `messageTemplate` stays populated even
+  when `producesValue` is null (e.g. the var-rooted-argument case above),
+  since §6.7's body attribution only needs the template's literal/wildcard
+  shape to match a real evaluated message, not a display rendering of its
+  arguments. `producesValue` remains the display-only field for the card's
+  own *"Produces: ..."* line and is never affected by this.
 - Assignments (`:=`, `=` used as binding) whose left side is a local variable and
   whose right side is a plain path: record the binding in a per-body symbol table
   and **substitute the path inline** wherever the variable is used later in the
@@ -438,10 +447,16 @@ If `opa eval` fails for a fixture, skip that fixture with a warning on stderr
 naming the fixture and passing through opa's error — never silently.
 
 **Body attribution (best effort, never guessed).** If every body of a rule group
-has a distinct `producesValue` (literal or sprintf template), match each produced
-message back to its body by template and label the example *(Situation N)*. If
-templates are missing, duplicated, or any body has `producesValue = null`,
-attribute at rule level only, with no situation label.
+has a distinct `messageTemplate` (literal or sprintf template, unhumanised —
+see §5), match each produced message back to its body by template and label
+the example *(Situation N)*. If templates are missing or duplicated, attribute
+at rule level only, with no situation label. Note this is keyed on
+`messageTemplate`, not the display-only `producesValue`: a body whose message
+argument can't be humanised (e.g. a var-rooted `sprintf` argument) still has
+a perfectly good template for matching purposes even though its `producesValue`
+is null — REL-004's body 2 (`window.name`) is exactly this case, and the
+acceptance pack's fixture verdict matrix requires it to still get a situation
+label.
 
 **Card section format**, after the situations:
 
