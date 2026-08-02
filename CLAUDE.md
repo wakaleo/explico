@@ -762,3 +762,27 @@ fixed, all in the Quick demo section itself, none in the tool's behavior:
   the full diff before accepting it: exactly the 2-line footer inserted
   once per worked-examples section (7 total insertion points across the 5
   files), nothing else changed anywhere.
+
+## §13.7 Dogfooding: `generateSampleDocs` (session 9)
+
+- **A `JavaExec` task, not a re-implementation of the render logic in
+  `build.gradle.kts`.** `generateSampleDocs` runs `io.explico.cli.MainKt
+  render samples/policies --out docs/sample-output --examples
+  samples/examples --data samples/data/release/data.json` as a real forked
+  JVM process against `sourceSets.main.get().runtimeClasspath` -- the exact
+  same code path any other consumer's shell invocation would go through,
+  never a shortcut. Confirmed byte-identical to the already-frozen
+  acceptance-pack goldens (`diff` against `expected/release-approvals.md`
+  etc., zero differences) and confirmed idempotent (ran twice, `diff -r`
+  the two outputs, zero differences).
+- **The generated-marker `README.md` is written in a `doLast`, after the
+  `JavaExec` action, not before it.** `render`'s own `--out` semantics
+  fully delete-and-recreate the target directory every run (spec §8.2) --
+  writing the marker first would just have it deleted again immediately.
+- **The CI drift check was verified to actually catch drift, not just
+  proven to pass trivially**: staged `docs/sample-output/`, appended a
+  stray blank line to one file by hand, confirmed `git diff --exit-code`
+  exits `1`; regenerated via the task, confirmed it exits `0` again.
+- **`docs/sample-output/` is committed** (not gitignored) -- deliberately,
+  so a browsing reader sees real rendered cards on GitHub without running
+  anything, and so CI's drift check has something to diff against.

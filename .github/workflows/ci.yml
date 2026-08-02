@@ -42,3 +42,12 @@ jobs:
 
       - name: Consumer smoke test
         run: ./gradlew -p consumer-smoke-test run --console=plain
+
+      # Dogfooding drift check (spec §13.7): docs/sample-output/ is committed, generated output --
+      # if a renderer change alters what samples/ produces without regenerating and committing it,
+      # this step catches the divergence. Same recipe docs/user-guide.md documents for a consumer's
+      # own CI, applied to this repository's own generated docs.
+      - name: Regenerate sample docs and check for drift
+        run: |
+          ./gradlew generateSampleDocs --console=plain
+          git diff --exit-code -- docs/sample-output
