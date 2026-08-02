@@ -277,6 +277,29 @@ example-coverage column, just aren't all shown individually on every card.
 A fixture whose evaluation genuinely fails prints a stderr warning naming it
 and is excluded from that render — never a silent omission.
 
+### Naming principle: describe the scenario, not the data
+
+`name` is the only thing a reader sees before deciding whether a fixture is
+relevant to what they're checking — it should read as a business scenario,
+not a description of which fields are set:
+
+- **Name a denied fixture after the violation, not the mechanism.** `"hotfix
+  without change ticket"` tells a reader what went wrong; `"change.ticket is
+  null"` makes them go read the rule to find out why that matters. The
+  fixture above is named the first way for exactly this reason.
+- **Name an allowed fixture after the scenario it represents in order, or
+  the near-miss it demonstrates** — `"approved standard release"` for the
+  straightforward in-order case, `"failed security scan"` (allowed once
+  remediated, or allowed because a *different* control's own examples show
+  the denial) for a case that's interesting precisely because it's close to
+  the line. Avoid generic names like `"valid input"` or `"test case 2"` —
+  they carry no scenario information at all, and stop being distinguishable
+  once a control accumulates several fixtures.
+
+The test is: could someone deciding "is my situation covered by an existing
+example?" answer just by reading the list of `name`s, without opening a
+single fixture file? If not, the name is describing data, not a scenario.
+
 ## Where examples come from
 
 ### The invariants

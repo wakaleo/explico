@@ -178,6 +178,45 @@ project's own `src/test/resources/diff/diff-all-categories/` fixture pair
 category in one report, which is exactly what this project's own test
 suite verifies against on every build.
 
+## 5. The same walkthrough, programmatically
+
+Everything above is also available as a library, without shelling out to the
+CLI at all. This is the exact code in
+[`src/docsSnippets/kotlin/QuickstartKotlin.kt`](../src/docsSnippets/kotlin/QuickstartKotlin.kt)
+— compiled as part of this project's own build, so it can never drift out of
+date with the real `Explico` API:
+
+```kotlin
+import io.explico.Explico
+import java.nio.file.Path
+
+fun main() {
+    val policySet = Explico.load(Path.of("samples/policies"))
+    val examples = Explico.loadExamples(Path.of("samples/examples"))
+    val rendered = Explico.render(
+        policySet,
+        Path.of("samples/policies"),
+        examples,
+        Path.of("samples/data/release/data.json"),
+    )
+    println(rendered.files["release-approvals.md"])
+    println("Coverage: ${rendered.coverage.percent}%")
+
+    // diff() takes two loaded PolicySets -- substitute your own old/new checkouts in practice.
+    // Diffing samples/ against itself is a real, runnable no-op: every control comes back UNCHANGED.
+    val report = Explico.diff(policySet, policySet)
+    println(report.markdown)
+}
+```
+
+Same `load` → `render` → `diff` sequence as steps 1 and 4 above, same
+`policyDir` re-passed to `render` for the same reason the CLI needs it
+(worked examples re-invoke `opa eval` against the real files). See
+[`user-guide.md`](user-guide.md#library) for the full facade reference,
+including the Java-callable form (`@JvmStatic`/`@JvmOverloads` — no
+`INSTANCE`, no explicit nulls) and the write-files-to-disk pattern for both
+languages.
+
 ## Where to go next
 
 - Every flag and exit code, exhaustively: [`user-guide.md`](user-guide.md).

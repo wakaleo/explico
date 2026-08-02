@@ -33,6 +33,32 @@ dependencies {
     testImplementation("org.assertj:assertj-core:3.27.3")
 }
 
+// docsSnippets (spec §13.8): every code snippet shown in README.md/docs/*.md lives here verbatim,
+// as a real compiled Kotlin/Java file -- not just an inline fenced code block nobody checks. A
+// snippet that doesn't compile fails the build. Conventional source dirs
+// (src/docsSnippets/{kotlin,java,resources}), no explicit srcDir wiring needed.
+sourceSets {
+    create("docsSnippets") {
+        compileClasspath += sourceSets.main.get().output
+        runtimeClasspath += sourceSets.main.get().output
+    }
+}
+
+val docsSnippetsImplementation by configurations.getting {
+    extendsFrom(configurations.implementation.get())
+}
+
+dependencies {
+    docsSnippetsImplementation(sourceSets.main.get().output)
+}
+
+// Compiling docsSnippets is enough to prove every shown snippet is valid, current API -- wired
+// into `check` (not a separate opt-in task) so a broken snippet is caught on every build, the
+// same "verified, not assumed" standard every other empirical claim in this project is held to.
+tasks.check {
+    dependsOn("compileDocsSnippetsKotlin", "compileDocsSnippetsJava")
+}
+
 application {
     mainClass.set("io.explico.cli.MainKt")
     // Clikt's terminal-capability detection (via its Mordant dependency) uses JNA, which trips a

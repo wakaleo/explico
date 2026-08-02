@@ -786,3 +786,90 @@ fixed, all in the Quick demo section itself, none in the tool's behavior:
 - **`docs/sample-output/` is committed** (not gitignored) -- deliberately,
   so a browsing reader sees real rendered cards on GitHub without running
   anything, and so CI's drift check has something to diff against.
+
+## §13.8 Documentation expansion + compiled `docsSnippets` (session 9)
+
+- **Every code snippet shown in `README.md`/`docs/*.md` is a real file under
+  `src/docsSnippets/{kotlin,java,resources}`**, compiled as its own Gradle
+  source set (`compileClasspath`/`runtimeClasspath` extend `sourceSets.main`)
+  and wired into `tasks.check` -- a snippet that stops compiling against the
+  real `Explico` API fails the build, the same standard every other
+  empirical claim in this project is held to. Verified genuinely wired (not
+  just present): deliberately broke `QuickstartKotlin.kt` with invalid
+  syntax, confirmed `./gradlew check` failed with a real compiler error at
+  that exact line, restored it, confirmed green again.
+- **Went one step further than "compiles": every snippet's `main()` was
+  actually *run* once** (via temporary `JavaExec` tasks, removed again after
+  verification) against the real `samples/` corpus and a real embedded
+  resource file (`src/docsSnippets/resources/policies/sample.rego`), not
+  just type-checked. `ExtractJarResourcesToTempDir.kt` in particular needed
+  this -- a version that merely compiled but silently extracted nothing (or
+  extracted to the wrong path) would have looked identical to a working one
+  under compilation alone. Not re-run on every build (only `check` compiles
+  them); the one-time run was manual verification that the pattern shown is
+  actually correct, the same posture taken with `--fetch-opa`'s real network
+  path in session 8.
+- **Two resource-loading patterns in `user-guide.md`, framed as genuinely
+  different situations, not two styles of the same thing**: build-time
+  generation from real project files (the common case -- point `load()`
+  straight at a source directory, no extraction) vs. jar-embedded resources
+  extracted to a temp directory at runtime (`explico demo`'s own
+  `extractDemoResources` is the precedent). The load-bearing gotcha stated
+  plainly: a classpath resource is not a filesystem `Path` and can't be
+  passed to `Explico.load` directly.
+- **The Gradle task recipe and CI drift-check recipe in `user-guide.md` are
+  copies of this project's own real, already-working `generateSampleDocs`
+  task and `ci.yml` step** (§13.7), not independently authored examples --
+  keeps the documented recipe and the dogfooded one from silently diverging.
+- **`policy-authoring.md`'s fixture-naming principle** (name the scenario,
+  not the data; violation-phrased for denied, in-order-or-near-miss for
+  allowed) is stated as a test a reader can apply ("could you tell if a
+  scenario is covered just by reading the list of names?") rather than a
+  bare rule, since the acceptance pack's own fixture names
+  (`hotfix-without-change-ticket`, `failed-security-scan`) are the only real
+  evidence behind it -- no tooling enforces this, it's a human convention.
+- **`tutorial.md`'s new stage 5 re-uses `QuickstartKotlin.kt` verbatim**
+  rather than authoring a new example -- the tutorial and the compiled,
+  build-checked snippet are the same code, so the tutorial can't show
+  something the build doesn't actually prove still works.
+
+## §13.9 Cold-start tests, round 2 (session 9)
+
+Same method as sessions 7/8's cold-start tests, two independent fresh
+subagents, no access to this repository beyond exactly the text/files
+handed to them:
+
+- **Jar-only Quick-demo re-test**: given only `explico.jar` (the real
+  shadow jar) and the README's Quick demo section text verbatim, with real
+  `opa` 1.19.0 on `PATH`. **Passed cleanly** -- exact output match (91%
+  coverage, both pointer lines, the documented refusal-on-rerun message and
+  exit code `1`), a genuinely substantive rendered `release-approvals.md`
+  and `index.md`. No fix needed; confirms §13.4's prior fixes held.
+- **Programmatic-Kotlin-path test**: given only `docs/user-guide.md`'s new
+  "Programmatic use" section text (the `LoadRenderWriteFilesKotlin.kt`
+  snippet plus its surrounding prose, *before* this session's fix below),
+  `explico` published to `mavenLocal()`, and real `samples/policies` copied
+  in -- told to build a throwaway Gradle project around it. **Found a real,
+  fixed gap**: the excerpt had zero Gradle scaffold (no dependency
+  coordinate, no plugin version, no toolchain), so the agent had to guess.
+  Its first guess -- a plausible everyday `kotlin("jvm") version "2.0.20"`
+  -- didn't hit the README's already-documented "incompatible version of
+  Kotlin" message at all; it crashed with an opaque internal compiler error
+  deep in the K2JVMCompiler frontend, because that Kotlin version's
+  compiler itself can't run cleanly on a modern JDK (25) host -- a genuinely
+  different, worse failure mode than the one already disclosed in the
+  README's Install section, and one a first-time reader would have no way
+  to connect to "bump Kotlin." Fixed by adding an "Adding the dependency"
+  subsection directly to `user-guide.md`'s programmatic-use section (not
+  just relying on the README having it elsewhere): a complete
+  `build.gradle.kts` scaffold (plugin, `mavenCentral()`, `jvmToolchain(21)`,
+  the real `io.github.wakaleo:explico:0.1.0` coordinate, `application`
+  block), the Kotlin 2.3.0+ requirement restated, and this exact crash mode
+  named explicitly so a reader who hits it recognizes it. Verified
+  `check`/`acceptanceTest` still green and `docs/sample-output/` still
+  drift-free after the edit -- a markdown-only change, no renderer code
+  touched.
+- Once past the Gradle scaffold gap, the actual `Explico.load`/
+  `Explico.render`/`RenderedDocs.files` API usage matched the documented
+  snippet exactly -- no corrections needed to the API-usage code itself,
+  only to what surrounds it.
