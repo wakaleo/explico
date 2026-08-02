@@ -45,6 +45,12 @@ prose standing in for logic the tool didn't actually check.
    Gradle plugin that makes the first of those work). No DI framework, no
    logging framework (`System.err` only), nothing else. Adding any dependency
    not on this list means **stop and ask the operator** — do not improvise.
+   This governs the *library's own* runtime/test dependencies (what ships
+   inside the published jar or its POM) — it does not cover build-only
+   Gradle plugins with no runtime footprint. `com.vanniktech.maven.publish`
+   and `org.gradle.toolchains.foojay-resolver-convention` (session 7, both
+   explicitly requested/approved) are build tooling, confirmed absent from
+   the published POM's own `<dependencies>` (§10.1).
 5. **Visibility.** `internal` everywhere except the `Explico` facade
    (`Explico.kt`) and the domain model (`model/Model.kt`) — those are the
    public API surface, KDoc'd on every public declaration.
@@ -396,3 +402,160 @@ spec's "no opa needed" framing for these three files specifically.
   preserving rename), and leaves `exempt_service` byte-identical (`UNCHANGED`,
   plain case). All 5 categories plus the rename in one golden, exactly as
   instructed.
+
+## §8.2 CLI (`cli/Main.kt`, session 7)
+
+- **Exit codes are enforced by catching each library exception once, at the
+  command level, and re-throwing Clikt's own `ProgramResult(code)`** — never
+  letting an exception reach the JVM's default uncaught-handler, which would
+  print a raw stack trace and violate "no stack trace" on `opa`
+  missing/incompatible. `1` (usage error) needs no explicit code at all:
+  Clikt's own `UsageError`/`CliktError` handling inside `.main()` already
+  exits `1` for a missing required option or a `path(mustExist = true)`
+  argument that doesn't exist — proven by a process-level test, not assumed.
+- **`explico version` prints only explico's own version, unconditionally
+  `0`.** Deliberately doesn't check or report `opa`'s status — that's a
+  diagnostic command's job to report cleanly even when `opa` is broken, not
+  fail like `render`/`diff` do. Spec's exit-3 rule ("opa binary
+  missing/incompatible") reads as applying to commands that actually need
+  `opa` to do their work, not this one.
+- **The version string is substituted at build time**
+  (`processResources`+`expand()` into `explico-version.properties`, no new
+  dependency) rather than hardcoded in `Main.kt`, so it can never drift from
+  `build.gradle.kts`'s own `version` — which Step 1 changes to a real
+  released version. **Caught a real bug doing this:** `expand()`'s
+  substitution value isn't tracked as a Gradle task input on its own, so
+  `processResources` stayed UP-TO-DATE across a version bump and `explico
+  version` kept reporting the *old* version until a manual `--rerun` —
+  confirmed empirically (bump, rebuild, observe stale output; add
+  `inputs.property("version", project.version)`; bump again, rebuild,
+  observe correct output). Don't remove that `inputs.property` call.
+- **`diff`'s stdout is the literal `## Summary` section sliced out of the
+  same markdown written to `--out`**, not a second, separately-computed
+  table — guarantees they can never disagree, at the cost of a small string
+  search instead of recomputing counts from `DiffReport.entries`.
+- **Process-level tests, not just unit tests of the command classes.**
+  `CliProcessTest` spawns the actual CLI as a child `java` process (reusing
+  the test JVM's own classpath via `java.class.path` — Gradle's `Test` task
+  launches with `-cp`, so this is already complete) for every documented
+  exit code (0/1/2/3/4), `--out` replacement, and both duplicate-detection
+  paths (control-ids via `diff`, fixture names via `render --examples`). An
+  in-process call to the command's `run()` couldn't prove the exit code
+  itself reaches the OS process, nor that stderr is genuinely free of a JVM
+  stack trace -- both are the actual spec requirement.
+
+## §10.1 Maven Central publishing (session 7)
+
+Full reasoning recorded in spec §10.1 (a deliberate spec amendment, not just
+here, since it changes `group`/`version` and adds a new plugin -- the kind of
+decision this project's convention always records in the spec itself). Key
+points for day-to-day work in this repo:
+
+- `group` is now `io.github.wakaleo`, `version` is `0.1.0` (no more `-POC`
+  suffix). The Kotlin package namespace (`io.explico.*`) is untouched --
+  these are independent things, don't conflate them.
+- `com.vanniktech.maven.publish` (0.37.0) replaced the raw `maven-publish`
+  plugin entirely; there is no more manual `publishing { publications {} }`
+  block in `build.gradle.kts`, only `mavenPublishing { }`.
+- `./gradlew publishToMavenLocal` works with **no credentials at all** --
+  signing only activates if `signingInMemoryKey` is present as a Gradle
+  property (i.e. `ORG_GRADLE_PROJECT_signingInMemoryKey` env var set). Don't
+  "fix" this by making signing unconditional; that would break local/CI
+  smoke testing for no safety benefit, since a real release path
+  (`publishToMavenCentral` + CI's own secret-presence check) still can't
+  silently skip signing.
+- `consumer-smoke-test/` is a **standalone** Gradle build, intentionally not
+  included in the root `settings.gradle.kts`. Run it via `./gradlew -p
+  consumer-smoke-test run` from the repo root (reuses the root's wrapper to
+  drive a different project directory) after a fresh `publishToMavenLocal`.
+  It resolves the real published artifact from `mavenLocal()`, never a
+  project dependency -- don't add an `include(...)` for it, that would
+  defeat the entire point of the test.
+
+## §10.2 CI/release workflows (`.github/workflows/`, session 7)
+
+- **`ci.yml`** (push/PR to `main`): pins `opa` to exactly `1.19.0` via
+  `open-policy-agent/setup-opa@v2` (verified as the current major-version tag
+  against the action's real repo, not assumed), runs `check acceptanceTest`,
+  then `publishToMavenLocal` + the consumer smoke test.
+- **`release.yml`** (push of a `v*` tag): same verification, then a secret-
+  presence check that fails the job immediately (before spending any CI time
+  on tests) if `MAVEN_CENTRAL_USERNAME`/`MAVEN_CENTRAL_TOKEN`/`SIGNING_KEY`/
+  `SIGNING_PASSWORD` aren't all set, then `publishToMavenCentral` with those
+  four secrets mapped to the `ORG_GRADLE_PROJECT_mavenCentralUsername`/
+  `mavenCentralPassword`/`signingInMemoryKey`/`signingInMemoryKeyPassword`
+  env vars the plugin actually reads (§10.1). No `signingInMemoryKeyId` --
+  confirmed via Gradle's own signing-plugin docs that it's only required for
+  a GPG *subkey*, not a regular key, and the operator's instruction named
+  exactly four secrets.
+- **Every action reference was verified against the real repository's tags
+  via `gh api`** (`actions/checkout@v7`, `actions/setup-java@v5`,
+  `gradle/actions/setup-gradle@v6`, `open-policy-agent/setup-opa@v2`), not
+  assumed from training-data memory of older conventions (e.g. `checkout@v4`
+  is what most existing tutorials still show, but v7 is current).
+- **Disclosed limitation: neither workflow has actually run in real GitHub
+  Actions.** This repo has no configured git remote (confirmed via `git
+  remote -v`), so there is nothing to push a tag or PR to yet. Verified
+  instead: YAML syntax (`python3 -c "import yaml; yaml.safe_load(...)"` on
+  both files) and that every action reference is a real, current tag on its
+  real repository. The actual job logic (`check acceptanceTest`,
+  `publishToMavenLocal`, the consumer smoke test, the secret-presence check)
+  is the same sequence already proven locally in this session, command by
+  command -- but "proven to parse and reference real actions" is not the
+  same claim as "proven to run green in Actions." Confirm this once the repo
+  has a real remote and a first real PR/tag push.
+
+## §12 acceptance criteria audit (session 7)
+
+All 8 checkboxes verified with real command+output evidence (not just
+"tests pass") -- see the session transcript for the exact commands. Two
+real bugs were found and fixed in the process, both by actually running
+things rather than trusting existing test coverage:
+
+- **`processResources`'s version substitution didn't invalidate on a
+  version bump** (already covered in §8.2's CLI section above) -- caught
+  by literally bumping the version and rebuilding, not by reasoning about
+  Gradle's caching model in the abstract.
+- **The README's Kotlin library-usage snippet was top-level script
+  statements, not valid inside a `fun main()` in a real `.kt` file** --
+  caught by extracting the exact snippet into a scratch consumer project
+  and running it verbatim, which failed to compile until wrapped in
+  `fun main() { }`. Also caught during the same pass: the snippet's
+  `diff()` call used placeholder paths (`old-policies`/`new-policies`)
+  that don't exist anywhere in the repo -- replaced with a real, runnable
+  call (`Explico.diff(policySet, policySet)`, diffing `samples/` against
+  itself).
+- **A cold-start subagent walkthrough** (a fresh agent, no context from
+  this session, told to follow only `README.md` in a clean copy of the
+  repo) surfaced further real friction, all fixed:
+  - `git clone <this repo>` was an unfillable placeholder (no remote
+    configured, no URL given) -- replaced with acquisition-method-agnostic
+    wording ("however you obtained the source...").
+  - JDK 21 wasn't on the default `PATH`/`JAVA_HOME` and the README gave no
+    install guidance -- fixed at the root instead of documenting around
+    it: added the `org.gradle.toolchains.foojay-resolver-convention`
+    plugin (`settings.gradle.kts`) so Gradle auto-downloads a JDK 21
+    toolchain when none is found, verified by actually running a build
+    under JDK 23 with no JDK 21 on the system `java_home` registry.
+  - Every CLI invocation printed 4 lines of JNA/`--enable-native-access`
+    JVM warnings before any real output (from Clikt's Mordant terminal
+    detection) -- fixed by adding
+    `applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")`
+    to the `application { }` block, confirmed silent afterward via both
+    `installDist` and `./gradlew run`.
+  - The published artifact requires **Kotlin 2.3.0+** on the consumer
+    side (an older Kotlin Gradle plugin hits an opaque "incompatible
+    metadata version" error) -- undocumented; now called out explicitly
+    in the README's library-install section.
+  - The Maven Central dependency snippet read as immediately usable, with
+    the "not actually published yet" caveat buried in a parenthetical
+    below it -- reordered so the caveat leads.
+- **Disclosed, not fixed: `opa fmt`, comment-edit, and variable-rename
+  invariants (spec §12) now have a genuine `opa fmt`-produced fixture**
+  (`src/test/resources/diff/canonicalizer/opa-fmt-applied/`, generated
+  once via a real `opa fmt -w` run, not hand-edited) backing both
+  `CanonicalizerTest` and `PolicyDiffTest` -- closing a gap where the
+  existing "reformatted" fixture was hand-edited, not `opa`'s own output.
+- **Disclosed, not fixed: the CI/release workflows themselves still
+  haven't run in real GitHub Actions** (§10.2) -- this repo has no git
+  remote yet. Everything checkable without one was checked.

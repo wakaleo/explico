@@ -72,6 +72,14 @@ class PolicyDiffTest {
     }
 
     @Test
+    fun aFileGenuinelyReformattedByRealOpaFmtIsUnchanged() {
+        // spec §12 names `opa fmt` specifically; see CanonicalizerTest's matching test for how
+        // this fixture was produced (real `opa fmt -w` output, checked in once).
+        val entries = PolicyDiff.diff(load(canonicalizerFixtures, "base"), load(canonicalizerFixtures, "opa-fmt-applied"))
+        assertThat(entries.single().category).isEqualTo(DiffCategory.UNCHANGED)
+    }
+
+    @Test
     fun anOperandChangeIsLogicChanged() {
         val entries = PolicyDiff.diff(load(canonicalizerFixtures, "base"), load(canonicalizerFixtures, "operand-changed"))
         assertThat(entries.single().category).isEqualTo(DiffCategory.LOGIC_CHANGED)

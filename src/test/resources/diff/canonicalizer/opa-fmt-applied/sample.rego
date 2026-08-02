@@ -1,0 +1,17 @@
+package diff.sample
+
+import rego.v1
+
+# METADATA
+# scope: document
+# title: Sample control
+# description: A sample rule for canonicalizer testing.
+# custom:
+#   control-id: SAMPLE-001
+deny contains msg if {
+	# a comment opa fmt should leave alone in position, sort of
+	input.deployment.environment == "production"
+	some stage in input.pipeline.stages
+	stage.status != "passed"
+	msg := sprintf("pipeline stage %v did not pass", [stage.name])
+}

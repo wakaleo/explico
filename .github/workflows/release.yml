@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Install opa 1.19.0
+        uses: open-policy-agent/setup-opa@v2
+        with:
+          version: 1.19.0
+
+      # Fail immediately, before spending any CI time on tests, rather than discovering a missing
+      # secret only when the publish step itself fails partway through -- and definitely rather
+      # than build.gradle.kts silently skipping signAllPublications() and publishing unsigned
+      # (spec §10.1: that conditional exists for local/CI smoke testing, never for a real release).
+      - name: Verify required release secrets are present
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          missing=()
+          [ -z "$MAVEN_CENTRAL_USERNAME" ] && missing+=("MAVEN_CENTRAL_USERNAME")
+          [ -z "$MAVEN_CENTRAL_TOKEN" ] && missing+=("MAVEN_CENTRAL_TOKEN")
+          [ -z "$SIGNING_KEY" ] && missing+=("SIGNING_KEY")
+          [ -z "$SIGNING_PASSWORD" ] && missing+=("SIGNING_PASSWORD")
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "::error::Missing required release secret(s): ${missing[*]}. Refusing to publish unsigned/unauthenticated -- configure these repository secrets before pushing a release tag."
+            exit 1
+          fi
+          echo "All required release secrets are present."
+
+      - name: Unit tests + Tier-1/Tier-2 acceptance tests
+        run: ./gradlew check acceptanceTest --console=plain
+
+      - name: Publish to Maven Local (for the consumer smoke test)
+        run: ./gradlew publishToMavenLocal --console=plain
+
+      - name: Consumer smoke test
+        run: ./gradlew -p consumer-smoke-test run --console=plain
+
+      # ORG_GRADLE_PROJECT_<name> is Gradle's own env-var-to-project-property mapping (not
+      # plugin-specific) -- these exact property names are what com.vanniktech.maven.publish
+      # (via Gradle's signing plugin) reads. See spec §10.1.
+      - name: Publish to Maven Central
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+        run: ./gradlew publishToMavenCentral --console=plain

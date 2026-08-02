@@ -59,32 +59,58 @@ public data class RuleBody(
 
 /** A single leaf condition within a rule body. */
 public sealed interface Condition {
+    /** `left <op> right`, e.g. `input.deployment.environment == "production"`. */
     public data class Comparison(val left: Operand, val op: Operator, val right: Operand) : Condition
+
+    /** `member in collection` (or its negation `not ... in ...`), e.g. a value-in-set test. */
     public data class Membership(val negated: Boolean, val member: Operand, val collection: Operand) : Condition
+
+    /** A bare reference used as a boolean condition, e.g. `not input.change.ticket.approved`. */
     public data class Truthy(val operand: Operand, val negated: Boolean) : Condition
+
+    /** A recognised builtin predicate call, e.g. `startswith(x, "release/")`. */
     public data class BuiltinCall(val name: String, val args: List<Operand>, val negated: Boolean) : Condition
+
+    /** `some <variable> in <collection>`, introducing a loop variable later path segments can reference. */
     public data class SomeIn(val variable: String, val collection: Operand) : Condition
+
+    /** A reference to another rule defined in the policy set (same or an imported package). */
     public data class RuleReference(val packagePath: String, val ruleName: String, val negated: Boolean) : Condition
 
     /** Anything the mapper cannot classify. Rendered as marked, verbatim source — never guessed. */
     public data class Unrendered(val sourceText: String, val reason: String) : Condition
 }
 
+/** A comparison operator (spec §5). */
 public enum class Operator { EQ, NEQ, GT, GTE, LT, LTE }
 
 /** One side of a comparison, membership test, or builtin call. */
 public sealed interface Operand {
+    /** An `input`/`data` field-chain reference, e.g. `input.deployment.environment`. */
     public data class Path(val segments: List<PathSegment>) : Operand
+
+    /** A scalar (or small array/set) literal, already rendered as Rego source, e.g. `"production"`. */
     public data class Literal(val rendered: String) : Operand
+
+    /** A local variable bound to something other than a plain path (spec §5). */
     public data class Variable(val name: String) : Operand
+
+    /** An operand the mapper cannot classify, e.g. an operand-position builtin call like `count(...)`. */
     public data class Unrendered(val sourceText: String) : Operand
 }
 
 /** One segment of an `input`/`data` path reference. */
 public sealed interface PathSegment {
+    /** A plain field/attribute name, e.g. `environment` in `input.deployment.environment`. */
     public data class Field(val name: String) : PathSegment
+
+    /** A wildcard index, `[_]`. */
     public object AnyIndex : PathSegment
+
+    /** A bracket or dot index bound by an enclosing `some ... in ...`, e.g. `stage` in `stage.status`. */
     public data class VarIndex(val name: String) : PathSegment
+
+    /** A literal bracket key, e.g. `"signed-off-by"` in `labels["signed-off-by"]`. */
     public data class KeyLiteral(val key: String) : PathSegment
 }
 

@@ -48,6 +48,19 @@ class CanonicalizerTest {
     }
 
     @Test
+    fun aFileGenuinelyReformattedByRealOpaFmtYieldsTheSameLogicHash() {
+        // spec §12's acceptance criterion names `opa fmt` specifically -- the "reformatted"
+        // fixture above is hand-edited, not opa's own output. This fixture is the real output of
+        // `opa fmt -w` run against a mangled copy of base/sample.rego (mixed spaces/tabs, a
+        // relocated comment); checked in once rather than shelling out to `opa fmt` at test time,
+        // since the point is proving the hash is stable against a real opa-fmt diff, not
+        // re-proving opa fmt itself works.
+        val base = denyRule("base")
+        val opaFmtApplied = denyRule("opa-fmt-applied")
+        assertThat(Canonicalizer.logicHash(opaFmtApplied)).isEqualTo(Canonicalizer.logicHash(base))
+    }
+
+    @Test
     fun anOperandChangeYieldsADifferentLogicHash() {
         val base = denyRule("base")
         val operandChanged = denyRule("operand-changed")

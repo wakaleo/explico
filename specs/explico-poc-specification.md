@@ -642,6 +642,74 @@ before `check`.
 - Sample policy set under `samples/` mirroring the `multi-body` golden scenario,
   referenced from the README.
 
+### 10.1 Maven Central publishing (session 7, approved deviation)
+
+Not specified in the original spec text; added per explicit operator instruction.
+Verified against the plugin's current docs
+(https://vanniktech.github.io/gradle-maven-publish-plugin/central/), not from memory,
+since Sonatype migrated to the Central Portal after this spec's original research.
+
+- **Plugin:** `com.vanniktech.maven.publish` 0.37.0, replacing the raw `maven-publish`
+  plugin's manual `publications {}` block entirely -- `mavenPublishing { }`'s
+  `coordinates()`/`pom {}` DSL is the single source of truth for the publication now.
+- **Group ID:** `io.github.wakaleo` -- a GitHub-username namespace, auto-verified via
+  GitHub OAuth on the Central Portal, chosen specifically because it needs no domain
+  ownership proof (unlike `io.explico`, which would require verifying an `explico.io`
+  DNS record). Independent of the `io.explico` Kotlin package namespace throughout the
+  codebase -- only the publishing coordinate changed, no source was renamed. Confirmed
+  with the operator rather than assumed.
+- **Version:** `0.1.0` (dropped the `-POC` suffix `build.gradle.kts` carried through
+  development -- Maven Central coordinates are permanent once published, so this is the
+  point that string had to become a real release version).
+- **Signing is conditional on credential presence** (`if
+  (providers.gradleProperty("signingInMemoryKey").isPresent) signAllPublications()`),
+  not unconditional. This keeps `publishToMavenLocal` usable for local and CI smoke
+  testing without a real GPG key, while never being a silent "publish unsigned" path for
+  an actual release: `publishToMavenCentral` without a key fails (Central rejects
+  unsigned publications), and CI's `release.yml` (§10.2) also verifies all four secrets
+  are present *before* invoking Gradle at all.
+- **`automaticRelease = false`**, not `true`: publishing to Central is irreversible (a
+  coordinate can never be deleted or overwritten), so a tagged release gets one manual
+  approval on the Central Portal after CI validates and uploads it, rather than a fully
+  unattended publish on every `v*` push. An operator judgment call, not a plugin default
+  -- reasonable to revisit once the pipeline has a track record.
+- **Credentials/key: environment variables only, mapped from GitHub Actions secrets
+  (§10.2), nothing secret in the repo.** The plugin reads Gradle properties
+  `mavenCentralUsername`/`mavenCentralPassword`/`signingInMemoryKey`/
+  `signingInMemoryKeyPassword`, which Gradle itself populates from any
+  `ORG_GRADLE_PROJECT_<name>`-prefixed environment variable -- not plugin-specific
+  behaviour, just how Gradle always maps env vars to project properties.
+- **Consumer smoke test** (`consumer-smoke-test/`): a deliberately standalone Gradle
+  build -- no `include(...)` in the root `settings.gradle.kts` -- so it resolves
+  `io.github.wakaleo:explico` from `mavenLocal()`/`mavenCentral()` like a real external
+  consumer, never via Gradle's own project-dependency substitution (which would mask a
+  broken or missing publication). Calls `Explico.load`/`Explico.render` against the
+  repo's own `samples/` and asserts specific rendered content (a real control-id
+  appearing in a real card heading), not just "it ran without throwing." Verified
+  end-to-end against a real `publishToMavenLocal` output.
+
+### 10.2 CI/release workflows (`.github/workflows/`, session 7)
+
+- **`ci.yml`**, on push to `main` and on pull requests: installs `opa` pinned to
+  exactly `1.19.0` (the version the acceptance pack's goldens were validated
+  against), runs `./gradlew check acceptanceTest`, then `publishToMavenLocal`
+  followed by the consumer smoke test (§10.1) -- proving the publication and the
+  external-consumer resolution path on every change, not only at release time.
+- **`release.yml`**, on push of a tag matching `v*`: the same verification
+  sequence, then `publishToMavenCentral`. Required secrets: `MAVEN_CENTRAL_USERNAME`,
+  `MAVEN_CENTRAL_TOKEN`, `SIGNING_KEY`, `SIGNING_PASSWORD` -- mapped to the
+  `ORG_GRADLE_PROJECT_mavenCentralUsername`/`mavenCentralPassword`/
+  `signingInMemoryKey`/`signingInMemoryKeyPassword` environment variables the
+  plugin actually reads (§10.1). A dedicated step checks all four are non-empty
+  and fails the job immediately, before running any tests, if any are missing --
+  `automaticRelease = false` (§10.1) already means a human approves the actual
+  release on the Central Portal, but this is a second, independent guard against
+  ever reaching the publish step unsigned or unauthenticated.
+- Every action reference (`actions/checkout`, `actions/setup-java`,
+  `gradle/actions/setup-gradle`, `open-policy-agent/setup-opa`) was pinned to its
+  current major-version tag, confirmed against the real repository at the time of
+  writing, not assumed from memory.
+
 ---
 
 ## 11. Implementation order (suggested milestones)

@@ -9,7 +9,12 @@ import io.explico.model.Operand
 import io.explico.model.PolicyPackage
 import io.explico.model.RuleGroup
 
-/** Part of the public facade return type [io.explico.RenderedDocs]. */
+/**
+ * Rendering coverage (spec §6.6): [rendered] is the count of leaf [Condition]s rendered as
+ * structured text; [total] is every leaf condition, rendered or fallback. [percent] is
+ * `rendered * 100 / total`, or `100` when [total] is zero (nothing to render is full coverage,
+ * not a division-by-zero gap). Part of the public facade return type [io.explico.RenderedDocs].
+ */
 public data class CoverageSummary(val rendered: Int, val total: Int) {
     public val percent: Int get() = if (total == 0) 100 else (rendered * 100) / total
 }
