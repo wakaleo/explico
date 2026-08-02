@@ -131,14 +131,16 @@ NOT yet do the following. Each is a scoping decision, not an oversight:
   `Operand.Unrendered` unconditionally for now. Revisit when
   `ExpressionRenderer` is built: either add a variant, or confirm the
   spec intends these to only ever appear as fallback anyway.
-- **`producesValue`'s placeholder humanisation is minimal, not `PathHumanizer`.**
-  It only handles a plain `input.`-rooted field chain (drop `input`, split
-  camelCase/snake_case/kebab-case, lowercase, join with spaces, wrap in
-  brackets) — approved for this session specifically to fulfil §5's own
-  mapping notes without building §6.4's breadcrumb renderer early. A
-  var-rooted, key-literal, or any-index sprintf argument (e.g. REL-002's
-  `stage.name`, REL-004's `window.name`) makes `producesValue` null rather
-  than guessing a format spec never gave an example for.
+- **`producesValue`'s placeholder format is deliberately its own thing, not
+  `PathHumanizer`'s breadcrumb style.** It reuses `PathHumanizer.wordsOf` for
+  the word-splitting (drop `input`, split camelCase/snake_case/kebab-case,
+  lowercase) but assembles a space-joined bracket phrase (`[deployment id]`),
+  not a `▸`-joined breadcrumb — spec §5 only gives an example for a plain
+  `input.`-rooted field chain, never for a var-rooted, key-literal, or
+  any-index one. A var-rooted, key-literal, or any-index sprintf argument
+  (e.g. REL-002's `stage.name`, REL-004's `window.name`) makes `producesValue`
+  null rather than guessing a bracket format spec never demonstrated (see
+  spec §5's session-2 amendment).
 - **The general "assign a local var to a plain path, substitute inline later"
   rule (§5) isn't implemented.** No rule in the acceptance pack exercises it
   (the only assignments present are the message-producing `msg := ...`, which
@@ -146,3 +148,32 @@ NOT yet do the following. Each is a scoping decision, not an oversight:
 - **`PathSegment.AnyIndex` (`[_]`) has minimal, untested-by-fixture handling.**
   No pack policy uses `[_]`; the code path exists per spec but has no real
   captured JSON exercising it.
+
+## PathHumanizer / ExpressionRenderer: known gaps (session 3)
+
+- **`PathHumanizer` can't distinguish a bound vs. unbound middle-position
+  `VarIndex` (spec §6.4 rule 6's "unbound: `[x]`" case).** AstMapper's
+  `mapPathSegments` builds a `VarIndex` for any non-root `var` segment
+  unconditionally, without checking the symbol table — the domain model
+  doesn't currently carry that distinction once flattened into a segment
+  list. `PathHumanizer` renders every `VarIndex` as `[each x]`. No pack
+  construct uses a middle-position bracket index at all (only var-ROOTED
+  paths, which are always resolved-and-bound by construction), so this is
+  untested either way — don't trust `[x]` (unbound) rendering until it has a
+  driving test and a way to detect it.
+- **`ExpressionRenderer`'s inline rendering for `Operand.Unrendered`
+  (backtick-wrapped verbatim source) is this session's own convention, not
+  from a spec example.** Spec only shows the block format for
+  `Condition`-level `Unrendered` (§6.2); it never demonstrates an
+  `Operand.Unrendered` embedded inside an otherwise-normal phrase. Revisit if
+  a real card makes this look wrong.
+- **`regex.match`/`glob.match` rendering is untested against real captured
+  JSON** — neither appears in the acceptance pack. The `.first()`/`.last()`
+  arg-picking is designed to be robust to `glob.match`'s ignored middle
+  delimiter argument, but this is inferred from the spec's function
+  signatures, not observed `opa parse` output.
+- **`RuleReference`'s anchor is fully injected (`anchorFor` callback), not
+  computed.** Spec §6.5 (anchor derivation from control-id or
+  package+rulename, same-file vs. cross-file `.md#anchor` linking) isn't
+  built yet. `ExpressionRenderer` only assembles the "see rule [...]" /
+  "rule [...] does not match" wrapper around whatever link text it's given.

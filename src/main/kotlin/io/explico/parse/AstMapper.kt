@@ -31,6 +31,7 @@ import io.explico.opa.OpaModule
 import io.explico.opa.OpaRule
 import io.explico.opa.OpaTerm
 import io.explico.opa.opaJson
+import io.explico.render.PathHumanizer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -344,23 +345,22 @@ internal object AstMapper {
         return result.toString()
     }
 
-    /** Only a plain `input.`-rooted field chain gets humanised into a bracket phrase; anything else (var-rooted, key-literal, any-index) is deferred to when PathHumanizer exists. */
+    /**
+     * Only a plain `input.`-rooted field chain gets humanised into a bracket phrase. A var-rooted,
+     * key-literal, or any-index chain returns null rather than a guessed bracket format -- spec §5
+     * (amended session 2) only gives an example for the plain-chain case, and this placeholder
+     * convention (space-joined words in brackets) is deliberately different from PathHumanizer's
+     * breadcrumb style (§6.4), so there's no format to translate a VarIndex/KeyLiteral segment into
+     * without inventing one.
+     */
     private fun renderPlaceholder(term: OpaTerm, symbolTable: Map<String, Operand.Path>): String? {
         if (term.type != "ref") return null
         val chain = decodeTermList(term.value)
         if (chain.isEmpty() || stringValueOf(chain.first()) != "input") return null
         val fieldNames = chain.drop(1)
         if (fieldNames.any { it.type != "string" || sourceText(it.location).startsWith("\"") }) return null
-        val words = fieldNames.flatMap { splitWords(stringValueOf(it)) }
+        val words = fieldNames.flatMap { PathHumanizer.wordsOf(stringValueOf(it)) }
         return "[${words.joinToString(" ")}]"
-    }
-
-    /** Splits a field name on camelCase/snake_case/kebab-case boundaries and lowercases it, per spec §6.4 rule 2 -- the one piece of that rule needed to fulfil §5's producesValue mapping this session. */
-    private fun splitWords(name: String): List<String> {
-        val withBoundaries = name
-            .replace(Regex("[_-]"), " ")
-            .replace(Regex("([a-z0-9])([A-Z])"), "$1 $2")
-        return withBoundaries.split(" ").filter { it.isNotEmpty() }.map { it.lowercase() }
     }
 
     // --- shared decoding helpers ---

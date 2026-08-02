@@ -426,6 +426,73 @@ class AstMapperTest {
         }
 
         @Test
+        fun operandPositionBuiltinBareAsAConditionFallsBackTwoPositionRule() {
+            // `count(input.x)` as a whole top-level condition -- count is operand-position only (spec §6.3).
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("count(input.x)")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"count"}]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val fallback = body.conditions.single() as Condition.Unrendered
+            assertThat(fallback.reason).isEqualTo("function-call")
+            assertThat(fallback.sourceText).isEqualTo("count(input.x)")
+        }
+
+        @Test
+        fun conditionPositionBuiltinMisusedAsOperandFallsBackTwoPositionRuleViceVersa() {
+            // `input.x == startswith(input.y, "a")` -- startswith is condition-position only; nested as an operand it's honestly Unrendered, not silently accepted.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("input.x == startswith(input.y, \"a\")")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}]},
+                            {"type":"call","location":{"text":"${b64("startswith(input.y, \"a\")")}"},"value":[
+                              {"type":"ref","value":[{"type":"var","value":"startswith"}]},
+                              {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"y"}]},
+                              {"type":"string","value":"a"}
+                            ]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val comparison = body.conditions.single() as Condition.Comparison
+            val unrendered = comparison.right as Operand.Unrendered
+            assertThat(unrendered.sourceText).isEqualTo("startswith(input.y, \"a\")")
+        }
+
+        @Test
         fun oversizedArrayLiteralBecomesOperandUnrendered() {
             // `input.x in [1,2,3,4,5,6]` -- more than the 5-scalar-element cap (spec §6.4).
             val elements = (1..6).joinToString(",") { """{"type":"number","value":$it}""" }
