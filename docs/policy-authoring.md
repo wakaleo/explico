@@ -4,11 +4,37 @@ This is for whoever writes the Rego *behind* an explico-rendered control
 card — how to get metadata, messages, and structure that render clearly,
 and why a lower coverage number isn't a bug report.
 
-## METADATA fields → card anatomy
+## METADATA: the standard OPA format, and what explico does with it
 
-explico reads the standard OPA `# METADATA` annotation block
-(document-scoped, immediately above a rule) and maps it directly onto the
-control card:
+### Standard format vs. explico's `custom:` conventions
+
+The `# METADATA` YAML-block annotation is
+[OPA's own standard mechanism](https://www.openpolicyagent.org/docs/latest/annotations/),
+not something explico invented or extends with special syntax. OPA's schema
+defines a fixed set of top-level fields — `scope`, `title`, `description`,
+`organizations`, `related_resources`, `authors`, `schemas`, and `custom`
+— and `custom` is itself OPA's own designated escape hatch for arbitrary,
+tool-defined data with no schema of its own. `control-id` and `frameworks`
+are **explico's own convention layered inside that escape hatch**, not part
+of OPA's standard vocabulary — any other tool reading the same annotation
+would see an ordinary `custom` map and wouldn't know to treat `control-id`
+specially. Nothing about writing `custom.control-id`/`custom.frameworks`
+requires explico-specific tooling to parse; it's plain METADATA any
+OPA-compliant reader can see.
+
+### Which fields explico actually reads
+
+| METADATA field | Read by explico? | What it does |
+|---|---|---|
+| `scope` | Yes, but only to distinguish `package` from everything else | See "scope: placement and semantics" below |
+| `title` | Yes | The card heading, after the control-id |
+| `description` | Yes | The paragraph under the heading |
+| `custom.control-id` | Yes | The control-id in the heading, the anchor, and the diff identity |
+| `custom.frameworks` | Yes | The `*Frameworks: ...*` line |
+| `organizations`, `authors`, `related_resources`, `schemas` | **No** | Valid, standard OPA fields — `opa parse` itself parses and preserves them — explico's own JSON decoding just doesn't model them, so they're silently unused, never an error |
+| Any other `custom.*` key besides `control-id`/`frameworks` | **No** | Same as above: OPA preserves it (`custom` is unstructured to OPA), explico's decoder ignores it |
+
+### REL-001: source to card, field by field
 
 ```rego
 # METADATA
@@ -27,18 +53,112 @@ deny contains msg if {
 }
 ```
 
-| METADATA field | Where it appears on the card |
+renders as:
+
+```markdown
+## REL-001 — Production change approval
+
+*Rule `deny` in package `release.approvals` — defined in `change_approval.rego`*
+*Frameworks: SOC 2 CC8.1, ISO 27001 A.8.32*
+
+Production deployments must reference an approved change ticket,
+and the change author must not approve their own change.
+```
+
+| Card text | Comes from |
 |---|---|
-| `custom.control-id` | The card's heading (`## REL-001 — ...`) and its anchor for cross-references. A rule with no control-id gets `## <package>.<rule name>` instead, and sorts last in `index.md`. |
-| `title` | The rest of the heading line. Falls back to the bare rule name if absent. |
-| `description` | The paragraph directly under the metadata line. If absent: *"No description provided in policy metadata."* — a visible gap, not a silently blank section. |
-| `custom.frameworks` | An italic `*Frameworks: ...*` line, comma-joined, only rendered if the list is non-empty. |
-| `scope: document` | Attaches the annotation to the rule as a whole, covering every body (situation). Use `scope: rule` for the same effect on a single-body rule; either works the same way to explico, since it matches annotations to rules by `opa inspect`'s own resolved `path`, not by proximity. |
+| `REL-001` in the heading | `custom.control-id` |
+| `Production change approval` in the heading | `title` |
+| The paragraph below the metadata line | `description`, verbatim (a YAML block literal's own trailing newline is trimmed so it doesn't double up with the blank line after it) |
+| `*Frameworks: SOC 2 CC8.1, ISO 27001 A.8.32*` | `custom.frameworks`, comma-joined |
+| The `Rule ... in package ... — defined in ...` line | **Not METADATA at all** — the rule name, package path, and source filename are read directly from the parsed AST, structurally derived the same way the condition bullets are (see "METADATA is a human-attested layer" below for why this distinction matters) |
+
+### `scope`: placement and semantics
+
+Only one thing about `scope` actually changes explico's behavior: whether
+it's `package` or not.
+
+- `scope: document`, `scope: rule`, or **omitting `scope` entirely** (which
+  defaults to `rule` when the annotation sits directly above a rule — OPA's
+  own default, not explico's) are all treated **identically**: the
+  annotation attaches to the rule as a whole, covering every body
+  ("situation") it has, not just the one nearest the comment.
+- `scope: package` is filtered out entirely — a package-scoped annotation
+  has no attachment point in explico's domain model (a deliberate,
+  disclosed scoping decision, not a bug — see `CLAUDE.md`).
+- **Placement above the rule is all that matters, not proximity within the
+  file.** explico matches an annotation to the rule it belongs to via `opa
+  inspect`'s own resolved `path` field, not by how close the comment block
+  sits to the rule textually. This is also what correctly deduplicates a
+  single `scope: document` annotation across a multi-body rule (two
+  `deny contains msg if { ... }` clauses with one shared METADATA block
+  above the first) into one attached `RuleMetadata`, not two.
+
+### Degradation when METADATA is absent
 
 A rule with **no** METADATA at all still renders — just with a plain
-`<package>.<rule name>` heading and the "no description" placeholder. Not
-every helper rule needs annotating; only annotate what should actually show
-up as a control.
+`<package>.<rule name>` heading (no control-id), the placeholder
+*"No description provided in policy metadata."*, no `*Frameworks:*` line,
+and it's identified for diffing purposes by `<package>.<rule name>` (see
+below) rather than a control-id. Not every helper rule needs annotating —
+only annotate what should actually show up as a control in its own right.
+
+### Malformed METADATA
+
+Verified against real `opa parse` output, not assumed:
+
+- **Invalid YAML inside the block is a hard parse failure for the whole
+  file** — e.g. a stray line like `#   this is: not: valid: yaml: at all`
+  produces `yaml: line 3: mapping values are not allowed in this context`
+  from `opa` itself (`opa parse`'s real exit code and stderr, reproduced
+  directly). This surfaces through explico exactly like any other Rego
+  syntax error: exit code `2`, `opa`'s own error message passed through
+  verbatim, never paraphrased.
+- **A genuinely unrecognised top-level key (not `custom`) is silently
+  dropped by `opa` itself**, before explico's own JSON decoding ever sees
+  it — confirmed by inspecting `opa parse`'s own annotation output with
+  such a key present: no error, and the key simply isn't there. This is
+  OPA's own leniency, not an explico behavior.
+- **An unrecognised key nested under `custom:` survives in `opa`'s own
+  output** (`custom` is unstructured to OPA) but is silently dropped by
+  explico's own deserialization, same as the standard fields explico
+  doesn't model above. Also never an error.
+
+### `control-id` as diff identity
+
+`custom.control-id` is more than display text — it's the identity
+`explico diff` tracks a control by:
+
+- **If present on both sides of a diff, it wins over package/rule-name
+  matching.** Renaming a rule, or moving it to a different package, while
+  keeping its `control-id` unchanged, is correctly reported as the *same*
+  control — `UNCHANGED` if its logic and metadata are both unchanged,
+  `LOGIC_CHANGED` if the logic differs — **never** a spurious "one control
+  removed, another added" pair. A rule with no `control-id` is identified
+  by `<package>.<rule name>` instead; a rename of *that* is genuinely
+  indistinguishable from a removal-plus-addition, since explico never
+  guesses at rename detection by similarity heuristics.
+- **Duplicate `control-id`s within one side of a diff are an error** (exit
+  code `4`), not a silent pick-one-arbitrarily — fix the duplicate before
+  the report can be produced.
+- **`frameworks` has no such identity role** — it's a flat list of strings,
+  rendered verbatim, comma-joined, with no registry or validation.
+
+### METADATA is a human-attested layer, not a mechanically verified one
+
+Everything under "All of the following are true" on a card — every
+condition bullet — is *true by construction*: mechanically derived from
+the parsed AST, never paraphrased, never guessed. **METADATA is different.**
+A rule's `title`, `description`, `control-id`, and `frameworks` are exactly
+what a human wrote in the annotation, rendered faithfully — but explico
+never checks whether a description still accurately describes what the
+conditions actually do, or whether a `frameworks` mapping is still correct.
+If the Rego changes and the METADATA block isn't updated to match, explico
+will render the stale description next to the current, accurate logic,
+with no warning that the two have drifted apart. Keeping metadata in sync
+with logic is the policy author's job, not something explico's honesty
+guarantee extends to — that guarantee is specifically about the *logic*,
+never about auditing the prose a human attached to it.
 
 ## Writing conditions that render as structured text
 
@@ -106,25 +226,6 @@ else non-trivial makes the whole `*Produces:*` value `null` (shown as
 absent) rather than a phrase with some parts humanised and others raw —
 again, never a partial guess.
 
-## Control-id and frameworks conventions
-
-- **`control-id` is the identity a diff report tracks a control by.** If
-  present on both sides of a `diff`, it wins over package/rule-name
-  matching — so renaming a rule, or moving it to a different package,
-  while keeping its `control-id`, is correctly reported as the *same*
-  control (`UNCHANGED` or `LOGIC_CHANGED`, depending on whether its actual
-  logic changed), never a spurious "one control removed, another added."
-  A rule with no `control-id` is identified by `<package>.<rule name>`
-  instead — a rename of *that* is genuinely indistinguishable from a
-  removal-plus-addition, since explico never guesses at rename detection
-  by similarity heuristics.
-- **Duplicate `control-id`s within one side of a diff are an error**
-  (exit code `4`), not a silent pick-one-arbitrarily — fix the duplicate
-  before the report can be produced.
-- **`frameworks` is a flat list of strings**, rendered verbatim,
-  comma-joined. There's no framework registry or validation; whatever you
-  write appears as-is.
-
 ## Fallback and coverage: design, not defect
 
 A card's `*Rendering coverage: X of Y conditions*` line, and the package-
@@ -175,3 +276,95 @@ entries; extras beyond the cap still count toward `index.md`'s
 example-coverage column, just aren't all shown individually on every card.
 A fixture whose evaluation genuinely fails prints a stderr warning naming it
 and is excluded from that render — never a silent omission.
+
+## Where examples come from
+
+### The invariants
+
+- **Examples are committed fixture files, never generated at render time.**
+  explico contains no fixture generator of any kind — every `*.json` file
+  under `--examples <dir>` is something a person wrote and checked in
+  before `render` ever ran. There is no "auto-generate a few examples for
+  me" mode, and none is planned; the sourcing ladder below is a manual
+  workflow, not a preview of upcoming tooling.
+- **Every verdict shown is `opa`'s own, evaluated against the current
+  policy version at render time.** A fixture's outcome, its produced
+  messages, and every referenced path value are computed fresh by a real
+  `opa eval` call each time `render` runs — never cached from a previous
+  run, never precomputed and stored alongside the fixture. Change the
+  policy and re-render, and the same fixture can show a different verdict,
+  correctly.
+- **The fixture's `name` is the only human-authored text that appears
+  in the Worked examples section.** Everything else displayed — the
+  outcome word (`❌ denied`/`✅ allowed`/`matched`/`not matched`), the
+  produced message, the `*(Situation N)*` label, every referenced path's
+  value — is either a fixed vocabulary word or something `opa`
+  computed. `description` is real, optional prose you can write in the
+  fixture file, but it is never rendered on the card (see the format
+  above) — it doesn't count as authored text *in the section*, because it
+  never reaches the section at all.
+
+### The mechanics: fixture file vs. computed each render
+
+| Lives in the fixture file | Computed fresh every render |
+|---|---|
+| `name` (required, unique) | The matched/not-matched verdict |
+| `description` (optional, never rendered) | Every produced message |
+| `input` (required, the exact JSON evaluated) | Which `*(Situation N)*` label applies, if any |
+| | Every referenced path's resolved value, read out of the fixture's own `input` |
+
+The fixture file is deliberately thin — just enough to name a scenario and
+supply its input. Everything a reader actually sees about *what happened*
+is derived, not stored.
+
+### The sourcing ladder (manual today — there is no harvesting tool)
+
+Nothing below is automated. This is a practical order to work through by
+hand when building or growing a fixture set, roughly cheapest-and-most-
+available first:
+
+1. **Harvest scenario inputs out of existing `*_test.rego` files.** If the
+   policy already has OPA unit tests, each `with input as {...}` block in a
+   `test_...` rule is a candidate fixture input someone already thought
+   through — copy the input object out by hand. The test rule's own name
+   (e.g. `test_denies_change_without_ticket`) is usually a good starting
+   point for the fixture's `name`, reworded into the plain-language style
+   the pack's own fixtures use (e.g. "hotfix without change ticket").
+2. **Hand-author flagship scenarios for your most critical controls.**
+   Don't rely solely on whatever a test file happened to exercise — for
+   the controls that matter most, deliberately write the one or two inputs
+   that most clearly demonstrate what the control is actually for, in the
+   clearest possible form (see "small inputs" below).
+3. **Capture real evaluation inputs from the pipeline.** A real input a
+   policy was actually evaluated against in CI/CD is often more
+   representative than anything hand-imagined. **Sanitise it first** —
+   strip real ticket IDs, usernames, hostnames, tokens, or anything else
+   that shouldn't end up permanently committed to the repository — before
+   turning it into a fixture. Treat this as building two things at once:
+   real example material for today's cards, and the seed of a **regression
+   corpus** for tomorrow (see below).
+
+### Choosing which examples to add
+
+- **Aim for at least one example per `Situation`** (each body of a
+  multi-body rule) **plus one "near-miss" allowed case** — an input that
+  comes close to violating the control but doesn't. Showing only "this
+  triggers it" examples leaves the actual boundary of the control
+  implicit; a near-miss makes it concrete.
+- **Prefer small, minimal inputs over large, realistic-looking ones.**
+  Only the paths a rule's conditions actually reference get shown under
+  each example (see the format above) — a fixture with just those fields
+  populated is more readable than a sprawling real-world payload with
+  dozens of irrelevant ones. Trim captured pipeline inputs down before
+  committing them, rather than pasting them in whole.
+
+### This corpus appreciates in value
+
+The same fixture set that powers today's Worked examples section is also
+the natural seed for **cross-version change-impact analysis** — evaluating
+whether a policy change flips any real scenario's verdict — which spec
+§1.2 explicitly names as future-phase scope, not something this POC does
+yet. A well-sourced, sanitised, real-world-grounded fixture corpus built
+now isn't just documentation for today's cards; it's the regression suite
+a future differential-evaluation feature would run against. Time spent
+growing it deliberately is not wasted on a feature that doesn't exist yet.

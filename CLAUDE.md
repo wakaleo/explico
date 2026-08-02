@@ -677,6 +677,28 @@ things rather than trusting existing test coverage:
   importable by name outside the module (spec §8.1's "everything else is
   internal" has this real, previously-undocumented consequence for
   consumers who want to catch specific failure types).
+- **`docs/policy-authoring.md`'s METADATA section was substantially
+  expanded post-hoc (later in session 8), on explicit operator request, to
+  cover the standard-vs-`custom:` distinction, exactly which fields are
+  read vs. ignored, `scope` semantics, degradation when absent, malformed-
+  METADATA behavior, `control-id`'s diff-identity role, and METADATA's
+  "human-attested, not mechanically verified" framing — all anchored to a
+  field-by-field walkthrough of REL-001's real source and card.** Every
+  factual claim about OPA's own parsing behavior was verified empirically
+  against real `opa parse` output before being written, not assumed --
+  including two genuinely surprising, previously-undocumented findings:
+  (1) a truly unrecognised top-level METADATA key is silently dropped by
+  `opa` itself, before explico's own JSON decoding ever sees it, while (2)
+  an unrecognised key nested under `custom:` survives in `opa`'s own
+  output (`custom` is unstructured to OPA) and is only silently dropped by
+  explico's own deserialization -- two different tools doing the dropping,
+  for two syntactically similar-looking cases. Also confirmed: `opa`
+  itself defaults an unscoped rule-level annotation to `scope: rule`
+  (matches the pre-existing, already-working `is_release_candidate`
+  sample policy, which has never declared `scope:` explicitly). The old
+  standalone "Control-id and frameworks conventions" section was removed
+  as fully redundant once its content was folded into the new METADATA
+  section -- not left as a second, potentially-drifting copy.
 
 ## §13.4 Cold-start demo test (session 8)
 
