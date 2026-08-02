@@ -9,6 +9,7 @@ import io.explico.model.Operand
 import io.explico.model.Operator
 import io.explico.model.PathSegment
 import io.explico.model.PolicySet
+import io.explico.opa.OpaInspectResult
 import io.explico.opa.OpaModule
 import io.explico.opa.opaJson
 import org.assertj.core.api.Assertions.assertThat
@@ -35,6 +36,22 @@ class AstMapperTest {
             ParsedFile("governance/release_governance.rego", fixture("release_governance")),
             ParsedFile("exemptions/exemptions.rego", fixture("exemptions")),
         )
+    )
+
+    private fun inspectFixture(): OpaInspectResult {
+        val json = Files.readString(Path.of("src/test/resources/ast/inspect_all.json"))
+        return opaJson.decodeFromString(OpaInspectResult.serializer(), json)
+    }
+
+    private fun wholePackWithMetadata(): PolicySet = AstMapper.mapPolicySet(
+        listOf(
+            ParsedFile("approvals/change_approval.rego", fixture("change_approval")),
+            ParsedFile("evidence/pipeline_evidence.rego", fixture("pipeline_evidence")),
+            ParsedFile("provenance/artifact_provenance.rego", fixture("artifact_provenance")),
+            ParsedFile("governance/release_governance.rego", fixture("release_governance")),
+            ParsedFile("exemptions/exemptions.rego", fixture("exemptions")),
+        ),
+        inspectFixture(),
     )
 
     /** Base64-encodes like opa's own `location.text` does, for hand-built synthetic AST JSON below. */
@@ -295,6 +312,46 @@ class AstMapperTest {
     }
 
     @Nested
+    inner class MetadataAttachment {
+        // opa inspect's own "path" field (packagePath + ruleName) is the match key, not
+        // row-proximity -- opa has already resolved which rule an annotation belongs to,
+        // including deduplicating a document-scoped annotation across multiple bodies
+        // (confirmed: release.approvals.deny has 2 bodies but exactly 1 inspect entry).
+
+        @Test
+        fun documentScopedMetadataAttachesToAllBodiesOfAMultiBodyRule() {
+            val rule = wholePackWithMetadata().packages.first { it.path == "release.approvals" }.rules.single { it.name == "deny" }
+            val metadata = rule.metadata
+            assertThat(metadata).isNotNull()
+            assertThat(metadata!!.title).isEqualTo("Production change approval")
+            assertThat(metadata.controlId).isEqualTo("REL-001")
+            assertThat(metadata.frameworks).containsExactly("SOC 2 CC8.1", "ISO 27001 A.8.32")
+        }
+
+        @Test
+        fun ruleScopedMetadataAttachesToASingleBodyRule() {
+            val rule = wholePackWithMetadata().packages.first { it.path == "release.evidence" }.rules.single { it.name == "is_release_candidate" }
+            val metadata = rule.metadata
+            assertThat(metadata).isNotNull()
+            assertThat(metadata!!.title).isEqualTo("Release candidate environments")
+            assertThat(metadata.controlId).isNull()
+            assertThat(metadata.frameworks).isEmpty()
+        }
+
+        @Test
+        fun ruleWithNoMetadataAtAllStaysNull() {
+            val rule = wholePackWithMetadata().packages.first { it.path == "release.exemptions" }.rules.single { it.name == "exempt_service" }
+            assertThat(rule.metadata).isNull()
+        }
+
+        @Test
+        fun noInspectResultLeavesAllMetadataNullExactlyAsBefore() {
+            val rule = wholePack().packages.first { it.path == "release.approvals" }.rules.single { it.name == "deny" }
+            assertThat(rule.metadata).isNull()
+        }
+    }
+
+    @Nested
     inner class DeterminismAndStructure {
 
         @Test
@@ -361,6 +418,101 @@ class AstMapperTest {
             val condition = policySet.packages[0].rules[0].bodies[0].conditions[0] as Condition.Comparison
             val unrendered = condition.left as Operand.Unrendered
             assertThat(unrendered.sourceText).isEqualTo("stage.status")
+        }
+
+        @Test
+        fun unboundMiddlePositionVarIndexBecomesOperandUnrendered() {
+            // `input.pipeline.checks[i].status == "x"` -- bracket-index `i` is NOT bound anywhere
+            // (no `some i in ...`), unlike a var-rooted path. Spec §6.4 rule 6: "Unbound: [x]" at the
+            // PathHumanizer level is unreachable in the real pipeline -- AstMapper promotes the whole
+            // operand to Unrendered instead, mirroring rule 7's root-position handling.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "deny", "key": {"type":"var","value":"msg"}, "ref": [{"type":"var","value":"deny"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("input.pipeline.checks[i].status == \"x\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"ref","location":{"text":"${b64("input.pipeline.checks[i].status")}"},"value":[
+                              {"type":"var","value":"input"},
+                              {"type":"string","value":"pipeline"},
+                              {"type":"string","value":"checks"},
+                              {"type":"var","value":"i"},
+                              {"type":"string","value":"status"}
+                            ]},
+                            {"type":"string","value":"x"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val policySet = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module)))
+            val condition = policySet.packages[0].rules[0].bodies[0].conditions[0] as Condition.Comparison
+            val unrendered = condition.left as Operand.Unrendered
+            assertThat(unrendered.sourceText).isEqualTo("input.pipeline.checks[i].status")
+        }
+
+        @Test
+        fun boundMiddlePositionVarIndexRendersLikeTheVarRootedCase() {
+            // `some i in input.pipeline.checks` then `input.pipeline.checks[i].status == "x"` --
+            // bracket-index `i` IS bound, so it becomes a normal VarIndex (renders "[each i]" via
+            // PathHumanizer), not Unrendered.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "deny", "key": {"type":"var","value":"msg"}, "ref": [{"type":"var","value":"deny"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("some i in input.pipeline.checks")}"},
+                          "terms": {"symbols":[
+                            {"type":"call","value":[
+                              {"type":"ref","value":[{"type":"var","value":"internal"},{"type":"string","value":"member_2"}]},
+                              {"type":"var","value":"i"},
+                              {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"pipeline"},{"type":"string","value":"checks"}]}
+                            ]}
+                          ]}
+                        },
+                        {
+                          "index": 1,
+                          "location": {"file":"scratch.rego","row":2,"text":"${b64("input.pipeline.checks[i].status == \"x\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"ref","value":[
+                              {"type":"var","value":"input"},
+                              {"type":"string","value":"pipeline"},
+                              {"type":"string","value":"checks"},
+                              {"type":"var","value":"i"},
+                              {"type":"string","value":"status"}
+                            ]},
+                            {"type":"string","value":"x"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val policySet = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module)))
+            val condition = policySet.packages[0].rules[0].bodies[0].conditions[1] as Condition.Comparison
+            val path = condition.left as Operand.Path
+            assertThat(path.segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("pipeline"), PathSegment.Field("checks"),
+                PathSegment.VarIndex("i"), PathSegment.Field("status"),
+            )
         }
 
         @Test
@@ -639,6 +791,83 @@ class AstMapperTest {
             val membership = body.conditions.single() as Condition.Membership
             val unrendered = membership.collection as Operand.Unrendered
             assertThat(unrendered.sourceText).isEqualTo("[1, [2, 3]]")
+        }
+
+        @Test
+        fun regexMatchClassifiesAsBuiltinCallWithPatternAndValueInSourceOrder() {
+            // `regex.match("^v[0-9]+$", input.artifact.version)` -- unexercised by the acceptance
+            // pack. The function-name ref chain [var:regex, string:match] mirrors the already-real,
+            // already-confirmed shape of "internal.member_2" (a dotted builtin name is a 2-element
+            // ref chain), not a guess about a wholly new construct.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("regex.match(\"^v[0-9]+$\", input.artifact.version)")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"regex"},{"type":"string","value":"match"}]},
+                            {"type":"string","value":"^v[0-9]+$"},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"artifact"},{"type":"string","value":"version"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val call = body.conditions.single() as Condition.BuiltinCall
+            assertThat(call.name).isEqualTo("regex.match")
+            assertThat(call.negated).isFalse()
+            assertThat((call.args[0] as Operand.Literal).rendered).isEqualTo("\"^v[0-9]+$\"")
+            assertThat((call.args[1] as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("artifact"), PathSegment.Field("version"),
+            )
+        }
+
+        @Test
+        fun globMatchClassifiesAsBuiltinCallIncludingTheIgnoredDelimiterArgument() {
+            // `glob.match("release/*", [], input.artifact.branch)` -- 3-arg form (spec §6.3's
+            // `glob.match(p, _, v)`), unexercised by the acceptance pack.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("glob.match(\"release/*\", [], input.artifact.branch)")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"glob"},{"type":"string","value":"match"}]},
+                            {"type":"string","value":"release/*"},
+                            {"type":"array","value":[]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"artifact"},{"type":"string","value":"branch"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val call = body.conditions.single() as Condition.BuiltinCall
+            assertThat(call.name).isEqualTo("glob.match")
+            assertThat(call.args).hasSize(3)
+            assertThat((call.args[0] as Operand.Literal).rendered).isEqualTo("\"release/*\"")
+            assertThat((call.args[2] as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("artifact"), PathSegment.Field("branch"),
+            )
         }
     }
 }

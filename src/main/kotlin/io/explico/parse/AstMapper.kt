@@ -9,11 +9,12 @@
  * such call (`count({a | ...}) == 0`) wraps a comprehension anyway, which forces the
  * whole condition to fall back regardless — see [ConstructResult.Unsupported].
  *
- * Metadata attachment (`opa inspect`, RuleMetadata) and `default` declarations are
- * deliberately not handled yet: no policy in the acceptance pack exercises a
- * `default` rule, and metadata attachment is a separate, later milestone (§11
- * suggests it alongside anchors/cross-references). `RuleGroup.metadata` and
- * `.default` are always null from this mapper for now.
+ * Metadata attachment (`opa inspect` -> `RuleMetadata`, see [buildMetadataIndex])
+ * matches by `opa inspect`'s own `path` field rather than the file/row-proximity
+ * spec §5 literally describes -- opa has already resolved which rule an
+ * annotation belongs to. `default` declarations are still not handled: no
+ * policy in the acceptance pack exercises one, so `RuleGroup.default` is
+ * always null.
  */
 package io.explico.parse
 
@@ -25,8 +26,10 @@ import io.explico.model.PolicyPackage
 import io.explico.model.PolicySet
 import io.explico.model.RuleBody
 import io.explico.model.RuleGroup
+import io.explico.model.RuleMetadata
 import io.explico.model.SourceRef
 import io.explico.opa.OpaExpr
+import io.explico.opa.OpaInspectResult
 import io.explico.opa.OpaModule
 import io.explico.opa.OpaRule
 import io.explico.opa.OpaTerm
@@ -53,14 +56,23 @@ private sealed interface ConstructResult {
 
 internal object AstMapper {
 
-    /** Maps every parsed file into a [PolicySet], grouping same-named rules and sorting per spec §2's determinism rule. */
-    fun mapPolicySet(files: List<ParsedFile>): PolicySet {
+    /**
+     * Maps every parsed file into a [PolicySet], grouping same-named rules and sorting per spec
+     * §2's determinism rule. [inspectResult] (from `opa inspect --annotations`) attaches
+     * [io.explico.model.RuleMetadata] by matching its own `path` field (packagePath + ruleName) --
+     * not row-proximity (spec §5's literal wording) -- since opa has already resolved which rule
+     * each annotation belongs to, including correctly deduplicating a document-scoped annotation
+     * across a rule's multiple bodies. `package`-scoped annotations are skipped: the domain model
+     * has nowhere to attach package-level metadata, and no acceptance-pack policy uses that scope.
+     */
+    fun mapPolicySet(files: List<ParsedFile>, inspectResult: OpaInspectResult? = null): PolicySet {
         val registry = buildRuleRegistry(files)
+        val metadataIndex = buildMetadataIndex(inspectResult)
         val packages = files
             .groupBy { packagePath(it.module) }
             .map { (path, filesInPackage) ->
                 val rules = filesInPackage
-                    .flatMap { mapRuleGroups(it, registry) }
+                    .flatMap { mapRuleGroups(it, registry, metadataIndex) }
                     .sortedBy { it.name }
                 PolicyPackage(
                     path = path,
@@ -71,6 +83,21 @@ internal object AstMapper {
             .sortedBy { it.path }
         return PolicySet(packages)
     }
+
+    private fun buildMetadataIndex(inspectResult: OpaInspectResult?): Map<Pair<String, String>, RuleMetadata> =
+        (inspectResult?.annotations ?: emptyList())
+            .filter { it.annotations.scope != "package" }
+            .mapNotNull { entry ->
+                val segments = entry.path.drop(1).map { stringValueOf(it) }
+                if (segments.size < 2) return@mapNotNull null
+                val key = segments.dropLast(1).joinToString(".") to segments.last()
+                key to RuleMetadata(
+                    title = entry.annotations.title,
+                    description = entry.annotations.description,
+                    controlId = entry.annotations.custom?.controlId,
+                    frameworks = entry.annotations.custom?.frameworks ?: emptyList(),
+                )
+            }.toMap()
 
     private fun packagePath(module: OpaModule): String =
         module.pkg.path.drop(1).joinToString(".") { stringValueOf(it) }
@@ -91,9 +118,14 @@ internal object AstMapper {
                 modules.flatMap { it.rules }.mapNotNull { it.head.name }.toSet()
             }
 
-    private fun mapRuleGroups(file: ParsedFile, registry: Map<String, Set<String>>): List<RuleGroup> {
+    private fun mapRuleGroups(
+        file: ParsedFile,
+        registry: Map<String, Set<String>>,
+        metadataIndex: Map<Pair<String, String>, RuleMetadata>,
+    ): List<RuleGroup> {
+        val currentPackage = packagePath(file.module)
         val ctx = MappingContext(
-            currentPackage = packagePath(file.module),
+            currentPackage = currentPackage,
             importAliases = resolveImportAliases(file.module),
             registry = registry,
             sourceFile = file.sourceFile,
@@ -105,7 +137,7 @@ internal object AstMapper {
                 val orderedRules = rules.sortedBy { it.location?.row ?: 0 }
                 RuleGroup(
                     name = name,
-                    metadata = null,
+                    metadata = metadataIndex[currentPackage to name],
                     default = null,
                     bodies = orderedRules.map { mapBody(it, ctx) },
                 )
@@ -283,23 +315,47 @@ internal object AstMapper {
         val rootName = stringValueOf(root)
         val remaining = chain.drop(1)
         return when {
-            rootName == "input" || rootName == "data" ->
-                ConstructResult.Ok(Operand.Path(listOf(PathSegment.Field(rootName)) + mapPathSegments(remaining)))
-            symbolTable.containsKey(rootName) ->
-                ConstructResult.Ok(Operand.Path(symbolTable.getValue(rootName).segments + PathSegment.VarIndex(rootName) + mapPathSegments(remaining)))
+            rootName == "input" || rootName == "data" -> {
+                val segments = mapPathSegments(remaining, symbolTable) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+                ConstructResult.Ok(Operand.Path(listOf(PathSegment.Field(rootName)) + segments))
+            }
+            symbolTable.containsKey(rootName) -> {
+                val segments = mapPathSegments(remaining, symbolTable) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+                ConstructResult.Ok(Operand.Path(symbolTable.getValue(rootName).segments + PathSegment.VarIndex(rootName) + segments))
+            }
             else -> ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
         }
     }
 
-    private fun mapPathSegments(terms: List<OpaTerm>): List<PathSegment> = terms.map { term ->
-        when (term.type) {
-            "string" -> {
-                val raw = sourceText(term.location)
-                if (raw.startsWith("\"")) PathSegment.KeyLiteral(stringValueOf(term)) else PathSegment.Field(stringValueOf(term))
+    /**
+     * Maps the segments after a ref chain's root. Returns null if a middle-position bracket-index
+     * variable (`arr[i]`, spec §6.4 rule 6) has no `some i in ...` binding in [symbolTable] -- the
+     * caller promotes that to `Operand.Unrendered` for the whole path, mirroring how an unbound
+     * var-ROOTED path (rule 7) is already handled, rather than emitting a raw, meaningless `VarIndex`.
+     * A bound middle-position var renders identically to the var-rooted case: PathHumanizer treats
+     * every `VarIndex` it sees as "[each x]" unconditionally, because by the time it gets one, this
+     * function has already guaranteed it's bound.
+     */
+    private fun mapPathSegments(terms: List<OpaTerm>, symbolTable: Map<String, Operand.Path>): List<PathSegment>? {
+        val segments = mutableListOf<PathSegment>()
+        for (term in terms) {
+            when (term.type) {
+                "string" -> {
+                    val raw = sourceText(term.location)
+                    segments += if (raw.startsWith("\"")) PathSegment.KeyLiteral(stringValueOf(term)) else PathSegment.Field(stringValueOf(term))
+                }
+                "var" -> {
+                    val name = stringValueOf(term)
+                    segments += when {
+                        name == "_" -> PathSegment.AnyIndex
+                        symbolTable.containsKey(name) -> PathSegment.VarIndex(name)
+                        else -> return null
+                    }
+                }
+                else -> segments += PathSegment.Field(sourceText(term.location))
             }
-            "var" -> if (stringValueOf(term) == "_") PathSegment.AnyIndex else PathSegment.VarIndex(stringValueOf(term))
-            else -> PathSegment.Field(sourceText(term.location))
         }
+        return segments
     }
 
     private fun mapCollectionLiteral(term: OpaTerm, symbolTable: Map<String, Operand.Path>): ConstructResult {

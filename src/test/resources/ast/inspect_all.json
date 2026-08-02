@@ -1,0 +1,446 @@
+{
+  "manifest": {
+    "revision": "",
+    "roots": [
+      ""
+    ]
+  },
+  "signatures_config": {},
+  "namespaces": {
+    "data.release.approvals": [
+      "src/test/resources/acceptance/policies/approvals/change_approval.rego"
+    ],
+    "data.release.evidence": [
+      "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego"
+    ],
+    "data.release.exemptions": [
+      "src/test/resources/acceptance/policies/exemptions/exemptions.rego"
+    ],
+    "data.release.governance": [
+      "src/test/resources/acceptance/policies/governance/release_governance.rego"
+    ],
+    "data.release.provenance": [
+      "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego"
+    ]
+  },
+  "annotations": [
+    {
+      "annotations": {
+        "custom": {
+          "control-id": "REL-001",
+          "frameworks": [
+            "SOC 2 CC8.1",
+            "ISO 27001 A.8.32"
+          ]
+        },
+        "description": "Production deployments must reference an approved change ticket,\nand the change author must not approve their own change.\n",
+        "scope": "document",
+        "title": "Production change approval"
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/approvals/change_approval.rego",
+        "row": 16,
+        "col": 1
+      },
+      "path": [
+        {
+          "type": "var",
+          "value": "data"
+        },
+        {
+          "type": "string",
+          "value": "release"
+        },
+        {
+          "type": "string",
+          "value": "approvals"
+        },
+        {
+          "type": "string",
+          "value": "deny"
+        }
+      ]
+    },
+    {
+      "annotations": {
+        "custom": {
+          "control-id": "REL-002",
+          "frameworks": [
+            "SOC 2 CC8.1"
+          ]
+        },
+        "description": "Every pipeline stage must have passed before a release candidate\nmay be deployed, unless the service is explicitly exempt.\n",
+        "scope": "document",
+        "title": "Pipeline evidence"
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 17,
+        "col": 1
+      },
+      "path": [
+        {
+          "type": "var",
+          "value": "data"
+        },
+        {
+          "type": "string",
+          "value": "release"
+        },
+        {
+          "type": "string",
+          "value": "evidence"
+        },
+        {
+          "type": "string",
+          "value": "deny"
+        }
+      ]
+    },
+    {
+      "annotations": {
+        "description": "Deployments to production or staging count as release candidates.",
+        "scope": "rule",
+        "title": "Release candidate environments"
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/evidence/pipeline_evidence.rego",
+        "row": 28,
+        "col": 1
+      },
+      "path": [
+        {
+          "type": "var",
+          "value": "data"
+        },
+        {
+          "type": "string",
+          "value": "release"
+        },
+        {
+          "type": "string",
+          "value": "evidence"
+        },
+        {
+          "type": "string",
+          "value": "is_release_candidate"
+        }
+      ]
+    },
+    {
+      "annotations": {
+        "scope": "rule",
+        "title": "Mandatory check completeness"
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 38,
+        "col": 1
+      },
+      "path": [
+        {
+          "type": "var",
+          "value": "data"
+        },
+        {
+          "type": "string",
+          "value": "release"
+        },
+        {
+          "type": "string",
+          "value": "governance"
+        },
+        {
+          "type": "string",
+          "value": "all_checks_passed"
+        }
+      ]
+    },
+    {
+      "annotations": {
+        "custom": {
+          "control-id": "REL-004",
+          "frameworks": [
+            "SOC 2 CC8.1",
+            "DORA Art. 9"
+          ]
+        },
+        "description": "Production releases require a release manager approval, must not fall\ninside a freeze window, and all mandatory checks must have passed.\n",
+        "scope": "document",
+        "title": "Release governance evidence"
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/governance/release_governance.rego",
+        "row": 16,
+        "col": 1
+      },
+      "path": [
+        {
+          "type": "var",
+          "value": "data"
+        },
+        {
+          "type": "string",
+          "value": "release"
+        },
+        {
+          "type": "string",
+          "value": "governance"
+        },
+        {
+          "type": "string",
+          "value": "deny"
+        }
+      ]
+    },
+    {
+      "annotations": {
+        "custom": {
+          "control-id": "REL-003",
+          "frameworks": [
+            "ISO 27001 A.8.32",
+            "SLSA v1.0 L2"
+          ]
+        },
+        "description": "Production artifacts must be built from a release branch and carry\na sign-off label identifying who approved the build.\n",
+        "scope": "document",
+        "title": "Artifact provenance"
+      },
+      "location": {
+        "file": "src/test/resources/acceptance/policies/provenance/artifact_provenance.rego",
+        "row": 16,
+        "col": 1
+      },
+      "path": [
+        {
+          "type": "var",
+          "value": "data"
+        },
+        {
+          "type": "string",
+          "value": "release"
+        },
+        {
+          "type": "string",
+          "value": "provenance"
+        },
+        {
+          "type": "string",
+          "value": "deny"
+        }
+      ]
+    }
+  ],
+  "capabilities": {
+    "builtins": [
+      {
+        "name": "assign",
+        "decl": {
+          "args": [
+            {
+              "type": "any"
+            },
+            {
+              "type": "any"
+            }
+          ],
+          "result": {
+            "type": "boolean"
+          },
+          "type": "function"
+        },
+        "infix": ":="
+      },
+      {
+        "name": "count",
+        "decl": {
+          "args": [
+            {
+              "of": [
+                {
+                  "type": "string"
+                },
+                {
+                  "dynamic": {
+                    "type": "any"
+                  },
+                  "type": "array"
+                },
+                {
+                  "dynamic": {
+                    "key": {
+                      "type": "any"
+                    },
+                    "value": {
+                      "type": "any"
+                    }
+                  },
+                  "type": "object"
+                },
+                {
+                  "of": {
+                    "type": "any"
+                  },
+                  "type": "set"
+                }
+              ],
+              "type": "any"
+            }
+          ],
+          "result": {
+            "type": "number"
+          },
+          "type": "function"
+        }
+      },
+      {
+        "name": "eq",
+        "decl": {
+          "args": [
+            {
+              "type": "any"
+            },
+            {
+              "type": "any"
+            }
+          ],
+          "result": {
+            "type": "boolean"
+          },
+          "type": "function"
+        },
+        "infix": "="
+      },
+      {
+        "name": "equal",
+        "decl": {
+          "args": [
+            {
+              "type": "any"
+            },
+            {
+              "type": "any"
+            }
+          ],
+          "result": {
+            "type": "boolean"
+          },
+          "type": "function"
+        },
+        "infix": "=="
+      },
+      {
+        "name": "gte",
+        "decl": {
+          "args": [
+            {
+              "type": "any"
+            },
+            {
+              "type": "any"
+            }
+          ],
+          "result": {
+            "type": "boolean"
+          },
+          "type": "function"
+        },
+        "infix": "\u003e="
+      },
+      {
+        "name": "internal.member_2",
+        "decl": {
+          "args": [
+            {
+              "type": "any"
+            },
+            {
+              "type": "any"
+            }
+          ],
+          "result": {
+            "type": "boolean"
+          },
+          "type": "function"
+        },
+        "infix": "in"
+      },
+      {
+        "name": "lte",
+        "decl": {
+          "args": [
+            {
+              "type": "any"
+            },
+            {
+              "type": "any"
+            }
+          ],
+          "result": {
+            "type": "boolean"
+          },
+          "type": "function"
+        },
+        "infix": "\u003c="
+      },
+      {
+        "name": "neq",
+        "decl": {
+          "args": [
+            {
+              "type": "any"
+            },
+            {
+              "type": "any"
+            }
+          ],
+          "result": {
+            "type": "boolean"
+          },
+          "type": "function"
+        },
+        "infix": "!="
+      },
+      {
+        "name": "sprintf",
+        "decl": {
+          "args": [
+            {
+              "type": "string"
+            },
+            {
+              "dynamic": {
+                "type": "any"
+              },
+              "type": "array"
+            }
+          ],
+          "result": {
+            "type": "string"
+          },
+          "type": "function"
+        }
+      },
+      {
+        "name": "startswith",
+        "decl": {
+          "args": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "result": {
+            "type": "boolean"
+          },
+          "type": "function"
+        }
+      }
+    ],
+    "features": [
+      "rego_v1"
+    ]
+  }
+}

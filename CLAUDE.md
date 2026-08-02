@@ -120,10 +120,17 @@ document.
 `AstMapper` (built session 2, driven from `src/test/resources/ast/*.json`) does
 NOT yet do the following. Each is a scoping decision, not an oversight:
 
-- **`RuleGroup.metadata` and `.default` are always null.** Metadata attachment
-  needs `opa inspect` + file/row-proximity matching (§5), and no policy in the
-  acceptance pack declares a `default` rule — both are deferred to their own
-  later `/tdd` pass rather than being built untested.
+- ~~`RuleGroup.metadata` and `.default` are always null~~ **Metadata resolved
+  (session 4).** `AstMapper.mapPolicySet` now takes an optional
+  `OpaInspectResult`; metadata attaches by matching `opa inspect`'s own
+  `path` field (packagePath + ruleName), not row-proximity as §5's literal
+  text describes — opa has already resolved which rule an annotation belongs
+  to, including deduplicating a document-scoped annotation across a
+  multi-body rule (confirmed: `release.approvals.deny` has 2 bodies but 1
+  inspect entry). `package`-scoped annotations are skipped (no attachment
+  point in the domain model; unexercised by the pack anyway). `.default`
+  remains unimplemented — still no policy in the pack declares a `default`
+  rule.
 - **No `Operand` variant exists for an operand-position builtin call**
   (`count`, `lower`, `upper`, `object.get`, `time.now_ns`). Spec's `Operand`
   sealed interface only has `Path`/`Literal`/`Variable`/`Unrendered` — there's
@@ -151,29 +158,74 @@ NOT yet do the following. Each is a scoping decision, not an oversight:
 
 ## PathHumanizer / ExpressionRenderer: known gaps (session 3)
 
-- **`PathHumanizer` can't distinguish a bound vs. unbound middle-position
-  `VarIndex` (spec §6.4 rule 6's "unbound: `[x]`" case).** AstMapper's
-  `mapPathSegments` builds a `VarIndex` for any non-root `var` segment
-  unconditionally, without checking the symbol table — the domain model
-  doesn't currently carry that distinction once flattened into a segment
-  list. `PathHumanizer` renders every `VarIndex` as `[each x]`. No pack
-  construct uses a middle-position bracket index at all (only var-ROOTED
-  paths, which are always resolved-and-bound by construction), so this is
-  untested either way — don't trust `[x]` (unbound) rendering until it has a
-  driving test and a way to detect it.
-- **`ExpressionRenderer`'s inline rendering for `Operand.Unrendered`
-  (backtick-wrapped verbatim source) is this session's own convention, not
-  from a spec example.** Spec only shows the block format for
-  `Condition`-level `Unrendered` (§6.2); it never demonstrates an
-  `Operand.Unrendered` embedded inside an otherwise-normal phrase. Revisit if
-  a real card makes this look wrong.
-- **`regex.match`/`glob.match` rendering is untested against real captured
-  JSON** — neither appears in the acceptance pack. The `.first()`/`.last()`
-  arg-picking is designed to be robust to `glob.match`'s ignored middle
-  delimiter argument, but this is inferred from the spec's function
-  signatures, not observed `opa parse` output.
-- **`RuleReference`'s anchor is fully injected (`anchorFor` callback), not
-  computed.** Spec §6.5 (anchor derivation from control-id or
-  package+rulename, same-file vs. cross-file `.md#anchor` linking) isn't
-  built yet. `ExpressionRenderer` only assembles the "see rule [...]" /
-  "rule [...] does not match" wrapper around whatever link text it's given.
+- ~~`PathHumanizer` can't distinguish a bound vs. unbound middle-position
+  `VarIndex`~~ **Resolved (session 4).** `AstMapper.mapPathSegments` now
+  takes the symbol table: a middle-position bracket-index variable
+  (`arr[i]`) with no `some i in ...` binding promotes the *whole* operand to
+  `Operand.Unrendered`, mirroring rule 7's already-established root-position
+  handling — never a raw, meaningless `VarIndex`. `PathHumanizer` therefore
+  still never needs to distinguish bound/unbound itself: every `VarIndex` it
+  receives is bound by construction. Both directions have synthetic-JSON
+  tests (`unboundMiddlePositionVarIndexBecomesOperandUnrendered`,
+  `boundMiddlePositionVarIndexRendersLikeTheVarRootedCase`) since no pack
+  policy uses bracket-index syntax at all.
+- ~~`ExpressionRenderer`'s inline rendering for `Operand.Unrendered` is this
+  session's own convention~~ **Settled (session 4), still not spec-sourced.**
+  Backtick-wrapped verbatim source (`` `count(input.x)` ``) stays the
+  convention: spec only shows the block format for `Condition`-level
+  `Unrendered` (§6.2), never an `Operand.Unrendered` embedded inside an
+  otherwise-normal phrase, and no pack policy exercises operand-level
+  `Unrendered` at all (confirmed again this session — still only reachable
+  via synthetic tests) so there's no new evidence to act on. Already tested
+  (`unrenderedOperandRendersAsVerbatimSourceInline`). If a real card in a
+  later session ever makes this look wrong once `MarkdownRenderer` exists,
+  reconsider it then, with that real evidence in hand — not preemptively.
+- ~~`regex.match`/`glob.match` rendering is untested against real captured
+  JSON`~~ **Partially resolved (session 4).** Neither builtin appears in the
+  acceptance pack, so there's still no *real* `opa parse` capture — but
+  `AstMapperTest` now has synthetic-JSON tests
+  (`regexMatchClassifiesAsBuiltinCallWithPatternAndValueInSourceOrder`,
+  `globMatchClassifiesAsBuiltinCallIncludingTheIgnoredDelimiterArgument`)
+  proving `AstMapper` correctly classifies both into `Condition.BuiltinCall`
+  with the args in source order, grounded in the already-real,
+  already-confirmed shape of dotted builtin names (a 2-element
+  `[var, string]` ref chain, first verified via `internal.member_2`) rather
+  than a guess about a new construct. `ExpressionRenderer`'s own
+  `.first()`/`.last()` arg-picking for these two is still only tested against
+  a hand-built `Condition.BuiltinCall` in `ExpressionRendererTest`, not one
+  produced by `AstMapper` — the two test files weren't wired together, so
+  don't overstate this as "tested end-to-end." Still not validated against
+  real `opa` output either way — no pack policy uses either builtin.
+- ~~`RuleReference`'s anchor is fully injected, not computed~~ **Resolved
+  (session 4).** `MarkdownRenderer.resolveAnchor` implements spec §6.5:
+  control-id if the target has one, else `package-rulename`, both slugged
+  (lowercased, non-alphanumeric runs -> single `-`, trimmed) -- includes
+  underscores in rule names, e.g. `is_release_candidate` ->
+  `is-release-candidate`, a convention choice spec doesn't pin exactly.
+  Same-package references get a bare `#anchor`; cross-package get
+  `<package>.md#anchor`. `ExpressionRenderer` still only assembles the
+  wrapper text around whatever `anchorFor` callback it's given -- the
+  callback is now `MarkdownRenderer`'s real implementation, not a test stub.
+
+## MarkdownRenderer: interpretation choices not pinned by spec (session 4)
+
+`release-approvals.md`'s golden only has ONE control card, so it can't confirm
+these choices; they're this session's own, reasonable-but-not-frozen decisions
+until Tier-2 goldens for a multi-card package exist:
+
+- **No "*(referenced rule)*" suffix after a `RuleReference` bullet.** Spec
+  §6.2's worked example shows one (`...does not match *(referenced rule)*`),
+  but §6.3's phrasing table and every Tier-1 assertion (including REL-002's
+  cross-package reference) omit it. Treated as the worked example's own
+  illustrative flourish, not a requirement — `ExpressionRenderer`'s existing,
+  already-tested contract (27 tests) doesn't produce it, and adding it would
+  mean splitting the responsibility for one bullet's text across two files.
+- **`---` separates every card, including the last one before the package
+  footer** (not just once at the very end). Consistent, but unconfirmed for
+  a real multi-card package.
+- **Combined coverage footer format**: `*Rendering coverage: X of Y
+  conditions; contains N unrendered value(s)*` — spec gives the two pieces
+  separately (§6.6) but never shows them combined in one footer line.
+- **`index.md`'s exact shape** (the `# Control index` heading, the table's
+  column order, `—` for a missing control id) is entirely this session's own
+  design — spec describes the columns to include, not the literal format.
