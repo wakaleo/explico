@@ -18,8 +18,15 @@ internal object OpaRunner {
     private const val TIMEOUT_SECONDS = 30L
     private const val REQUIRED_MAJOR_VERSION = 1
 
-    /** Resolves the `opa` binary: the `OPA_BIN` environment variable if set, else `opa` on `PATH`. */
-    fun resolveBinary(): String = System.getenv("OPA_BIN") ?: "opa"
+    /**
+     * Set once per process by `explico demo --fetch-opa` (spec §13.2) after a successful download,
+     * so the freshly-fetched binary is used without needing to mutate `OPA_BIN` -- which, being an
+     * environment variable, can't be changed for an already-running JVM. Checked before `OPA_BIN`.
+     */
+    var binaryOverride: Path? = null
+
+    /** Resolves the `opa` binary: [binaryOverride] if set, else the `OPA_BIN` environment variable, else `opa` on `PATH`. */
+    fun resolveBinary(): String = binaryOverride?.toString() ?: System.getenv("OPA_BIN") ?: "opa"
 
     /** True if the resolved binary runs and reports major version 1. */
     fun isAvailable(): Boolean = detectedMajorVersion() == REQUIRED_MAJOR_VERSION

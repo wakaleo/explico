@@ -559,3 +559,146 @@ things rather than trusting existing test coverage:
 - **Disclosed, not fixed: the CI/release workflows themselves still
   haven't run in real GitHub Actions** (§10.2) -- this repo has no git
   remote yet. Everything checkable without one was checked.
+
+## §13.1 Shadow-jar distribution (session 8)
+
+- **`com.gradleup.shadow` 9.6.0**, not the unmaintained
+  `com.github.johnrengelman.shadow` -- verified current via the plugin's
+  own docs, same standard as every other plugin choice this project has
+  made. Build-only tooling (§2's note on this), no runtime footprint on
+  the published library jar.
+- **`tasks.test { dependsOn(tasks.shadowJar) }`** -- deliberate: the shadow
+  jar is a first-class deliverable now, and `ShadowJarProcessTest` runs it
+  as a real subprocess, so it must exist before `test` runs. This means
+  `./gradlew check` (and therefore CI, §10.2) always builds and exercises
+  the shadow jar too, with no separate wiring needed in `ci.yml`.
+- **Two real build issues found and fixed by actually running
+  `./gradlew shadowJar` and reading its warnings, not by pre-emptively
+  configuring things "to be safe":**
+  - Several `META-INF/*.kotlin_module` files (one per Kotlin dependency
+    jar) needed `duplicatesStrategy = DuplicatesStrategy.INCLUDE` for
+    shadow's own `KotlinModuleMetadataTransformer` to see and merge all of
+    them, per the plugin's own warning text.
+  - Mordant (Clikt's terminal backend) ships 3 separate
+    `META-INF/services/...TerminalInterfaceProvider` entries; needed
+    `mergeServiceFiles()` so ServiceLoader-based platform-detection
+    fallback keeps all 3 instead of shadow picking one arbitrarily.
+- **`java -jar <shadow jar>` needed its own fix for the JNA/native-access
+  warning** (§8.2 already silenced this for the installed-distribution
+  path via `applicationDefaultJvmArgs`) -- that JVM arg only affects the
+  generated start script, which a standalone `java -jar` launch never
+  goes through. Fixed via the JAR manifest's `Enable-Native-Access:
+  ALL-UNNAMED` attribute (a real, JDK-supported manifest key for exactly
+  this "no command-line flag available" scenario, confirmed via JDK docs,
+  not assumed).
+- **A real, unrelated deprecation warning was found and fixed in the same
+  pass**: `expand("version" to project.version)` inside `processResources`'s
+  execution-time `filesMatching {}` closure triggered a "Task.project at
+  execution time" deprecation (configuration-cache-incompatible, would
+  break in a future Gradle). Fixed by capturing `project.version` into a
+  `val` at configuration time instead. Unrelated to shadow itself --
+  found only because `--warning-mode all` was run to double-check the
+  shadow-jar build was clean, and it surfaced this too.
+
+## §13.2 `explico demo` (session 8)
+
+- **Embedded resources, driven by a build-generated manifest, not a
+  classpath directory listing.** `generateDemoResources` (build.gradle.kts)
+  copies `src/test/resources/acceptance/{policies,examples,data}` into
+  `build/generated/demoResources/` and writes `demo-manifest.txt` next to
+  them (a flat, sorted, newline-separated relative-path list), added as an
+  extra `main` resources `srcDir`. `getResource("policies")` (a directory
+  name) is unreliable inside a jar depending on whether its zip index has
+  explicit directory entries; `getResourceAsStream` on each manifest-listed
+  file path always works, jar or exploded classpath alike. Verified by
+  actually inspecting the built jar's contents (`unzip -l`), not assumed.
+- **`OpaRunner.binaryOverride`**: a mutable `var`, checked before `OPA_BIN`
+  in `resolveBinary()`. Exists only because `--fetch-opa` needs a way to
+  make a freshly-downloaded binary path take effect for the rest of the
+  process -- an already-running JVM can't mutate its own `OPA_BIN`
+  environment variable. Set exactly once, by `DemoCommand`, never by
+  `render`/`diff`.
+- **`OpaFetcher`** (`opa/OpaFetcher.kt`): `java.net.http.HttpClient` only,
+  no new dependency. Platform → asset name mapping
+  (`opa_<darwin|linux|windows>_<amd64|arm64>[.exe]`) and the checksum-file
+  URL convention were both confirmed against the real `v1.19.0` GitHub
+  release assets (`gh api repos/open-policy-agent/opa/releases/tags/v1.19.0`),
+  not guessed. **Caught a real bug this way too**: `HttpClient.newHttpClient()`'s
+  default redirect policy is `NEVER`, and GitHub's release-asset URLs 302 to
+  a CDN -- the first real fetch attempt failed with a raw HTTP 302 until
+  `.followRedirects(HttpClient.Redirect.NORMAL)` was added. windows/arm64 has
+  no release asset at all; `assetNameForCurrentPlatform` throws
+  `UnsupportedPlatformException` for it rather than guessing a substitute.
+- **Verified for real, end-to-end, not just unit-tested**: a real
+  `--fetch-opa` run this session downloaded the actual opa 1.19.0 binary
+  from GitHub, verified its SHA-256 against the release's own checksum
+  file, cached it, and used it to run a real demo (confirmed byte-identical
+  output against the frozen `release-approvals.md` golden). This path is
+  deliberately **not** in the automated test suite (`check`/`acceptanceTest`
+  stay network-independent and fast) -- `OpaFetcherTest` covers the pure
+  platform-mapping logic; `DemoCommandProcessTest` covers everything else
+  (extraction, refuse-if-exists, the exit-3 message) without touching the
+  network. This is a disclosed, deliberate gap, not an oversight.
+- **Precondition order**: `explico-demo` already existing (exit 1) is
+  checked before opa availability (exit 3) -- cheaper, unrelated to opa,
+  and the more relevant error when both would otherwise apply. Consistent
+  with `render`/`diff`'s existing "no partial side effects on failure"
+  pattern: a failed `demo` run (either exit code) leaves nothing behind.
+
+## §13.3 Documentation (session 8)
+
+- **Mid-session addition, not in the original spec §13.3 text**: the
+  operator asked for the README to open with the name-origin paragraph
+  (now sourced verbatim in spirit from spec §1's own opening sentence) and
+  a new "Relationship to OPA and Rego" section (drives the real `opa`
+  binary rather than reimplementing Rego, standard METADATA only, OPA 1.x
+  targeting, positioning vs. Regal and Konstraint, an independence
+  disclaimer). Both Regal's and Konstraint's actual descriptions were
+  verified via web search before writing the comparison -- Regal is a
+  linter/language server (a different problem entirely from rendering),
+  Konstraint's `doc` subcommand is the closest existing analogue but is a
+  byproduct of its real job (Kubernetes Gatekeeper ConstraintTemplate
+  generation, scoped to the `violation[]` convention) -- not assumed from
+  memory, since misdescribing another real project in a public README
+  would be a real (if minor) harm, not just an internal inaccuracy.
+- **Every command and every piece of output in `docs/tutorial.md` is real**,
+  generated by actually running `explico render`/`explico diff` against
+  `samples/` (including a genuine `diff` walkthrough: copied `samples/policies`,
+  edited one rule's title/description only, diffed the copy against the
+  original, confirmed `DOCS_CHANGED` with the exact real table content) --
+  the same standard the README's own worked example already held itself to
+  (session 7's audit finding). Nothing in any of the three `docs/` files is
+  hypothetical or hand-typed output.
+- **`docs/user-guide.md` explicitly documents which exceptions a library
+  consumer can actually catch by type**: only
+  `io.explico.render.DuplicateFixtureNameException` and
+  `io.explico.diff.DuplicateControlIdException` are public; everything else
+  `load`/`render`/`diff` might throw is an `internal` exception type, not
+  importable by name outside the module (spec §8.1's "everything else is
+  internal" has this real, previously-undocumented consequence for
+  consumers who want to catch specific failure types).
+
+## §13.4 Cold-start demo test (session 8)
+
+Same method as session 7's README cold-start test: a fresh subagent given
+*only* the built shadow jar (renamed to `explico.jar`, matching the
+README's literal command) and the exact "Quick demo" section text, with
+explicit instructions not to look at anything else in this repository.
+`opa` was already on the test machine's `PATH`, so `--fetch-opa` itself
+wasn't exercised by the agent (already covered by manual verification in
+§13.2's notes above). Everything the section *claimed* — the command, the
+exact two-line output, the file existing with real content, the 91%/6-doc
+figures — matched exactly on a real run. Three real omissions found and
+fixed, all in the Quick demo section itself, none in the tool's behavior:
+
+- No hint that `demo` writes `./explico-demo/` relative to the *current*
+  directory — a first-time reader following the snippet from an arbitrary
+  directory gets a surprise new folder wherever they happened to be. Now
+  says "from an empty/scratch directory" up front.
+- Re-running the exact same command in the same directory doesn't
+  re-render — it refuses (exit `1`, spec §13.2's own deliberate
+  behavior) with no README guidance on what that means or how to retry.
+  Now documented (`rm -rf explico-demo` first).
+- The two-line pointer names `release-approvals.md` specifically but never
+  mentions `index.md` — arguably the better first stop (a table across all
+  6 documents). Now mentioned alongside it.

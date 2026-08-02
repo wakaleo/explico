@@ -6,7 +6,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: read
+  contents: write  # needed to create the GitHub Release and attach the shadow jar to it (spec §13.1)
 
 jobs:
   release:
@@ -70,3 +70,14 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
         run: ./gradlew publishToMavenCentral --console=plain
+
+      # Single runnable jar (spec §13.1) attached to the GitHub Release last, only once the Central
+      # publish itself has succeeded -- so a release only appears "done" (jar attached) once it
+      # actually is. gh is preinstalled on GitHub-hosted runners; no extra action needed.
+      - name: Build the shadow jar
+        run: ./gradlew shadowJar --console=plain
+
+      - name: Attach the shadow jar to the GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${{ github.ref_name }}" build/libs/explico-*.jar --generate-notes

@@ -3,6 +3,10 @@ plugins {
     kotlin("plugin.serialization") version "2.3.0"
     application
     id("com.vanniktech.maven.publish") version "0.37.0"
+    // Build-only tooling (spec §2/§13.1), not a library runtime dependency. The actively
+    // maintained fork -- com.github.johnrengelman.shadow is unmaintained -- verified against the
+    // plugin's own current docs (gradleup.com/shadow), not assumed from memory.
+    id("com.gradleup.shadow") version "9.6.0"
 }
 
 // Maven coordinates (io.github.wakaleo -- auto-verified via GitHub OAuth on the Central Portal,
@@ -38,15 +42,73 @@ application {
     applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
 }
 
+// Single runnable jar (spec §13.1): shadow auto-configures Main-Class from application.mainClass
+// above, no extra manifest wiring needed. Dropping the default "all" classifier gives a clean
+// explico-<version>.jar instead of explico-<version>-all.jar for the release-asset name (§10.2).
+// Enable-Native-Access: ALL-UNNAMED silences the same JNA warning applicationDefaultJvmArgs
+// silences for the installed-distribution path (above) -- but a plain `java -jar` launch of this
+// jar doesn't go through that generated start script, so it needs the equivalent manifest
+// attribute instead (the only JDK-supported way to do this from inside the jar itself).
+tasks.shadowJar {
+    archiveClassifier.set("")
+    // Each Kotlin dependency jar carries its own same-named META-INF/*.kotlin_module file; shadow's
+    // KotlinModuleMetadataTransformer needs to see all of them (not just the first, which EXCLUDE
+    // would leave it) to merge correctly -- confirmed via the exact build warning this produced
+    // and the plugin's own guidance for it, not applied speculatively.
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    // Mordant (Clikt's terminal backend) ships 3 separate META-INF/services/...TerminalInterfaceProvider
+    // entries, one per platform-detection implementation -- merging them (not picking one arbitrarily)
+    // is what ServiceLoader-based platform fallback actually needs. Also confirmed via the real
+    // build warning this fixes, not applied preemptively.
+    mergeServiceFiles()
+    manifest {
+        attributes("Enable-Native-Access" to "ALL-UNNAMED")
+    }
+}
+
+// Embeds the acceptance pack's policies/examples/data as jar resources for `explico demo` (spec
+// §13.2) -- copied from the same src/test/resources/acceptance/ the acceptance pack itself uses,
+// never a second hand-copied set that can drift (the samples/ precedent, spec §9/§10). A generated
+// manifest lists every embedded file by relative path: classpath *directory* listing (getResource on
+// a directory name) is unreliable inside a jar depending on whether the zip has explicit directory
+// entries, but getResourceAsStream on a known file path always works, jar or exploded classes alike.
+val demoResourceFiles = fileTree("src/test/resources/acceptance") {
+    include("policies/**", "examples/**", "data/**")
+}
+val generateDemoResources by tasks.registering(Copy::class) {
+    from(demoResourceFiles)
+    into(layout.buildDirectory.dir("generated/demoResources"))
+    doLast {
+        val sourceRoot = file("src/test/resources/acceptance")
+        val manifestLines = demoResourceFiles.files
+            .map { it.relativeTo(sourceRoot).path.replace(File.separatorChar, '/') }
+            .sorted()
+        layout.buildDirectory.file("generated/demoResources/demo-manifest.txt").get().asFile
+            .writeText(manifestLines.joinToString("\n"))
+    }
+}
+sourceSets {
+    main {
+        resources {
+            srcDir(generateDemoResources.map { layout.buildDirectory.dir("generated/demoResources").get() })
+        }
+    }
+}
+
 // Substitutes the project version into the CLI's `explico version` output -- avoids hardcoding
 // a duplicate version string in Main.kt that would drift from build.gradle.kts's own `version`.
 // inputs.property() is required: expand()'s substitution value isn't otherwise tracked as a task
 // input, so a version bump alone wouldn't invalidate an UP-TO-DATE processResources and the CLI
 // would keep reporting the stale version (confirmed empirically -- this isn't a hypothetical).
+// The version is captured into a local val at configuration time, not read via `project.version`
+// inside the execution-time filesMatching {} closure -- the latter is a deprecated
+// configuration-cache-incompatible pattern (confirmed via a real build warning naming this exact
+// line), not a style preference.
+val explicoVersion = project.version.toString()
 tasks.processResources {
-    inputs.property("version", project.version)
+    inputs.property("version", explicoVersion)
     filesMatching("explico-version.properties") {
-        expand("version" to project.version)
+        expand("version" to explicoVersion)
     }
 }
 
@@ -56,6 +118,9 @@ tasks.test {
         excludeTestsMatching("*IT")
         isFailOnNoMatchingTests = false
     }
+    // ShadowJarProcessTest (spec §13.1) runs the real built jar as a subprocess, so it must
+    // already exist. Only real cost is a fast (~1-3s) shadowJar build before every `test` run.
+    dependsOn(tasks.shadowJar)
 }
 
 // Tier-1 acceptance tests and Tier-2 golden tests (spec §9): require the `opa`

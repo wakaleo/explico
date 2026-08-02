@@ -1,14 +1,49 @@
 # explico
 
-*Latin: "I unfold, I explain" — the counterpart to* rego*, "I govern".*
-
-**explico** is a Kotlin/JVM tool that renders [OPA](https://www.openpolicyagent.org/)
+`explico` (Latin: *"I unfold, I explain"* — the counterpart to *rego*, *"I govern"*)
+is a Kotlin/JVM tool that renders [OPA](https://www.openpolicyagent.org/)
 Rego policy files into Markdown that non-technical control owners and
 auditors can read, evaluates worked examples to show what a policy actually
 does against real inputs, and reports structural changes between two
 versions of a policy set. The target domain is SDLC compliance release
 controls (change approvals, separation of duties, pipeline evidence,
 artifact provenance, freeze windows) — the engine itself is domain-agnostic.
+
+## Relationship to OPA and Rego
+
+explico is a documentation and change-reporting layer *on top of* OPA, not
+a replacement for any part of it, and not affiliated with or endorsed by
+the Open Policy Agent project or Styra.
+
+- **It drives the real `opa` binary rather than reimplementing Rego.**
+  Every parse, metadata lookup, and evaluation goes through `opa parse`/
+  `opa inspect`/`opa eval` as subprocess calls (see
+  [`ARCHITECTURE.md`](ARCHITECTURE.md) for why). explico never contains its
+  own Rego parser or evaluator, so its understanding of a policy can't
+  silently drift from what OPA itself would do with it.
+- **It reads standard OPA METADATA annotations only** — the same
+  `# METADATA` YAML-block convention [documented by OPA itself](https://www.openpolicyagent.org/docs/latest/annotations/),
+  not an explico-specific markup dialect. Any already-annotated,
+  OPA-compliant policy set can be rendered as-is; nothing needs adding
+  purely to make explico happy.
+- **Targets OPA 1.x** (developed and tested against 1.19.0 specifically —
+  see the Install section). `opa parse`'s JSON shape and the METADATA
+  annotation format are both spec'd per-major-version by OPA; a 2.x line,
+  if one ever exists, isn't assumed compatible without re-verifying.
+- **Positioning vs. other Rego tooling**: [Regal](https://www.openpolicyagent.org/ecosystem/entry/regal)
+  (Styra's Rego linter and language server) checks whether your Rego is
+  *well-written* — style, bugs, best practices. explico doesn't lint
+  anything; it assumes the policy is already valid and renders what it
+  *means*. [Konstraint](https://github.com/plexsystems/konstraint) is the
+  closest existing tool in spirit — it also generates a Markdown doc from
+  METADATA annotations — but its `doc` subcommand is a byproduct of its
+  primary job (converting Rego into Kubernetes Gatekeeper
+  ConstraintTemplates), scoped to policies using Gatekeeper's `violation[]`
+  convention. explico is a dedicated, general-purpose documentation-and-diff
+  tool for any Rego policy set, with worked-example evaluation and a
+  structural diff/change-report that Konstraint's docs generator doesn't
+  have, demonstrated here via an SDLC release-governance policy set rather
+  than a Kubernetes admission-control one.
 
 ## The core principle
 
@@ -29,6 +64,46 @@ below is implemented and tested: `render`, `diff`, worked examples, and the
 CLI. See [`CLAUDE.md`](CLAUDE.md) for the project's development conventions,
 non-negotiables, and a full log of the judgment calls made where the spec
 doesn't pin an exact detail.
+
+## Quick demo
+
+The fastest way to see explico do something real, no build tools and no
+checkout of this repository needed — just a JDK and `opa`:
+
+```
+# from an empty/scratch directory (it writes ./explico-demo/ relative to
+# your current directory) -- download the jar from this project's latest
+# GitHub Release, then:
+java -jar explico.jar demo
+```
+
+(No release has been tagged yet — see the Install section below for
+building the jar locally instead: `./gradlew shadowJar`, then `java -jar
+build/libs/explico-<version>.jar demo`.)
+
+This extracts a small real policy set to `./explico-demo/`, renders it, and
+prints exactly where to look:
+
+```
+Rendered 6 documents to explico-demo/docs/ (91% coverage).
+Open explico-demo/docs/release-approvals.md to see a rendered control card.
+```
+
+`explico-demo/docs/index.md` is worth a look too — a table of every control
+across all 6 rendered documents, with a coverage column per control. Running
+`demo` again in the same directory refuses rather than overwriting
+(`'explico-demo' already exists...`, exit code `1`) — remove the directory
+first if you want to re-run it: `rm -rf explico-demo`.
+
+No `opa` on `PATH`? Either install it (the Install section below names the
+exact version) or add `--fetch-opa` to have explico download a pinned,
+checksum-verified build itself: `java -jar explico.jar demo --fetch-opa`.
+
+For everything else — every flag, every exit code, the full library API —
+see [`docs/user-guide.md`](docs/user-guide.md). Writing policies you want
+explico to render well? See [`docs/policy-authoring.md`](docs/policy-authoring.md).
+Want a guided walkthrough of all five sample policies, not just one card?
+See [`docs/tutorial.md`](docs/tutorial.md).
 
 ## Install
 
@@ -92,11 +167,15 @@ project's own `kotlin("jvm")` plugin version.
 explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>]
 explico diff <oldDir> <newDir> --out <reportFile>
 explico version
+explico demo [--fetch-opa]
 ```
 
-Run from a source checkout with `./gradlew run --args="..."`, or via the
+Run from a source checkout with `./gradlew run --args="..."`, via the
 installed distribution (`./gradlew installDist`, then
-`build/install/explico/bin/explico ...`).
+`build/install/explico/bin/explico ...`), or via the standalone shadow jar
+(`./gradlew shadowJar`, then `java -jar build/libs/explico-<version>.jar
+...` — see Quick demo above). Full detail on every flag and exit code:
+[`docs/user-guide.md`](docs/user-guide.md).
 
 ### Worked example
 
@@ -262,6 +341,9 @@ against the coverage percentage reported on every card and package.
 
 ## Documentation
 
+- [`docs/user-guide.md`](docs/user-guide.md) — every CLI flag, every exit code, every public library function.
+- [`docs/policy-authoring.md`](docs/policy-authoring.md) — writing Rego policies explico renders well: METADATA conventions, the distinct-message/Situation-label convention, control-id/frameworks, fallback and coverage as design, fixture authoring.
+- [`docs/tutorial.md`](docs/tutorial.md) — a guided walkthrough of all five `samples/` policies through render → worked examples → diff, real output inline.
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — the pipeline, extension points, and why there's no Kotlin Rego parser.
 - [`specs/explico-poc-specification.md`](specs/explico-poc-specification.md) — the authoritative design spec.
 - [`CLAUDE.md`](CLAUDE.md) — project non-negotiables, the development cycle, and every judgment call made session by session.
