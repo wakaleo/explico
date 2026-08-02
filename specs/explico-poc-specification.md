@@ -61,12 +61,21 @@ criteria. No speculative abstraction, no plugin systems, no configuration files.
 
 - **Language/runtime:** Kotlin (latest stable 2.x), JVM toolchain Java 21.
 - **Build:** Gradle (Kotlin DSL). Single module. `application` plugin for the CLI,
-  `maven-publish` so the module can be consumed as a library.
+  a Maven-publishing plugin so the module can be consumed as a library
+  (`com.vanniktech.maven.publish` as of §10.1 — supersedes this line's original
+  plain `maven-publish`, since Sonatype's Central Portal migration needed more
+  than the raw plugin provides).
 - **Dependencies (keep to exactly these):**
   - `org.jetbrains.kotlinx:kotlinx-serialization-json` — parsing `opa` JSON output.
   - `com.github.ajalt.clikt:clikt` — CLI argument parsing.
   - Test: JUnit 5, AssertJ.
   - Nothing else. No DI framework, no logging framework (use `System.err`).
+  - This list governs the *library's own* runtime/test dependencies (what
+    ships inside the published jar or its POM). It does not cover build-only
+    Gradle plugins with no runtime footprint: `com.vanniktech.maven.publish`
+    (§10.1), `org.gradle.toolchains.foojay-resolver-convention` (§10.2), and
+    `com.gradleup.shadow` (§13.1) are all build tooling, each confirmed absent
+    from the published POM's own dependency list.
 - **Simplicity rules:**
   - Data classes + top-level/object functions. No interfaces with a single
     implementation. No inheritance hierarchies unless the AST model requires a
@@ -747,3 +756,107 @@ Each milestone ends green (`./gradlew check`) and committed.
 - [ ] Published artifact usable from another Gradle project via `Explico.load/render/diff`.
 - [ ] README example can be followed start-to-finish by someone who has never
       seen the project.
+
+---
+
+## 13. Post-POC increment 1: distribution & documentation
+
+Scope decided before implementation, recorded here per this project's own
+convention (design decisions get written down before, or as, they're made —
+see `CLAUDE.md`'s session-by-session log for the reasoning behind each one).
+Everything below is *new* scope beyond §12's POC acceptance criteria, not a
+correction to them — the POC is done; this is what comes after it.
+
+### 13.1 Shadow-jar distribution
+
+A single runnable jar bundling explico and all its runtime dependencies
+(`kotlinx-serialization-json`, `clikt`/its `clikt-mordant` dependency), so a
+user only needs a JDK and the jar — no Gradle, no dependency resolution — to
+run the CLI. `java -jar <jar> version` must work as a plain subprocess
+invocation, proven by a real test (the same process-level-test convention
+§8.2's exit codes already use, not a library-level shortcut).
+
+- **Plugin: `com.gradleup.shadow`** — the actively maintained fork; the
+  original `com.github.johnrengelman.shadow` is unmaintained. Exact version
+  confirmed against the plugin's own current docs at implementation time,
+  not assumed from training-data memory (the same standard §10.1/§10.2's
+  plugin choices were held to).
+- Build-only tooling (§2): does not appear in the published library jar's own
+  dependencies, so it doesn't expand the closed runtime/test whitelist.
+- `release.yml` (§10.2) attaches the built shadow jar to the GitHub Release
+  created for the pushed `v*` tag — the Quick demo section (§13.3)'s
+  "download the jar" step needs something real to point at.
+
+### 13.2 `explico demo`
+
+A fourth CLI command, alongside `render`/`diff`/`version` (§8.2): zero-argument,
+self-contained walkthrough for someone who has the jar and `opa` but no
+checkout of this repository.
+
+- Embeds the acceptance pack's `policies/`, `examples/`, and
+  `data/release/data.json` as jar resources, packaged at build time from the
+  same `src/test/resources/acceptance/` directory the acceptance pack itself
+  uses — one source of truth, never a second hand-copied set that can drift
+  (the same principle behind `samples/` in §9/§10).
+- On run: extracts those resources to `./explico-demo/` in the current
+  working directory. **Refuses and exits 1 if that directory already
+  exists** — never silently overwrites or merges into a directory the user
+  might have other content in.
+- Then runs the equivalent of `render ./explico-demo/policies --out
+  ./explico-demo/docs --examples ./explico-demo/examples --data
+  ./explico-demo/data/release/data.json`, and prints a short, exact pointer
+  to the file to open (e.g. "Open ./explico-demo/docs/release-approvals.md
+  to see a rendered control card.") — two lines, not a wall of text.
+- **Missing/incompatible `opa`**: exit 3 (same code as `render`/`diff`),
+  with an actionable message naming the *exact pinned version* (matching
+  CI's pin, §10.2) rather than just "version 1.x" — a first-time user
+  following the Quick demo section needs the precise version to install,
+  not a range.
+- **`--fetch-opa`** (optional flag): if it fits cleanly — a single pinned
+  version, a per-platform download URL, and a checksum verification, all
+  addable without materially growing `OpaRunner`'s scope or introducing a
+  new dependency (the JDK's own `java.net.http` should suffice) — downloads
+  that exact pinned `opa` build to a cache directory and uses it for the
+  demo run. If achieving checksum-verified, correctly-platformed download
+  turns out to need meaningfully more machinery than that (its own
+  retry/proxy handling, a new HTTP client dependency), this flag is
+  explicitly **deferred to a later increment** instead of half-built — a
+  decision to resolve during implementation, not pre-committed either way.
+
+### 13.3 Documentation
+
+Three new files under `docs/`, each with a single clear job, no overlap:
+
+- **`docs/user-guide.md`** — the CLI and library reference: every flag,
+  every exit code, every public facade function, in one place. What the
+  README's CLI-usage/Library-usage sections summarize, this covers
+  exhaustively.
+- **`docs/policy-authoring.md`** — for someone writing Rego policies *for*
+  explico to render well: which METADATA fields map to which part of a
+  control card, the distinct-`producesValue`-per-body convention that drives
+  `*(Situation N)*` attribution (§6.7) and why it's "distinct or no label,
+  never guessed," control-id/`frameworks` conventions, the fallback mechanism
+  and coverage percentage explained explicitly as *intentional, honest
+  design* (a lower coverage number means "here's what to read as source,"
+  not "the tool is unfinished"), and how to author a worked-example fixture
+  (§6.7's format).
+- **`docs/tutorial.md`** — walks all five `samples/` policies through
+  `render` → inspecting the worked-examples section → `diff`, with real
+  command output inlined throughout — never hypothetical/hand-typed output,
+  the same standard the README's own worked example already holds itself to
+  (session 7's audit).
+
+README gains a **Quick demo** section, ahead of the existing, more involved
+Install/CLI-usage sections: download the release jar (§13.1), run `explico
+demo`, see a real rendered card, in as few steps as possible. Links out to
+the three `docs/` files instead of duplicating their content.
+
+### 13.4 Cold-start demo test
+
+Same method as session 7's README cold-start test, narrower scope: a fresh
+subagent with *only* the built jar, `opa` on `PATH`, and the README's Quick
+demo section — explicitly no repository checkout, no other file in this
+project visible to it. Must reach a rendered control card. Exactly like
+session 7: fix what it stumbles on, fix the docs (or the demo command's own
+behavior) — never the tester, never chalk a finding up to "well, a real user
+would know better."
