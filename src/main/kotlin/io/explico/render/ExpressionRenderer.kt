@@ -29,8 +29,13 @@ internal object ExpressionRenderer {
             "$m ${if (condition.negated) "is not one of" else "is one of"} $c"
         }
         is Condition.Truthy -> {
+            // spec §14 amendment: a bare reference in condition position tests "defined and not
+            // equal to boolean false" regardless of the value's actual type -- "is true" (the
+            // original §6.3 wording) is only accurate when the field happens to be boolean, and
+            // reads as flatly wrong for e.g. a non-empty string field. "is present and not false"
+            // is the exact type-agnostic mirror of the already-correct negated phrasing below.
             val (text, hasAnyIndex) = renderOperand(condition.operand)
-            withAnyOfPrefix(if (condition.negated) "$text is absent or false" else "$text is true", hasAnyIndex)
+            withAnyOfPrefix(if (condition.negated) "$text is absent or false" else "$text is present and not false", hasAnyIndex)
         }
         is Condition.BuiltinCall -> renderBuiltinCall(condition)
         is Condition.SomeIn -> {

@@ -977,3 +977,83 @@ would have and nothing else):
 
 Both: fix what the agent stumbles on in the docs or the tool's own
 behavior — never dismiss a finding as "a real reader would know better."
+
+## 14. Rego language coverage audit
+
+A dedicated audit session (not a feature expansion) verifying every
+rendering decision `AstMapper`/`ExpressionRenderer`/`PathHumanizer` make
+against the real Rego language, not just the 5 policies the acceptance pack
+happens to exercise. The design principle already implicit in §6.2/§6.3
+("leaf conditions rendered, helper rules referenced one level deep, anything
+deeper shown as source") is confirmed as the correct rationale for the
+fallback bucket, not a limitation to design around. Full findings, the
+construct/builtin-by-builtin classification table, and a ranked promotion
+backlog for future increments live in
+[`docs/rego-coverage.md`](../docs/rego-coverage.md) — this section records
+only the spec-relevant outcomes: the amendment below, and the audit's
+existence as a permanent, executable regression suite
+(`src/test/resources/probes/` + `RegoCoverageAuditTest.kt`), not prose that
+can silently drift from what the code actually does.
+
+### 14.1 Amendment: `Truthy` non-negated wording
+
+Spec §6.3's original table specified `Truthy(p, false)` → `<p> is true`.
+This session found and confirmed (via a real probe evaluated through the
+actual pipeline, `src/test/resources/probes/38-truthy-non-boolean-field.rego`)
+that this wording is only accurate when the referenced field happens to be
+boolean — the acceptance pack only ever exercises the *negated* bare-truthy
+form (`not input.change.ticket.approved`), never the non-negated one, so
+this was untested against a real non-boolean field until now. Rego's actual
+semantics for a bare condition-position reference is "defined and not equal
+to boolean `false`" — type-agnostic, not "is exactly `true`". For a non-empty
+string field, "is true" is simply wrong.
+
+**§6.3's table is amended**: `Truthy(p, false)` → `<p> is present and not
+false` — the exact type-agnostic mirror of the already-correct negated
+wording (`<p> is absent or false`). No acceptance-pack golden changes (the
+non-negated form isn't exercised by any of the 5 real policies).
+
+### 14.2 Fixed this session (previously ERROR or MISLEADING)
+
+Four other findings, all confirmed by running the real pipeline (two of
+them requiring an actual `opa eval` run to settle the runtime semantics, not
+just reading the code) rather than reasoned about in the abstract:
+
+- **A crash**, not a fallback: a declare-only single-variable `some key`
+  (no `in`) threw an uncaught `JsonDecodingException` and took down the
+  entire render, violating "the fallback is sacred" more severely than any
+  ordinary unclassified construct — a crash isn't even a fallback.
+- **Silent data loss**: an `else`-chain's branch is a sibling field on
+  opa's own rule AST (`OpaRule` didn't model it); `ignoreUnknownKeys`
+  silently dropped it entirely, so the rendered card showed only the `if`
+  branch as if it were the rule's whole logic, with no fallback marker at
+  all — not "shown as source", just gone.
+- **Silent, false-by-omission**: a `with` override has the identical root
+  cause at the expr level (`OpaExpr` didn't model `with`) — a rule
+  reference evaluated against a deliberately modified input rendered as an
+  ordinary, unqualified reference to the real one.
+- **Misleading**: a bare reference (negated or not) to a **partial**
+  (`contains`/object) rule was classified identically to a reference to a
+  complete/boolean rule. A partial rule is always defined, even as an
+  empty set — confirmed via real `opa eval` that the enclosing condition
+  stays undefined regardless of the partial rule's contents — so "does not
+  match" (negated) or an implied real conditional (non-negated) both
+  describe something that can never actually happen.
+
+All four are fixed (§14's own `OpaRule`/`OpaExpr` field additions and the
+rule registry's new partial/complete distinction), covered by a permanent
+regression test per probe, and confirmed absent from every existing
+acceptance-pack policy — nothing previously shipped was affected, but any
+future policy using any of these four idioms would have been silently
+misrendered before this session.
+
+### 14.3 Deliberately not changed
+
+Reviewed and reaffirmed, not altered: `Operand.Unrendered`'s rendering as
+plain backticked verbatim source, indistinguishable inline from a real
+humanized path (only disclosed in aggregate via the coverage footer's
+"contains N unrendered value(s)"). This session's probe corpus showed the
+pattern is more pervasive than session 3/4 originally scoped it for, but the
+underlying assertion in every affected bullet remains true — this is a
+legibility question, not a semantic one, and is left to a future increment's
+own deliberate review rather than folded into this audit as a side effect.

@@ -76,6 +76,10 @@ prose standing in for logic the tool didn't actually check.
    `*IT`) since they're not Tier-1/Tier-2 acceptance-pack transcriptions; they
    just happen to need `opa`. `./gradlew check` stays green without `opa`
    installed because `assumeTrue` skips (not fails) them.
+   **Same deviation (session 10):** `RegoCoverageAuditTest` (spec §14) —
+   driven by the 40-file probe corpus under `src/test/resources/probes/`,
+   real `.rego` parsed through the actual `opa` binary, same
+   `assumeTrue(OpaRunner.isAvailable())` guard.
 2. **Tier-1 acceptance tests** (`*IT`, guarded by
    `Assumptions.assumeTrue(OpaRunner.isAvailable())`) — JUnit transcriptions,
    verbatim, of the "Tier 1 assertions" tables in the acceptance pack README.
@@ -873,3 +877,101 @@ handed to them:
   `Explico.render`/`RenderedDocs.files` API usage matched the documented
   snippet exactly -- no corrections needed to the API-usage code itself,
   only to what surrounds it.
+
+## §14 Rego language coverage audit (session 10)
+
+A dedicated audit session, not a feature expansion -- verifying every
+rendering decision against the real Rego language via a 40-file probe
+corpus (`src/test/resources/probes/`), each run through the REAL pipeline
+(`opa parse` -> `AstMapper` -> `ExpressionRenderer`), never a hand-built
+synthetic `Condition`. Full findings and the ranked promotion backlog live
+in `docs/rego-coverage.md` (spec §14); this entry records the process and
+judgment calls behind them.
+
+- **Ground truth came from real tools, not memory**: `opa capabilities
+  --current` (opa 1.19.0, 206 builtins) for the builtin inventory, the
+  official Rego language-reference docs (fetched fresh) for the construct
+  inventory, both cross-referenced against spec §6.3/§6.4 and `AstMapper.kt`
+  read in full before a single probe was written.
+- **One real ERROR found and fixed**: a declare-only single-variable `some
+  key` (no `in`) crashed `AstMapper.mapSomeIn` with an uncaught
+  `JsonDecodingException`, taking down the ENTIRE render, not just that one
+  condition -- caught only by actually running the probe through the real
+  pipeline (a first, buggy version of the scratch driver loaded the whole
+  probes/ directory at once, which masked this behind an unrelated
+  test-harness bug; fixed by isolating each probe into its own temp
+  directory before the real crash's true scope became visible).
+- **Two real MISLEADING findings involved silent data loss, not just wrong
+  wording**: `else`-chains and `with`-overrides both attach as sibling
+  fields on opa's own AST (`else` on the rule, `with` on the expr) that
+  `OpaRule`/`OpaExpr` didn't model -- `ignoreUnknownKeys = true` (deliberate,
+  for forward-compat with opa upgrades) silently dropped them entirely,
+  before `AstMapper` ever saw they existed. An else-chain's alternate branch
+  simply vanished from the card (not shown as fallback source, just gone);
+  a `with`-override rendered as an ordinary, unqualified rule reference,
+  actively implying the real input was being tested. Fixed by adding
+  presence-only fields to both DTOs (never decoding the override's own
+  target/value, or the else-branch's own nested body -- only detecting
+  non-null) and demoting to `Condition.Unrendered` with a specific reason
+  category in both cases. Confirmed empirically that opa's own top-level
+  `rule.location.text` for an else-chain already spans every branch, so no
+  extra source-slicing logic was needed for the fallback text.
+- **One MISLEADING finding required real `opa eval` runs to settle, not
+  just reading the code**: `not partialSetRule` (a bare reference to a
+  `contains`/object rule, negated or not) was classified identically to a
+  reference to a complete/boolean rule. Ran `opa eval` against both an
+  empty-set and non-empty-set input and confirmed the enclosing rule stayed
+  undefined in BOTH cases -- a partial rule is always defined, even as an
+  empty set, so `not partialRule` can never succeed regardless of contents,
+  and "does not match" flatly contradicts that. Fixed by adding a second
+  rule registry (`buildPartialRuleRegistry`, keyed on `head.key != null`)
+  and refusing to classify a reference to a partial rule as
+  `Condition.RuleReference` in either direction -- including a data.-prefixed
+  reference, which needed its own guard so it doesn't fall through to an
+  ordinary `Truthy`-over-a-path rendering that would resurface the identical
+  issue via a different `Condition` shape.
+- **One MISLEADING finding was a genuine spec amendment, not just an
+  implementation fix**: `Truthy(p, false)`'s "is true" wording (spec §6.3's
+  own frozen text) is only accurate when the referenced field happens to be
+  boolean -- the acceptance pack only ever exercises the negated form over a
+  boolean flag, never the non-negated form over anything else, so this was
+  genuinely untested until this session's probe. Fixed to "is present and
+  not false", the exact type-agnostic mirror of the already-correct negated
+  wording -- recorded as spec §14.1, not silently patched, since it changes
+  literal frozen-spec text.
+- **Two findings were deliberately escalated to the operator as ambiguous**,
+  per this session's own explicit instruction to stop rather than decide
+  unilaterally whenever a finding was ambiguous between MISLEADING and
+  FAITHFUL: the `Truthy` wording question above (resolved: fix it, since the
+  acceptance pack's own silence on the non-negated path meant there was no
+  existing behavior to protect) and whether `Operand.Unrendered`'s
+  visually-indistinguishable-from-a-real-path rendering (much more
+  pervasive across the probe corpus than session 3/4 originally scoped it
+  for) should gain an inline marker (resolved: leave it -- the underlying
+  assertion stays true either way, and this reaffirms an already-reviewed
+  convention rather than reopening it on the strength of "it's more common
+  than we thought" alone).
+- **A third finding (partial-rule reference) was initially omitted from the
+  consolidated findings list** shown to the operator, despite already being
+  confirmed via real `opa eval` earlier in the same session -- caught only
+  when re-reviewing the scratch dump output for the write-up, not by the
+  operator. Surfaced separately, with the omission disclosed rather than
+  silently folded in, before fixing it in the same pass (operator's
+  explicit choice: fix now, not defer).
+- **The audit is executable, not prose**: `RegoCoverageAuditTest.kt` pins
+  40+ assertions (one or more per probe) to their confirmed bucket.
+  Verified genuinely load-bearing, not just present: temporarily reverted
+  the `some key` crash-guard fix, confirmed the exact real
+  `JsonDecodingException` resurfaced as a test failure (not a different,
+  weaker symptom), then restored it and confirmed green again -- the same
+  break/restore standard `docsSnippets` wiring was held to in session 9.
+- **`docs/rego-coverage.md`'s promotion backlog is ranked by estimated
+  real-world frequency with an explicit risk note per item**, and
+  deliberately recommends AGAINST near-term promotion for two items despite
+  their frequency: else-chains (rendering each branch as its own "Situation
+  N" would misrepresent their real priority-ordered, mutually-exclusive
+  semantics as a simple OR, risking reintroducing exactly the kind of
+  MISLEADING finding this session just fixed) and `walk()` (low estimated
+  frequency in this project's compliance/authz target domain doesn't
+  justify the design cost). No promotion was implemented this session, per
+  explicit instruction -- the backlog is for the operator's own selection.

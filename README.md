@@ -350,6 +350,7 @@ against the coverage percentage reported on every card and package.
 - [`docs/user-guide.md`](docs/user-guide.md) — every CLI flag, every exit code, every public library function.
 - [`docs/policy-authoring.md`](docs/policy-authoring.md) — writing Rego policies explico renders well: METADATA conventions, the distinct-message/Situation-label convention, control-id/frameworks, fallback and coverage as design, fixture authoring.
 - [`docs/tutorial.md`](docs/tutorial.md) — a guided walkthrough of all five `samples/` policies through render → worked examples → diff, real output inline.
+- [`docs/rego-coverage.md`](docs/rego-coverage.md) — a systematic audit of every Rego construct/builtin against the real renderer: what's rendered faithfully, what falls back by design, what was fixed this session, and a ranked backlog of fallback constructs that could be promoted next.
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — the pipeline, extension points, and why there's no Kotlin Rego parser.
 - [`specs/explico-poc-specification.md`](specs/explico-poc-specification.md) — the authoritative design spec.
 - [`CLAUDE.md`](CLAUDE.md) — project non-negotiables, the development cycle, and every judgment call made session by session.

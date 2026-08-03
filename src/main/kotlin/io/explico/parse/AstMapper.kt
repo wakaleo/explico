@@ -67,12 +67,13 @@ internal object AstMapper {
      */
     fun mapPolicySet(files: List<ParsedFile>, inspectResult: OpaInspectResult? = null): PolicySet {
         val registry = buildRuleRegistry(files)
+        val partialRegistry = buildPartialRuleRegistry(files)
         val metadataIndex = buildMetadataIndex(inspectResult)
         val packages = files
             .groupBy { packagePath(it.module) }
             .map { (path, filesInPackage) ->
                 val rules = filesInPackage
-                    .flatMap { mapRuleGroups(it, registry, metadataIndex) }
+                    .flatMap { mapRuleGroups(it, registry, partialRegistry, metadataIndex) }
                     .sortedBy { it.name }
                 PolicyPackage(
                     path = path,
@@ -118,9 +119,25 @@ internal object AstMapper {
                 modules.flatMap { it.rules }.mapNotNull { it.head.name }.toSet()
             }
 
+    /**
+     * Rule names that are partial (a `contains`/object rule, i.e. the head has a `key`) rather than
+     * complete/single-value (spec §14 finding): a partial rule is ALWAYS defined -- even as an empty
+     * set/object -- so a bare reference to one (negated or not) never behaves like a boolean flag.
+     * `not partialRule` can NEVER succeed (confirmed via real `opa eval`: the enclosing rule stayed
+     * undefined whether the partial rule was empty or non-empty), which "does not match" flatly
+     * contradicts; a non-negated bare reference is unconditionally, tautologically true for the same
+     * reason. [ruleReferenceIfKnown] refuses to classify either direction as a [Condition.RuleReference].
+     */
+    private fun buildPartialRuleRegistry(files: List<ParsedFile>): Map<String, Set<String>> =
+        files.groupBy({ packagePath(it.module) }, { it.module })
+            .mapValues { (_, modules) ->
+                modules.flatMap { it.rules }.filter { it.head.key != null }.mapNotNull { it.head.name }.toSet()
+            }
+
     private fun mapRuleGroups(
         file: ParsedFile,
         registry: Map<String, Set<String>>,
+        partialRegistry: Map<String, Set<String>>,
         metadataIndex: Map<Pair<String, String>, RuleMetadata>,
     ): List<RuleGroup> {
         val currentPackage = packagePath(file.module)
@@ -128,6 +145,7 @@ internal object AstMapper {
             currentPackage = currentPackage,
             importAliases = resolveImportAliases(file.module),
             registry = registry,
+            partialRegistry = partialRegistry,
             sourceFile = file.sourceFile,
         )
         return file.module.rules
@@ -145,6 +163,21 @@ internal object AstMapper {
     }
 
     private fun mapBody(rule: OpaRule, ctx: MappingContext): RuleBody {
+        // An else-chain (spec §14 finding): opa's own top-level `rule.location` already spans the
+        // WHOLE chain (every branch), confirmed empirically against real opa parse output -- so the
+        // existing whole-rule source slice is already the correct fallback text, no extra decoding
+        // needed. The chain's later branches are a priority-ordered alternative, not a simple OR of
+        // situations, so this demotes the entire body rather than attempting a per-branch rendering.
+        if (rule.elseBranch != null) {
+            return RuleBody(
+                conditions = listOf(Condition.Unrendered(sourceText(rule.location), "else-chain")),
+                producesValue = null,
+                messageTemplate = null,
+                sourceLocation = SourceRef(ctx.sourceFile, rule.location?.row ?: 0),
+                sourceText = sourceText(rule.location),
+            )
+        }
+
         val symbolTable = mutableMapOf<String, Operand.Path>()
         val messageVar = rule.head.key?.takeIf { it.type == "var" }?.let { stringValueOf(it) }
         var producesValue: String? = null
@@ -152,6 +185,14 @@ internal object AstMapper {
         val conditions = mutableListOf<Condition>()
 
         for (expr in rule.body) {
+            // A `with` override (spec §14 finding): attaches to ANY expr shape, and silently
+            // changes what's actually being evaluated (a modified, hypothetical input/data/function),
+            // which no existing Condition template describes -- demoted before shape-dispatch so it
+            // can never be misclassified as testing the real input.
+            if (expr.with != null) {
+                conditions += Condition.Unrendered(sourceText(expr.location), "with-override")
+                continue
+            }
             val assignedMessage = messageVar?.let { matchMessageAssignment(expr, it) }
             if (assignedMessage != null) {
                 producesValue = renderProducesValue(assignedMessage, symbolTable)
@@ -237,6 +278,11 @@ internal object AstMapper {
     private fun mapSomeIn(expr: OpaExpr, terms: JsonObject, symbolTable: MutableMap<String, Operand.Path>): Condition {
         val symbols = opaJson.decodeFromJsonElement(ListSerializer(OpaTerm.serializer()), terms.getValue("symbols"))
         val callTerm = symbols.singleOrNull() ?: return Condition.Unrendered(sourceText(expr.location), "unclassified")
+        // A declare-only `some x` (no `in`) has exactly one symbol too, but its value is a bare var
+        // term, not a call-shaped `internal.member_2` term -- decodeTermList would otherwise crash
+        // trying to deserialize a JsonPrimitive as a JsonArray (spec §14 finding: this took down the
+        // whole render, not just this one condition, before the guard existed).
+        if (callTerm.type != "call") return Condition.Unrendered(sourceText(expr.location), "unclassified")
         val (name, args) = decodeCallShape(decodeTermList(callTerm.value)) ?: return Condition.Unrendered(sourceText(expr.location), "unclassified")
         if (name != "internal.member_2" || args.size != 2 || args[0].type != "var") {
             return Condition.Unrendered(sourceText(expr.location), "unclassified")
@@ -258,7 +304,7 @@ internal object AstMapper {
         if (term.type == "var") {
             val name = stringValueOf(term)
             return ruleReferenceIfKnown(ctx.currentPackage, name, ctx, expr.negated)
-                ?: Condition.Unrendered(sourceText(expr.location), "unclassified")
+                ?: Condition.Unrendered(sourceText(expr.location), fallbackReasonFor(ctx.currentPackage, name, ctx))
         }
         if (term.type != "ref") return Condition.Unrendered(sourceText(expr.location), "unclassified")
 
@@ -270,13 +316,19 @@ internal object AstMapper {
         if (aliasedPackage != null) {
             val ruleName = chain.drop(1).joinToString(".") { stringValueOf(it) }
             return ruleReferenceIfKnown(aliasedPackage, ruleName, ctx, expr.negated)
-                ?: Condition.Unrendered(sourceText(expr.location), "unclassified")
+                ?: Condition.Unrendered(sourceText(expr.location), fallbackReasonFor(aliasedPackage, ruleName, ctx))
         }
         if (root == "data" && chain.size > 1) {
             val candidatePackage = chain.drop(1).dropLast(1).joinToString(".") { stringValueOf(it) }
             val candidateRule = stringValueOf(chain.last())
-            val reference = ruleReferenceIfKnown(candidatePackage, candidateRule, ctx, expr.negated)
-            if (reference != null) return reference
+            // A known rule name (any kind) at a data.-prefixed path must never fall through to
+            // mapRefChain below: an ordinary Path/Truthy rendering of a PARTIAL rule's data path
+            // would resurface the exact same always-defined/tautological-truthiness issue
+            // ruleReferenceIfKnown already guards against, just via a different Condition shape.
+            if (ctx.registry[candidatePackage]?.contains(candidateRule) == true) {
+                return ruleReferenceIfKnown(candidatePackage, candidateRule, ctx, expr.negated)
+                    ?: Condition.Unrendered(sourceText(expr.location), "partial-rule-reference")
+            }
         }
         val operand = mapRefChain(chain, symbolTable, term.location)
         return when (operand) {
@@ -285,8 +337,22 @@ internal object AstMapper {
         }
     }
 
-    private fun ruleReferenceIfKnown(packagePath: String, ruleName: String, ctx: MappingContext, negated: Boolean): Condition.RuleReference? =
-        if (ctx.registry[packagePath]?.contains(ruleName) == true) Condition.RuleReference(packagePath, ruleName, negated) else null
+    /**
+     * A known rule name (spec §14 finding) resolves to a real [Condition.RuleReference] only when
+     * it's a COMPLETE rule -- a partial (`contains`/object) rule is always defined, even as an empty
+     * set/object, so neither a negated nor a non-negated bare reference to one behaves like a
+     * boolean flag (confirmed via real `opa eval`: the enclosing rule stayed undefined regardless of
+     * the partial rule's contents). Refusing to classify it at all, rather than rendering a phrase
+     * ("does not match" / implicitly "matches") that can never be true, is the safe fallback.
+     */
+    private fun ruleReferenceIfKnown(packagePath: String, ruleName: String, ctx: MappingContext, negated: Boolean): Condition.RuleReference? {
+        if (ctx.registry[packagePath]?.contains(ruleName) != true) return null
+        if (ctx.partialRegistry[packagePath]?.contains(ruleName) == true) return null
+        return Condition.RuleReference(packagePath, ruleName, negated)
+    }
+
+    private fun fallbackReasonFor(packagePath: String, ruleName: String, ctx: MappingContext): String =
+        if (ctx.partialRegistry[packagePath]?.contains(ruleName) == true) "partial-rule-reference" else "unclassified"
 
     // --- Operands ---
 
@@ -473,5 +539,6 @@ private data class MappingContext(
     val currentPackage: String,
     val importAliases: Map<String, String>,
     val registry: Map<String, Set<String>>,
+    val partialRegistry: Map<String, Set<String>>,
     val sourceFile: String,
 )

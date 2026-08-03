@@ -42,7 +42,7 @@ class ExpressionRendererTest {
                 Case("Comparison LTE", Condition.Comparison(approved, Operator.LTE, zero), "`change ▸ ticket ▸ approved` is at most `0`"),
                 Case("Membership positive", Condition.Membership(false, env, Operand.Literal("\"production\", \"staging\"")), "`deployment ▸ environment` is one of `\"production\", \"staging\"`"),
                 Case("Membership negated", Condition.Membership(true, env, Operand.Literal("\"production\", \"staging\"")), "`deployment ▸ environment` is not one of `\"production\", \"staging\"`"),
-                Case("Truthy positive (bare reference)", Condition.Truthy(approved, false), "`change ▸ ticket ▸ approved` is true"),
+                Case("Truthy positive (bare reference)", Condition.Truthy(approved, false), "`change ▸ ticket ▸ approved` is present and not false"),
                 Case("Truthy negated (absent or false)", Condition.Truthy(approved, true), "`change ▸ ticket ▸ approved` is absent or false"),
                 Case(
                     "SomeIn",

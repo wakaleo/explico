@@ -47,6 +47,15 @@ internal data class OpaExpr(
     val negated: Boolean = false,
     val terms: JsonElement? = null,
     val location: OpaLocation? = null,
+    /**
+     * Presence-only (spec §14): a `with input.x as ...` / `with data.x as ...` override attaches
+     * as a sibling `with` array on the expr, structurally unrelated to `terms` -- before this field
+     * existed, `ignoreUnknownKeys` silently dropped it, so the mapper never knew an override was in
+     * play and rendered the expression as if it evaluated against the real input. Only used to
+     * detect non-null and demote to `Condition.Unrendered`; the override's own target/value is never
+     * decoded, since faithfully rendering "evaluated against a modified input" is out of scope.
+     */
+    val with: JsonElement? = null,
 )
 
 @Serializable
@@ -84,6 +93,16 @@ internal data class OpaRule(
     val annotations: List<OpaAnnotationBody> = emptyList(),
     val default: Boolean = false,
     val location: OpaLocation? = null,
+    /**
+     * Presence-only (spec §14): an `else := ... if {...}` branch is a nested, rule-shaped sibling
+     * structure under the `else` key, entirely separate from `body` -- before this field existed,
+     * `ignoreUnknownKeys` silently dropped it, and the else-branch's logic simply vanished from the
+     * rendered card with no fallback marker at all, not even "shown as source". Only used to detect
+     * non-null and demote the whole rule body to `Condition.Unrendered`; the branch's own nested
+     * body/head is never decoded, since correctly modeling "which branch's value applies" (a
+     * priority-ordered alternative, not a simple OR of situations) is out of scope.
+     */
+    @SerialName("else") val elseBranch: JsonElement? = null,
 )
 
 @Serializable
