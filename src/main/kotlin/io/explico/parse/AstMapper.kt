@@ -307,6 +307,9 @@ internal object AstMapper {
         if (comparisonOp != null && args.size == 2) {
             return buildComparisonLike(expr, args, symbolTable) { left, right -> Condition.Comparison(left, comparisonOp, right) }
         }
+        if (name == "eq" && args.size == 2 && !expr.negated) {
+            eqAsPureComparisonOrNull(args, symbolTable)?.let { return it }
+        }
         if (name == "internal.member_2" && args.size == 2) {
             return buildComparisonLike(expr, args, symbolTable) { member, collection ->
                 Condition.Membership(expr.negated, member, collection)
@@ -333,6 +336,34 @@ internal object AstMapper {
         val unsupported = listOf(left, right).filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
         if (unsupported != null) return Condition.Unrendered(sourceText(expr.location), unsupported.reason)
         return build((left as ConstructResult.Ok).operand, (right as ConstructResult.Ok).operand)
+    }
+
+    /**
+     * `=` (opa's own operator name "eq", spec §14 promotion, backlog rank #1 after §14.6) is
+     * Rego's general unification operator -- unlike `==` ("equal"), which the language guarantees
+     * never introduces a binding, `=` can ALSO destructure/bind a fresh variable (`[x, y] = [...]`
+     * binds x and y; probe 04). Promoting it to [Condition.Comparison] is only safe once BOTH sides
+     * are confirmed to already resolve to a genuine value through the exact same [mapOperand] path
+     * `==` uses -- an unbound bare var (`x` in `x = input.y` when `x` is fresh) or a composite
+     * literal containing one (`[x, y]`) maps to `Operand.Unrendered` (never `Unsupported` -- see
+     * [mapCollectionLiteral]/[mapVarOperand]), which is this function's positive signal that a new
+     * binding may be in play, not a comparison. Returns null (never a guess) for that case, and for
+     * a comprehension/every on either side too -- the caller's existing "function-call" fallback
+     * handles both exactly as it already did before this promotion existed.
+     *
+     * The caller additionally requires `!expr.negated` before calling this at all: `not x = y` is
+     * valid Rego (confirmed via a real `opa parse` run: `negated: true`, terms name still "eq") --
+     * `Condition.Comparison` has no `negated` field to carry that through faithfully (a pre-existing
+     * gap shared by `==`/`!=`/`>`/`>=`/`<`/`<=` too, all built via [buildComparisonLike], out of
+     * scope for this promotion), so a negated `=` stays in the existing "function-call" fallback
+     * rather than silently dropping the negation.
+     */
+    private fun eqAsPureComparisonOrNull(args: List<OpaTerm>, symbolTable: Map<String, VarBinding>): Condition? {
+        val left = mapOperand(args[0], symbolTable)
+        val right = mapOperand(args[1], symbolTable)
+        if (left !is ConstructResult.Ok || right !is ConstructResult.Ok) return null
+        if (left.operand is Operand.Unrendered || right.operand is Operand.Unrendered) return null
+        return Condition.Comparison(left.operand, Operator.EQ, right.operand)
     }
 
     private fun mapSomeIn(expr: OpaExpr, terms: JsonObject, symbolTable: MutableMap<String, VarBinding>): Condition {

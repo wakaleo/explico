@@ -205,7 +205,7 @@ class ExpressionRendererTest {
         // AstMapper never constructs this (it only builds Operand.BuiltinCall from
         // count/lower/upper/object.get/time.now_ns) -- this constructs one directly to prove the
         // defensive check actually fires. "concat" is a real operand-position-shaped builtin that's
-        // still a documented gap (spec §14 backlog rank #3) -- genuinely never promoted.
+        // still a documented gap (spec §14 backlog rank #2) -- genuinely never promoted.
         val bogus = Condition.Comparison(Operand.BuiltinCall("concat", listOf(Operand.Literal("\",\""))), Operator.GT, Operand.Literal("0"))
         assertThatThrownBy { ExpressionRenderer.render(bogus, noAnchor) }
             .isInstanceOf(IllegalArgumentException::class.java)

@@ -54,6 +54,7 @@ guessing.
 | Local variable bound to a plain path, reused later (`env := input.x; env == "y"`) | The bound path substituted inline; the assignment itself disappears entirely | **Promoted this session** — see below. Probes 03/07/39; new `AstMapperTest.LocalVariableSubstitution` cases cover var-rooted continuation, transitive chaining, and the non-plain-path fallback. |
 | `Operand.BuiltinCall`: `object.get(o, k, d)` — `o` a real path, `k` a plain string literal | `<o> ▸ <k> (default <d>)`, `k` extending `o`'s own breadcrumb as a `PathSegment.KeyLiteral` | **Promoted this session** — see below. Probe 35; new `AstMapperTest` cases cover both the promoted shape and the non-string-key fallback. |
 | `Operand.BuiltinCall`: `time.now_ns()` in operand position | `the current time` | **Promoted, follow-up session** — see below. Zero arguments, so the template is a fixed phrase rather than one built around a rendered argument. Probe 34. |
+| `=` unification (opa's `eq`), used as a **pure comparison** — both sides already resolve to a real, non-`Unrendered` operand | Identical to `==` | **Promoted, further follow-up session** — see below. Probe 05. Destructuring/binding uses of `=` (probe 04) are unaffected — still `function-call`, see below. |
 
 ### Falls back by design (confirmed correct, not a gap)
 
@@ -64,7 +65,7 @@ guessing.
 | Operand-position builtins outside `count`/`lower`/`upper`/`object.get`/`time.now_ns` (`concat`, and any user-defined function used as an operand) | n/a (`Operand.Unrendered`, condition itself still classifies) | No `Operand` shape decided yet for these (differing arity, no template precedent for `concat`). Probes 15/25/26/31 confirm this is safe: the verbatim call text is shown inline, never silently dropped or guessed. |
 | `object.get(o, k, d)` where `k` is not a plain string literal (a var, a number, a computed expression) | n/a (`Operand.Unrendered`) | No breadcrumb-extension rule exists for a non-string key — guessing one would be exactly the "widen a template to swallow a construct approximately" failure mode this audit exists to catch. New `AstMapperTest` case (`objectGetWithANonStringKeyIsNotPromoted`); not exercised by any probe file. |
 | `count(...)` bare in condition position | `function-call` | Spec's explicit rule: operand-position builtins never render as conditions. Probe 37. |
-| `=` unification, both as binding (destructuring) and as pure comparison between two already-bound values | `function-call` | `=` desugars to operator name `eq`, not `equal` (which `==` produces) — confirmed via real `opa parse` output. `COMPARISON_OPERATORS` only maps `equal`, so `=` is uniformly unclassified today; never misrendered as a binding when it's actually a comparison or vice versa. Probes 04/05/31. |
+| `=` unification used as **binding/destructuring** (`[x, y] = [...]`, a fresh var on either side) | `function-call` | **Partially promoted, further follow-up session** — the pure-comparison case (both sides already bound) is now `Comparison` (see "Rendered faithfully" above); a genuine bind still falls back, since `Condition.Comparison` can't represent "this also assigns x and y" — the mapper positively confirms neither side maps to `Operand.Unrendered` (its signal that a fresh binding may be in play) before promoting. Probe 04. A **negated** `=` (`not x = input.y`) also still falls back regardless of whether it's a pure comparison — see the disclosed gap below. |
 | `null` / object literal as a comparison operand | `unclassified` | No `Operand` variant for either shape yet. Probes 01/02. |
 | Ref-head rule reference used as an operand (`fruit.apple.seeds`, `users_by_role.admin.u1.name`) | n/a (`Operand.Unrendered`) | Neither `input`/`data`-rooted nor a known local-variable binding, so `mapRefChain` correctly falls back to verbatim rather than guessing a breadcrumb for a rule it doesn't recognise as such. Probes 13/14. |
 | `default` declarations (rule and function) | `unclassified` | No recognised body shape; RuleGroup's own `.default` field stays null (pre-existing, disclosed gap). **Quirk found this session**: opa's own AST gives a `default` rule's whole-rule `location.text` as just the literal word `default` — not the full `default allow := false` statement — so the fallback block, while honestly verbatim, is unhelpfully short. This is opa's own location-span behaviour, not an AstMapper defect. Probes 27/28. |
@@ -213,6 +214,75 @@ above), one backlog item per pass:
   `docs/sample-output/` staying drift-free -- no acceptance-pack policy uses
   the two-variable form.
 
+### `=` used as a pure comparison
+
+- **`=` (opa's own operator name `eq`) now promotes to `Condition.Comparison`
+  when -- and only when -- both sides are positively confirmed to already
+  resolve to a real value.** Unlike `==` ("equal"), which the Rego language
+  guarantees never introduces a binding, `=` is genuinely ambiguous at the
+  syntax level: it can ALSO destructure/bind a fresh variable (`[x, y] =
+  [...]`, probe 04). The mapper runs both sides through the exact same
+  `mapOperand` path `==` already uses, then requires NEITHER side to be
+  `Operand.Unrendered` before promoting -- an unbound bare var, or a
+  composite literal containing one, is exactly the shape that maps to
+  `Operand.Unrendered` today (never `Unsupported`), so its presence is
+  treated as a positive signal a fresh binding may be in play, not a
+  comparison. This is deliberately conservative: `x = input.y` with `x`
+  fresh stays unpromoted (probe 05 uses two already-real paths and DOES
+  promote; a new `AstMapperTest` case proves the fresh-var sibling stays
+  unclassified).
+- **A variable already bound by an earlier plain-path `:=` also qualifies**
+  -- `x := input.a; x = "production"` promotes the second line, since `x`
+  resolves through the pre-existing `VarBinding.Substitution` mechanism
+  (spec §14.4) to a real path, not `Operand.Unrendered`. New `AstMapperTest`
+  case.
+- **Real diff-quality improvement, not just a rendering one**: before this
+  promotion, `=` unconditionally fell back to a verbatim
+  `Condition.Unrendered`, so switching an existing, equally-pure comparison
+  from `==` to `=` (a purely stylistic change with identical real semantics)
+  would have spuriously changed the canonical hash. Now both hash
+  identically -- confirmed with a new `CanonicalizerTest` fixture pair
+  (`eq-unification-base`/`eq-unification-equivalent`), not assumed.
+- Verified via `check`/`acceptanceTest` staying green and
+  `docs/sample-output/` staying drift-free -- no acceptance-pack policy uses
+  `=`.
+
+### Disclosed, not fixed: negated comparisons silently drop the negation
+
+**Discovered while implementing the `=` promotion above, confirmed via a
+real `opa parse` run, and deliberately NOT fixed in this pass** -- it's a
+pre-existing gap in `buildComparisonLike` (the code path shared by `==`,
+`!=`, `>`, `>=`, `<`, `<=`, and now the promoted pure-`=` case), not
+something this promotion introduced, and fixing it is a materially larger
+change than "promote the next backlog item": it needs a new `negated` field
+on the public `Condition.Comparison` (a spec-frozen model type), a spec
+amendment, new `ExpressionRenderer` templates for six negated operators, and
+a `Canonicalizer` update.
+
+- **The gap**: `not input.a == input.b` is real, valid Rego -- confirmed via
+  `opa parse`: `negated: true` on the expr, terms name still `equal`. But
+  `Condition.Comparison` has no `negated` field, and `buildComparisonLike`
+  never reads `expr.negated` at all -- so this renders as `` `input.a` is
+  `input.b` `` (the POSITIVE statement), when the real logic is testing that
+  they're **not** equal. This is a genuine MISLEADING finding by this
+  audit's own definition (spec §14's cardinal sin: a rendered template whose
+  English doesn't match the construct's exact semantics), just discovered a
+  session later than the original audit, via unrelated work.
+- **This promotion's own new code does NOT add a new instance of it**: the
+  `=`-promotion path explicitly requires `!expr.negated` before even
+  attempting the pure-comparison check (`mapCallShapedCondition`) -- a
+  negated `=` (`not x = input.y`) stays in the pre-existing `function-call`
+  fallback, exactly as it already did before this promotion existed. New
+  `AstMapperTest` case
+  (`negatedUnificationStaysUnclassifiedRatherThanSilentlyDroppingTheNegation`)
+  proves this directly.
+- **Not exercised by the acceptance pack** -- none of the 5 real policies
+  negate a comparison operator (`not input.x == "y"` doesn't appear
+  anywhere; the pack's own negations are all over `Truthy`, `Membership`,
+  `BuiltinCall`, or `RuleReference`, which already carry `negated`
+  correctly). Flagged to the operator as a discovered issue for a
+  deliberate future session, not silently left undocumented.
+
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
 **Operand-level fallback (`Operand.Unrendered`) renders as plain backticked
@@ -241,19 +311,20 @@ Constructs currently in the fallback bucket that a future increment could
 render faithfully, ranked by estimated real-world policy-authoring
 frequency. The top four ranks (`count`/`lower`/`upper`/`object.get`, and
 local-variable substitution) plus former rank 1 (`time.now_ns`) plus former
-rank 1 of the next round (`some k, v in obj`) were selected and implemented
-in follow-up passes — see "Promoted this session" and "Promoted in further
+rank 1 of the next round (`some k, v in obj`) plus former rank 1 of the
+round after that (`=` as pure comparison) were selected and implemented in
+follow-up passes — see "Promoted this session" and "Promoted in further
 follow-up sessions" above; the rest remain a ranked list for selection, not
 a plan.
 
 | Rank | Construct | Proposed template | Risk |
 |---|---|---|---|
-| 1 | `=` used as a pure comparison (both sides already bound, no new binding introduced) | Treat identically to `==` | **Medium.** Must positively confirm *neither* side introduces an unbound variable before promoting — a destructuring `=` is assignment, not comparison, and conflating the two would be exactly the "widen a template to swallow a construct approximately" failure mode this audit exists to catch. |
-| 2 | Arithmetic operands (`x + 1`, etc.) | A small infix expression renderer | **Medium-high.** More design surface than the others (multiple operators, precedence, humanizing the operand sub-tree). |
-| 3 | `concat(sep, [...])` string-join operand | "X joined with Y" (no spec precedent) | **Medium.** New design, not just new wiring. |
-| 4 | `null` literal operand | `Operand.Literal("null")` | **Low.** Trivial, just never added. |
-| 5 | Small flat object literal operand | Same mechanism as the existing small-array-literal rendering | **Medium.** Needs a deterministic key-ordering and size-cap decision (mirroring the existing ≤5-element array rule). |
-| 6 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
+| 1 | Arithmetic operands (`x + 1`, etc.) | A small infix expression renderer | **Medium-high.** More design surface than the others (multiple operators, precedence, humanizing the operand sub-tree). |
+| 2 | `concat(sep, [...])` string-join operand | "X joined with Y" (no spec precedent) | **Medium.** New design, not just new wiring. |
+| 3 | `null` literal operand | `Operand.Literal("null")` | **Low.** Trivial, just never added. |
+| 4 | Small flat object literal operand | Same mechanism as the existing small-array-literal rendering | **Medium.** Needs a deterministic key-ordering and size-cap decision (mirroring the existing ≤5-element array rule). |
+| 5 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
+| — | **Correctness bug, not a coverage gap**: negated comparisons (`not x == y`) silently render the positive form | Add `negated: Boolean` to `Condition.Comparison`, thread `expr.negated` through `buildComparisonLike` and the promoted `=` path, add negated `ExpressionRenderer` templates for all six operators, update `Canonicalizer` | **High priority despite not being ranked with the others above** — this is a MISLEADING finding (spec §14's cardinal sin), not a missing-coverage nicety; see "Disclosed, not fixed" above for the full write-up. Not bumped ahead of the frequency-ranked list above only because it's a different KIND of work (a model/renderer/diff fix touching six operators at once, not a single new construct), and the operator hasn't yet chosen to prioritize it over the ranked list. |
 | — | `else`-chains rendered as multiple "Situation N" entries | *Not recommended near-term* | **High — explicitly deferred.** An else-chain's branches are priority-ordered and mutually exclusive (first match wins), not a simple OR of situations the way multiple `deny` bodies are. Modeling this incorrectly would reintroduce a MISLEADING finding of exactly the kind this session just fixed; needs its own design pass, not an incremental template tweak. |
 | — | `walk()` builtin | *Not recommended* | Niche in this project's target domain (compliance/authz policies rarely need generic tree traversal); low estimated frequency doesn't justify the design cost. |
 

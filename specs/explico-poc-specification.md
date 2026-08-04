@@ -1143,3 +1143,34 @@ Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
 content changed. Full rationale, including the empirical fixture proving
 the hash-collision gap above, is in `docs/rego-coverage.md`, not duplicated
 here.
+
+### 14.7 Further promotion: `=` used as a pure comparison (follow-up session)
+
+Backlog rank #1 of the ranked list remaining after §14.6, selected on its
+own:
+
+- `=` (opa's own operator name `eq`, distinct from `==`'s `equal`) promotes
+  to `Condition.Comparison` when -- and only when -- both sides are
+  positively confirmed to already resolve to a real, non-`Unrendered`
+  operand through the same `mapOperand` path `==` already uses. Unlike
+  `==`, which the language guarantees never introduces a binding, `=` can
+  also destructure/bind a fresh variable (`[x, y] = [...]`); a fresh bare
+  var or a composite literal containing one maps to `Operand.Unrendered`
+  (never `Unsupported`), which this promotion treats as a positive signal a
+  binding may be in play, and declines to promote rather than guess.
+- **Disclosed, not fixed, in the same pass**: implementing this promotion
+  surfaced a pre-existing gap shared by `==`/`!=`/`>`/`>=`/`<`/`<=`:
+  `Condition.Comparison` has no `negated` field, so `not x == y` (real,
+  valid Rego -- confirmed via `opa parse`) silently renders the POSITIVE
+  form. This promotion's own new code does not add a new instance of it (a
+  negated `=` is explicitly excluded before the promotion check even runs),
+  but fixing the pre-existing gap itself needs a model field, a spec
+  amendment, six new renderer templates, and a `Canonicalizer` update --
+  larger than this promotion's own scope, so it was flagged to the operator
+  rather than fixed unilaterally. See `docs/rego-coverage.md` for the full
+  write-up.
+
+Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
+content changed. Full rationale, including the empirical fixture proving
+`=` and `==` now hash identically for equivalent logic, is in
+`docs/rego-coverage.md`, not duplicated here.

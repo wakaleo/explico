@@ -81,6 +81,10 @@ class RegoCoverageAuditTest {
 
     @Test
     fun unificationDestructureFallsBackForTheDestructureButRendersTheFollowUpComparison() {
+        // Still NOT promoted, deliberately: `[x, y] = [...]` binds fresh x/y (destructuring, not
+        // comparison) -- the left side maps to Operand.Unrendered (a non-scalar array literal),
+        // which the `=`-promotion (spec §14) treats as a positive signal a binding may be in play,
+        // so the whole condition stays in its pre-existing "function-call" fallback.
         val conditions = conditionsOf(loadProbe("04-unification-destructure.rego"), "deny")
         assertThat(conditions).hasSize(2)
         assertUnrendered(conditions[0], "function-call")
@@ -88,12 +92,14 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun unificationUsedAsPureComparisonFallsBack() {
-        // `=` desugars to operator name "eq", not "equal" (which `==` produces) -- COMPARISON_OPERATORS
-        // only maps "equal", so `=` is entirely unclassified today, never misclassified as a comparison.
+    fun unificationUsedAsPureComparisonNowRendersFaithfullyPromotedThisSession() {
+        // Promoted (spec §14 backlog rank #1): `=` desugars to operator name "eq", not "equal"
+        // (which `==` produces). Both sides here are plain, already-real paths -- no fresh variable
+        // is introduced anywhere in the expression -- so this is genuinely a pure equality test,
+        // not destructuring, and renders identically to `==`.
         val conditions = conditionsOf(loadProbe("05-unification-as-comparison.rego"), "deny")
         assertThat(conditions).hasSize(1)
-        assertUnrendered(conditions.single(), "function-call")
+        assertThat(render(conditions.single())).isEqualTo("`change ▸ author` is `change ▸ approver`")
     }
 
     @Test

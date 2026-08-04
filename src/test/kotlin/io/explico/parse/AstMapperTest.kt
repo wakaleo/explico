@@ -1344,4 +1344,128 @@ class AstMapperTest {
             )
         }
     }
+
+    @Nested
+    inner class UnificationAsPureComparison {
+
+        @Test
+        fun freshBareVarOnOneSideStaysUnclassified() {
+            // `x = input.deployment.environment`, x never bound before this point -- possibly a
+            // fresh-variable bind (equivalent to `x := ...`), not provably a pure comparison, so
+            // spec §14's promotion must NOT treat this as Condition.Comparison.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("x = input.deployment.environment")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"eq"}]},
+                            {"type":"var","value":"x"},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"deployment"},{"type":"string","value":"environment"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            assertThat(body.conditions).hasSize(1)
+            val fallback = body.conditions.single() as Condition.Unrendered
+            assertThat(fallback.reason).isEqualTo("function-call")
+            assertThat(fallback.sourceText).isEqualTo("x = input.deployment.environment")
+        }
+
+        @Test
+        fun aVariableAlreadyBoundByAnEarlierPlainPathAssignmentPromotesToComparison() {
+            // `x := input.deployment.environment; x = "production"` -- x is already bound (to a
+            // real path) BEFORE the `=` line, so this second line is genuinely a pure comparison,
+            // not a bind -- must promote identically to `x == "production"`.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("x := input.deployment.environment")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"assign"}]},
+                            {"type":"var","value":"x"},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"deployment"},{"type":"string","value":"environment"}]}
+                          ]
+                        },
+                        {
+                          "index": 1,
+                          "location": {"file":"scratch.rego","row":2,"text":"${b64("x = \"production\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"eq"}]},
+                            {"type":"var","value":"x"},
+                            {"type":"string","value":"production"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            // The `:=` line itself disappears entirely (spec §14.4, already-established substitution
+            // behaviour) -- only the promoted comparison remains.
+            assertThat(body.conditions).hasSize(1)
+            val comparison = body.conditions.single() as Condition.Comparison
+            assertThat(comparison.op).isEqualTo(Operator.EQ)
+            assertThat((comparison.left as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("deployment"), PathSegment.Field("environment"),
+            )
+            assertThat((comparison.right as Operand.Literal).rendered).isEqualTo("\"production\"")
+        }
+
+        @Test
+        fun negatedUnificationStaysUnclassifiedRatherThanSilentlyDroppingTheNegation() {
+            // `not input.change.author = input.change.approver` -- real, valid Rego (confirmed via a
+            // real `opa parse` run: negated: true, terms name still "eq"). Condition.Comparison has
+            // no negated field, so promoting this would silently render the OPPOSITE of what the
+            // source actually checks -- must stay in the existing "function-call" fallback instead.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "negated": true,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("not input.change.author = input.change.approver")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"eq"}]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"change"},{"type":"string","value":"author"}]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"change"},{"type":"string","value":"approver"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            assertThat(body.conditions).hasSize(1)
+            val fallback = body.conditions.single() as Condition.Unrendered
+            assertThat(fallback.reason).isEqualTo("function-call")
+        }
+    }
 }

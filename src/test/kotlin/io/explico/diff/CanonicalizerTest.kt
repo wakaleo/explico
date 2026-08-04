@@ -153,4 +153,17 @@ class CanonicalizerTest {
         val keyInstead = denyRule("some-kv-key-vs-value") // tests k (the key), same variable names throughout
         assertThat(Canonicalizer.logicHash(keyInstead)).isNotEqualTo(Canonicalizer.logicHash(base))
     }
+
+    @Test
+    fun pureUnificationEquivalentToDoubleEqualsHashesTheSame() {
+        // spec §14 promotion: `input.a = input.b` (both sides already real, non-binding paths) now
+        // promotes identically to `input.a == input.b` -- a real diff-quality improvement, not just
+        // a rendering one. Before this promotion, `=` unconditionally fell back to a verbatim
+        // Condition.Unrendered, so switching from `==` to an equivalent, equally-pure `=` would have
+        // spuriously hashed differently (or even flipped DiffCategory to LOGIC_CHANGED) despite
+        // identical real semantics.
+        val doubleEquals = denyRule("eq-unification-base")
+        val singleEquals = denyRule("eq-unification-equivalent")
+        assertThat(Canonicalizer.logicHash(singleEquals)).isEqualTo(Canonicalizer.logicHash(doubleEquals))
+    }
 }
