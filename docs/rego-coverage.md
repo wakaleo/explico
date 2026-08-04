@@ -48,6 +48,9 @@ guessing.
 | `BuiltinCall`: `glob.match` | `<v> matches glob <p>` | Probe 32 — same gap, same confirmation. |
 | Function overloading (multiple bodies, same name, discriminated by arg pattern) | Each body as its own Situation | Probe 16 — needs **no** special-case handling at all: it's structurally identical to the pre-existing incremental-definitions mechanism (`RuleGroup.bodies`), confirmed by actually running it. |
 | Partial object rule with a plain string value (`deny_severity[msg] := "high" if {...}`) | Normal card + `producesValue` | Probe 18 — conditions and the message both render exactly as a `deny contains msg` rule would. |
+| `Operand.BuiltinCall`: `count(x)` in operand position | `the number of <x>` | **Promoted this session** — see below. Probe 23. |
+| `Operand.BuiltinCall`: `lower(x)` / `upper(x)` in operand position | `<x> lowercased` / `<x> uppercased` | **Promoted this session** — see below. Probe 36. |
+| Local variable bound to a plain path, reused later (`env := input.x; env == "y"`) | The bound path substituted inline; the assignment itself disappears entirely | **Promoted this session** — see below. Probes 03/07/39; new `AstMapperTest.LocalVariableSubstitution` cases cover var-rooted continuation, transitive chaining, and the non-plain-path fallback. |
 
 ### Falls back by design (confirmed correct, not a gap)
 
@@ -55,16 +58,16 @@ guessing.
 |---|---|---|
 | Comprehensions (array/set/object), bare or wrapped in `count(...)` | `comprehension` | Explicit non-goal (spec §1.2). Probes 09 (nested `every`), 29, 30; pack REL-004. |
 | `every` (incl. nested `every` inside `every`) | `every` | Explicit non-goal. Probe 09 confirms nesting doesn't get partial credit — the whole outer block falls back as one unit, never guessing at the inner structure. |
-| Operand-position builtins (`count`, `lower`, `upper`, `object.get`, `time.now_ns`, `concat`, and any user-defined function used as an operand) | n/a (`Operand.Unrendered`, condition itself still classifies) | No `Operand` variant exists yet for "the result of calling X" (documented gap, AstMapper file header). Probes 15/23/25/26/31/34/35/36 confirm this is safe: the verbatim call text is shown inline, never silently dropped or guessed. |
+| Operand-position builtins outside `count`/`lower`/`upper` (`object.get`, `time.now_ns`, `concat`, and any user-defined function used as an operand) | n/a (`Operand.Unrendered`, condition itself still classifies) | No `Operand` shape decided yet for these (differing arity, no template precedent for `concat`). Probes 15/25/26/31/34/35 confirm this is safe: the verbatim call text is shown inline, never silently dropped or guessed. |
 | `count(...)` bare in condition position | `function-call` | Spec's explicit rule: operand-position builtins never render as conditions. Probe 37. |
 | `=` unification, both as binding (destructuring) and as pure comparison between two already-bound values | `function-call` | `=` desugars to operator name `eq`, not `equal` (which `==` produces) — confirmed via real `opa parse` output. `COMPARISON_OPERATORS` only maps `equal`, so `=` is uniformly unclassified today; never misrendered as a binding when it's actually a comparison or vice versa. Probes 04/05/31. |
 | `null` / object literal as a comparison operand | `unclassified` | No `Operand` variant for either shape yet. Probes 01/02. |
-| Local variable bound to a plain path, then reused (`env := input.x; env == "production"`) | `function-call` (assignment) + faithful-looking `Comparison` with a bare-var operand | The pre-existing, already-disclosed gap (CLAUDE.md, spec §5): the assignment renders as its own (slightly confusing) fallback bullet; the later comparison renders correctly as a `Comparison`, but with `` `env` `` shown as bare backticked text indistinguishable from a real path breadcrumb. Reviewed this session (see "Disclosed, unchanged" below) — not reclassified, but now backed by a permanent regression test (probes 03/06/07/11) instead of only a prose note. |
 | Ref-head rule reference used as an operand (`fruit.apple.seeds`, `users_by_role.admin.u1.name`) | n/a (`Operand.Unrendered`) | Neither `input`/`data`-rooted nor a known local-variable binding, so `mapRefChain` correctly falls back to verbatim rather than guessing a breadcrumb for a rule it doesn't recognise as such. Probes 13/14. |
 | `default` declarations (rule and function) | `unclassified` | No recognised body shape; RuleGroup's own `.default` field stays null (pre-existing, disclosed gap). **Quirk found this session**: opa's own AST gives a `default` rule's whole-rule `location.text` as just the literal word `default` — not the full `default allow := false` statement — so the fallback block, while honestly verbatim, is unhelpfully short. This is opa's own location-span behaviour, not an AstMapper defect. Probes 27/28. |
-| Declare-only `some` (`some key`, `some i, j` — no `in`) | `unclassified` | Correctly falls back once the confirmed crash (below) was fixed. Probes 07/12. |
+| Declare-only `some` (`some key`, `some i, j` — no `in`) | `unclassified` | Correctly falls back once the confirmed crash (below) was fixed; `i`/`j` never become iteration bindings, so a later `arr[i]` still falls back too even though `arr` itself may now be a promoted substitution binding. Probes 07/12. |
 | `walk(input, [path, value])` | `unclassified` (binding) + `function-call` (the call) | Probe 11 — the binding and the call both fall back independently; a later comparison using the bound `value` still renders. |
-| Composite-value membership (`[1, 2] in pairs`) | `function-call` (the `pairs :=` binding) | The membership check itself renders (`Membership`), with the untraced `pairs` variable shown as bare text — same pattern as the local-variable case above. Probe 31. |
+| Composite-value membership (`[1, 2] in pairs`) | `function-call` (the `pairs :=` binding) | `{[1, 2], [3, 4]}` is a set literal, not a plain path, so the promoted substitution rule doesn't apply -- the binding still falls back, with `pairs` shown as untraced bare text in the (still-rendered) `Membership` check. Probe 31. |
+| Assignment to something other than a plain path (`x := count(input.y)`), later bare use | `function-call` (assignment) + `Operand.Variable` on reuse | Spec §5's own explicit wording for the non-promoted case: the assignment stays a visible fallback bullet, and later bare uses of the variable render as `Operand.Variable(x)` -- known to be assigned, distinguishable from a genuinely unbound/unknown name (which stays `Operand.Unrendered`). New `AstMapperTest` case (`assignmentToANonPlainPathStillFallsBackAndLaterBareUseRendersAsVariable`); not exercised by any probe file. |
 | String interpolation (`$"Deployment {x} was rejected"`) | `function-call` | A genuinely new-to-this-audit Rego construct (desugars to a `templatestring` term type opa's parser produces, not documented in spec §6.3 at all). Safely, silently falls back for both the binding and the message — same graceful-omission behaviour as any other unsupported message shape, not a new regression. Probe 39. |
 | Dynamic root-position ref (`input[key]`) where `key` is unbound | n/a (`Operand.Unrendered`) | Not a new rule — this is the *existing* "unbound middle/root-position `VarIndex` → whole operand falls back" rule (session 4) doing exactly its job against a genuinely new real-`opa`-output shape. Probe 12. |
 
@@ -84,46 +87,95 @@ existing acceptance pack, so nothing previously shipped was affected — but
 any future policy using any of them would have been silently misrendered
 before this session.
 
+## Promoted this session (selected from the backlog below)
+
+Three backlog items were selected and implemented in a follow-up pass, not
+part of the original audit:
+
+- **`count(x)` in operand position** (`x` a plain path) now renders "the
+  number of X" via a new `Operand.BuiltinCall(name, args)` variant. A
+  comprehension-wrapped `count({a | ...})` (the acceptance pack's own
+  REL-004 shape) is unaffected — the comprehension argument still fails to
+  resolve, so the whole call still falls back exactly as before.
+- **`lower(x)` / `upper(x)` in operand position** now render "X lowercased"
+  / "X uppercased" via the same mechanism.
+- `Coverage.unrenderedOperandCount` was extended to recurse into
+  `BuiltinCall.args`, since this is the first *nested* `Operand` shape the
+  model has had — an unrenderable argument buried inside an otherwise-
+  faithful `count(...)` (e.g. `count(x)` where `x` is itself an unbound
+  local variable) still counts against the coverage footer instead of
+  silently vanishing from it.
+- `object.get`/`time.now_ns` were deliberately left for a later pass — no
+  acceptance-pack policy or probe forced a decision on rendering a
+  non-trivial key/default argument yet.
+- **Disclosed, not fixed**: `Examples.referencedPaths` (spec §6.7's worked-
+  examples display) only recognises a top-level `Operand.Path`, so a
+  `count(x) == 0` condition's underlying `x` won't appear in a worked
+  example's referenced-value listing even though the condition itself now
+  renders faithfully. Left as-is — out of scope for this promotion, which
+  was about the *condition's* rendering, not worked-examples completeness;
+  worth a small follow-up (recurse into `BuiltinCall.args`) whenever
+  worked-examples coverage for promoted operand builtins is worth doing.
+- **Local variable bound to a plain path, reused later** (`env := input.x;
+  env == "y"`) — spec §5's own long-documented rule, finally implemented.
+  A per-body symbol table now distinguishes three binding kinds
+  (`VarBinding.Iteration` for `some x in y`, `VarBinding.Substitution` for
+  a plain-path assignment, `VarBinding.NonPath` for anything else) so an
+  iteration variable's "[each x]" marker is never wrongly applied to a
+  plain substitution, and vice versa. Resolution is transitive
+  (`a := input.x; b := a.y` substitutes fully through both), and works both
+  as a bare reference and as a ref-chain root (`env.field`). The
+  non-promoted case (assignment to something other than a plain path) now
+  matches spec §5's own wording precisely: later bare uses render as
+  `Operand.Variable(x)`, not the generic unbound `Operand.Unrendered` --
+  distinguishing "assigned, but not a path" from "genuinely never bound".
+- Verified via `check`/`acceptanceTest` staying green and
+  `docs/sample-output/` staying drift-free for all three — no existing
+  golden or shipped behavior was affected, since none of the acceptance
+  pack's 5 policies uses any of these idioms.
+
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
 **Operand-level fallback (`Operand.Unrendered`) renders as plain backticked
-verbatim source — visually identical to a real humanized path.** An untraced
-local variable (`` `env` ``), a ref-head rule reference (`` `fruit.apple.seeds` ``),
-or an operand-position builtin call (`` `count(input.x)` ``) all look exactly
-like a real breadcrumb (`` `deployment ▸ environment` ``) in the rendered
-bullet — there is no inline marker, only the aggregate "contains N unrendered
-value(s)" coverage-footer line. This session's probe corpus showed the
-pattern is considerably more pervasive than the single narrow case (operand-
-position builtins) session 3/4 originally reviewed it for. Reaffirmed as
-**not** a MISLEADING finding: the underlying assertion in every affected
-bullet stays true regardless (the comparison really does hold), only
-legibility suffers, and widening the convention now — mid-audit, without new
-evidence the *wording itself* is wrong — risks exactly the scope creep this
-session was meant to avoid. Left unchanged; noted here for a future
-increment to weigh deliberately, with its own review, not as a byproduct of
-this one.
+verbatim source — visually identical to a real humanized path.** A ref-head
+rule reference (`` `fruit.apple.seeds` ``), an untraced non-plain-path-assigned
+variable, or an operand-position builtin call the promotion above doesn't
+cover (`` `object.get(input.x, "y", "z")` ``) all look exactly like a real
+breadcrumb (`` `deployment ▸ environment` ``) in the rendered bullet — there
+is no inline marker, only the aggregate "contains N unrendered value(s)"
+coverage-footer line. This session's probe corpus showed the pattern is
+considerably more pervasive than the single narrow case (operand-position
+builtins) session 3/4 originally reviewed it for — though the plain-path
+local-variable case, the single largest contributor to that pervasiveness,
+was itself promoted away this session (see above), narrowing the remaining
+surface. Reaffirmed as **not** a MISLEADING finding for what's left: the
+underlying assertion in every affected bullet stays true regardless (the
+comparison really does hold), only legibility suffers, and widening the
+convention now — mid-audit, without new evidence the *wording itself* is
+wrong — risks exactly the scope creep this session was meant to avoid. Left
+unchanged; noted here for a future increment to weigh deliberately, with its
+own review, not as a byproduct of this one.
 
 ## Promotion backlog
 
 Constructs currently in the fallback bucket that a future increment could
 render faithfully, ranked by estimated real-world policy-authoring
-frequency. **No promotion was implemented this session** — this is a ranked
-list for selection, not a plan.
+frequency. The top three ranks (`count`/`lower`/`upper`, and local-variable
+substitution) were selected and implemented in a follow-up pass — see
+"Promoted this session" above; the rest remain a ranked list for selection,
+not a plan.
 
 | Rank | Construct | Proposed template | Risk |
 |---|---|---|---|
-| 1 | `count(x)` in operand position, `x` a plain path (not a comprehension) | "the number of X" — spec §6.3 already specifies this exact wording | **Low.** Only needs a new `Operand` variant + `AstMapper` wiring; the design already exists and is approved. |
-| 2 | `lower(x)` / `upper(x)` in operand position | "X lowercased" / "X uppercased" — also already spec'd | **Low.** Same reasoning as #1. |
-| 3 | Local variable bound to a plain path, reused later (`env := input.x; env == "y"`) | Substitute the bound path inline wherever the variable is used; suppress the separate assignment bullet | **Medium.** The documented, long-standing gap (spec §5). Needs to apply *only* when the RHS is a plain path (not a builtin call, comprehension, or arithmetic expression) — mirrors the `SomeIn`-binding mechanism already in place, but getting the scope boundary wrong would reintroduce exactly the kind of untraced-variable confusion this audit flagged. |
-| 4 | `object.get(o, k, d)` in operand position | "X ▸ K (default D)" — already spec'd | **Low-medium.** Needs a decision on rendering the key/default when *they* aren't simple literals. |
-| 5 | `time.now_ns()` in operand position | "the current time" — already spec'd | **Low.** |
-| 6 | `some k, v in obj` (two-variable form) | "for some k, v in X", with both `k` and `v` in scope for later var-rooted paths | **Medium.** Touches `PathHumanizer`'s `[each x]` convention, which has no two-variable form yet. |
-| 7 | `=` used as a pure comparison (both sides already bound, no new binding introduced) | Treat identically to `==` | **Medium.** Must positively confirm *neither* side introduces an unbound variable before promoting — a destructuring `=` is assignment, not comparison, and conflating the two would be exactly the "widen a template to swallow a construct approximately" failure mode this audit exists to catch. |
-| 8 | Arithmetic operands (`x + 1`, etc.) | A small infix expression renderer | **Medium-high.** More design surface than the others (multiple operators, precedence, humanizing the operand sub-tree). |
-| 9 | `concat(sep, [...])` string-join operand | "X joined with Y" (no spec precedent) | **Medium.** New design, not just new wiring. |
-| 10 | `null` literal operand | `Operand.Literal("null")` | **Low.** Trivial, just never added. |
-| 11 | Small flat object literal operand | Same mechanism as the existing small-array-literal rendering | **Medium.** Needs a deterministic key-ordering and size-cap decision (mirroring the existing ≤5-element array rule). |
-| 12 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
+| 1 | `object.get(o, k, d)` in operand position | "X ▸ K (default D)" — already spec'd | **Low-medium.** Needs a decision on rendering the key/default when *they* aren't simple literals. |
+| 2 | `time.now_ns()` in operand position | "the current time" — already spec'd | **Low.** |
+| 3 | `some k, v in obj` (two-variable form) | "for some k, v in X", with both `k` and `v` in scope for later var-rooted paths | **Medium.** Touches `PathHumanizer`'s `[each x]` convention, which has no two-variable form yet. |
+| 4 | `=` used as a pure comparison (both sides already bound, no new binding introduced) | Treat identically to `==` | **Medium.** Must positively confirm *neither* side introduces an unbound variable before promoting — a destructuring `=` is assignment, not comparison, and conflating the two would be exactly the "widen a template to swallow a construct approximately" failure mode this audit exists to catch. |
+| 5 | Arithmetic operands (`x + 1`, etc.) | A small infix expression renderer | **Medium-high.** More design surface than the others (multiple operators, precedence, humanizing the operand sub-tree). |
+| 6 | `concat(sep, [...])` string-join operand | "X joined with Y" (no spec precedent) | **Medium.** New design, not just new wiring. |
+| 7 | `null` literal operand | `Operand.Literal("null")` | **Low.** Trivial, just never added. |
+| 8 | Small flat object literal operand | Same mechanism as the existing small-array-literal rendering | **Medium.** Needs a deterministic key-ordering and size-cap decision (mirroring the existing ≤5-element array rule). |
+| 9 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
 | — | `else`-chains rendered as multiple "Situation N" entries | *Not recommended near-term* | **High — explicitly deferred.** An else-chain's branches are priority-ordered and mutually exclusive (first match wins), not a simple OR of situations the way multiple `deny` bodies are. Modeling this incorrectly would reintroduce a MISLEADING finding of exactly the kind this session just fixed; needs its own design pass, not an incremental template tweak. |
 | — | `walk()` builtin | *Not recommended* | Niche in this project's target domain (compliance/authz policies rarely need generic tree traversal); low estimated frequency doesn't justify the design cost. |
 

@@ -159,13 +159,18 @@ NOT yet do the following. Each is a scoping decision, not an oversight:
   point in the domain model; unexercised by the pack anyway). `.default`
   remains unimplemented — still no policy in the pack declares a `default`
   rule.
-- **No `Operand` variant exists for an operand-position builtin call**
-  (`count`, `lower`, `upper`, `object.get`, `time.now_ns`). Spec's `Operand`
-  sealed interface only has `Path`/`Literal`/`Variable`/`Unrendered` — there's
-  nowhere to put "the number of `X`". AstMapper maps these to
-  `Operand.Unrendered` unconditionally for now. Revisit when
-  `ExpressionRenderer` is built: either add a variant, or confirm the
-  spec intends these to only ever appear as fallback anyway.
+- ~~No `Operand` variant exists for an operand-position builtin call~~
+  **Partially resolved (session 11, spec §14 promotion backlog rank #1/#2).**
+  `Operand.BuiltinCall(name, args)` now exists and is wired for `count`,
+  `lower`, `upper` — the three lowest-risk promotion-backlog items, all with
+  a spec §6.3 template that already existed and only needed a model variant
+  + `AstMapper` wiring, no new design. `object.get`/`time.now_ns` remain
+  unresolved (different arity, no template decision made yet for how to
+  render a non-trivial key/default argument) and still map to
+  `Operand.Unrendered`. `Coverage.unrenderedOperandCount` recurses into
+  `BuiltinCall.args` so a nested unrenderable argument (e.g. an unbound var
+  passed to `count`) still counts against the footer, since this is the
+  first *nested* `Operand` shape the model has ever had.
 - **`producesValue`'s placeholder format is deliberately its own thing, not
   `PathHumanizer`'s breadcrumb style.** It reuses `PathHumanizer.wordsOf` for
   the word-splitting (drop `input`, split camelCase/snake_case/kebab-case,
@@ -176,10 +181,19 @@ NOT yet do the following. Each is a scoping decision, not an oversight:
   (e.g. REL-002's `stage.name`, REL-004's `window.name`) makes `producesValue`
   null rather than guessing a bracket format spec never demonstrated (see
   spec §5's session-2 amendment).
-- **The general "assign a local var to a plain path, substitute inline later"
-  rule (§5) isn't implemented.** No rule in the acceptance pack exercises it
-  (the only assignments present are the message-producing `msg := ...`, which
-  IS handled). Don't assume it works until it has a driving test.
+- ~~The general "assign a local var to a plain path, substitute inline
+  later" rule (§5) isn't implemented.~~ **Resolved (session 11, spec §14
+  backlog rank #1).** A per-body `VarBinding` sealed type now distinguishes
+  three binding kinds -- `Iteration` (`some x in y`, appends `[each x]`),
+  `Substitution` (`x := <plain path>`, substitutes directly, no extra
+  segment), `NonPath` (`x := <anything else>`, later bare uses render as
+  `Operand.Variable(x)` per spec §5's own wording). Resolution is
+  transitive (`a := input.x; b := a.y` fully substitutes through both) and
+  works as both a bare reference and a ref-chain root. Still no
+  acceptance-pack policy exercises it directly -- driven instead by
+  `RegoCoverageAuditTest`'s probes 03/07/39 and four new synthetic-JSON
+  `AstMapperTest.LocalVariableSubstitution` cases (bare use, ref-chain-root
+  use, transitive chaining, and the non-plain-path fallback case).
 - **`PathSegment.AnyIndex` (`[_]`) has minimal, untested-by-fixture handling.**
   No pack policy uses `[_]`; the code path exists per spec but has no real
   captured JSON exercising it.
@@ -975,3 +989,63 @@ judgment calls behind them.
   frequency in this project's compliance/authz target domain doesn't
   justify the design cost). No promotion was implemented this session, per
   explicit instruction -- the backlog is for the operator's own selection.
+
+## §14.4 Promotion pass: count/lower/upper + local-variable substitution (session 11)
+
+Immediate follow-up to session 10's audit: the operator asked to "work
+through" the promotion backlog rather than leave it entirely for later, so
+the top three ranked items were implemented in the same sitting the backlog
+was proposed in, not deferred to a separate increment.
+
+- **`count`/`lower`/`upper` first** (ranks #1/#2, both marked Low risk):
+  added `Operand.BuiltinCall(name, args)` -- the sealed interface's first
+  genuinely NESTED operand shape. This immediately surfaced a real
+  correctness question nothing else in the model had ever posed:
+  `Coverage.unrenderedOperandCount` only ever checked TOP-level operands
+  for `is Operand.Unrendered`, so an unrenderable argument buried inside an
+  otherwise-faithful `count(x)` (e.g. `x` an unbound var) would have
+  silently under-counted against the coverage footer. Fixed by making
+  `countUnrendered` recurse into `BuiltinCall.args` -- caught by reasoning
+  about the new nesting, not by a failing test, since no probe happened to
+  exercise that exact combination; added one afterward
+  (`AstMapperTest.operandPositionBuiltinWithAnUnboundArgumentWrapsAnUnrenderedOperandRatherThanFallingBackWhole`)
+  specifically so it wouldn't regress silently.
+- **Local-variable substitution second** (rank #3 in the original
+  ordering, promoted immediately after): implementing spec §5's own
+  long-documented rule required recognizing that the EXISTING
+  `symbolTable: Map<String, Operand.Path>` (populated only by `some x in
+  y`) could not simply be reused for `x := <plain path>` bindings too --
+  `mapRefChain`'s var-rooted branch unconditionally appends a
+  `PathSegment.VarIndex` (the "[each x]" marker), which is correct for an
+  iteration variable but actively WRONG for a plain substitution
+  (`env := input.deployment.environment; env == "production"` would have
+  rendered as `` `deployment ▸ environment ▸ [each env]` `` -- a fabricated
+  index segment implying iteration that isn't there). Caught by tracing
+  the existing code's actual behavior before writing any new logic, not by
+  a failing test. Fixed by introducing a `VarBinding` sealed interface
+  (`Iteration` / `Substitution` / `NonPath`) so the SAME per-body map now
+  carries enough information to apply the right substitution rule per
+  binding kind -- a single map, not two parallel ones, kept the threading
+  change mechanical (a type-annotation swap) everywhere except the four
+  functions that actually inspect binding kind
+  (`mapVarOperand`/`mapRefChain`/`mapPathSegments`/`mapSomeIn`).
+- **Both promotions changed existing `RegoCoverageAuditTest` expectations,
+  not just added new ones** -- three probes (03, 07, 39) had their
+  CURRENT-behavior assertions pinned in session 10 specifically because
+  that behavior was disclosed-but-unresolved at the time; promoting the
+  underlying construct made those exact assertions wrong on purpose, and
+  they were updated in place (with the old reasoning replaced by the new,
+  not left as a stale comment) rather than treated as a regression to
+  avoid.
+- **Verified zero acceptance-pack impact for both promotions**, not
+  assumed from "no policy uses this idiom" reasoning alone:
+  `check`/`acceptanceTest` stayed green and `generateSampleDocs` produced
+  no diff against the committed `docs/sample-output/` after each of the
+  two changes, run separately so a regression from either promotion could
+  be attributed to the right one.
+- **`docs/rego-coverage.md` and spec §14 were updated as part of the same
+  pass**, not deferred -- the coverage table, the "Disclosed, unchanged"
+  section (whose own example, `` `env` ``, was itself the construct just
+  promoted, requiring the example to change too, not just the table row),
+  and the promotion backlog's ranking were all edited together so the
+  document never described an already-superseded state.

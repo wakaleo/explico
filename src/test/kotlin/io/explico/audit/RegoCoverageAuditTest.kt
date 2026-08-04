@@ -70,15 +70,13 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun localVarAssignThenCompareFallsBackForTheAssignmentButRendersTheComparison() {
-        // Disclosed gap (CLAUDE.md, spec §5): the assignment itself becomes its own fallback bullet,
-        // and the later `env == "production"` still renders -- with `env` shown as a bare backtick
-        // value indistinguishable from a real path. Assertion pins the CURRENT behavior so a future
-        // change is a deliberate, reviewed diff here, not a silent drift.
+    fun localVarAssignThenCompareNowSubstitutesInlinePromotedThisSession() {
+        // Promoted (spec §5/§14 backlog rank #1): `env := input.deployment.environment` no longer
+        // produces its own fallback bullet -- it's registered as a Substitution binding and
+        // disappears entirely, with `env` substituted for the real path wherever it's used later.
         val conditions = conditionsOf(loadProbe("03-var-assign-then-compare.rego"), "deny")
-        assertThat(conditions).hasSize(2)
-        assertUnrendered(conditions[0], "function-call")
-        assertThat(render(conditions[1])).isEqualTo("`env` is `\"production\"`")
+        assertThat(conditions).hasSize(1)
+        assertThat(render(conditions.single())).isEqualTo("`deployment ▸ environment` is `\"production\"`")
     }
 
     @Test
@@ -109,13 +107,15 @@ class RegoCoverageAuditTest {
 
     @Test
     fun someDeclareMultipleWithoutInFallsBackSafelyNoCrash() {
+        // `arr := input.change.approvals` is now promoted (spec §14 backlog rank #1) and disappears
+        // from the conditions list -- but `arr[i]`/`arr[j]` still fall back, since `i`/`j` themselves
+        // stay unbound (`some i, j` with no `in` never registers them as iteration variables).
         val conditions = conditionsOf(loadProbe("07-some-declare-multiple-no-in.rego"), "deny")
-        assertThat(conditions).hasSize(5)
+        assertThat(conditions).hasSize(4)
         assertUnrendered(conditions[0], "unclassified")
-        assertUnrendered(conditions[1], "function-call")
-        assertThat(render(conditions[2])).isEqualTo("`arr[i].role` is `\"release-manager\"`")
-        assertThat(render(conditions[3])).isEqualTo("`arr[j].role` is `\"security\"`")
-        assertThat(render(conditions[4])).isEqualTo("`i` is not `j`")
+        assertThat(render(conditions[1])).isEqualTo("`arr[i].role` is `\"release-manager\"`")
+        assertThat(render(conditions[2])).isEqualTo("`arr[j].role` is `\"security\"`")
+        assertThat(render(conditions[3])).isEqualTo("`i` is not `j`")
     }
 
     @Test
@@ -268,13 +268,14 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun countOfAPlainPathStillRendersAsAComparisonWithAnUnhumanizedOperand() {
-        // Promotion-backlog candidate: the Condition itself renders (not a whole-condition fallback),
-        // but count(...) itself is still Operand.Unrendered -- no Operand variant exists for it yet.
+    fun countOfAPlainPathNowRendersFaithfullyPromotedThisSession() {
+        // Promoted (spec §14): count(x) with a plain-path argument now renders via
+        // Operand.BuiltinCall's "the number of X" template, per spec §6.3's own already-approved
+        // wording -- was previously in the promotion backlog as rank #1 (lowest risk).
         val conditions = conditionsOf(loadProbe("23-count-emptiness-idiom-plain-path.rego"), "deny")
         assertThat(conditions).hasSize(1)
         assertThat(conditions.single()).isInstanceOf(Condition.Comparison::class.java)
-        assertThat(render(conditions.single())).isEqualTo("`count(input.change.approvals)` is `0`")
+        assertThat(render(conditions.single())).isEqualTo("the number of `change ▸ approvals` is `0`")
     }
 
     @Test
@@ -372,10 +373,12 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun lowerAndUpperOperandsRenderAsUnhumanizedVerbatimSource() {
+    fun lowerAndUpperOperandsNowRenderFaithfullyPromotedThisSession() {
+        // Promoted (spec §14): both were rank #2 in the promotion backlog (lowest risk, spec §6.3
+        // already specified these exact templates).
         val policySet = loadProbe("36-lower-upper-operand.rego")
-        assertThat(render(conditionsOf(policySet, "deny", 0).single())).isEqualTo("`lower(input.change.author)` is `\"asmith\"`")
-        assertThat(render(conditionsOf(policySet, "deny", 1).single())).isEqualTo("`upper(input.deployment.environment)` is `\"PRODUCTION\"`")
+        assertThat(render(conditionsOf(policySet, "deny", 0).single())).isEqualTo("`change ▸ author` lowercased is `\"asmith\"`")
+        assertThat(render(conditionsOf(policySet, "deny", 1).single())).isEqualTo("`deployment ▸ environment` uppercased is `\"PRODUCTION\"`")
     }
 
     @Test
@@ -396,15 +399,16 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun stringInterpolationFallsBackForBothTheBindingAndTheMessage() {
-        // `$"..."` desugars to a new "templatestring" term type explico doesn't model -- safely
-        // falls back rather than crashing or guessing; the message stays silently absent (same as
-        // any other unsupported message shape), not a regression specific to this construct.
+    fun stringInterpolationFallsBackForTheMessageOnlyNowThatTheEarlierAssignmentIsPromoted() {
+        // `x := input.deployment.id` is now promoted (spec §14 backlog rank #1) and disappears --
+        // `deny` here is a plain `if` rule (no head key), so `msg` is an ordinary local variable,
+        // not this rule's message var; `$"..."` desugars to a new "templatestring" term type
+        // explico doesn't model, so its own assignment still safely falls back rather than
+        // crashing or guessing.
         val policySet = loadProbe("39-string-interpolation.rego")
         val body = policySet.packages.single().rules.single { it.name == "deny" }.bodies.single()
-        assertThat(body.conditions).hasSize(2)
-        assertUnrendered(body.conditions[0], "function-call")
-        assertUnrendered(body.conditions[1], "function-call")
+        assertThat(body.conditions).hasSize(1)
+        assertUnrendered(body.conditions.single(), "function-call")
         assertThat(body.producesValue).isNull()
         assertThat(body.messageTemplate).isNull()
     }

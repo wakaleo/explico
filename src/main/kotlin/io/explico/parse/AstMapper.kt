@@ -1,13 +1,13 @@
 /**
  * Maps `opa parse` DTOs ([io.explico.opa.OpaModule]) to the domain model (spec §5).
  *
- * Known gap (flagged, not resolved here): spec's `Operand` sealed interface has no
- * variant for an operand-position builtin call (`count`, `lower`, `upper`,
- * `object.get`, `time.now_ns`) — only `Path`/`Literal`/`Variable`/`Unrendered`. Until
- * the model grows one, such calls map to `Operand.Unrendered`, honestly reflecting
- * that we can't render them yet rather than guessing a phrase. In this pack every
- * such call (`count({a | ...}) == 0`) wraps a comprehension anyway, which forces the
- * whole condition to fall back regardless — see [ConstructResult.Unsupported].
+ * `count`/`lower`/`upper` in operand position map to [io.explico.model.Operand.BuiltinCall]
+ * (spec §14 promotion) when their single argument itself resolves cleanly. `object.get` and
+ * `time.now_ns` remain a known gap: no [Operand] shape fits their differing arity yet, so they
+ * (and anything else) still map to `Operand.Unrendered`, honestly reflecting that we can't
+ * render them rather than guessing a phrase. Note that in the acceptance pack, `count({a | ...})
+ * == 0` wraps a comprehension, which forces the whole condition to fall back regardless of the
+ * builtin promotion above -- see [ConstructResult.Unsupported].
  *
  * Metadata attachment (`opa inspect` -> `RuleMetadata`, see [buildMetadataIndex])
  * matches by `opa inspect`'s own `path` field rather than the file/row-proximity
@@ -48,10 +48,31 @@ internal data class ParsedFile(val sourceFile: String, val module: OpaModule)
 /** A condition-position builtin call recognised per spec §6.3's table. */
 private val CONDITION_BUILTINS = setOf("startswith", "endswith", "contains", "regex.match", "glob.match")
 
+/** An operand-position builtin call recognised per spec §6.3/§14 -- each takes exactly one argument. */
+private val OPERAND_BUILTINS = setOf("count", "lower", "upper")
+
 /** Result of mapping a term into an operand: either a usable [Operand], or a marker that a fundamentally unsupported Rego construct (comprehension/every) was found underneath it and must promote the whole condition to [Condition.Unrendered]. */
 private sealed interface ConstructResult {
     data class Ok(val operand: Operand) : ConstructResult
     data class Unsupported(val reason: String) : ConstructResult
+}
+
+/**
+ * What a local variable name is bound to, within one rule body (spec §5/§6.4/§14). Two Rego
+ * constructs populate this, with different substitution semantics -- conflating them would
+ * misrender one as the other:
+ * - [Iteration]: `some x in collection` -- `x` stands for one element, so later uses append a
+ *   `PathSegment.VarIndex` ("[each x]") on top of the collection's own path.
+ * - [Substitution]: `x := <plain input/data path>` (spec §5's promotion) -- `x` stands for that
+ *   exact value, so later uses substitute the path directly, with no extra segment.
+ * - [NonPath]: `x := <anything else>` -- spec §5 is explicit that later bare uses of `x` still
+ *   render, as `Operand.Variable(x)`, never a guessed path and never conflated with a genuinely
+ *   unbound/unknown variable (which stays `Operand.Unrendered`).
+ */
+private sealed interface VarBinding {
+    data class Iteration(val collection: Operand.Path) : VarBinding
+    data class Substitution(val path: Operand.Path) : VarBinding
+    object NonPath : VarBinding
 }
 
 internal object AstMapper {
@@ -178,7 +199,7 @@ internal object AstMapper {
             )
         }
 
-        val symbolTable = mutableMapOf<String, Operand.Path>()
+        val symbolTable = mutableMapOf<String, VarBinding>()
         val messageVar = rule.head.key?.takeIf { it.type == "var" }?.let { stringValueOf(it) }
         var producesValue: String? = null
         var messageTemplate: String? = null
@@ -199,6 +220,20 @@ internal object AstMapper {
                 messageTemplate = computeMessageTemplate(assignedMessage)
                 continue
             }
+            // A local-variable assignment (spec §5 promotion, spec §14 backlog rank #1): `x := <plain
+            // path>` records the binding and disappears from the output entirely -- no fallback
+            // bullet, substituted inline wherever `x` is used later in this body. Anything else on
+            // the right-hand side still becomes a visible Unrendered bullet (as before), but `x` is
+            // now known to be *assigned*, not merely absent, so later bare uses render as
+            // `Operand.Variable(x)` per spec §5's own wording, not the generic unbound fallback.
+            val assignment = matchAssignment(expr)
+            if (assignment != null) {
+                val (targetVar, valueTerm) = assignment
+                val plainPath = plainPathOperandOrNull(valueTerm, symbolTable)
+                symbolTable[targetVar] = if (plainPath != null) VarBinding.Substitution(plainPath) else VarBinding.NonPath
+                if (plainPath == null) conditions += Condition.Unrendered(sourceText(expr.location), "function-call")
+                continue
+            }
             conditions += mapCondition(expr, symbolTable, ctx)
         }
 
@@ -212,18 +247,37 @@ internal object AstMapper {
     }
 
     /** If [expr] is `<messageVar> := <value>`, returns the value term; else null. */
-    private fun matchMessageAssignment(expr: OpaExpr, messageVar: String): OpaTerm? {
+    private fun matchMessageAssignment(expr: OpaExpr, messageVar: String): OpaTerm? =
+        matchAssignment(expr)?.takeIf { it.first == messageVar }?.second
+
+    /** If [expr] is `<localVar> := <value>` (any local variable, not just the message var), returns (variable name, value term); else null. */
+    private fun matchAssignment(expr: OpaExpr): Pair<String, OpaTerm>? {
         val terms = expr.terms as? JsonArray ?: return null
         if (terms.size != 3) return null
         val list = decodeTermList(terms)
         val (name, args) = decodeCallShape(list) ?: return null
         if (name != "assign" || args.size != 2) return null
         val target = args[0]
-        if (target.type != "var" || stringValueOf(target) != messageVar) return null
-        return args[1]
+        if (target.type != "var") return null
+        return stringValueOf(target) to args[1]
     }
 
-    private fun mapCondition(expr: OpaExpr, symbolTable: MutableMap<String, Operand.Path>, ctx: MappingContext): Condition {
+    /**
+     * Spec §5's promotion: the assignment's right-hand side qualifies for substitution only when
+     * it's itself a plain `input`/`data`/already-bound-variable path -- resolved through the SAME
+     * [mapRefChain] every other path reference goes through, so a chained assignment
+     * (`a := input.x; b := a.y`) works via [VarBinding.Substitution] resolution for free. Anything
+     * that resolves to `Operand.Unrendered` (unbound, or genuinely not a "ref" term at all) does
+     * NOT qualify -- the assignment stays a visible fallback bullet instead of silently vanishing
+     * while pointing nowhere.
+     */
+    private fun plainPathOperandOrNull(term: OpaTerm, symbolTable: Map<String, VarBinding>): Operand.Path? {
+        if (term.type != "ref") return null
+        val result = mapRefChain(decodeTermList(term.value), symbolTable, term.location)
+        return (result as? ConstructResult.Ok)?.operand as? Operand.Path
+    }
+
+    private fun mapCondition(expr: OpaExpr, symbolTable: MutableMap<String, VarBinding>, ctx: MappingContext): Condition {
         return when (val terms = expr.terms) {
             is JsonArray -> mapCallShapedCondition(expr, decodeTermList(terms), symbolTable, ctx)
             is JsonObject -> when {
@@ -239,7 +293,7 @@ internal object AstMapper {
     private fun mapCallShapedCondition(
         expr: OpaExpr,
         terms: List<OpaTerm>,
-        symbolTable: Map<String, Operand.Path>,
+        symbolTable: Map<String, VarBinding>,
         ctx: MappingContext,
     ): Condition {
         val (name, args) = decodeCallShape(terms) ?: return Condition.Unrendered(sourceText(expr.location), "unclassified")
@@ -265,7 +319,7 @@ internal object AstMapper {
     private inline fun buildComparisonLike(
         expr: OpaExpr,
         args: List<OpaTerm>,
-        symbolTable: Map<String, Operand.Path>,
+        symbolTable: Map<String, VarBinding>,
         build: (Operand, Operand) -> Condition,
     ): Condition {
         val left = mapOperand(args[0], symbolTable)
@@ -275,7 +329,7 @@ internal object AstMapper {
         return build((left as ConstructResult.Ok).operand, (right as ConstructResult.Ok).operand)
     }
 
-    private fun mapSomeIn(expr: OpaExpr, terms: JsonObject, symbolTable: MutableMap<String, Operand.Path>): Condition {
+    private fun mapSomeIn(expr: OpaExpr, terms: JsonObject, symbolTable: MutableMap<String, VarBinding>): Condition {
         val symbols = opaJson.decodeFromJsonElement(ListSerializer(OpaTerm.serializer()), terms.getValue("symbols"))
         val callTerm = symbols.singleOrNull() ?: return Condition.Unrendered(sourceText(expr.location), "unclassified")
         // A declare-only `some x` (no `in`) has exactly one symbol too, but its value is a bare var
@@ -291,14 +345,14 @@ internal object AstMapper {
         val collection = mapOperand(args[1], symbolTable)
         val collectionPath = (collection as? ConstructResult.Ok)?.operand as? Operand.Path
             ?: return Condition.Unrendered(sourceText(expr.location), (collection as? ConstructResult.Unsupported)?.reason ?: "unclassified")
-        symbolTable[variable] = collectionPath
+        symbolTable[variable] = VarBinding.Iteration(collectionPath)
         return Condition.SomeIn(variable, collectionPath)
     }
 
     private fun mapSingleTermCondition(
         expr: OpaExpr,
         term: OpaTerm,
-        symbolTable: Map<String, Operand.Path>,
+        symbolTable: Map<String, VarBinding>,
         ctx: MappingContext,
     ): Condition {
         if (term.type == "var") {
@@ -356,7 +410,7 @@ internal object AstMapper {
 
     // --- Operands ---
 
-    private fun mapOperand(term: OpaTerm, symbolTable: Map<String, Operand.Path>): ConstructResult = when (term.type) {
+    private fun mapOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult = when (term.type) {
         "string" -> ConstructResult.Ok(Operand.Literal(quoted(stringValueOf(term))))
         "number" -> ConstructResult.Ok(Operand.Literal(term.value?.jsonPrimitive?.content ?: "0"))
         "boolean" -> ConstructResult.Ok(Operand.Literal(term.value?.jsonPrimitive?.content ?: "false"))
@@ -368,45 +422,60 @@ internal object AstMapper {
         else -> ConstructResult.Unsupported("unclassified")
     }
 
-    private fun mapVarOperand(term: OpaTerm, symbolTable: Map<String, Operand.Path>): ConstructResult {
-        val name = stringValueOf(term)
-        val bound = symbolTable[name]
-        return if (bound != null) {
-            ConstructResult.Ok(Operand.Path(bound.segments + PathSegment.VarIndex(name)))
-        } else {
-            ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
+    /** A bare local-variable reference (spec §6.4 rule 7 / spec §5 promotion): resolved through [VarBinding] -- see its own KDoc for what each kind means. A name absent from [symbolTable] entirely is genuinely unknown/unbound, never seen by any recognised construct, so it stays the generic `Operand.Unrendered` fallback. */
+    private fun mapVarOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult =
+        when (val binding = symbolTable[stringValueOf(term)]) {
+            is VarBinding.Iteration -> ConstructResult.Ok(Operand.Path(binding.collection.segments + PathSegment.VarIndex(stringValueOf(term))))
+            is VarBinding.Substitution -> ConstructResult.Ok(Operand.Path(binding.path.segments))
+            VarBinding.NonPath -> ConstructResult.Ok(Operand.Variable(stringValueOf(term)))
+            null -> ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
         }
-    }
 
-    /** Builds a Path from a decoded ref chain: `input`/`data` root, or a var-rooted path resolved via [symbolTable] (spec §6.4 rule 7). [wholeRefLocation] is used only for the unbound-variable fallback, so its source text covers the whole reference, not just the root token. */
-    private fun mapRefChain(chain: List<OpaTerm>, symbolTable: Map<String, Operand.Path>, wholeRefLocation: io.explico.opa.OpaLocation?): ConstructResult {
+    /**
+     * Builds a Path from a decoded ref chain: `input`/`data` root, or a var-rooted path resolved via
+     * [symbolTable] (spec §6.4 rule 7 for [VarBinding.Iteration]; spec §5's promotion for
+     * [VarBinding.Substitution], which continues the chain with no extra segment since the
+     * variable stands for the exact value, not one element of a collection). [wholeRefLocation] is
+     * used only for the unbound-variable fallback, so its source text covers the whole reference,
+     * not just the root token. A [VarBinding.NonPath] root (assigned, but not to a plain path)
+     * falls back to `Operand.Unrendered` rather than `Operand.Variable` -- spec §5 only specifies
+     * `Operand.Variable` for a *bare* use of such a variable, not a field chained off it.
+     */
+    private fun mapRefChain(chain: List<OpaTerm>, symbolTable: Map<String, VarBinding>, wholeRefLocation: io.explico.opa.OpaLocation?): ConstructResult {
         if (chain.isEmpty()) return ConstructResult.Ok(Operand.Unrendered(""))
         val root = chain.first()
         val rootName = stringValueOf(root)
         val remaining = chain.drop(1)
-        return when {
-            rootName == "input" || rootName == "data" -> {
+        if (rootName == "input" || rootName == "data") {
+            val segments = mapPathSegments(remaining, symbolTable) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+            return ConstructResult.Ok(Operand.Path(listOf(PathSegment.Field(rootName)) + segments))
+        }
+        return when (val binding = symbolTable[rootName]) {
+            is VarBinding.Iteration -> {
                 val segments = mapPathSegments(remaining, symbolTable) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
-                ConstructResult.Ok(Operand.Path(listOf(PathSegment.Field(rootName)) + segments))
+                ConstructResult.Ok(Operand.Path(binding.collection.segments + PathSegment.VarIndex(rootName) + segments))
             }
-            symbolTable.containsKey(rootName) -> {
+            is VarBinding.Substitution -> {
                 val segments = mapPathSegments(remaining, symbolTable) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
-                ConstructResult.Ok(Operand.Path(symbolTable.getValue(rootName).segments + PathSegment.VarIndex(rootName) + segments))
+                ConstructResult.Ok(Operand.Path(binding.path.segments + segments))
             }
-            else -> ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+            VarBinding.NonPath, null -> ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
         }
     }
 
     /**
      * Maps the segments after a ref chain's root. Returns null if a middle-position bracket-index
-     * variable (`arr[i]`, spec §6.4 rule 6) has no `some i in ...` binding in [symbolTable] -- the
-     * caller promotes that to `Operand.Unrendered` for the whole path, mirroring how an unbound
-     * var-ROOTED path (rule 7) is already handled, rather than emitting a raw, meaningless `VarIndex`.
-     * A bound middle-position var renders identically to the var-rooted case: PathHumanizer treats
-     * every `VarIndex` it sees as "[each x]" unconditionally, because by the time it gets one, this
-     * function has already guaranteed it's bound.
+     * variable (`arr[i]`, spec §6.4 rule 6) has no `some i in ...` binding ([VarBinding.Iteration])
+     * in [symbolTable] -- the caller promotes that to `Operand.Unrendered` for the whole path,
+     * mirroring how an unbound var-ROOTED path (rule 7) is already handled, rather than emitting a
+     * raw, meaningless `VarIndex`. A [VarBinding.Substitution]/[VarBinding.NonPath] name in
+     * bracket-index position is deliberately treated the same as unbound -- spec §5's promotion
+     * only covers substitution as a bare reference or a chain ROOT, not as an index. A bound
+     * middle-position var renders identically to the var-rooted case: PathHumanizer treats every
+     * `VarIndex` it sees as "[each x]" unconditionally, because by the time it gets one, this
+     * function has already guaranteed it's an iteration variable.
      */
-    private fun mapPathSegments(terms: List<OpaTerm>, symbolTable: Map<String, Operand.Path>): List<PathSegment>? {
+    private fun mapPathSegments(terms: List<OpaTerm>, symbolTable: Map<String, VarBinding>): List<PathSegment>? {
         val segments = mutableListOf<PathSegment>()
         for (term in terms) {
             when (term.type) {
@@ -418,7 +487,7 @@ internal object AstMapper {
                     val name = stringValueOf(term)
                     segments += when {
                         name == "_" -> PathSegment.AnyIndex
-                        symbolTable.containsKey(name) -> PathSegment.VarIndex(name)
+                        symbolTable[name] is VarBinding.Iteration -> PathSegment.VarIndex(name)
                         else -> return null
                     }
                 }
@@ -428,7 +497,7 @@ internal object AstMapper {
         return segments
     }
 
-    private fun mapCollectionLiteral(term: OpaTerm, symbolTable: Map<String, Operand.Path>): ConstructResult {
+    private fun mapCollectionLiteral(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult {
         val elements = decodeTermList(term.value)
         val allScalar = elements.all { it.type in setOf("string", "number", "boolean") }
         if (elements.size > 5 || !allScalar) return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
@@ -438,11 +507,23 @@ internal object AstMapper {
         return ConstructResult.Ok(Operand.Literal(rendered))
     }
 
-    /** Operand-position builtins (count/lower/upper/object.get/time.now_ns) have no [Operand] variant yet (see file header) -- always [Operand.Unrendered], unless an argument contains a fundamentally unsupported construct, which propagates instead. */
-    private fun mapCallOperand(term: OpaTerm, symbolTable: Map<String, Operand.Path>): ConstructResult {
-        val (_, args) = decodeCallShape(decodeTermList(term.value)) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
-        val unsupported = args.map { mapOperand(it, symbolTable) }.filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
-        return unsupported ?: ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
+    /**
+     * Operand-position builtins. `count`/`lower`/`upper` (spec §14 promotion) map to
+     * [Operand.BuiltinCall] when their single argument itself resolves cleanly -- rendered via
+     * [io.explico.render.ExpressionRenderer]'s spec §6.3 templates ("the number of X", "X lowercased",
+     * "X uppercased"). `object.get`/`time.now_ns` and anything else (still a documented gap, file
+     * header) fall back to [Operand.Unrendered], as does any of the three above if its argument
+     * doesn't resolve -- never a guessed rendering of an argument the mapper can't classify.
+     */
+    private fun mapCallOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult {
+        val (name, args) = decodeCallShape(decodeTermList(term.value)) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
+        val mapped = args.map { mapOperand(it, symbolTable) }
+        val unsupported = mapped.filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
+        if (unsupported != null) return unsupported
+        if (name in OPERAND_BUILTINS && args.size == 1) {
+            return ConstructResult.Ok(Operand.BuiltinCall(name, mapped.map { (it as ConstructResult.Ok).operand }))
+        }
+        return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
     }
 
     // --- producesValue (spec §5's minimal placeholder formatting, approved for this session) ---
@@ -461,7 +542,7 @@ internal object AstMapper {
         return args[0].takeIf { it.type == "string" }?.let { stringValueOf(it) }
     }
 
-    private fun renderProducesValue(valueTerm: OpaTerm, symbolTable: Map<String, Operand.Path>): String? {
+    private fun renderProducesValue(valueTerm: OpaTerm, symbolTable: Map<String, VarBinding>): String? {
         if (valueTerm.type == "string") return stringValueOf(valueTerm)
         if (valueTerm.type != "call") return null
         val (name, args) = decodeCallShape(decodeTermList(valueTerm.value)) ?: return null
@@ -493,7 +574,7 @@ internal object AstMapper {
      * breadcrumb style (§6.4), so there's no format to translate a VarIndex/KeyLiteral segment into
      * without inventing one.
      */
-    private fun renderPlaceholder(term: OpaTerm, symbolTable: Map<String, Operand.Path>): String? {
+    private fun renderPlaceholder(term: OpaTerm, symbolTable: Map<String, VarBinding>): String? {
         if (term.type != "ref") return null
         val chain = decodeTermList(term.value)
         if (chain.isEmpty() || stringValueOf(chain.first()) != "input") return null

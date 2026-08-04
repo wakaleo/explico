@@ -205,6 +205,8 @@ sealed interface Operand {
     data class Path(val segments: List<PathSegment>) : Operand    // input/data references
     data class Literal(val rendered: String) : Operand            // scalars, small arrays/sets
     data class Variable(val name: String) : Operand
+    // §14 promotion: count/lower/upper only -- object.get/time.now_ns still fall back (differing arity).
+    data class BuiltinCall(val name: String, val args: List<Operand>) : Operand
     data class Unrendered(val sourceText: String) : Operand
 }
 
@@ -1057,3 +1059,33 @@ pattern is more pervasive than session 3/4 originally scoped it for, but the
 underlying assertion in every affected bullet remains true — this is a
 legibility question, not a semantic one, and is left to a future increment's
 own deliberate review rather than folded into this audit as a side effect.
+
+### 14.4 Promotions (follow-up pass, same session)
+
+Three items from §14's own promotion backlog (`docs/rego-coverage.md`) were
+selected and implemented immediately after the audit landed, rather than
+deferred wholesale:
+
+- `count(x)`/`lower(x)`/`upper(x)` in operand position now render via a new
+  `Operand.BuiltinCall(name, args)` model variant, using the exact templates
+  §6.3's table already specified ("the number of X", "X lowercased", "X
+  uppercased"). `object.get`/`time.now_ns` remain unpromoted — differing
+  arity, no template decision made yet for a non-trivial key/default
+  argument.
+- The long-documented §5 rule — "assign a local var to a plain path,
+  substitute inline later" — is implemented. A per-body binding now
+  distinguishes *why* a variable is bound (`some x in y` iteration vs. a
+  plain-path assignment vs. anything else), since the two constructs need
+  different substitution behavior (an iteration variable's "[each x]"
+  marker must never apply to a plain substitution, or vice versa).
+  Resolution is transitive and works both as a bare reference and as a
+  ref-chain root. The wording for the *non*-promoted case (assignment to
+  something other than a plain path) is also now implemented exactly as
+  originally specified: a later bare use of such a variable renders as
+  `Operand.Variable`, not the generic unbound fallback.
+
+None of the three promoted constructs appear in the existing acceptance
+pack, so no golden or `docs/sample-output/` content changed — confirmed by
+running both after each promotion, not assumed. Full rationale, verification
+steps, and updated coverage/backlog tables are in `docs/rego-coverage.md`,
+not duplicated here.

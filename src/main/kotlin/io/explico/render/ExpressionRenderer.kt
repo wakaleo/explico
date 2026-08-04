@@ -1,12 +1,15 @@
 /**
  * Renders one [Condition] into its spec §6.3 phrase. Operates purely on the
  * already-built domain model -- the two-position rule (operand-position
- * builtins like `count`/`lower`/`upper`/`object.get`/`time.now_ns` never
- * appearing as a condition, and vice versa) is enforced upstream by AstMapper's
- * classification, not here: by construction, a `Condition.BuiltinCall` this
- * renderer receives always has a name from the recognised condition-position
- * set, and a misused condition-only builtin in operand position already became
- * `Operand.Unrendered` before reaching this class.
+ * builtins never appearing as a condition, and vice versa) is enforced
+ * upstream by AstMapper's classification, not here: by construction, a
+ * `Condition.BuiltinCall` this renderer receives always has a name from the
+ * recognised condition-position set, and a misused condition-only builtin in
+ * operand position already became `Operand.Unrendered` before reaching this
+ * class. `count`/`lower`/`upper` (spec §14 promotion) are operand-position
+ * only and render via [Operand.BuiltinCall]'s own template map; `object.get`
+ * and `time.now_ns` remain a documented gap and still fall back to
+ * `Operand.Unrendered`.
  *
  * `Condition.Unrendered` is deliberately NOT part of spec §6.3's phrasing table
  * -- it gets a structurally different, multi-line "shown as source" block
@@ -73,10 +76,18 @@ internal object ExpressionRenderer {
         is Operand.Path -> PathHumanizer.humanize(operand.segments).let { it.rendered to it.hasAnyIndex }
         is Operand.Literal -> "`${operand.rendered}`" to false
         is Operand.Variable -> "`${operand.name}`" to false
+        is Operand.BuiltinCall -> renderOperandBuiltinCall(operand)
         // Never guessed prose: the operand's own verbatim source, in backticks. Not part of spec's
         // explicit examples (only Condition-level Unrendered's block format is spec'd) -- this
         // session's interpretation for the inline case, kept as visible source rather than hidden.
         is Operand.Unrendered -> "`${operand.sourceText}`" to false
+    }
+
+    private fun renderOperandBuiltinCall(operand: Operand.BuiltinCall): Pair<String, Boolean> {
+        val template = OPERAND_BUILTIN_TEMPLATES[operand.name]
+            ?: throw IllegalArgumentException("Unrecognised operand-position builtin '${operand.name}'; AstMapper should never produce this.")
+        val (argText, hasAnyIndex) = renderOperand(operand.args.single())
+        return template(argText) to hasAnyIndex
     }
 
     private fun withAnyOfPrefix(phrase: String, hasAnyIndex: Boolean): String = if (hasAnyIndex) "any of: $phrase" else phrase
@@ -104,4 +115,11 @@ private val BUILTIN_TEMPLATES = mapOf(
     // the acceptance pack; this is untested against real captured JSON (see CLAUDE.md).
     "regex.match" to BuiltinTemplate("matches pattern", "does not match pattern") { it.last() to it.first() },
     "glob.match" to BuiltinTemplate("matches glob", "does not match glob") { it.last() to it.first() },
+)
+
+/** Operand-position builtin templates (spec §6.3/§14 promotion) -- each takes the already-rendered single argument text and produces the final phrase. */
+private val OPERAND_BUILTIN_TEMPLATES: Map<String, (String) -> String> = mapOf(
+    "count" to { a -> "the number of $a" },
+    "lower" to { a -> "$a lowercased" },
+    "upper" to { a -> "$a uppercased" },
 )

@@ -31,9 +31,18 @@ internal object Coverage {
 
     /** Operand-level fallbacks don't count against coverage but are reported separately (spec §6.6). */
     fun unrenderedOperandCount(conditions: List<Condition>): Int =
-        conditions.sumOf { operandsOf(it).count { operand -> operand is Operand.Unrendered } }
+        conditions.sumOf { operandsOf(it).sumOf { operand -> countUnrendered(operand) } }
 
     fun unrenderedOperandCount(rule: RuleGroup): Int = unrenderedOperandCount(conditionsOf(rule))
+
+    /** `Operand.BuiltinCall` (spec §14) is the only nested operand shape -- an unrenderable argument
+     * buried inside an otherwise-faithful `count(...)`/`lower(...)`/`upper(...)` call must still count,
+     * or the coverage footer would silently undercount it. */
+    private fun countUnrendered(operand: Operand): Int = when (operand) {
+        is Operand.Unrendered -> 1
+        is Operand.BuiltinCall -> operand.args.sumOf { countUnrendered(it) }
+        else -> 0
+    }
 
     private fun conditionsOf(rule: RuleGroup): List<Condition> = rule.bodies.flatMap { it.conditions }
 

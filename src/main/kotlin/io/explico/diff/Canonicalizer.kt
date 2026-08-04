@@ -111,6 +111,11 @@ internal object Canonicalizer {
             put("name", JsonPrimitive(aliasFor(operand.name, aliases)))
             put("type", JsonPrimitive("Variable"))
         }
+        is Operand.BuiltinCall -> buildJsonObject {
+            put("args", buildJsonArray { operand.args.forEach { add(canonicalOperand(it, aliases)) } })
+            put("name", JsonPrimitive(operand.name))
+            put("type", JsonPrimitive("BuiltinCall"))
+        }
         is Operand.Unrendered -> buildJsonObject {
             put("sourceText", JsonPrimitive(operand.sourceText))
             put("type", JsonPrimitive("Unrendered"))

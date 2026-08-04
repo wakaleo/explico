@@ -152,4 +152,43 @@ class ExpressionRendererTest {
         val condition = Condition.Comparison(Operand.Unrendered("count(input.x)"), Operator.EQ, Operand.Literal("0"))
         assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("`count(input.x)` is `0`")
     }
+
+    @Test
+    @DisplayName("Operand.BuiltinCall(count) renders as spec §6.3/§14's \"the number of X\" template")
+    fun operandBuiltinCallCountRendersFaithfully() {
+        val approvals = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("approvals")))
+        val condition = Condition.Comparison(Operand.BuiltinCall("count", listOf(approvals)), Operator.EQ, Operand.Literal("0"))
+        assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("the number of `change ▸ approvals` is `0`")
+    }
+
+    @Test
+    @DisplayName("Operand.BuiltinCall(lower/upper) render as spec §6.3/§14's \"X lowercased\"/\"X uppercased\" templates")
+    fun operandBuiltinCallLowerAndUpperRenderFaithfully() {
+        val author = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("author")))
+        val lower = Condition.Comparison(Operand.BuiltinCall("lower", listOf(author)), Operator.EQ, Operand.Literal("\"asmith\""))
+        val upper = Condition.Comparison(Operand.BuiltinCall("upper", listOf(author)), Operator.EQ, Operand.Literal("\"ASMITH\""))
+        assertThat(ExpressionRenderer.render(lower, noAnchor)).isEqualTo("`change ▸ author` lowercased is `\"asmith\"`")
+        assertThat(ExpressionRenderer.render(upper, noAnchor)).isEqualTo("`change ▸ author` uppercased is `\"ASMITH\"`")
+    }
+
+    @Test
+    @DisplayName("An Operand.BuiltinCall name outside the recognised operand-position set is rejected, not silently mis-rendered")
+    fun rejectsUnrecognisedOperandBuiltinName() {
+        // AstMapper never constructs this (it only builds Operand.BuiltinCall from count/lower/upper) --
+        // this constructs one directly to prove the defensive check actually fires.
+        val bogus = Condition.Comparison(Operand.BuiltinCall("object.get", listOf(Operand.Literal("\"x\""))), Operator.EQ, Operand.Literal("\"y\""))
+        assertThatThrownBy { ExpressionRenderer.render(bogus, noAnchor) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    @DisplayName("AnyIndex inside an Operand.BuiltinCall's argument still prefixes the whole phrase with 'any of:'")
+    fun anyOfPrefixPropagatesThroughOperandBuiltinCall() {
+        val pathWithAnyIndex = Operand.Path(
+            listOf(PathSegment.Field("input"), PathSegment.Field("pipeline"), PathSegment.Field("checks"), PathSegment.AnyIndex, PathSegment.Field("name")),
+        )
+        val condition = Condition.Comparison(Operand.BuiltinCall("count", listOf(pathWithAnyIndex)), Operator.GT, Operand.Literal("0"))
+        assertThat(ExpressionRenderer.render(condition, noAnchor))
+            .isEqualTo("any of: the number of `pipeline ▸ checks ▸ name` is greater than `0`")
+    }
 }

@@ -745,8 +745,9 @@ class AstMapperTest {
         }
 
         @Test
-        fun operandPositionBuiltinWithARenderableArgumentIsStillUnrenderedButNotPromoted() {
-            // `count(input.x) == 0` -- the argument IS renderable; only the missing Operand variant (CLAUDE.md gap) blocks it.
+        fun operandPositionBuiltinWithARenderableArgumentIsPromotedToBuiltinCall() {
+            // `count(input.x) == 0` -- promoted (spec §14): the argument is renderable, so count(...)
+            // is now Operand.BuiltinCall rather than Operand.Unrendered.
             val module = moduleOf(
                 """
                 {
@@ -775,8 +776,51 @@ class AstMapperTest {
             )
             val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
             val comparison = body.conditions.single() as Condition.Comparison
-            val unrendered = comparison.left as Operand.Unrendered
-            assertThat(unrendered.sourceText).isEqualTo("count(input.x)")
+            val builtinCall = comparison.left as Operand.BuiltinCall
+            assertThat(builtinCall.name).isEqualTo("count")
+            assertThat((builtinCall.args.single() as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("x"),
+            )
+        }
+
+        @Test
+        fun operandPositionBuiltinWithAnUnboundArgumentWrapsAnUnrenderedOperandRatherThanFallingBackWhole() {
+            // `count(x) == 0` where x is an unbound var -- mapVarOperand resolves this to
+            // Operand.Unrendered("x") (Ok, not Unsupported), so it's wrapped inside the
+            // Operand.BuiltinCall rather than demoting the whole call. Coverage.countUnrendered
+            // recurses into BuiltinCall args specifically so this nested case still counts.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("count(x) == 0")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"call","location":{"text":"${b64("count(x)")}"},"value":[
+                              {"type":"ref","value":[{"type":"var","value":"count"}]},
+                              {"type":"var","value":"x","location":{"text":"${b64("x")}"}}
+                            ]},
+                            {"type":"number","value":0}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val comparison = body.conditions.single() as Condition.Comparison
+            val builtinCall = comparison.left as Operand.BuiltinCall
+            assertThat(builtinCall.name).isEqualTo("count")
+            val arg = builtinCall.args.single() as Operand.Unrendered
+            assertThat(arg.sourceText).isEqualTo("x")
         }
 
         @Test
@@ -889,6 +933,200 @@ class AstMapperTest {
             assertThat((call.args[2] as Operand.Path).segments).containsExactly(
                 PathSegment.Field("input"), PathSegment.Field("artifact"), PathSegment.Field("branch"),
             )
+        }
+    }
+
+    @Nested
+    inner class LocalVariableSubstitution {
+
+        @Test
+        fun plainPathAssignmentDisappearsAndSubstitutesInlineOnBareUse() {
+            // `env := input.deployment.environment; env == "production"` -- spec §5/§14 promotion.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("env := input.deployment.environment")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"assign"}]},
+                            {"type":"var","value":"env"},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"deployment"},{"type":"string","value":"environment"}]}
+                          ]
+                        },
+                        {
+                          "index": 1,
+                          "location": {"file":"scratch.rego","row":2,"text":"${b64("env == \"production\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"var","value":"env"},
+                            {"type":"string","value":"production"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            assertThat(body.conditions).hasSize(1)
+            val comparison = body.conditions.single() as Condition.Comparison
+            assertThat((comparison.left as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("deployment"), PathSegment.Field("environment"),
+            )
+        }
+
+        @Test
+        fun plainPathAssignmentSubstitutesAsARefChainRootTooNotJustBareUse() {
+            // `dep := input.deployment; dep.environment == "production"` -- the bound var used as a
+            // ref-chain ROOT (`dep.environment`), continuing the chain with no extra segment (unlike
+            // a some-in iteration binding, which would append "[each dep]").
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("dep := input.deployment")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"assign"}]},
+                            {"type":"var","value":"dep"},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"deployment"}]}
+                          ]
+                        },
+                        {
+                          "index": 1,
+                          "location": {"file":"scratch.rego","row":2,"text":"${b64("dep.environment == \"production\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"ref","value":[{"type":"var","value":"dep"},{"type":"string","value":"environment"}]},
+                            {"type":"string","value":"production"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            assertThat(body.conditions).hasSize(1)
+            val comparison = body.conditions.single() as Condition.Comparison
+            assertThat((comparison.left as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("deployment"), PathSegment.Field("environment"),
+            )
+        }
+
+        @Test
+        fun chainedPlainPathAssignmentsResolveTransitively() {
+            // `a := input.change; b := a.author; b == "asmith"` -- b substitutes through a, which
+            // itself substitutes through input.change, entirely disappearing from the output.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("a := input.change")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"assign"}]},
+                            {"type":"var","value":"a"},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"change"}]}
+                          ]
+                        },
+                        {
+                          "index": 1,
+                          "location": {"file":"scratch.rego","row":2,"text":"${b64("b := a.author")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"assign"}]},
+                            {"type":"var","value":"b"},
+                            {"type":"ref","value":[{"type":"var","value":"a"},{"type":"string","value":"author"}]}
+                          ]
+                        },
+                        {
+                          "index": 2,
+                          "location": {"file":"scratch.rego","row":3,"text":"${b64("b == \"asmith\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"var","value":"b"},
+                            {"type":"string","value":"asmith"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            assertThat(body.conditions).hasSize(1)
+            val comparison = body.conditions.single() as Condition.Comparison
+            assertThat((comparison.left as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("author"),
+            )
+        }
+
+        @Test
+        fun assignmentToANonPlainPathStillFallsBackAndLaterBareUseRendersAsVariable() {
+            // `x := count(input.y); x > 0` -- spec §5's own explicit wording: a non-plain-path RHS
+            // keeps the assignment as a visible fallback bullet, and later bare uses of x render as
+            // Operand.Variable (known to be assigned, not a genuinely unbound/unknown name).
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("x := count(input.y)")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"assign"}]},
+                            {"type":"var","value":"x"},
+                            {"type":"call","location":{"text":"${b64("count(input.y)")}"},"value":[
+                              {"type":"ref","value":[{"type":"var","value":"count"}]},
+                              {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"y"}]}
+                            ]}
+                          ]
+                        },
+                        {
+                          "index": 1,
+                          "location": {"file":"scratch.rego","row":2,"text":"${b64("x > 0")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"gt"}]},
+                            {"type":"var","value":"x"},
+                            {"type":"number","value":0}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            assertThat(body.conditions).hasSize(2)
+            val fallback = body.conditions[0] as Condition.Unrendered
+            assertThat(fallback.reason).isEqualTo("function-call")
+            assertThat(fallback.sourceText).isEqualTo("x := count(input.y)")
+            val comparison = body.conditions[1] as Condition.Comparison
+            assertThat((comparison.left as Operand.Variable).name).isEqualTo("x")
         }
     }
 }

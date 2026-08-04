@@ -95,7 +95,10 @@ public sealed interface Operand {
     /** A local variable bound to something other than a plain path (spec §5). */
     public data class Variable(val name: String) : Operand
 
-    /** An operand the mapper cannot classify, e.g. an operand-position builtin call like `count(...)`. */
+    /** A recognised operand-position builtin call with a faithful template, e.g. `count(x)` (spec §6.3/§14). */
+    public data class BuiltinCall(val name: String, val args: List<Operand>) : Operand
+
+    /** An operand the mapper cannot classify, e.g. an unrecognised operand-position builtin call. */
     public data class Unrendered(val sourceText: String) : Operand
 }
 
