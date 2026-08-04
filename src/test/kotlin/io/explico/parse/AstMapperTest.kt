@@ -1653,4 +1653,46 @@ class AstMapperTest {
             assertThat(fallback.sourceText).isEqualTo("concat(\",\", [x | some x in input.a]) == input.b")
         }
     }
+
+    @Nested
+    inner class NullLiteralOperand {
+
+        @Test
+        fun aNullLiteralInASmallArrayLiteralNowPromotesTooDirectConsequenceOfNullsOwnPromotion() {
+            // `input.a == ["x", null, 1]` -- confirmed via a real `opa parse` run that a `null`
+            // element has term type "null", the same type mapOperand's own top-level null-literal
+            // case now recognises. mapCollectionLiteral's allow-list needed the SAME type added, or
+            // this array would still fall back despite null itself being promoted.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("input.a == [\"x\", null, 1]")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"a"}]},
+                            {"type":"array","value":[
+                              {"type":"string","value":"x"},
+                              {"type":"null","value":{}},
+                              {"type":"number","value":1}
+                            ]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val comparison = body.conditions.single() as Condition.Comparison
+            assertThat((comparison.right as Operand.Literal).rendered).isEqualTo("\"x\", null, 1")
+        }
+    }
 }

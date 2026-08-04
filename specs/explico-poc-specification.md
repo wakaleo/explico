@@ -205,7 +205,7 @@ enum class Operator { EQ, NEQ, GT, GTE, LT, LTE }
 
 sealed interface Operand {
     data class Path(val segments: List<PathSegment>) : Operand    // input/data references
-    data class Literal(val rendered: String) : Operand            // scalars, small arrays/sets
+    data class Literal(val rendered: String) : Operand            // scalars (incl. null, §14.11), small arrays/sets
     data class Variable(val name: String) : Operand
     // §14 promotion: count/lower/upper/object.get/time.now_ns (§14.4/§14.5); plus/minus/mul/div/rem
     // (§14.9); concat (§14.10).
@@ -1250,6 +1250,24 @@ own:
   naturally needs no comma.
 - `Coverage`/`Canonicalizer` needed no change -- both were already fully
   generic over `Operand.BuiltinCall`'s `name`/variable-length `args`.
+
+Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
+content changed. Full rationale is in `docs/rego-coverage.md`, not
+duplicated here.
+
+### 14.11 Further promotion: `null` literal operand (follow-up session)
+
+Backlog rank #1 of the ranked list remaining after §14.10, selected on its
+own -- the lowest-risk item left:
+
+- `mapOperand` maps the `"null"` term type to `Operand.Literal("null")` --
+  a one-line addition.
+- `mapCollectionLiteral`'s scalar-type allow-list (deciding whether a small
+  array/set literal renders inline) gains `"null"` too, as a direct
+  mechanical consequence of the same change -- an array containing a
+  `null` element (confirmed via a real `opa parse` run to have term type
+  `"null"`, the same type just added to `mapOperand`) would otherwise still
+  have fallen back despite `null` itself being promoted.
 
 Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
 content changed. Full rationale is in `docs/rego-coverage.md`, not

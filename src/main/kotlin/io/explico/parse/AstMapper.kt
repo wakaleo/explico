@@ -461,6 +461,7 @@ internal object AstMapper {
         "string" -> ConstructResult.Ok(Operand.Literal(quoted(stringValueOf(term))))
         "number" -> ConstructResult.Ok(Operand.Literal(term.value?.jsonPrimitive?.content ?: "0"))
         "boolean" -> ConstructResult.Ok(Operand.Literal(term.value?.jsonPrimitive?.content ?: "false"))
+        "null" -> ConstructResult.Ok(Operand.Literal("null")) // spec §14 promotion, backlog rank #1 after §14.10 -- trivial, just never added.
         "ref" -> mapRefChain(decodeTermList(term.value), symbolTable, term.location)
         "var" -> mapVarOperand(term, symbolTable)
         "array", "set" -> mapCollectionLiteral(term, symbolTable)
@@ -546,7 +547,10 @@ internal object AstMapper {
 
     private fun mapCollectionLiteral(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult {
         val elements = decodeTermList(term.value)
-        val allScalar = elements.all { it.type in setOf("string", "number", "boolean") }
+        // "null" included since its own promotion (spec §14) -- a direct, mechanical consequence of
+        // the same change, not a new construct: this set is just "term types mapOperand renders as
+        // an Operand.Literal", and null now qualifies.
+        val allScalar = elements.all { it.type in setOf("string", "number", "boolean", "null") }
         if (elements.size > 5 || !allScalar) return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
         val rendered = elements.joinToString(", ") { el ->
             (mapOperand(el, symbolTable) as ConstructResult.Ok).let { (it.operand as Operand.Literal).rendered }

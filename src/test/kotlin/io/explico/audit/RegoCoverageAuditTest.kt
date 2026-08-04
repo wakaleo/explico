@@ -56,10 +56,12 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun nullLiteralComparisonFallsBack() {
+    fun nullLiteralComparisonNowRendersFaithfullyPromotedThisSession() {
+        // Promoted (spec §14 backlog rank #1): `null` maps to Operand.Literal("null") -- trivial,
+        // just never added before now.
         val conditions = conditionsOf(loadProbe("01-null-literal.rego"), "deny")
         assertThat(conditions).hasSize(1)
-        assertUnrendered(conditions.single(), "unclassified")
+        assertThat(render(conditions.single())).isEqualTo("`change ▸ author` is `null`")
     }
 
     @Test
