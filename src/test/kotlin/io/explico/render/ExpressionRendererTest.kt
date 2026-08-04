@@ -230,12 +230,74 @@ class ExpressionRendererTest {
     }
 
     @Test
+    @DisplayName("Operand.BuiltinCall(plus/minus/mul/div/rem) render via an infix-prose template, per spec §6.3/§14")
+    fun operandBuiltinCallArithmeticRendersFaithfully() {
+        val approvals = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("approvals_count")))
+        val one = Operand.Literal("1")
+        val plus = Condition.Comparison(Operand.BuiltinCall("plus", listOf(approvals, one)), Operator.GT, Operand.Literal("0"))
+        val minus = Condition.Comparison(Operand.BuiltinCall("minus", listOf(approvals, one)), Operator.GT, Operand.Literal("0"))
+        val mul = Condition.Comparison(Operand.BuiltinCall("mul", listOf(approvals, one)), Operator.GT, Operand.Literal("0"))
+        val div = Condition.Comparison(Operand.BuiltinCall("div", listOf(approvals, one)), Operator.GT, Operand.Literal("0"))
+        val rem = Condition.Comparison(Operand.BuiltinCall("rem", listOf(approvals, one)), Operator.GT, Operand.Literal("0"))
+        assertThat(ExpressionRenderer.render(plus, noAnchor)).isEqualTo("`change ▸ approvals count` plus `1` is greater than `0`")
+        assertThat(ExpressionRenderer.render(minus, noAnchor)).isEqualTo("`change ▸ approvals count` minus `1` is greater than `0`")
+        assertThat(ExpressionRenderer.render(mul, noAnchor)).isEqualTo("`change ▸ approvals count` times `1` is greater than `0`")
+        assertThat(ExpressionRenderer.render(div, noAnchor)).isEqualTo("`change ▸ approvals count` divided by `1` is greater than `0`")
+        assertThat(ExpressionRenderer.render(rem, noAnchor)).isEqualTo("`change ▸ approvals count` modulo `1` is greater than `0`")
+    }
+
+    @Test
+    @DisplayName("Subtraction preserves left-to-right operand order (non-commutative, unlike plus)")
+    fun arithmeticMinusPreservesOperandOrder() {
+        val a = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("a")))
+        val b = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("b")))
+        val condition = Condition.Comparison(Operand.BuiltinCall("minus", listOf(a, b)), Operator.EQ, Operand.Literal("0"))
+        assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("`a` minus `b` is `0`")
+    }
+
+    @Test
+    @DisplayName("Nested arithmetic (opa's own left-associative parse tree, plus(plus(a,b),c)) renders correctly with no extra logic")
+    fun chainedArithmeticRendersLeftAssociatively() {
+        // `input.a + input.b + input.c` desugars to plus(plus(a, b), c) -- confirmed via a real
+        // `opa parse` run. Each level renders via the exact same recursive mechanism.
+        val a = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("a")))
+        val b = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("b")))
+        val c = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("c")))
+        val innerPlus = Operand.BuiltinCall("plus", listOf(a, b))
+        val outerPlus = Operand.BuiltinCall("plus", listOf(innerPlus, c))
+        val condition = Condition.Comparison(outerPlus, Operator.GT, Operand.Literal("0"))
+        assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("`a` plus `b` plus `c` is greater than `0`")
+    }
+
+    @Test
+    @DisplayName("Arithmetic nested inside another promoted operand builtin (count(x) + 1) composes as prose, never malformed nested backticks")
+    fun arithmeticNestedWithAnotherOperandBuiltinComposesAsProse() {
+        val approvals = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("approvals")))
+        val count = Operand.BuiltinCall("count", listOf(approvals))
+        val plusOne = Operand.BuiltinCall("plus", listOf(count, Operand.Literal("1")))
+        val condition = Condition.Comparison(plusOne, Operator.GT, Operand.Literal("0"))
+        assertThat(ExpressionRenderer.render(condition, noAnchor))
+            .isEqualTo("the number of `change ▸ approvals` plus `1` is greater than `0`")
+    }
+
+    @Test
+    @DisplayName("An unbound operand nested inside arithmetic still counts against the coverage footer, per Coverage's existing BuiltinCall.args recursion")
+    fun anUnrenderedOperandNestedInsideArithmeticStillCountsAgainstCoverage() {
+        val unbound = Operand.Unrendered("y")
+        val arithmetic = Operand.BuiltinCall("plus", listOf(unbound, Operand.Literal("1")))
+        val condition = Condition.Comparison(arithmetic, Operator.GT, Operand.Literal("0"))
+        assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("`y` plus `1` is greater than `0`")
+        assertThat(Coverage.unrenderedOperandCount(listOf(condition))).isEqualTo(1)
+    }
+
+    @Test
     @DisplayName("An Operand.BuiltinCall name outside the recognised operand-position set is rejected, not silently mis-rendered")
     fun rejectsUnrecognisedOperandBuiltinName() {
         // AstMapper never constructs this (it only builds Operand.BuiltinCall from
-        // count/lower/upper/object.get/time.now_ns) -- this constructs one directly to prove the
-        // defensive check actually fires. "concat" is a real operand-position-shaped builtin that's
-        // still a documented gap (spec §14 backlog rank #2) -- genuinely never promoted.
+        // count/lower/upper/object.get/time.now_ns/plus/minus/mul/div/rem) -- this constructs one
+        // directly to prove the defensive check actually fires. "concat" is a real
+        // operand-position-shaped builtin that's still a documented gap (spec §14 backlog rank #1) --
+        // genuinely never promoted.
         val bogus = Condition.Comparison(Operand.BuiltinCall("concat", listOf(Operand.Literal("\",\""))), Operator.GT, Operand.Literal("0"))
         assertThatThrownBy { ExpressionRenderer.render(bogus, noAnchor) }
             .isInstanceOf(IllegalArgumentException::class.java)

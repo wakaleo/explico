@@ -1475,4 +1475,94 @@ class AstMapperTest {
             )
         }
     }
+
+    @Nested
+    inner class ArithmeticOperands {
+
+        @Test
+        fun chainedPlusDesugarsToOpasOwnLeftAssociativeNestedCallTree() {
+            // `input.a + input.b + input.c` desugars to plus(plus(a, b), c) -- confirmed via a real
+            // `opa parse` run (spec §14 promotion). AstMapper needs no special-case logic for this:
+            // the same single-call promotion rule applies recursively at each level.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("input.a + input.b + input.c > 0")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"gt"}]},
+                            {"type":"call","value":[
+                              {"type":"ref","value":[{"type":"var","value":"plus"}]},
+                              {"type":"call","value":[
+                                {"type":"ref","value":[{"type":"var","value":"plus"}]},
+                                {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"a"}]},
+                                {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"b"}]}
+                              ]},
+                              {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"c"}]}
+                            ]},
+                            {"type":"number","value":0}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val comparison = body.conditions.single() as Condition.Comparison
+            val outerPlus = comparison.left as Operand.BuiltinCall
+            assertThat(outerPlus.name).isEqualTo("plus")
+            val innerPlus = outerPlus.args[0] as Operand.BuiltinCall
+            assertThat(innerPlus.name).isEqualTo("plus")
+            assertThat((innerPlus.args[0] as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("a"))
+            assertThat((innerPlus.args[1] as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("b"))
+            assertThat((outerPlus.args[1] as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("c"))
+        }
+
+        @Test
+        fun unaryMinusDesugarsToMinusZeroXAndPromotesLikeAnyOtherBinaryArithmeticCall() {
+            // `-input.a` desugars to minus(0, input.a) -- confirmed via a real `opa parse` run. No
+            // special-casing needed: it's a genuine binary "minus" call like any other.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("-input.a > 0")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"gt"}]},
+                            {"type":"call","value":[
+                              {"type":"ref","value":[{"type":"var","value":"minus"}]},
+                              {"type":"number","value":0},
+                              {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"a"}]}
+                            ]},
+                            {"type":"number","value":0}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val comparison = body.conditions.single() as Condition.Comparison
+            val minus = comparison.left as Operand.BuiltinCall
+            assertThat(minus.name).isEqualTo("minus")
+            assertThat((minus.args[0] as Operand.Literal).rendered).isEqualTo("0")
+            assertThat((minus.args[1] as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("a"))
+        }
+    }
 }

@@ -57,6 +57,9 @@ private val CONDITION_BUILTINS = setOf("startswith", "endswith", "contains", "re
 /** An operand-position builtin call recognised per spec §6.3/§14 -- each takes exactly one argument. */
 private val OPERAND_BUILTINS = setOf("count", "lower", "upper")
 
+/** Arithmetic infix operators (spec §14 promotion, backlog rank #1 after §14.8) -- opa's own operator names for `+`/`-`/`*`/`/`/`%`, confirmed via a real `opa parse` run; always binary. */
+private val ARITHMETIC_BUILTINS = setOf("plus", "minus", "mul", "div", "rem")
+
 /** Result of mapping a term into an operand: either a usable [Operand], or a marker that a fundamentally unsupported Rego construct (comprehension/every) was found underneath it and must promote the whole condition to [Condition.Unrendered]. */
 private sealed interface ConstructResult {
     data class Ok(val operand: Operand) : ConstructResult
@@ -560,9 +563,17 @@ internal object AstMapper {
      * exactly the "widen a template to swallow a construct approximately" failure mode spec §14's
      * audit exists to catch -- falls back to `Operand.Unrendered` instead. `time.now_ns()` (spec §14
      * backlog rank #1) promotes too -- it takes no arguments, so there's nothing to resolve; the
-     * renderer's template is a fixed phrase. Anything else (still a documented gap, file header)
-     * falls back, as does any promotable builtin above if an argument doesn't resolve -- never a
-     * guessed rendering.
+     * renderer's template is a fixed phrase. `plus`/`minus`/`mul`/`div`/`rem` (spec §14, next backlog
+     * rank #1) -- opa's own arithmetic operator names -- promote unconditionally on arity 2 (they're
+     * always binary; opa desugars even unary minus to `minus(0, x)`, confirmed via a real `opa parse`
+     * run), with NO restriction on whether an argument is itself nested `Operand.BuiltinCall` or
+     * `Operand.Unrendered` -- unlike `=`/`object.get`, arithmetic operators can never introduce a
+     * binding, so there's no "fresh variable" ambiguity to guard against, and opa's own parse tree
+     * already resolves operator precedence correctly, so rendering it recursively (each nested call
+     * rendered via the exact same mechanism) is faithful by construction regardless of depth --
+     * [io.explico.render.ExpressionRenderer]'s templates interpolate already-rendered text rather
+     * than re-deriving grouping. Anything else (still a documented gap, file header) falls back, as
+     * does any promotable builtin above if an argument doesn't resolve -- never a guessed rendering.
      */
     private fun mapCallOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult {
         val (name, args) = decodeCallShape(decodeTermList(term.value)) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
@@ -577,6 +588,9 @@ internal object AstMapper {
             return ConstructResult.Ok(Operand.BuiltinCall(name, operands))
         }
         if (name == "time.now_ns" && operands.isEmpty()) {
+            return ConstructResult.Ok(Operand.BuiltinCall(name, operands))
+        }
+        if (name in ARITHMETIC_BUILTINS && operands.size == 2) {
             return ConstructResult.Ok(Operand.BuiltinCall(name, operands))
         }
         return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))

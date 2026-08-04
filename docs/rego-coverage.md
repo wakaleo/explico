@@ -55,6 +55,7 @@ guessing.
 | `Operand.BuiltinCall`: `object.get(o, k, d)` — `o` a real path, `k` a plain string literal | `<o> ▸ <k> (default <d>)`, `k` extending `o`'s own breadcrumb as a `PathSegment.KeyLiteral` | **Promoted this session** — see below. Probe 35; new `AstMapperTest` cases cover both the promoted shape and the non-string-key fallback. |
 | `Operand.BuiltinCall`: `time.now_ns()` in operand position | `the current time` | **Promoted, follow-up session** — see below. Zero arguments, so the template is a fixed phrase rather than one built around a rendered argument. Probe 34. |
 | `=` unification (opa's `eq`), used as a **pure comparison** — both sides already resolve to a real, non-`Unrendered` operand | Identical to `==` | **Promoted, further follow-up session** — see below. Probe 05. Destructuring/binding uses of `=` (probe 04) are unaffected — still `function-call`, see below. |
+| `Operand.BuiltinCall`: `plus`/`minus`/`mul`/`div`/`rem` (opa's operator names for `+`/`-`/`*`/`/`/`%`) in operand position, at any nesting depth | `<a> plus/minus/times/divided by/modulo <b>` | **Promoted, further follow-up session** — see below. Probe 25. Unlike `=`/`object.get`, no restriction on nested/`Unrendered` args — arithmetic never introduces a binding, and opa's own parse tree already resolves precedence, so recursive rendering is faithful at any depth. |
 
 ### Falls back by design (confirmed correct, not a gap)
 
@@ -62,7 +63,7 @@ guessing.
 |---|---|---|
 | Comprehensions (array/set/object), bare or wrapped in `count(...)` | `comprehension` | Explicit non-goal (spec §1.2). Probes 09 (nested `every`), 29, 30; pack REL-004. |
 | `every` (incl. nested `every` inside `every`) | `every` | Explicit non-goal. Probe 09 confirms nesting doesn't get partial credit — the whole outer block falls back as one unit, never guessing at the inner structure. |
-| Operand-position builtins outside `count`/`lower`/`upper`/`object.get`/`time.now_ns` (`concat`, and any user-defined function used as an operand) | n/a (`Operand.Unrendered`, condition itself still classifies) | No `Operand` shape decided yet for these (differing arity, no template precedent for `concat`). Probes 15/25/26/31 confirm this is safe: the verbatim call text is shown inline, never silently dropped or guessed. |
+| Operand-position builtins outside `count`/`lower`/`upper`/`object.get`/`time.now_ns`/arithmetic (`concat`, and any user-defined function used as an operand) | n/a (`Operand.Unrendered`, condition itself still classifies) | No `Operand` shape decided yet for these (differing arity, no template precedent for `concat`). Probes 15/26/31 confirm this is safe: the verbatim call text is shown inline, never silently dropped or guessed. |
 | `object.get(o, k, d)` where `k` is not a plain string literal (a var, a number, a computed expression) | n/a (`Operand.Unrendered`) | No breadcrumb-extension rule exists for a non-string key — guessing one would be exactly the "widen a template to swallow a construct approximately" failure mode this audit exists to catch. New `AstMapperTest` case (`objectGetWithANonStringKeyIsNotPromoted`); not exercised by any probe file. |
 | `count(...)` bare in condition position | `function-call` | Spec's explicit rule: operand-position builtins never render as conditions. Probe 37. |
 | `=` unification used as **binding/destructuring** (`[x, y] = [...]`, a fresh var on either side) | `function-call` | **Partially promoted, further follow-up session** — the pure-comparison case (both sides already bound) is now `Comparison` (see "Rendered faithfully" above); a genuine bind still falls back, since `Condition.Comparison` can't represent "this also assigns x and y" — the mapper positively confirms neither side maps to `Operand.Unrendered` (its signal that a fresh binding may be in play) before promoting. Probe 04. A **negated** `=` (`not x = input.y`) also still falls back regardless of whether it's a pure comparison — see the disclosed gap below. |
@@ -297,6 +298,54 @@ follow-up pass on the operator's explicit instruction.**
   negate a comparison operator, so no golden or `docs/sample-output/`
   content changed.
 
+### Arithmetic operands (`plus`/`minus`/`mul`/`div`/`rem`)
+
+Backlog rank #1 of the ranked list remaining after the negated-comparisons
+fix, selected on its own:
+
+- **`plus`/`minus`/`mul`/`div`/`rem`** (opa's own operator names for
+  `+`/`-`/`*`/`/`/`%`, confirmed via real `opa parse` runs) now promote to
+  `Operand.BuiltinCall`, rendered via a new infix-prose template map
+  (`ExpressionRenderer`'s `ARITHMETIC_TEMPLATES`) that interpolates the
+  already-rendered LEFT and RIGHT argument text -- "X plus Y", "X minus Y",
+  "X times Y", "X divided by Y", "X modulo Y".
+- **No restriction on nested or `Unrendered` arguments, unlike `=`/
+  `object.get`.** Arithmetic operators can never introduce a binding (unlike
+  `=`), so there's no "fresh variable" ambiguity to guard against; and opa's
+  own parse tree already resolves operator precedence correctly (confirmed
+  empirically: `input.a + input.b + input.c` desugars to opa's own
+  left-associative `plus(plus(a, b), c)`), so recursive rendering -- each
+  nested call rendered via the exact same mechanism, with no re-derivation
+  of grouping -- is faithful by construction at any depth. This is a
+  deliberately different design decision from the earlier "Medium-high risk
+  ... precedence" framing in the original backlog entry: the risk was about
+  a NAIVE flat-token implementation re-deriving precedence, which this
+  implementation never does (it only ever walks opa's already-correct tree).
+- **Composes cleanly with prior promotions with zero extra logic**: a
+  chained sum renders as "`a` plus `b` plus `c`" (confirmed via
+  `ExpressionRendererTest.chainedArithmeticRendersLeftAssociatively`); an
+  arithmetic expression nested inside another promoted operand builtin
+  (`count(x) + 1`) renders as "the number of `x` plus `1`" -- valid prose,
+  never malformed nested backticks, since each level's rendered text is
+  interpolated as plain text rather than concatenated/re-wrapped at the
+  character level (`ExpressionRendererTest.arithmeticNestedWithAnotherOperandBuiltinComposesAsProse`).
+- **Unary minus is not a special case**: `-input.a` desugars to opa's own
+  `minus(0, input.a)` (confirmed via a real `opa parse` run) -- a genuine
+  binary `minus` call like any other, needing no dedicated handling. New
+  `AstMapperTest` case.
+- **`Coverage.unrenderedOperandCount`'s existing recursion into
+  `BuiltinCall.args` needed no change** -- an unbound variable nested inside
+  an arithmetic expression still counts against the coverage footer, the
+  same guarantee already proven for `count`/`lower`/`upper` (spec §14.4).
+  New `ExpressionRendererTest` case
+  (`anUnrenderedOperandNestedInsideArithmeticStillCountsAgainstCoverage`).
+- **`Canonicalizer` needed no change either** -- `Operand.BuiltinCall`'s
+  canonicalization is already fully generic over `name`/`args`, with no
+  arithmetic-specific logic to add.
+- Verified via `check`/`acceptanceTest` staying green and
+  `docs/sample-output/` staying drift-free -- no acceptance-pack policy uses
+  arithmetic.
+
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
 **Operand-level fallback (`Operand.Unrendered`) renders as plain backticked
@@ -326,21 +375,21 @@ render faithfully, ranked by estimated real-world policy-authoring
 frequency. The top four ranks (`count`/`lower`/`upper`/`object.get`, and
 local-variable substitution) plus former rank 1 (`time.now_ns`) plus former
 rank 1 of the next round (`some k, v in obj`) plus former rank 1 of the
-round after that (`=` as pure comparison) were selected and implemented in
-follow-up passes — see "Promoted this session" and "Promoted in further
-follow-up sessions" above; the rest remain a ranked list for selection, not
-a plan. (The negated-comparisons correctness bug that used to appear here
-as an unranked, un-prioritized entry is now fixed -- see "Fixed, follow-up
+round after that (`=` as pure comparison) plus former rank 1 of the round
+after that (arithmetic operands) were selected and implemented in follow-up
+passes — see "Promoted this session" and "Promoted in further follow-up
+sessions" above; the rest remain a ranked list for selection, not a plan.
+(The negated-comparisons correctness bug that used to appear here as an
+unranked, un-prioritized entry is now fixed -- see "Fixed, follow-up
 session" above; it was never really part of this frequency-ranked list to
 begin with, since it's a bug fix rather than a coverage promotion.)
 
 | Rank | Construct | Proposed template | Risk |
 |---|---|---|---|
-| 1 | Arithmetic operands (`x + 1`, etc.) | A small infix expression renderer | **Medium-high.** More design surface than the others (multiple operators, precedence, humanizing the operand sub-tree). |
-| 2 | `concat(sep, [...])` string-join operand | "X joined with Y" (no spec precedent) | **Medium.** New design, not just new wiring. |
-| 3 | `null` literal operand | `Operand.Literal("null")` | **Low.** Trivial, just never added. |
-| 4 | Small flat object literal operand | Same mechanism as the existing small-array-literal rendering | **Medium.** Needs a deterministic key-ordering and size-cap decision (mirroring the existing ≤5-element array rule). |
-| 5 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
+| 1 | `concat(sep, [...])` string-join operand | "X joined with Y" (no spec precedent) | **Medium.** New design, not just new wiring. |
+| 2 | `null` literal operand | `Operand.Literal("null")` | **Low.** Trivial, just never added. |
+| 3 | Small flat object literal operand | Same mechanism as the existing small-array-literal rendering | **Medium.** Needs a deterministic key-ordering and size-cap decision (mirroring the existing ≤5-element array rule). |
+| 4 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
 | — | `else`-chains rendered as multiple "Situation N" entries | *Not recommended near-term* | **High — explicitly deferred.** An else-chain's branches are priority-ordered and mutually exclusive (first match wins), not a simple OR of situations the way multiple `deny` bodies are. Modeling this incorrectly would reintroduce a MISLEADING finding of exactly the kind this session just fixed; needs its own design pass, not an incremental template tweak. |
 | — | `walk()` builtin | *Not recommended* | Niche in this project's target domain (compliance/authz policies rarely need generic tree traversal); low estimated frequency doesn't justify the design cost. |
 

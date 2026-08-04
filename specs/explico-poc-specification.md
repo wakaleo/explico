@@ -207,7 +207,7 @@ sealed interface Operand {
     data class Path(val segments: List<PathSegment>) : Operand    // input/data references
     data class Literal(val rendered: String) : Operand            // scalars, small arrays/sets
     data class Variable(val name: String) : Operand
-    // §14 promotion: count/lower/upper/object.get/time.now_ns -- see §14.4.
+    // §14 promotion: count/lower/upper/object.get/time.now_ns (§14.4/§14.5); plus/minus/mul/div/rem (§14.9).
     data class BuiltinCall(val name: String, val args: List<Operand>) : Operand
     data class Unrendered(val sourceText: String) : Operand
 }
@@ -372,11 +372,12 @@ Builtin templates (`BuiltinCall`) — implement exactly this set; anything else 
 | `object.get(o, k, d)` | `<o> ▸ <k> (default <d>)` (as operand) |
 | `sprintf(f, args)` | only in head values, see §5 |
 | `time.now_ns()` | `the current time` (as operand) |
+| `plus(a, b)` / `minus(a, b)` / `mul(a, b)` / `div(a, b)` / `rem(a, b)` (§14.9) | `<a> plus/minus/times/divided by/modulo <b>` (as operand; renders recursively at any nesting depth) |
 
 Note two categories: builtins used as **conditions** (boolean position) and
 builtins used as **operands** inside a comparison. `count`, `lower`, `upper`,
-`object.get`, `time.now_ns` are operand-position; if found in condition position,
-fall back to `Unrendered`.
+`object.get`, `time.now_ns`, `plus`/`minus`/`mul`/`div`/`rem` are
+operand-position; if found in condition position, fall back to `Unrendered`.
 
 ### 6.4 Path humanisation (`PathHumanizer.kt`)
 
@@ -1195,6 +1196,35 @@ explicit instruction:
 - Confirmed via a real `opa parse` run that all six comparison operators
   (not just `equal`) can carry `negated: true` -- this isn't an
   `equal`-specific quirk.
+
+Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
+content changed. Full rationale is in `docs/rego-coverage.md`, not
+duplicated here.
+
+### 14.9 Further promotion: arithmetic operands (follow-up session)
+
+Backlog rank #1 of the ranked list remaining after §14.8, selected on its
+own:
+
+- `plus`/`minus`/`mul`/`div`/`rem` (opa's own operator names for
+  `+`/`-`/`*`/`/`/`%`, confirmed via real `opa parse` runs) promote to
+  `Operand.BuiltinCall` unconditionally on arity 2 (they're always binary --
+  even unary minus desugars to opa's own `minus(0, x)`). Unlike `=`/
+  `object.get`, there's no restriction on nested or `Unrendered` arguments:
+  arithmetic operators can never introduce a binding, and opa's own parse
+  tree already resolves operator precedence correctly (confirmed
+  empirically: `a + b + c` desugars to opa's own left-associative
+  `plus(plus(a, b), c)`), so recursive rendering is faithful by construction
+  at any depth.
+- `ExpressionRenderer` gains `ARITHMETIC_TEMPLATES`, an infix-prose template
+  map ("X plus Y", "X minus Y", "X times Y", "X divided by Y", "X modulo
+  Y") that interpolates already-rendered argument text -- the same pattern
+  the single-argument `OPERAND_BUILTIN_TEMPLATES` already uses, extended to
+  two arguments. This is what makes nesting compose correctly with zero
+  extra logic (e.g. `count(x) + 1` renders as "the number of X plus 1" --
+  valid prose, never malformed nested backticks).
+- `Coverage`/`Canonicalizer` needed no change -- both were already fully
+  generic over `Operand.BuiltinCall`'s `name`/`args`.
 
 Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
 content changed. Full rationale is in `docs/rego-coverage.md`, not

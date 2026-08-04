@@ -6,11 +6,11 @@
  * `Condition.BuiltinCall` this renderer receives always has a name from the
  * recognised condition-position set, and a misused condition-only builtin in
  * operand position already became `Operand.Unrendered` before reaching this
- * class. `count`/`lower`/`upper`/`time.now_ns` (spec §14 promotion) are
- * operand-position only and render via [Operand.BuiltinCall]'s own template
- * map; `object.get` renders via its own dedicated breadcrumb-extension logic
- * ([renderObjectGet]). Anything else remains a documented gap and still
- * falls back to `Operand.Unrendered`.
+ * class. `count`/`lower`/`upper`/`time.now_ns`/arithmetic (`plus`/`minus`/
+ * `mul`/`div`/`rem`, spec §14 promotion) are operand-position only and render
+ * via [Operand.BuiltinCall]'s own template maps; `object.get` renders via its
+ * own dedicated breadcrumb-extension logic ([renderObjectGet]). Anything else
+ * remains a documented gap and still falls back to `Operand.Unrendered`.
  *
  * `Condition.Comparison.negated` (spec §14 amendment: `not x == y` is real, valid Rego) picks
  * [NEGATED_COMPARISON_VERBS] instead of [COMPARISON_VERBS] -- a literal negation of the positive
@@ -100,6 +100,11 @@ internal object ExpressionRenderer {
         // time.now_ns() takes no arguments -- its template is a fixed phrase, not one built around
         // a rendered argument, so it's handled separately from the single-argument templates below.
         if (operand.name == "time.now_ns") return "the current time" to false
+        ARITHMETIC_TEMPLATES[operand.name]?.let { template ->
+            val (leftText, leftAny) = renderOperand(operand.args[0])
+            val (rightText, rightAny) = renderOperand(operand.args[1])
+            return template(leftText, rightText) to (leftAny || rightAny)
+        }
         val template = OPERAND_BUILTIN_TEMPLATES[operand.name]
             ?: throw IllegalArgumentException("Unrecognised operand-position builtin '${operand.name}'; AstMapper should never produce this.")
         val (argText, hasAnyIndex) = renderOperand(operand.args.single())
@@ -164,4 +169,21 @@ private val OPERAND_BUILTIN_TEMPLATES: Map<String, (String) -> String> = mapOf(
     "count" to { a -> "the number of $a" },
     "lower" to { a -> "$a lowercased" },
     "upper" to { a -> "$a uppercased" },
+)
+
+/**
+ * Arithmetic infix operators (spec §14 promotion) -- each takes the already-rendered LEFT and
+ * RIGHT argument text and interpolates them into a prose phrase, the same pattern
+ * [OPERAND_BUILTIN_TEMPLATES] already uses for a single argument. This is what makes nesting
+ * (e.g. `count(x) + 1`, or a chained `a + b + c` -- opa's own left-associative parse tree,
+ * `plus(plus(a, b), c)`) render correctly with no extra logic: each level's already-rendered text
+ * (which may itself be non-backtick-wrapped prose, e.g. "the number of `x`") is interpolated as
+ * plain text, never re-wrapped or concatenated at the character level.
+ */
+private val ARITHMETIC_TEMPLATES: Map<String, (String, String) -> String> = mapOf(
+    "plus" to { a, b -> "$a plus $b" },
+    "minus" to { a, b -> "$a minus $b" },
+    "mul" to { a, b -> "$a times $b" },
+    "div" to { a, b -> "$a divided by $b" },
+    "rem" to { a, b -> "$a modulo $b" },
 )

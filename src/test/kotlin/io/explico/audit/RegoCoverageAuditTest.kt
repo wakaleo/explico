@@ -310,10 +310,12 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun arithmeticOperandRendersAsUnhumanizedVerbatimSource() {
+    fun arithmeticOperandNowRendersFaithfullyPromotedThisSession() {
+        // Promoted (spec §14 backlog rank #1): `plus` (opa's own operator name for `+`) renders via
+        // an infix-prose template, humanizing the path operand rather than leaving it as raw source.
         val conditions = conditionsOf(loadProbe("25-arithmetic-operand.rego"), "deny")
         assertThat(render(conditions.single()))
-            .isEqualTo("`input.change.approvals_count + 1` is greater than `policy ▸ minimum approvals`")
+            .isEqualTo("`change ▸ approvals count` plus `1` is greater than `policy ▸ minimum approvals`")
     }
 
     @Test
