@@ -58,6 +58,7 @@ guessing.
 | `Operand.BuiltinCall`: `plus`/`minus`/`mul`/`div`/`rem` (opa's operator names for `+`/`-`/`*`/`/`/`%`) in operand position, at any nesting depth | `<a> plus/minus/times/divided by/modulo <b>` | **Promoted, further follow-up session** — see below. Probe 25. Unlike `=`/`object.get`, no restriction on nested/`Unrendered` args — arithmetic never introduces a binding, and opa's own parse tree already resolves precedence, so recursive rendering is faithful at any depth. |
 | `Operand.BuiltinCall`: `concat(sep, collection)` — a literal array/set explodes into one operand per element; a path/var reference maps as a single whole-collection operand | `<elem>, <elem>, ... joined with <sep>` (one element needs no comma) | **Promoted, further follow-up session** — see below. Probes 26 (exploded array literal), 42 (whole-collection reference). |
 | `null` literal operand | `null` | **Promoted, further follow-up session** — see below. Probe 01. |
+| Small flat object literal (≤5 pairs, string keys, scalar values) as an operand | `{"key": value, ...}`, opa's own already-sorted key order | **Promoted, further follow-up session** — see below. Probe 02. |
 
 ### Falls back by design (confirmed correct, not a gap)
 
@@ -69,7 +70,7 @@ guessing.
 | `object.get(o, k, d)` where `k` is not a plain string literal (a var, a number, a computed expression) | n/a (`Operand.Unrendered`) | No breadcrumb-extension rule exists for a non-string key — guessing one would be exactly the "widen a template to swallow a construct approximately" failure mode this audit exists to catch. New `AstMapperTest` case (`objectGetWithANonStringKeyIsNotPromoted`); not exercised by any probe file. |
 | `count(...)` bare in condition position | `function-call` | Spec's explicit rule: operand-position builtins never render as conditions. Probe 37. |
 | `=` unification used as **binding/destructuring** (`[x, y] = [...]`, a fresh var on either side) | `function-call` | **Partially promoted, further follow-up session** — the pure-comparison case (both sides already bound) is now `Comparison` (see "Rendered faithfully" above); a genuine bind still falls back, since `Condition.Comparison` can't represent "this also assigns x and y" — the mapper positively confirms neither side maps to `Operand.Unrendered` (its signal that a fresh binding may be in play) before promoting. Probe 04. A **negated** `=` (`not x = input.y`) also still falls back regardless of whether it's a pure comparison — see the disclosed gap below. |
-| Object literal as a comparison operand | `unclassified` | No `Operand` variant for this shape yet. Probe 02. (`null` is promoted, see "Rendered faithfully" above and below.) |
+| Object literal — more than 5 pairs, a non-string key, or a nested (non-scalar) value | n/a (`Operand.Unrendered`, condition itself still classifies) | Same conservative scope as the small array/set literal's own ≤5-element/scalar-only restriction, extended to objects (see "Rendered faithfully" above and the promotion write-up below). New `AstMapperTest` cases; not exercised by any probe file. |
 | Ref-head rule reference used as an operand (`fruit.apple.seeds`, `users_by_role.admin.u1.name`) | n/a (`Operand.Unrendered`) | Neither `input`/`data`-rooted nor a known local-variable binding, so `mapRefChain` correctly falls back to verbatim rather than guessing a breadcrumb for a rule it doesn't recognise as such. Probes 13/14. |
 | `default` declarations (rule and function) | `unclassified` | No recognised body shape; RuleGroup's own `.default` field stays null (pre-existing, disclosed gap). **Quirk found this session**: opa's own AST gives a `default` rule's whole-rule `location.text` as just the literal word `default` — not the full `default allow := false` statement — so the fallback block, while honestly verbatim, is unhelpfully short. This is opa's own location-span behaviour, not an AstMapper defect. Probes 27/28. |
 | Declare-only `some` (`some key`, `some i, j` — no `in`) | `unclassified` | Correctly falls back once the confirmed crash (below) was fixed; `i`/`j` never become iteration bindings, so a later `arr[i]` still falls back too even though `arr` itself may now be a promoted substitution binding. Probes 07/12. |
@@ -421,6 +422,56 @@ trivial, just never added" note predicted:
   `docs/sample-output/` staying drift-free -- no acceptance-pack policy
   compares against `null`.
 
+### Small flat object literal operand
+
+Backlog rank #1 of the ranked list remaining after `null`, selected on its
+own -- the last item at "Low"/"Medium" risk before the remaining backlog
+steps up to "Medium-high":
+
+- **Same mechanism as the small array/set literal** (`mapCollectionLiteral`)
+  -- a ≤5-pair size cap, every VALUE restricted to the same
+  `SCALAR_TERM_TYPES` set (now shared between both functions, extracted as
+  a single file-level constant rather than duplicated). Renders as
+  `{"key": value, ...}` -- real Rego object-literal syntax, not the array
+  literal's own bracket-free convention (which only reads naturally after
+  "is one of"; a compared whole-object VALUE reads better with its own
+  real braces/colons).
+- **Every KEY is also restricted to a plain `"string"` term** -- the
+  overwhelmingly common `{"k": v}` shape. Rego does allow a non-string key
+  (`{1: "a"}`), but promoting that too would need a second, different
+  rendering convention for the key position, and the backlog's own risk
+  note didn't ask for it -- deliberately left unpromoted rather than
+  guessed. New `AstMapperTest` case.
+- **The "deterministic key-ordering" question the backlog flagged as a
+  design risk turned out to already be solved, not something to design**:
+  confirmed via two real `opa parse` runs that opa's own AST already lists
+  an object literal's pairs in alphabetically-sorted-by-key order,
+  regardless of source order (`{"author": ..., "approved": ...}` parses
+  with `"approved"` listed before `"author"`; a `{"zebra":1, "apple":2,
+  "mango":3}` probe confirms genuine alphabetical sorting, not just an
+  artifact of the first example's particular keys). This mapper never
+  sorts anything itself -- it only renders opa's own already-deterministic
+  order, consistent with the project's "never guess, only mechanically
+  derive" posture.
+- **A non-scalar (nested array/object) value stays unpromoted**, exactly
+  like the array/set literal's own restriction -- "flat" is the operative
+  word in both the backlog's proposed template and this implementation.
+  New `AstMapperTest` case.
+- **Falling short of the cap or scalar-value restriction demotes only the
+  OBJECT OPERAND to `Operand.Unrendered`, never the whole enclosing
+  condition** -- exactly like an unbound bare variable doesn't demote its
+  whole `Condition.Comparison` either. `input.x == {6 pairs...}` still
+  renders as a real comparison, just with the object shown as verbatim
+  source on the right. New `AstMapperTest` cases for the size cap and the
+  non-scalar-value case both confirm this (a first draft of these tests
+  wrongly expected the whole condition to fall back, caught by actually
+  running them against the real implementation rather than assumed).
+- `ExpressionRenderer`/`Coverage`/`Canonicalizer` needed no change --
+  `Operand.Literal` was already a fully generic leaf shape everywhere.
+- Verified via `check`/`acceptanceTest` staying green and
+  `docs/sample-output/` staying drift-free -- no acceptance-pack policy
+  compares against an object literal.
+
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
 **Operand-level fallback (`Operand.Unrendered`) renders as plain backticked
@@ -453,18 +504,18 @@ rank 1 of the next round (`some k, v in obj`) plus former rank 1 of the
 round after that (`=` as pure comparison) plus former rank 1 of the round
 after that (arithmetic operands) plus former rank 1 of the round after that
 (`concat`) plus former rank 1 of the round after that (`null` literal
-operand) were selected and implemented in follow-up passes — see "Promoted
-this session" and "Promoted in further follow-up sessions" above; the rest
-remain a ranked list for selection, not a plan. (The negated-comparisons
-correctness bug that used to appear here as an unranked, un-prioritized
-entry is now fixed -- see "Fixed, follow-up session" above; it was never
-really part of this frequency-ranked list to begin with, since it's a bug
-fix rather than a coverage promotion.)
+operand) plus former rank 1 of the round after that (small flat object
+literal operand) were selected and implemented in follow-up passes — see
+"Promoted this session" and "Promoted in further follow-up sessions" above;
+the rest remain a ranked list for selection, not a plan. (The
+negated-comparisons correctness bug that used to appear here as an
+unranked, un-prioritized entry is now fixed -- see "Fixed, follow-up
+session" above; it was never really part of this frequency-ranked list to
+begin with, since it's a bug fix rather than a coverage promotion.)
 
 | Rank | Construct | Proposed template | Risk |
 |---|---|---|---|
-| 1 | Small flat object literal operand | Same mechanism as the existing small-array-literal rendering | **Medium.** Needs a deterministic key-ordering and size-cap decision (mirroring the existing ≤5-element array rule). |
-| 2 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
+| 1 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
 | — | `else`-chains rendered as multiple "Situation N" entries | *Not recommended near-term* | **High — explicitly deferred.** An else-chain's branches are priority-ordered and mutually exclusive (first match wins), not a simple OR of situations the way multiple `deny` bodies are. Modeling this incorrectly would reintroduce a MISLEADING finding of exactly the kind this session just fixed; needs its own design pass, not an incremental template tweak. |
 | — | `walk()` builtin | *Not recommended* | Niche in this project's target domain (compliance/authz policies rarely need generic tree traversal); low estimated frequency doesn't justify the design cost. |
 

@@ -1695,4 +1695,84 @@ class AstMapperTest {
             assertThat((comparison.right as Operand.Literal).rendered).isEqualTo("\"x\", null, 1")
         }
     }
+
+    @Nested
+    inner class ObjectLiteralOperand {
+
+        /** `input.x == {...pairsJson}` -- the object term's own "value" is a list of [key, value] pairs, per a real `opa parse` run. */
+        private fun objectComparisonModule(pairsJson: String, objectSourceText: String = "{...}"): OpaModule = moduleOf(
+            """
+            {
+              "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+              "rules": [
+                {
+                  "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                  "body": [
+                    {
+                      "index": 0,
+                      "location": {"file":"scratch.rego","row":1,"text":"${b64("input.x == $objectSourceText")}"},
+                      "terms": [
+                        {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                        {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}]},
+                        {"type":"object","location":{"text":"${b64(objectSourceText)}"},"value":[$pairsJson]}
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+            """.trimIndent()
+        )
+
+        private fun conditionOf(module: OpaModule): Condition =
+            AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0].conditions.single()
+
+        @Test
+        fun emptyObjectLiteralPromotesToEmptyBraces() {
+            val condition = conditionOf(objectComparisonModule("")) as Condition.Comparison
+            assertThat((condition.right as Operand.Literal).rendered).isEqualTo("{}")
+        }
+
+        @Test
+        fun aSixPairObjectLiteralExceedsTheCapAndTheWholeOperandFallsBack() {
+            // Mirrors the array/set literal's own ≤5-element cap exactly. Like a non-scalar array
+            // (mapCollectionLiteral), the object as a whole becomes Operand.Unrendered -- the
+            // ENCLOSING comparison stays a real Condition.Comparison, exactly like an unbound bare
+            // var doesn't demote its whole condition either.
+            val sixPairs = (1..6).joinToString(",") { i ->
+                """[{"type":"string","value":"k$i"},{"type":"number","value":$i}]"""
+            }
+            val objectSource = "{" + (1..6).joinToString(", ") { "\"k$it\": $it" } + "}"
+            val condition = conditionOf(objectComparisonModule(sixPairs, objectSource)) as Condition.Comparison
+            assertThat((condition.right as Operand.Unrendered).sourceText).isEqualTo(objectSource)
+        }
+
+        @Test
+        fun aNonStringKeyLeavesTheWholeOperandUnrendered() {
+            // `{1: "a"}` -- Rego allows a non-string key, but this promotion deliberately only
+            // covers the overwhelmingly common `{"k": v}` shape, per its own KDoc.
+            val numericKeyPair = """[{"type":"number","value":1},{"type":"string","value":"a"}]"""
+            val objectSource = "{1: \"a\"}"
+            val condition = conditionOf(objectComparisonModule(numericKeyPair, objectSource)) as Condition.Comparison
+            assertThat((condition.right as Operand.Unrendered).sourceText).isEqualTo(objectSource)
+        }
+
+        @Test
+        fun aNestedArrayValueLeavesTheWholeOperandUnrendered() {
+            // `{"k": [1, 2]}` -- a non-scalar value; "flat" means every value must itself be a
+            // SCALAR_TERM_TYPES member, never a nested array/object.
+            val nestedPair = """[{"type":"string","value":"k"},{"type":"array","value":[{"type":"number","value":1}]}]"""
+            val objectSource = "{\"k\": [1]}"
+            val condition = conditionOf(objectComparisonModule(nestedPair, objectSource)) as Condition.Comparison
+            assertThat((condition.right as Operand.Unrendered).sourceText).isEqualTo(objectSource)
+        }
+
+        @Test
+        fun aNullValuePromotesJustLikeAnyOtherScalarValue() {
+            // `{"k": null}` -- null qualifies as a SCALAR_TERM_TYPES member per its own promotion.
+            val nullPair = """[{"type":"string","value":"k"},{"type":"null","value":{}}]"""
+            val condition = conditionOf(objectComparisonModule(nullPair)) as Condition.Comparison
+            assertThat((condition.right as Operand.Literal).rendered).isEqualTo("{\"k\": null}")
+        }
+    }
 }

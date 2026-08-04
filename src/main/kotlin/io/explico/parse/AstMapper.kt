@@ -63,6 +63,9 @@ private val OPERAND_BUILTINS = setOf("count", "lower", "upper")
 /** Arithmetic infix operators (spec §14 promotion, backlog rank #1 after §14.8) -- opa's own operator names for `+`/`-`/`*`/`/`/`%`, confirmed via a real `opa parse` run; always binary. */
 private val ARITHMETIC_BUILTINS = setOf("plus", "minus", "mul", "div", "rem")
 
+/** Term types [mapOperand] renders directly as an `Operand.Literal` -- shared by [AstMapper.mapCollectionLiteral] (array/set element types) and [AstMapper.mapObjectLiteral] (object literal value types, spec §14 promotion). */
+private val SCALAR_TERM_TYPES = setOf("string", "number", "boolean", "null")
+
 /** Result of mapping a term into an operand: either a usable [Operand], or a marker that a fundamentally unsupported Rego construct (comprehension/every) was found underneath it and must promote the whole condition to [Condition.Unrendered]. */
 private sealed interface ConstructResult {
     data class Ok(val operand: Operand) : ConstructResult
@@ -465,6 +468,7 @@ internal object AstMapper {
         "ref" -> mapRefChain(decodeTermList(term.value), symbolTable, term.location)
         "var" -> mapVarOperand(term, symbolTable)
         "array", "set" -> mapCollectionLiteral(term, symbolTable)
+        "object" -> mapObjectLiteral(term, symbolTable)
         "call" -> mapCallOperand(term, symbolTable)
         "setcomprehension", "arraycomprehension", "objectcomprehension" -> ConstructResult.Unsupported("comprehension")
         else -> ConstructResult.Unsupported("unclassified")
@@ -547,15 +551,39 @@ internal object AstMapper {
 
     private fun mapCollectionLiteral(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult {
         val elements = decodeTermList(term.value)
-        // "null" included since its own promotion (spec §14) -- a direct, mechanical consequence of
-        // the same change, not a new construct: this set is just "term types mapOperand renders as
-        // an Operand.Literal", and null now qualifies.
-        val allScalar = elements.all { it.type in setOf("string", "number", "boolean", "null") }
+        val allScalar = elements.all { it.type in SCALAR_TERM_TYPES }
         if (elements.size > 5 || !allScalar) return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
         val rendered = elements.joinToString(", ") { el ->
             (mapOperand(el, symbolTable) as ConstructResult.Ok).let { (it.operand as Operand.Literal).rendered }
         }
         return ConstructResult.Ok(Operand.Literal(rendered))
+    }
+
+    /**
+     * A small flat object literal (spec §14 promotion, backlog rank #1 after §14.11) -- the exact
+     * same mechanism [mapCollectionLiteral] already uses for a small array/set: a ≤5-pair size cap,
+     * every VALUE restricted to [SCALAR_TERM_TYPES] (a nested object/array value stays a documented
+     * gap, never guessed), rendered as `{"key": value, ...}` -- valid Rego object-literal syntax,
+     * not the array literal's bracket-free convention (which only fits after a "is one of" phrase;
+     * a compared whole-object VALUE reads better with its own real braces/colons). Every KEY is also
+     * restricted to a plain "string" term -- the overwhelmingly common case (`{"k": v}` syntax); a
+     * non-string key (Rego does allow e.g. a numeric key) is unusual enough, and adds enough
+     * rendering-format ambiguity, that it's deliberately left unpromoted rather than guessed.
+     * Key order is opa's own: confirmed via a real `opa parse` run that opa's AST already lists an
+     * object literal's pairs in sorted-by-key order regardless of source order (`{"zebra":1,
+     * "apple":2,"mango":3}` parses with pairs in `apple, mango, zebra` order) -- this mapper never
+     * re-sorts anything itself, it only renders opa's own already-deterministic order.
+     */
+    private fun mapObjectLiteral(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult {
+        val pairs = opaJson.decodeFromJsonElement(ListSerializer(ListSerializer(OpaTerm.serializer())), term.value ?: JsonArray(emptyList()))
+            .map { it[0] to it[1] }
+        val allFlat = pairs.all { (key, value) -> key.type == "string" && value.type in SCALAR_TERM_TYPES }
+        if (pairs.size > 5 || !allFlat) return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
+        val rendered = pairs.joinToString(", ") { (key, value) ->
+            val valueText = (mapOperand(value, symbolTable) as ConstructResult.Ok).let { (it.operand as Operand.Literal).rendered }
+            "${quoted(stringValueOf(key))}: $valueText"
+        }
+        return ConstructResult.Ok(Operand.Literal("{$rendered}"))
     }
 
     /**

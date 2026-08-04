@@ -205,7 +205,7 @@ enum class Operator { EQ, NEQ, GT, GTE, LT, LTE }
 
 sealed interface Operand {
     data class Path(val segments: List<PathSegment>) : Operand    // input/data references
-    data class Literal(val rendered: String) : Operand            // scalars (incl. null, §14.11), small arrays/sets
+    data class Literal(val rendered: String) : Operand            // scalars (incl. null, §14.11), small arrays/sets/objects (§14.12)
     data class Variable(val name: String) : Operand
     // §14 promotion: count/lower/upper/object.get/time.now_ns (§14.4/§14.5); plus/minus/mul/div/rem
     // (§14.9); concat (§14.10).
@@ -1268,6 +1268,31 @@ own -- the lowest-risk item left:
   `null` element (confirmed via a real `opa parse` run to have term type
   `"null"`, the same type just added to `mapOperand`) would otherwise still
   have fallen back despite `null` itself being promoted.
+
+Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
+content changed. Full rationale is in `docs/rego-coverage.md`, not
+duplicated here.
+
+### 14.12 Further promotion: small flat object literal operand (follow-up session)
+
+Backlog rank #1 of the ranked list remaining after §14.11, selected on its
+own:
+
+- Same mechanism as the small array/set literal (`mapCollectionLiteral`):
+  a ≤5-pair size cap, every value restricted to the same
+  `SCALAR_TERM_TYPES` set (now a shared file-level constant, not
+  duplicated). Every key is additionally restricted to a plain `"string"`
+  term -- the common `{"k": v}` shape; a non-string key (Rego does allow
+  one) is deliberately left unpromoted. Renders as `{"key": value, ...}`.
+- The backlog's own "deterministic key-ordering" design question turned
+  out to already be solved by opa itself: confirmed via real `opa parse`
+  runs that opa's AST already lists an object literal's pairs in
+  alphabetically-sorted-by-key order, regardless of source order. This
+  mapper never sorts anything itself.
+- Falling short of the cap/scalar-value restriction demotes only the
+  object operand to `Operand.Unrendered`, never the whole enclosing
+  condition -- the same behavior an unbound bare variable already has.
+- `ExpressionRenderer`/`Coverage`/`Canonicalizer` needed no change.
 
 Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
 content changed. Full rationale is in `docs/rego-coverage.md`, not

@@ -65,10 +65,16 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun objectLiteralOperandComparisonFallsBack() {
+    fun objectLiteralOperandNowRendersFaithfullyPromotedThisSession() {
+        // Promoted (spec §14 backlog rank #1): a small flat object literal (≤5 pairs, string keys,
+        // scalar values) renders with opa's own already-sorted key order -- the source wrote
+        // {"author": ..., "approved": ...} but opa's AST lists "approved" before "author"
+        // (alphabetical), confirmed via a real `opa parse` run; this mapper never re-sorts anything
+        // itself.
         val conditions = conditionsOf(loadProbe("02-object-literal-operand.rego"), "deny")
         assertThat(conditions).hasSize(1)
-        assertUnrendered(conditions.single(), "unclassified")
+        assertThat(render(conditions.single()))
+            .isEqualTo("`change` is `{\"approved\": true, \"author\": \"asmith\"}`")
     }
 
     @Test
