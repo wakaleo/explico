@@ -361,9 +361,11 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun timeNowNsOperandRendersAsUnhumanizedVerbatimSource() {
+    fun timeNowNsOperandNowRendersFaithfullyPromotedThisSession() {
+        // Promoted (spec §14 backlog rank #1): takes no arguments, so the renderer's template is a
+        // fixed phrase rather than one built around a rendered argument.
         val conditions = conditionsOf(loadProbe("34-time-now-ns-operand.rego"), "deny")
-        assertThat(render(conditions.single())).isEqualTo("`time.now_ns()` is greater than `deployment ▸ timestamp`")
+        assertThat(render(conditions.single())).isEqualTo("the current time is greater than `deployment ▸ timestamp`")
     }
 
     @Test

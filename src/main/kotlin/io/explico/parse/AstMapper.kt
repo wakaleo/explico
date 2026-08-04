@@ -4,9 +4,10 @@
  * `count`/`lower`/`upper` in operand position map to [io.explico.model.Operand.BuiltinCall]
  * (spec §14 promotion) when their single argument itself resolves cleanly; `object.get(o, k, d)`
  * promotes too, but only when `o` is a real path and `k` a plain string literal (see
- * [mapCallOperand]'s own KDoc for why a non-string key isn't promoted). `time.now_ns` and anything
- * else (still a documented gap) map to `Operand.Unrendered`, honestly reflecting that we can't
- * render them rather than guessing a phrase. Note that in the acceptance pack, `count({a | ...})
+ * [mapCallOperand]'s own KDoc for why a non-string key isn't promoted); `time.now_ns()` promotes
+ * unconditionally, since it takes no arguments to resolve. Anything else (still a documented gap)
+ * maps to `Operand.Unrendered`, honestly reflecting that we can't render it rather than guessing a
+ * phrase. Note that in the acceptance pack, `count({a | ...})
  * == 0` wraps a comprehension, which forces the whole condition to fall back regardless of the
  * builtin promotion above -- see [ConstructResult.Unsupported].
  *
@@ -518,9 +519,11 @@ internal object AstMapper {
      * bracket-string path segment (`labels["signed-off-by"]`) already renders. A non-string key (a
      * var, a number, a computed expression) has no such extension rule, and guessing one would be
      * exactly the "widen a template to swallow a construct approximately" failure mode spec §14's
-     * audit exists to catch -- falls back to `Operand.Unrendered` instead. `time.now_ns()` and
-     * anything else (still a documented gap, file header) also fall back, as does any promotable
-     * builtin above if an argument doesn't resolve -- never a guessed rendering.
+     * audit exists to catch -- falls back to `Operand.Unrendered` instead. `time.now_ns()` (spec §14
+     * backlog rank #1) promotes too -- it takes no arguments, so there's nothing to resolve; the
+     * renderer's template is a fixed phrase. Anything else (still a documented gap, file header)
+     * falls back, as does any promotable builtin above if an argument doesn't resolve -- never a
+     * guessed rendering.
      */
     private fun mapCallOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult {
         val (name, args) = decodeCallShape(decodeTermList(term.value)) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
@@ -532,6 +535,9 @@ internal object AstMapper {
             return ConstructResult.Ok(Operand.BuiltinCall(name, operands))
         }
         if (name == "object.get" && operands.size == 3 && operands[0] is Operand.Path && isStringLiteral(operands[1])) {
+            return ConstructResult.Ok(Operand.BuiltinCall(name, operands))
+        }
+        if (name == "time.now_ns" && operands.isEmpty()) {
             return ConstructResult.Ok(Operand.BuiltinCall(name, operands))
         }
         return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))

@@ -205,7 +205,7 @@ sealed interface Operand {
     data class Path(val segments: List<PathSegment>) : Operand    // input/data references
     data class Literal(val rendered: String) : Operand            // scalars, small arrays/sets
     data class Variable(val name: String) : Operand
-    // §14 promotion: count/lower/upper only -- object.get/time.now_ns still fall back (differing arity).
+    // §14 promotion: count/lower/upper/object.get/time.now_ns -- see §14.4.
     data class BuiltinCall(val name: String, val args: List<Operand>) : Operand
     data class Unrendered(val sourceText: String) : Operand
 }
@@ -1069,8 +1069,9 @@ deferred wholesale:
 - `count(x)`/`lower(x)`/`upper(x)` in operand position now render via a new
   `Operand.BuiltinCall(name, args)` model variant, using the exact templates
   §6.3's table already specified ("the number of X", "X lowercased", "X
-  uppercased"). `time.now_ns` remains unpromoted — no arguments to extend a
-  breadcrumb with, and not yet forced by any real case.
+  uppercased"). ~~`time.now_ns` remains unpromoted — no arguments to extend a
+  breadcrumb with, and not yet forced by any real case.~~ **Promoted in a
+  further follow-up session — see §14.5.**
 - The long-documented §5 rule — "assign a local var to a plain path,
   substitute inline later" — is implemented. A per-body binding now
   distinguishes *why* a variable is bound (`some x in y` iteration vs. a
@@ -1096,3 +1097,18 @@ pack, so no golden or `docs/sample-output/` content changed — confirmed by
 running both after each promotion, not assumed. Full rationale, verification
 steps, and updated coverage/backlog tables are in `docs/rego-coverage.md`,
 not duplicated here.
+
+### 14.5 Further promotion: `time.now_ns()` (follow-up session)
+
+Backlog rank #1 (of the ranked list remaining after §14.4), selected on its
+own rather than bundled into that earlier pass:
+
+- `time.now_ns()` in operand position now renders as the fixed phrase "the
+  current time", via the same `Operand.BuiltinCall(name, args)` model
+  variant, promoted unconditionally on zero arguments rather than on an
+  argument resolving cleanly (it has none to resolve). `Operand`'s KDoc
+  example in §5 above is updated accordingly.
+
+Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
+content changed. Full rationale is in `docs/rego-coverage.md`, not
+duplicated here.

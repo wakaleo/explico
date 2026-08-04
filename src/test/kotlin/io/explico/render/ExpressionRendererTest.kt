@@ -182,13 +182,22 @@ class ExpressionRendererTest {
     }
 
     @Test
+    @DisplayName("Operand.BuiltinCall(time.now_ns) renders as the fixed phrase 'the current time', per spec §6.3/§14")
+    fun operandBuiltinCallTimeNowNsRendersFaithfully() {
+        val timestamp = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("deployment"), PathSegment.Field("timestamp")))
+        val condition = Condition.Comparison(Operand.BuiltinCall("time.now_ns", emptyList()), Operator.GT, timestamp)
+        assertThat(ExpressionRenderer.render(condition, noAnchor))
+            .isEqualTo("the current time is greater than `deployment ▸ timestamp`")
+    }
+
+    @Test
     @DisplayName("An Operand.BuiltinCall name outside the recognised operand-position set is rejected, not silently mis-rendered")
     fun rejectsUnrecognisedOperandBuiltinName() {
         // AstMapper never constructs this (it only builds Operand.BuiltinCall from
-        // count/lower/upper/object.get) -- this constructs one directly to prove the defensive
-        // check actually fires. "time.now_ns" is a real operand-position builtin (spec §6.3) that's
-        // still a documented gap -- genuinely never promoted, unlike object.get.
-        val bogus = Condition.Comparison(Operand.BuiltinCall("time.now_ns", emptyList()), Operator.GT, Operand.Literal("0"))
+        // count/lower/upper/object.get/time.now_ns) -- this constructs one directly to prove the
+        // defensive check actually fires. "concat" is a real operand-position-shaped builtin that's
+        // still a documented gap (spec §14 backlog rank #4) -- genuinely never promoted.
+        val bogus = Condition.Comparison(Operand.BuiltinCall("concat", listOf(Operand.Literal("\",\""))), Operator.GT, Operand.Literal("0"))
         assertThatThrownBy { ExpressionRenderer.render(bogus, noAnchor) }
             .isInstanceOf(IllegalArgumentException::class.java)
     }
