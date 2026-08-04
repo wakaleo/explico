@@ -1060,18 +1060,17 @@ underlying assertion in every affected bullet remains true — this is a
 legibility question, not a semantic one, and is left to a future increment's
 own deliberate review rather than folded into this audit as a side effect.
 
-### 14.4 Promotions (follow-up pass, same session)
+### 14.4 Promotions (follow-up passes, same session)
 
-Three items from §14's own promotion backlog (`docs/rego-coverage.md`) were
+Four items from §14's own promotion backlog (`docs/rego-coverage.md`) were
 selected and implemented immediately after the audit landed, rather than
 deferred wholesale:
 
 - `count(x)`/`lower(x)`/`upper(x)` in operand position now render via a new
   `Operand.BuiltinCall(name, args)` model variant, using the exact templates
   §6.3's table already specified ("the number of X", "X lowercased", "X
-  uppercased"). `object.get`/`time.now_ns` remain unpromoted — differing
-  arity, no template decision made yet for a non-trivial key/default
-  argument.
+  uppercased"). `time.now_ns` remains unpromoted — no arguments to extend a
+  breadcrumb with, and not yet forced by any real case.
 - The long-documented §5 rule — "assign a local var to a plain path,
   substitute inline later" — is implemented. A per-body binding now
   distinguishes *why* a variable is bound (`some x in y` iteration vs. a
@@ -1083,8 +1082,16 @@ deferred wholesale:
   something other than a plain path) is also now implemented exactly as
   originally specified: a later bare use of such a variable renders as
   `Operand.Variable`, not the generic unbound fallback.
+- `object.get(o, k, d)` in operand position now also renders via
+  `Operand.BuiltinCall`, but only in the unambiguous shape §6.3's own
+  template implies: `o` a real path, `k` a plain string literal. `k`
+  extends `o`'s own breadcrumb as an ordinary `PathSegment.KeyLiteral` --
+  the same mechanism a real bracket-string path (`labels["signed-off-by"]`)
+  already uses -- rather than inventing a second rendering convention. A
+  non-string key has no such extension rule and stays `Operand.Unrendered`
+  rather than guessing one.
 
-None of the three promoted constructs appear in the existing acceptance
+None of the four promoted constructs appear in the existing acceptance
 pack, so no golden or `docs/sample-output/` content changed — confirmed by
 running both after each promotion, not assumed. Full rationale, verification
 steps, and updated coverage/backlog tables are in `docs/rego-coverage.md`,

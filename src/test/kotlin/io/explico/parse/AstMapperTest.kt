@@ -824,6 +824,87 @@ class AstMapperTest {
         }
 
         @Test
+        fun objectGetWithAPathAndAStringKeyIsPromotedToBuiltinCall() {
+            // `object.get(input.change, "ticket", "none") == "none"` -- spec §14 backlog rank #1.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("object.get(input.change, \"ticket\", \"none\") == \"none\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"call","location":{"text":"${b64("object.get(input.change, \"ticket\", \"none\")")}"},"value":[
+                              {"type":"ref","value":[{"type":"var","value":"object"},{"type":"string","value":"get"}]},
+                              {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"change"}]},
+                              {"type":"string","value":"ticket","location":{"text":"${b64("\"ticket\"")}"}},
+                              {"type":"string","value":"none","location":{"text":"${b64("\"none\"")}"}}
+                            ]},
+                            {"type":"string","value":"none"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val comparison = body.conditions.single() as Condition.Comparison
+            val builtinCall = comparison.left as Operand.BuiltinCall
+            assertThat(builtinCall.name).isEqualTo("object.get")
+            assertThat((builtinCall.args[0] as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("change"),
+            )
+            assertThat((builtinCall.args[1] as Operand.Literal).rendered).isEqualTo("\"ticket\"")
+            assertThat((builtinCall.args[2] as Operand.Literal).rendered).isEqualTo("\"none\"")
+        }
+
+        @Test
+        fun objectGetWithANonStringKeyIsNotPromoted() {
+            // `object.get(input.change, 0, "none") == "none"` -- a numeric key has no
+            // breadcrumb-extension rule (spec §14's own risk note); falls back rather than
+            // guessing one, exactly like an unrecognised operand-position builtin would.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("object.get(input.change, 0, \"none\") == \"none\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"call","location":{"text":"${b64("object.get(input.change, 0, \"none\")")}"},"value":[
+                              {"type":"ref","value":[{"type":"var","value":"object"},{"type":"string","value":"get"}]},
+                              {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"change"}]},
+                              {"type":"number","value":0},
+                              {"type":"string","value":"none"}
+                            ]},
+                            {"type":"string","value":"none"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val comparison = body.conditions.single() as Condition.Comparison
+            val unrendered = comparison.left as Operand.Unrendered
+            assertThat(unrendered.sourceText).isEqualTo("object.get(input.change, 0, \"none\")")
+        }
+
+        @Test
         fun nestedNonScalarLiteralBecomesOperandUnrenderedEvenWhenSmall() {
             // `input.x in [1, [2, 3]]` -- only 2 elements, but one is nested (not scalar) -- spec §6.4's "or nested" clause.
             val module = moduleOf(

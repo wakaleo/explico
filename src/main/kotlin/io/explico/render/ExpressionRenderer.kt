@@ -22,6 +22,7 @@ package io.explico.render
 import io.explico.model.Condition
 import io.explico.model.Operand
 import io.explico.model.Operator
+import io.explico.model.PathSegment
 
 internal object ExpressionRenderer {
 
@@ -84,10 +85,27 @@ internal object ExpressionRenderer {
     }
 
     private fun renderOperandBuiltinCall(operand: Operand.BuiltinCall): Pair<String, Boolean> {
+        if (operand.name == "object.get") return renderObjectGet(operand)
         val template = OPERAND_BUILTIN_TEMPLATES[operand.name]
             ?: throw IllegalArgumentException("Unrecognised operand-position builtin '${operand.name}'; AstMapper should never produce this.")
         val (argText, hasAnyIndex) = renderOperand(operand.args.single())
         return template(argText) to hasAnyIndex
+    }
+
+    /**
+     * `object.get(o, k, d)` (spec §6.3/§14): AstMapper only ever promotes this shape when `o` is a
+     * real [Operand.Path] and `k` a plain string literal (its own KDoc explains why), so both casts
+     * here are safe by construction. `k` extends `o`'s own breadcrumb as a [PathSegment.KeyLiteral]
+     * -- the exact same segment a real bracket-string path (`labels["signed-off-by"]`) already
+     * renders with -- rather than being shown as a second, separately backtick-wrapped operand.
+     */
+    private fun renderObjectGet(operand: Operand.BuiltinCall): Pair<String, Boolean> {
+        val (objectOperand, keyOperand, defaultOperand) = operand.args
+        val key = (keyOperand as Operand.Literal).rendered.removeSurrounding("\"")
+        val extendedPath = (objectOperand as Operand.Path).segments + PathSegment.KeyLiteral(key)
+        val humanized = PathHumanizer.humanize(extendedPath)
+        val (defaultText, defaultAnyIndex) = renderOperand(defaultOperand)
+        return "${humanized.rendered} (default $defaultText)" to (humanized.hasAnyIndex || defaultAnyIndex)
     }
 
     private fun withAnyOfPrefix(phrase: String, hasAnyIndex: Boolean): String = if (hasAnyIndex) "any of: $phrase" else phrase

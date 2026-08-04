@@ -2,9 +2,10 @@
  * Maps `opa parse` DTOs ([io.explico.opa.OpaModule]) to the domain model (spec §5).
  *
  * `count`/`lower`/`upper` in operand position map to [io.explico.model.Operand.BuiltinCall]
- * (spec §14 promotion) when their single argument itself resolves cleanly. `object.get` and
- * `time.now_ns` remain a known gap: no [Operand] shape fits their differing arity yet, so they
- * (and anything else) still map to `Operand.Unrendered`, honestly reflecting that we can't
+ * (spec §14 promotion) when their single argument itself resolves cleanly; `object.get(o, k, d)`
+ * promotes too, but only when `o` is a real path and `k` a plain string literal (see
+ * [mapCallOperand]'s own KDoc for why a non-string key isn't promoted). `time.now_ns` and anything
+ * else (still a documented gap) map to `Operand.Unrendered`, honestly reflecting that we can't
  * render them rather than guessing a phrase. Note that in the acceptance pack, `count({a | ...})
  * == 0` wraps a comprehension, which forces the whole condition to fall back regardless of the
  * builtin promotion above -- see [ConstructResult.Unsupported].
@@ -220,7 +221,7 @@ internal object AstMapper {
                 messageTemplate = computeMessageTemplate(assignedMessage)
                 continue
             }
-            // A local-variable assignment (spec §5 promotion, spec §14 backlog rank #1): `x := <plain
+            // A local-variable assignment (spec §5 promotion, spec §14 backlog): `x := <plain
             // path>` records the binding and disappears from the output entirely -- no fallback
             // bullet, substituted inline wherever `x` is used later in this body. Anything else on
             // the right-hand side still becomes a visible Unrendered bullet (as before), but `x` is
@@ -511,20 +512,33 @@ internal object AstMapper {
      * Operand-position builtins. `count`/`lower`/`upper` (spec §14 promotion) map to
      * [Operand.BuiltinCall] when their single argument itself resolves cleanly -- rendered via
      * [io.explico.render.ExpressionRenderer]'s spec §6.3 templates ("the number of X", "X lowercased",
-     * "X uppercased"). `object.get`/`time.now_ns` and anything else (still a documented gap, file
-     * header) fall back to [Operand.Unrendered], as does any of the three above if its argument
-     * doesn't resolve -- never a guessed rendering of an argument the mapper can't classify.
+     * "X uppercased"). `object.get(o, k, d)` (spec §14 backlog) promotes only in the common,
+     * unambiguous shape -- `o` a real path and `k` a plain string literal -- so the renderer can
+     * extend `o`'s own breadcrumb with `k` as a `PathSegment.KeyLiteral`, exactly like an ordinary
+     * bracket-string path segment (`labels["signed-off-by"]`) already renders. A non-string key (a
+     * var, a number, a computed expression) has no such extension rule, and guessing one would be
+     * exactly the "widen a template to swallow a construct approximately" failure mode spec §14's
+     * audit exists to catch -- falls back to `Operand.Unrendered` instead. `time.now_ns()` and
+     * anything else (still a documented gap, file header) also fall back, as does any promotable
+     * builtin above if an argument doesn't resolve -- never a guessed rendering.
      */
     private fun mapCallOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult {
         val (name, args) = decodeCallShape(decodeTermList(term.value)) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
         val mapped = args.map { mapOperand(it, symbolTable) }
         val unsupported = mapped.filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
         if (unsupported != null) return unsupported
+        val operands = mapped.map { (it as ConstructResult.Ok).operand }
         if (name in OPERAND_BUILTINS && args.size == 1) {
-            return ConstructResult.Ok(Operand.BuiltinCall(name, mapped.map { (it as ConstructResult.Ok).operand }))
+            return ConstructResult.Ok(Operand.BuiltinCall(name, operands))
+        }
+        if (name == "object.get" && operands.size == 3 && operands[0] is Operand.Path && isStringLiteral(operands[1])) {
+            return ConstructResult.Ok(Operand.BuiltinCall(name, operands))
         }
         return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
     }
+
+    /** An `Operand.Literal` produced from a "string" term is always quote-wrapped by [quoted] -- distinguishes a string key from a numeric/boolean one, which [mapOperand] renders unquoted. */
+    private fun isStringLiteral(operand: Operand): Boolean = operand is Operand.Literal && operand.rendered.startsWith("\"")
 
     // --- producesValue (spec §5's minimal placeholder formatting, approved for this session) ---
 

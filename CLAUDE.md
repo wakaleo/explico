@@ -160,17 +160,21 @@ NOT yet do the following. Each is a scoping decision, not an oversight:
   remains unimplemented — still no policy in the pack declares a `default`
   rule.
 - ~~No `Operand` variant exists for an operand-position builtin call~~
-  **Partially resolved (session 11, spec §14 promotion backlog rank #1/#2).**
+  **Mostly resolved (session 11, spec §14 promotion backlog).**
   `Operand.BuiltinCall(name, args)` now exists and is wired for `count`,
-  `lower`, `upper` — the three lowest-risk promotion-backlog items, all with
-  a spec §6.3 template that already existed and only needed a model variant
-  + `AstMapper` wiring, no new design. `object.get`/`time.now_ns` remain
-  unresolved (different arity, no template decision made yet for how to
-  render a non-trivial key/default argument) and still map to
-  `Operand.Unrendered`. `Coverage.unrenderedOperandCount` recurses into
-  `BuiltinCall.args` so a nested unrenderable argument (e.g. an unbound var
-  passed to `count`) still counts against the footer, since this is the
-  first *nested* `Operand` shape the model has ever had.
+  `lower`, `upper` (all three lowest-risk, spec §6.3 templates that only
+  needed a model variant + `AstMapper` wiring, no new design) and for
+  `object.get(o, k, d)` -- but only when `o` is a real path and `k` a plain
+  string literal, in which case `k` extends `o`'s own breadcrumb as an
+  ordinary `PathSegment.KeyLiteral` (the same mechanism a real
+  bracket-string path already uses). A non-string key has no such
+  extension rule and stays `Operand.Unrendered`. `time.now_ns` remains
+  unresolved (no arguments to extend anything with, not yet forced by any
+  real case) and still maps to `Operand.Unrendered`.
+  `Coverage.unrenderedOperandCount` recurses into `BuiltinCall.args` so a
+  nested unrenderable argument (e.g. an unbound var passed to `count`)
+  still counts against the footer, since this is the first *nested*
+  `Operand` shape the model has ever had.
 - **`producesValue`'s placeholder format is deliberately its own thing, not
   `PathHumanizer`'s breadcrumb style.** It reuses `PathHumanizer.wordsOf` for
   the word-splitting (drop `input`, split camelCase/snake_case/kebab-case,
@@ -990,7 +994,7 @@ judgment calls behind them.
   justify the design cost). No promotion was implemented this session, per
   explicit instruction -- the backlog is for the operator's own selection.
 
-## §14.4 Promotion pass: count/lower/upper + local-variable substitution (session 11)
+## §14.4 Promotion pass: count/lower/upper, local-variable substitution, object.get (session 11)
 
 Immediate follow-up to session 10's audit: the operator asked to "work
 through" the promotion backlog rather than leave it entirely for later, so
@@ -1049,3 +1053,27 @@ was proposed in, not deferred to a separate increment.
   promoted, requiring the example to change too, not just the table row),
   and the promotion backlog's ranking were all edited together so the
   document never described an already-superseded state.
+- **`object.get` third, in a separate follow-up request** ("do the next
+  backlog item"), not bundled into the same sitting as the first two --
+  confirming this project's own convention holds even mid-session: each
+  backlog selection gets its own implementation-and-verification pass, not
+  a batch. Promoting it exposed the real design question the backlog's own
+  risk note ("needs a decision on rendering the key/default when they
+  aren't simple literals") had flagged but not resolved: spec §6.3's
+  `<o> ▸ <k> (default <d>)` template reads as a path-breadcrumb extension,
+  not two independently-backtick-wrapped operands, so `k` (when a plain
+  string literal) is appended to `o`'s own segments as an ordinary
+  `PathSegment.KeyLiteral` and the WHOLE extended path is humanized as one
+  breadcrumb -- reusing the exact mechanism a real bracket-string path
+  (`labels["signed-off-by"]`) already renders with, rather than inventing
+  a new one. A non-string key (var, number, computed expression) has no
+  such extension rule and is deliberately not promoted, per this project's
+  own "never widen a template to swallow a construct approximately" rule --
+  confirmed via a dedicated `AstMapperTest` case rather than left
+  untested. Also caught and fixed in the same pass: an existing
+  `ExpressionRendererTest` used `object.get` as its "genuinely unrecognised
+  operand builtin" example specifically *because* it wasn't recognised
+  before -- promoting it broke that test's own premise, not just its
+  assertion, and it was repointed at `time.now_ns` (a builtin that's
+  still, and deliberately, unpromoted) rather than patched to keep using a
+  now-inaccurate example.

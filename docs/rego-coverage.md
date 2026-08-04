@@ -51,6 +51,7 @@ guessing.
 | `Operand.BuiltinCall`: `count(x)` in operand position | `the number of <x>` | **Promoted this session** — see below. Probe 23. |
 | `Operand.BuiltinCall`: `lower(x)` / `upper(x)` in operand position | `<x> lowercased` / `<x> uppercased` | **Promoted this session** — see below. Probe 36. |
 | Local variable bound to a plain path, reused later (`env := input.x; env == "y"`) | The bound path substituted inline; the assignment itself disappears entirely | **Promoted this session** — see below. Probes 03/07/39; new `AstMapperTest.LocalVariableSubstitution` cases cover var-rooted continuation, transitive chaining, and the non-plain-path fallback. |
+| `Operand.BuiltinCall`: `object.get(o, k, d)` — `o` a real path, `k` a plain string literal | `<o> ▸ <k> (default <d>)`, `k` extending `o`'s own breadcrumb as a `PathSegment.KeyLiteral` | **Promoted this session** — see below. Probe 35; new `AstMapperTest` cases cover both the promoted shape and the non-string-key fallback. |
 
 ### Falls back by design (confirmed correct, not a gap)
 
@@ -58,7 +59,8 @@ guessing.
 |---|---|---|
 | Comprehensions (array/set/object), bare or wrapped in `count(...)` | `comprehension` | Explicit non-goal (spec §1.2). Probes 09 (nested `every`), 29, 30; pack REL-004. |
 | `every` (incl. nested `every` inside `every`) | `every` | Explicit non-goal. Probe 09 confirms nesting doesn't get partial credit — the whole outer block falls back as one unit, never guessing at the inner structure. |
-| Operand-position builtins outside `count`/`lower`/`upper` (`object.get`, `time.now_ns`, `concat`, and any user-defined function used as an operand) | n/a (`Operand.Unrendered`, condition itself still classifies) | No `Operand` shape decided yet for these (differing arity, no template precedent for `concat`). Probes 15/25/26/31/34/35 confirm this is safe: the verbatim call text is shown inline, never silently dropped or guessed. |
+| Operand-position builtins outside `count`/`lower`/`upper`/`object.get` (`time.now_ns`, `concat`, and any user-defined function used as an operand) | n/a (`Operand.Unrendered`, condition itself still classifies) | No `Operand` shape decided yet for these (differing arity, no template precedent for `concat`). Probes 15/25/26/31/34 confirm this is safe: the verbatim call text is shown inline, never silently dropped or guessed. |
+| `object.get(o, k, d)` where `k` is not a plain string literal (a var, a number, a computed expression) | n/a (`Operand.Unrendered`) | No breadcrumb-extension rule exists for a non-string key — guessing one would be exactly the "widen a template to swallow a construct approximately" failure mode this audit exists to catch. New `AstMapperTest` case (`objectGetWithANonStringKeyIsNotPromoted`); not exercised by any probe file. |
 | `count(...)` bare in condition position | `function-call` | Spec's explicit rule: operand-position builtins never render as conditions. Probe 37. |
 | `=` unification, both as binding (destructuring) and as pure comparison between two already-bound values | `function-call` | `=` desugars to operator name `eq`, not `equal` (which `==` produces) — confirmed via real `opa parse` output. `COMPARISON_OPERATORS` only maps `equal`, so `=` is uniformly unclassified today; never misrendered as a binding when it's actually a comparison or vice versa. Probes 04/05/31. |
 | `null` / object literal as a comparison operand | `unclassified` | No `Operand` variant for either shape yet. Probes 01/02. |
@@ -89,7 +91,7 @@ before this session.
 
 ## Promoted this session (selected from the backlog below)
 
-Three backlog items were selected and implemented in a follow-up pass, not
+Four backlog items were selected and implemented in a follow-up pass, not
 part of the original audit:
 
 - **`count(x)` in operand position** (`x` a plain path) now renders "the
@@ -105,9 +107,17 @@ part of the original audit:
   faithful `count(...)` (e.g. `count(x)` where `x` is itself an unbound
   local variable) still counts against the coverage footer instead of
   silently vanishing from it.
-- `object.get`/`time.now_ns` were deliberately left for a later pass — no
-  acceptance-pack policy or probe forced a decision on rendering a
-  non-trivial key/default argument yet.
+- `time.now_ns` was deliberately left for a later pass — no acceptance-pack
+  policy or probe forced a decision on it yet, and it has no arguments to
+  extend a breadcrumb with in the first place.
+- **`object.get(o, k, d)` in operand position** — promoted in the SAME
+  follow-up pass, once `o` is a real path and `k` a plain string literal:
+  `k` extends `o`'s own breadcrumb as a `PathSegment.KeyLiteral`, exactly
+  like a real bracket-string path (`labels["signed-off-by"]`) already
+  renders — not a second, separately-backtick-wrapped operand. A non-string
+  key (a var, a number, a computed expression) has no such extension rule
+  and is deliberately NOT promoted — falls back to `Operand.Unrendered`
+  rather than guessing a phrase for a shape spec never demonstrated.
 - **Disclosed, not fixed**: `Examples.referencedPaths` (spec §6.7's worked-
   examples display) only recognises a top-level `Operand.Path`, so a
   `count(x) == 0` condition's underlying `x` won't appear in a worked
@@ -160,22 +170,21 @@ own review, not as a byproduct of this one.
 
 Constructs currently in the fallback bucket that a future increment could
 render faithfully, ranked by estimated real-world policy-authoring
-frequency. The top three ranks (`count`/`lower`/`upper`, and local-variable
-substitution) were selected and implemented in a follow-up pass — see
-"Promoted this session" above; the rest remain a ranked list for selection,
-not a plan.
+frequency. The top four ranks (`count`/`lower`/`upper`/`object.get`, and
+local-variable substitution) were selected and implemented in follow-up
+passes — see "Promoted this session" above; the rest remain a ranked list
+for selection, not a plan.
 
 | Rank | Construct | Proposed template | Risk |
 |---|---|---|---|
-| 1 | `object.get(o, k, d)` in operand position | "X ▸ K (default D)" — already spec'd | **Low-medium.** Needs a decision on rendering the key/default when *they* aren't simple literals. |
-| 2 | `time.now_ns()` in operand position | "the current time" — already spec'd | **Low.** |
-| 3 | `some k, v in obj` (two-variable form) | "for some k, v in X", with both `k` and `v` in scope for later var-rooted paths | **Medium.** Touches `PathHumanizer`'s `[each x]` convention, which has no two-variable form yet. |
-| 4 | `=` used as a pure comparison (both sides already bound, no new binding introduced) | Treat identically to `==` | **Medium.** Must positively confirm *neither* side introduces an unbound variable before promoting — a destructuring `=` is assignment, not comparison, and conflating the two would be exactly the "widen a template to swallow a construct approximately" failure mode this audit exists to catch. |
-| 5 | Arithmetic operands (`x + 1`, etc.) | A small infix expression renderer | **Medium-high.** More design surface than the others (multiple operators, precedence, humanizing the operand sub-tree). |
-| 6 | `concat(sep, [...])` string-join operand | "X joined with Y" (no spec precedent) | **Medium.** New design, not just new wiring. |
-| 7 | `null` literal operand | `Operand.Literal("null")` | **Low.** Trivial, just never added. |
-| 8 | Small flat object literal operand | Same mechanism as the existing small-array-literal rendering | **Medium.** Needs a deterministic key-ordering and size-cap decision (mirroring the existing ≤5-element array rule). |
-| 9 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
+| 1 | `time.now_ns()` in operand position | "the current time" — already spec'd | **Low.** |
+| 2 | `some k, v in obj` (two-variable form) | "for some k, v in X", with both `k` and `v` in scope for later var-rooted paths | **Medium.** Touches `PathHumanizer`'s `[each x]` convention, which has no two-variable form yet. |
+| 3 | `=` used as a pure comparison (both sides already bound, no new binding introduced) | Treat identically to `==` | **Medium.** Must positively confirm *neither* side introduces an unbound variable before promoting — a destructuring `=` is assignment, not comparison, and conflating the two would be exactly the "widen a template to swallow a construct approximately" failure mode this audit exists to catch. |
+| 4 | Arithmetic operands (`x + 1`, etc.) | A small infix expression renderer | **Medium-high.** More design surface than the others (multiple operators, precedence, humanizing the operand sub-tree). |
+| 5 | `concat(sep, [...])` string-join operand | "X joined with Y" (no spec precedent) | **Medium.** New design, not just new wiring. |
+| 6 | `null` literal operand | `Operand.Literal("null")` | **Low.** Trivial, just never added. |
+| 7 | Small flat object literal operand | Same mechanism as the existing small-array-literal rendering | **Medium.** Needs a deterministic key-ordering and size-cap decision (mirroring the existing ≤5-element array rule). |
+| 8 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
 | — | `else`-chains rendered as multiple "Situation N" entries | *Not recommended near-term* | **High — explicitly deferred.** An else-chain's branches are priority-ordered and mutually exclusive (first match wins), not a simple OR of situations the way multiple `deny` bodies are. Modeling this incorrectly would reintroduce a MISLEADING finding of exactly the kind this session just fixed; needs its own design pass, not an incremental template tweak. |
 | — | `walk()` builtin | *Not recommended* | Niche in this project's target domain (compliance/authz policies rarely need generic tree traversal); low estimated frequency doesn't justify the design cost. |
 

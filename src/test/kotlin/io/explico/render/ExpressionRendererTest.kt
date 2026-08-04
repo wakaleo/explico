@@ -172,11 +172,23 @@ class ExpressionRendererTest {
     }
 
     @Test
+    @DisplayName("Operand.BuiltinCall(object.get) extends the object's own breadcrumb with the key as a KeyLiteral, per spec §6.3/§14")
+    fun operandBuiltinCallObjectGetRendersFaithfully() {
+        val change = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("change")))
+        val objectGet = Operand.BuiltinCall("object.get", listOf(change, Operand.Literal("\"ticket\""), Operand.Literal("\"none\"")))
+        val condition = Condition.Comparison(objectGet, Operator.EQ, Operand.Literal("\"none\""))
+        assertThat(ExpressionRenderer.render(condition, noAnchor))
+            .isEqualTo("`change ▸ \"ticket\"` (default `\"none\"`) is `\"none\"`")
+    }
+
+    @Test
     @DisplayName("An Operand.BuiltinCall name outside the recognised operand-position set is rejected, not silently mis-rendered")
     fun rejectsUnrecognisedOperandBuiltinName() {
-        // AstMapper never constructs this (it only builds Operand.BuiltinCall from count/lower/upper) --
-        // this constructs one directly to prove the defensive check actually fires.
-        val bogus = Condition.Comparison(Operand.BuiltinCall("object.get", listOf(Operand.Literal("\"x\""))), Operator.EQ, Operand.Literal("\"y\""))
+        // AstMapper never constructs this (it only builds Operand.BuiltinCall from
+        // count/lower/upper/object.get) -- this constructs one directly to prove the defensive
+        // check actually fires. "time.now_ns" is a real operand-position builtin (spec §6.3) that's
+        // still a documented gap -- genuinely never promoted, unlike object.get.
+        val bogus = Condition.Comparison(Operand.BuiltinCall("time.now_ns", emptyList()), Operator.GT, Operand.Literal("0"))
         assertThatThrownBy { ExpressionRenderer.render(bogus, noAnchor) }
             .isInstanceOf(IllegalArgumentException::class.java)
     }

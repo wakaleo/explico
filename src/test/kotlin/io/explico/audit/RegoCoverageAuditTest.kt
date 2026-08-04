@@ -367,9 +367,11 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun objectGetOperandRendersAsUnhumanizedVerbatimSource() {
+    fun objectGetOperandNowRendersFaithfullyPromotedThisSession() {
+        // Promoted (spec §14 backlog rank #1): the key extends the object's own breadcrumb as a
+        // KeyLiteral, exactly like a real bracket-string path segment would.
         val conditions = conditionsOf(loadProbe("35-object-get-operand.rego"), "deny")
-        assertThat(render(conditions.single())).isEqualTo("`object.get(input.change, \"ticket\", \"none\")` is `\"none\"`")
+        assertThat(render(conditions.single())).isEqualTo("`change ▸ \"ticket\"` (default `\"none\"`) is `\"none\"`")
     }
 
     @Test
