@@ -1565,4 +1565,92 @@ class AstMapperTest {
             assertThat((minus.args[1] as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("a"))
         }
     }
+
+    @Nested
+    inner class ConcatOperand {
+
+        @Test
+        fun aSetLiteralCollectionExplodesIntoOneOperandPerElementJustLikeAnArrayLiteral() {
+            // `concat("/", {input.a, input.b})` -- a set literal, not an array. No probe exercises
+            // this shape (probe 26 only covers array literals); mapConcatOperand treats "array" and
+            // "set" identically per its own KDoc.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("concat(\"/\", {input.a, input.b}) == input.c")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"call","value":[
+                              {"type":"ref","value":[{"type":"var","value":"concat"}]},
+                              {"type":"string","value":"/"},
+                              {"type":"set","value":[
+                                {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"a"}]},
+                                {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"b"}]}
+                              ]}
+                            ]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"c"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val comparison = body.conditions.single() as Condition.Comparison
+            val concat = comparison.left as Operand.BuiltinCall
+            assertThat(concat.name).isEqualTo("concat")
+            assertThat((concat.args[0] as Operand.Literal).rendered).isEqualTo("\"/\"")
+            assertThat((concat.args[1] as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("a"))
+            assertThat((concat.args[2] as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("b"))
+        }
+
+        @Test
+        fun aComprehensionAsTheCollectionArgumentFallsBackTheWholeConcatCall() {
+            // `concat(",", [x | some x in input.a])` -- the collection argument is ITSELF an
+            // arraycomprehension term (not an "array" literal type), so it takes mapConcatOperand's
+            // whole-collection-reference path, and mapOperand's own comprehension handling correctly
+            // returns Unsupported, propagating to fall back the WHOLE concat call -- never a
+            // partial/guessed rendering, exactly like every other operand-position promotion.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("concat(\",\", [x | some x in input.a]) == input.b")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"call","value":[
+                              {"type":"ref","value":[{"type":"var","value":"concat"}]},
+                              {"type":"string","value":","},
+                              {"type":"arraycomprehension","value":{}}
+                            ]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"b"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val fallback = body.conditions.single() as Condition.Unrendered
+            assertThat(fallback.reason).isEqualTo("comprehension")
+            assertThat(fallback.sourceText).isEqualTo("concat(\",\", [x | some x in input.a]) == input.b")
+        }
+    }
 }

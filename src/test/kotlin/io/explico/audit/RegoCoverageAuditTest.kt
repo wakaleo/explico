@@ -319,10 +319,22 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun stringConcatOperandRendersAsUnhumanizedVerbatimSource() {
+    fun stringConcatOperandNowRendersFaithfullyPromotedThisSession() {
+        // Promoted (spec §14 backlog rank #1): a literal array/set of joined elements explodes into
+        // one operand per element, each humanized independently and comma-joined at render time.
         val conditions = conditionsOf(loadProbe("26-string-concat-operand.rego"), "deny")
         assertThat(render(conditions.single()))
-            .isEqualTo("`concat(\"/\", [input.change.namespace, input.change.name])` is `change ▸ full name`")
+            .isEqualTo("`change ▸ namespace`, `change ▸ name` joined with `\"/\"` is `change ▸ full name`")
+    }
+
+    @Test
+    fun concatOfAWholeCollectionReferenceRendersAsASingleJoinedOperand() {
+        // A path/var referencing an existing collection (concat("/", input.change.path_parts), not
+        // a literal array) maps as a SINGLE whole-collection operand rather than exploded elements
+        // -- both shapes reach the same "concat" promotion, since neither requires guessing.
+        val conditions = conditionsOf(loadProbe("42-concat-whole-collection.rego"), "deny")
+        assertThat(render(conditions.single()))
+            .isEqualTo("`change ▸ path parts` joined with `\"/\"` is `change ▸ full name`")
     }
 
     @Test

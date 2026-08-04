@@ -8,9 +8,9 @@
  * operand position already became `Operand.Unrendered` before reaching this
  * class. `count`/`lower`/`upper`/`time.now_ns`/arithmetic (`plus`/`minus`/
  * `mul`/`div`/`rem`, spec §14 promotion) are operand-position only and render
- * via [Operand.BuiltinCall]'s own template maps; `object.get` renders via its
- * own dedicated breadcrumb-extension logic ([renderObjectGet]). Anything else
- * remains a documented gap and still falls back to `Operand.Unrendered`.
+ * via [Operand.BuiltinCall]'s own template maps; `object.get`/`concat` render
+ * via their own dedicated logic ([renderObjectGet]/[renderConcat]). Anything
+ * else remains a documented gap and still falls back to `Operand.Unrendered`.
  *
  * `Condition.Comparison.negated` (spec §14 amendment: `not x == y` is real, valid Rego) picks
  * [NEGATED_COMPARISON_VERBS] instead of [COMPARISON_VERBS] -- a literal negation of the positive
@@ -100,6 +100,7 @@ internal object ExpressionRenderer {
         // time.now_ns() takes no arguments -- its template is a fixed phrase, not one built around
         // a rendered argument, so it's handled separately from the single-argument templates below.
         if (operand.name == "time.now_ns") return "the current time" to false
+        if (operand.name == "concat") return renderConcat(operand)
         ARITHMETIC_TEMPLATES[operand.name]?.let { template ->
             val (leftText, leftAny) = renderOperand(operand.args[0])
             val (rightText, rightAny) = renderOperand(operand.args[1])
@@ -125,6 +126,22 @@ internal object ExpressionRenderer {
         val humanized = PathHumanizer.humanize(extendedPath)
         val (defaultText, defaultAnyIndex) = renderOperand(defaultOperand)
         return "${humanized.rendered} (default $defaultText)" to (humanized.hasAnyIndex || defaultAnyIndex)
+    }
+
+    /**
+     * `concat(separator, collection)` (spec §6.3/§14): `operand.args[0]` is always the separator;
+     * `args.drop(1)` is either N element operands (a literal array/set was exploded at mapping
+     * time) or a single whole-collection operand (a path/var reference) -- [mapConcatOperand]'s own
+     * KDoc explains why both shapes reach here identically. Either way the renderer just
+     * comma-joins whatever already-rendered operand text it's given; a single element naturally
+     * needs no comma.
+     */
+    private fun renderConcat(operand: Operand.BuiltinCall): Pair<String, Boolean> {
+        val (separatorText, separatorAny) = renderOperand(operand.args[0])
+        val rendered = operand.args.drop(1).map { renderOperand(it) }
+        val listText = rendered.joinToString(", ") { it.first }
+        val hasAnyIndex = separatorAny || rendered.any { it.second }
+        return "$listText joined with $separatorText" to hasAnyIndex
     }
 
     private fun withAnyOfPrefix(phrase: String, hasAnyIndex: Boolean): String = if (hasAnyIndex) "any of: $phrase" else phrase

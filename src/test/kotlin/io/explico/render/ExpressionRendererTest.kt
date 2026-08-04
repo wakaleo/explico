@@ -291,14 +291,52 @@ class ExpressionRendererTest {
     }
 
     @Test
+    @DisplayName("Operand.BuiltinCall(concat) comma-joins exploded array elements, per spec §6.3/§14")
+    fun operandBuiltinCallConcatWithExplodedArrayRendersFaithfully() {
+        // args[0] is always the separator; args.drop(1) is one operand per array element
+        // (AstMapper's own convention -- see mapConcatOperand's KDoc).
+        val separator = Operand.Literal("\"/\"")
+        val namespace = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("namespace")))
+        val name = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("name")))
+        val concat = Operand.BuiltinCall("concat", listOf(separator, namespace, name))
+        val condition = Condition.Comparison(concat, Operator.EQ, Operand.Literal("\"a/b\""))
+        assertThat(ExpressionRenderer.render(condition, noAnchor))
+            .isEqualTo("`change ▸ namespace`, `change ▸ name` joined with `\"/\"` is `\"a/b\"`")
+    }
+
+    @Test
+    @DisplayName("Operand.BuiltinCall(concat) with a single whole-collection operand needs no comma")
+    fun operandBuiltinCallConcatWithWholeCollectionReferenceRendersFaithfully() {
+        // A single args[1] element -- a path/var referencing an existing collection, not an
+        // exploded literal -- joinToString naturally produces no comma for a one-element list.
+        val separator = Operand.Literal("\"/\"")
+        val parts = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("path_parts")))
+        val concat = Operand.BuiltinCall("concat", listOf(separator, parts))
+        val condition = Condition.Comparison(concat, Operator.EQ, Operand.Literal("\"a/b\""))
+        assertThat(ExpressionRenderer.render(condition, noAnchor))
+            .isEqualTo("`change ▸ path parts` joined with `\"/\"` is `\"a/b\"`")
+    }
+
+    @Test
+    @DisplayName("An unbound element nested inside concat still counts against the coverage footer")
+    fun anUnrenderedOperandNestedInsideConcatStillCountsAgainstCoverage() {
+        val separator = Operand.Literal("\"/\"")
+        val unbound = Operand.Unrendered("y")
+        val concat = Operand.BuiltinCall("concat", listOf(separator, unbound))
+        val condition = Condition.Comparison(concat, Operator.EQ, Operand.Literal("\"a/b\""))
+        assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("`y` joined with `\"/\"` is `\"a/b\"`")
+        assertThat(Coverage.unrenderedOperandCount(listOf(condition))).isEqualTo(1)
+    }
+
+    @Test
     @DisplayName("An Operand.BuiltinCall name outside the recognised operand-position set is rejected, not silently mis-rendered")
     fun rejectsUnrecognisedOperandBuiltinName() {
         // AstMapper never constructs this (it only builds Operand.BuiltinCall from
-        // count/lower/upper/object.get/time.now_ns/plus/minus/mul/div/rem) -- this constructs one
-        // directly to prove the defensive check actually fires. "concat" is a real
-        // operand-position-shaped builtin that's still a documented gap (spec §14 backlog rank #1) --
-        // genuinely never promoted.
-        val bogus = Condition.Comparison(Operand.BuiltinCall("concat", listOf(Operand.Literal("\",\""))), Operator.GT, Operand.Literal("0"))
+        // count/lower/upper/object.get/time.now_ns/plus/minus/mul/div/rem/concat) -- this constructs
+        // one directly to prove the defensive check actually fires. "sprintf" is a real builtin
+        // that's explicitly documented (spec §6.3's own table) as head-value-only, never
+        // operand-position -- genuinely never promoted here.
+        val bogus = Condition.Comparison(Operand.BuiltinCall("sprintf", listOf(Operand.Literal("\"%v\""))), Operator.GT, Operand.Literal("0"))
         assertThatThrownBy { ExpressionRenderer.render(bogus, noAnchor) }
             .isInstanceOf(IllegalArgumentException::class.java)
     }

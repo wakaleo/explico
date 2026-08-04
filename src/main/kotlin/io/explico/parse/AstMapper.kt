@@ -5,8 +5,11 @@
  * (spec §14 promotion) when their single argument itself resolves cleanly; `object.get(o, k, d)`
  * promotes too, but only when `o` is a real path and `k` a plain string literal (see
  * [mapCallOperand]'s own KDoc for why a non-string key isn't promoted); `time.now_ns()` promotes
- * unconditionally, since it takes no arguments to resolve. Anything else (still a documented gap)
- * maps to `Operand.Unrendered`, honestly reflecting that we can't render it rather than guessing a
+ * unconditionally, since it takes no arguments to resolve; `plus`/`minus`/`mul`/`div`/`rem`
+ * (arithmetic) promote unconditionally on arity 2, recursively at any nesting depth;
+ * `concat(sep, collection)` promotes too, via its own dedicated expansion of the collection
+ * argument (see [mapConcatOperand]'s own KDoc). Anything else (still a documented gap) maps to
+ * `Operand.Unrendered`, honestly reflecting that we can't render it rather than guessing a
  * phrase. Note that in the acceptance pack, `count({a | ...})
  * == 0` wraps a comprehension, which forces the whole condition to fall back regardless of the
  * builtin promotion above -- see [ConstructResult.Unsupported].
@@ -593,7 +596,35 @@ internal object AstMapper {
         if (name in ARITHMETIC_BUILTINS && operands.size == 2) {
             return ConstructResult.Ok(Operand.BuiltinCall(name, operands))
         }
+        if (name == "concat" && args.size == 2) {
+            return mapConcatOperand(args[0], args[1], symbolTable)
+        }
         return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
+    }
+
+    /**
+     * `concat(separator, collection)` (spec §14 promotion) -- unlike the uniform checks above, the
+     * SECOND argument needs its own expansion rather than the generic single-pass `args.map {
+     * mapOperand }` at the top of [mapCallOperand]: a literal array/set (`concat("/", [a, b])`)
+     * explodes into one [Operand] per element, joined at render time; anything else (a path or
+     * bound var referencing an existing collection, e.g. `concat("/", input.parts)`) maps as a
+     * SINGLE whole-collection operand instead -- both are genuinely common real-world shapes, and
+     * neither requires guessing: every element (or the whole collection reference) still goes
+     * through the same [mapOperand] every other operand position uses. The result is stored as
+     * `Operand.BuiltinCall("concat", listOf(separator) + collectionOperands)` -- the renderer knows
+     * by convention that args[0] is the separator and the rest are the joined items (one item for
+     * the whole-collection-reference case, N items for the exploded-literal case).
+     */
+    private fun mapConcatOperand(separatorTerm: OpaTerm, collectionTerm: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult {
+        val collectionElementTerms = if (collectionTerm.type == "array" || collectionTerm.type == "set") {
+            decodeTermList(collectionTerm.value)
+        } else {
+            listOf(collectionTerm)
+        }
+        val results = (listOf(separatorTerm) + collectionElementTerms).map { mapOperand(it, symbolTable) }
+        val unsupported = results.filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
+        if (unsupported != null) return unsupported
+        return ConstructResult.Ok(Operand.BuiltinCall("concat", results.map { (it as ConstructResult.Ok).operand }))
     }
 
     /** An `Operand.Literal` produced from a "string" term is always quote-wrapped by [quoted] -- distinguishes a string key from a numeric/boolean one, which [mapOperand] renders unquoted. */

@@ -56,6 +56,7 @@ guessing.
 | `Operand.BuiltinCall`: `time.now_ns()` in operand position | `the current time` | **Promoted, follow-up session** — see below. Zero arguments, so the template is a fixed phrase rather than one built around a rendered argument. Probe 34. |
 | `=` unification (opa's `eq`), used as a **pure comparison** — both sides already resolve to a real, non-`Unrendered` operand | Identical to `==` | **Promoted, further follow-up session** — see below. Probe 05. Destructuring/binding uses of `=` (probe 04) are unaffected — still `function-call`, see below. |
 | `Operand.BuiltinCall`: `plus`/`minus`/`mul`/`div`/`rem` (opa's operator names for `+`/`-`/`*`/`/`/`%`) in operand position, at any nesting depth | `<a> plus/minus/times/divided by/modulo <b>` | **Promoted, further follow-up session** — see below. Probe 25. Unlike `=`/`object.get`, no restriction on nested/`Unrendered` args — arithmetic never introduces a binding, and opa's own parse tree already resolves precedence, so recursive rendering is faithful at any depth. |
+| `Operand.BuiltinCall`: `concat(sep, collection)` — a literal array/set explodes into one operand per element; a path/var reference maps as a single whole-collection operand | `<elem>, <elem>, ... joined with <sep>` (one element needs no comma) | **Promoted, further follow-up session** — see below. Probes 26 (exploded array literal), 42 (whole-collection reference). |
 
 ### Falls back by design (confirmed correct, not a gap)
 
@@ -63,7 +64,7 @@ guessing.
 |---|---|---|
 | Comprehensions (array/set/object), bare or wrapped in `count(...)` | `comprehension` | Explicit non-goal (spec §1.2). Probes 09 (nested `every`), 29, 30; pack REL-004. |
 | `every` (incl. nested `every` inside `every`) | `every` | Explicit non-goal. Probe 09 confirms nesting doesn't get partial credit — the whole outer block falls back as one unit, never guessing at the inner structure. |
-| Operand-position builtins outside `count`/`lower`/`upper`/`object.get`/`time.now_ns`/arithmetic (`concat`, and any user-defined function used as an operand) | n/a (`Operand.Unrendered`, condition itself still classifies) | No `Operand` shape decided yet for these (differing arity, no template precedent for `concat`). Probes 15/26/31 confirm this is safe: the verbatim call text is shown inline, never silently dropped or guessed. |
+| Operand-position builtins outside `count`/`lower`/`upper`/`object.get`/`time.now_ns`/arithmetic/`concat` (any user-defined function used as an operand) | n/a (`Operand.Unrendered`, condition itself still classifies) | No `Operand` shape decided yet for these (differing arity, no template precedent). Probe 15 confirms this is safe: the verbatim call text is shown inline, never silently dropped or guessed. |
 | `object.get(o, k, d)` where `k` is not a plain string literal (a var, a number, a computed expression) | n/a (`Operand.Unrendered`) | No breadcrumb-extension rule exists for a non-string key — guessing one would be exactly the "widen a template to swallow a construct approximately" failure mode this audit exists to catch. New `AstMapperTest` case (`objectGetWithANonStringKeyIsNotPromoted`); not exercised by any probe file. |
 | `count(...)` bare in condition position | `function-call` | Spec's explicit rule: operand-position builtins never render as conditions. Probe 37. |
 | `=` unification used as **binding/destructuring** (`[x, y] = [...]`, a fresh var on either side) | `function-call` | **Partially promoted, further follow-up session** — the pure-comparison case (both sides already bound) is now `Comparison` (see "Rendered faithfully" above); a genuine bind still falls back, since `Condition.Comparison` can't represent "this also assigns x and y" — the mapper positively confirms neither side maps to `Operand.Unrendered` (its signal that a fresh binding may be in play) before promoting. Probe 04. A **negated** `=` (`not x = input.y`) also still falls back regardless of whether it's a pure comparison — see the disclosed gap below. |
@@ -346,6 +347,53 @@ fix, selected on its own:
   `docs/sample-output/` staying drift-free -- no acceptance-pack policy uses
   arithmetic.
 
+### `concat(sep, collection)`
+
+Backlog rank #1 of the ranked list remaining after arithmetic, selected on
+its own:
+
+- **Two genuinely common real-world shapes for the collection argument,
+  both promoted, neither guessed.** `concat("/", [input.a, input.b])` (a
+  literal array/set) explodes into one operand PER ELEMENT at mapping time
+  -- each element goes through the same general `mapOperand` every other
+  operand position uses, then all elements are comma-joined at render time.
+  `concat("/", input.parts)` (a path or bound var referencing an EXISTING
+  collection -- arguably the more common real-world idiom, since most
+  policies join an already-computed list rather than construct one inline)
+  maps as a SINGLE whole-collection operand instead. Neither requires
+  guessing semantics; both were judged in-scope for "how do I render
+  `concat`", not scope creep into a different construct. The original
+  backlog entry's proposed template ("X joined with Y") didn't specify
+  which argument was X vs. Y or address the array-vs-reference question at
+  all -- both were this session's own design decision, following the
+  project's established "never guess, only promote the unambiguous common
+  shape" convention (same posture as `object.get`'s string-literal-key
+  restriction).
+- **Model representation reuses `Operand.BuiltinCall` with no new type**:
+  `args[0]` is always the separator; `args.drop(1)` is either N element
+  operands or a single whole-collection operand, by convention (documented
+  in `mapConcatOperand`'s own KDoc, not a new sealed variant). The renderer
+  doesn't need to know which shape produced its input -- it just
+  comma-joins whatever operand text it's given, and `joinToString` naturally
+  needs no comma for a one-element list.
+- **A set literal (`concat(",", {a, b})`) is treated identically to an
+  array literal** -- `mapConcatOperand` checks for either term type. Not
+  exercised by any probe (no acceptance-pack-adjacent idiom uses a set
+  here); confirmed via a new synthetic-JSON `AstMapperTest` case following
+  a real `opa parse` run confirming the "set" term type.
+- **A comprehension as the collection argument correctly falls back the
+  WHOLE `concat` call**, not a partial rendering -- it takes the
+  whole-collection-reference path (its term type isn't "array"/"set"), and
+  `mapOperand`'s existing comprehension handling returns `Unsupported`,
+  propagating up exactly like every other operand-position promotion's
+  `Unsupported` handling already does. New synthetic-JSON `AstMapperTest`
+  case.
+- **`Coverage`/`Canonicalizer` needed no change** -- both are already fully
+  generic over `Operand.BuiltinCall`'s `name`/variable-length `args`.
+- Verified via `check`/`acceptanceTest` staying green and
+  `docs/sample-output/` staying drift-free -- no acceptance-pack policy uses
+  `concat`.
+
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
 **Operand-level fallback (`Operand.Unrendered`) renders as plain backticked
@@ -376,20 +424,20 @@ frequency. The top four ranks (`count`/`lower`/`upper`/`object.get`, and
 local-variable substitution) plus former rank 1 (`time.now_ns`) plus former
 rank 1 of the next round (`some k, v in obj`) plus former rank 1 of the
 round after that (`=` as pure comparison) plus former rank 1 of the round
-after that (arithmetic operands) were selected and implemented in follow-up
-passes — see "Promoted this session" and "Promoted in further follow-up
-sessions" above; the rest remain a ranked list for selection, not a plan.
-(The negated-comparisons correctness bug that used to appear here as an
+after that (arithmetic operands) plus former rank 1 of the round after that
+(`concat`) were selected and implemented in follow-up passes — see
+"Promoted this session" and "Promoted in further follow-up sessions" above;
+the rest remain a ranked list for selection, not a plan. (The
+negated-comparisons correctness bug that used to appear here as an
 unranked, un-prioritized entry is now fixed -- see "Fixed, follow-up
 session" above; it was never really part of this frequency-ranked list to
 begin with, since it's a bug fix rather than a coverage promotion.)
 
 | Rank | Construct | Proposed template | Risk |
 |---|---|---|---|
-| 1 | `concat(sep, [...])` string-join operand | "X joined with Y" (no spec precedent) | **Medium.** New design, not just new wiring. |
-| 2 | `null` literal operand | `Operand.Literal("null")` | **Low.** Trivial, just never added. |
-| 3 | Small flat object literal operand | Same mechanism as the existing small-array-literal rendering | **Medium.** Needs a deterministic key-ordering and size-cap decision (mirroring the existing ≤5-element array rule). |
-| 4 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
+| 1 | `null` literal operand | `Operand.Literal("null")` | **Low.** Trivial, just never added. |
+| 2 | Small flat object literal operand | Same mechanism as the existing small-array-literal rendering | **Medium.** Needs a deterministic key-ordering and size-cap decision (mirroring the existing ≤5-element array rule). |
+| 3 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
 | — | `else`-chains rendered as multiple "Situation N" entries | *Not recommended near-term* | **High — explicitly deferred.** An else-chain's branches are priority-ordered and mutually exclusive (first match wins), not a simple OR of situations the way multiple `deny` bodies are. Modeling this incorrectly would reintroduce a MISLEADING finding of exactly the kind this session just fixed; needs its own design pass, not an incremental template tweak. |
 | — | `walk()` builtin | *Not recommended* | Niche in this project's target domain (compliance/authz policies rarely need generic tree traversal); low estimated frequency doesn't justify the design cost. |
 
