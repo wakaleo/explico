@@ -71,8 +71,14 @@ public sealed interface Condition {
     /** A recognised builtin predicate call, e.g. `startswith(x, "release/")`. */
     public data class BuiltinCall(val name: String, val args: List<Operand>, val negated: Boolean) : Condition
 
-    /** `some <variable> in <collection>`, introducing a loop variable later path segments can reference. */
-    public data class SomeIn(val variable: String, val collection: Operand) : Condition
+    /**
+     * `some <variable> in <collection>`, introducing a loop variable later path segments can
+     * reference. The two-variable form (`some <key>, <variable> in <collection>`, spec §14
+     * promotion) additionally binds [key] -- both names resolve later var-rooted paths against
+     * the same [collection], since Rego makes no distinction in how a key vs. value variable can
+     * be used once bound. `key` is null for the single-variable form.
+     */
+    public data class SomeIn(val variable: String, val collection: Operand, val key: String? = null) : Condition
 
     /** A reference to another rule defined in the policy set (same or an imported package). */
     public data class RuleReference(val packagePath: String, val ruleName: String, val negated: Boolean) : Condition

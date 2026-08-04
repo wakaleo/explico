@@ -1210,4 +1210,138 @@ class AstMapperTest {
             assertThat((comparison.left as Operand.Variable).name).isEqualTo("x")
         }
     }
+
+    @Nested
+    inner class SomeKeyValueForm {
+
+        /** `internal.member_3(k, v, collection)` -- confirmed via a real `opa parse` run against `some k, v in ...`. */
+        private fun someKvCollectionTerms(collectionRefJson: String): String = """
+            {
+              "symbols": [
+                {
+                  "type": "call",
+                  "value": [
+                    {"type":"ref","value":[{"type":"var","value":"internal"},{"type":"string","value":"member_3"}]},
+                    {"type":"var","value":"k"},
+                    {"type":"var","value":"v"},
+                    $collectionRefJson
+                  ]
+                }
+              ]
+            }
+        """.trimIndent()
+
+        @Test
+        fun bindsBothKeyAndValueAndLaterBareUsesOfEachResolveThroughTheCollection() {
+            // `some k, v in input.change.approvals; v == "approved"; k == "release-manager"` -- spec
+            // §14 promotion: both k and v bind as iteration variables against the SAME collection,
+            // exactly like the single-variable form already binds one.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("some k, v in input.change.approvals")}"},
+                          "terms": ${
+            someKvCollectionTerms(
+                """{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"change"},{"type":"string","value":"approvals"}]}""",
+            )
+        }
+                        },
+                        {
+                          "index": 1,
+                          "location": {"file":"scratch.rego","row":2,"text":"${b64("v == \"approved\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"var","value":"v"},
+                            {"type":"string","value":"approved"}
+                          ]
+                        },
+                        {
+                          "index": 2,
+                          "location": {"file":"scratch.rego","row":3,"text":"${b64("k == \"release-manager\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"var","value":"k"},
+                            {"type":"string","value":"release-manager"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            assertThat(body.conditions).hasSize(3)
+
+            val someIn = body.conditions[0] as Condition.SomeIn
+            assertThat(someIn.key).isEqualTo("k")
+            assertThat(someIn.variable).isEqualTo("v")
+            assertThat((someIn.collection as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("approvals"),
+            )
+
+            val valueComparison = body.conditions[1] as Condition.Comparison
+            assertThat((valueComparison.left as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("approvals"), PathSegment.VarIndex("v"),
+            )
+
+            val keyComparison = body.conditions[2] as Condition.Comparison
+            assertThat((keyComparison.left as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("approvals"), PathSegment.VarIndex("k"),
+            )
+        }
+
+        @Test
+        fun valueVariableUsedAsARefChainRootExtendsWithVarIndexThenContinues() {
+            // `some k, v in input.change.approvals; v.role == "release-manager"` -- mirrors the
+            // already-established single-variable precedent (PipelineEvidenceRego's `stage.status`),
+            // proving the two-variable form's value binding works as a chain ROOT too, not just bare.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("some k, v in input.change.approvals")}"},
+                          "terms": ${
+            someKvCollectionTerms(
+                """{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"change"},{"type":"string","value":"approvals"}]}""",
+            )
+        }
+                        },
+                        {
+                          "index": 1,
+                          "location": {"file":"scratch.rego","row":2,"text":"${b64("v.role == \"release-manager\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"ref","value":[{"type":"var","value":"v"},{"type":"string","value":"role"}]},
+                            {"type":"string","value":"release-manager"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            assertThat(body.conditions).hasSize(2)
+            val comparison = body.conditions[1] as Condition.Comparison
+            assertThat((comparison.left as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("approvals"),
+                PathSegment.VarIndex("v"), PathSegment.Field("role"),
+            )
+        }
+    }
 }

@@ -45,7 +45,8 @@ internal object ExpressionRenderer {
         is Condition.BuiltinCall -> renderBuiltinCall(condition)
         is Condition.SomeIn -> {
             val (text, hasAnyIndex) = renderOperand(condition.collection)
-            withAnyOfPrefix("for some ${condition.variable} in $text", hasAnyIndex)
+            val vars = if (condition.key != null) "${condition.key}, ${condition.variable}" else condition.variable
+            withAnyOfPrefix("for some $vars in $text", hasAnyIndex)
         }
         is Condition.RuleReference -> renderRuleReference(condition, anchorFor)
         is Condition.Unrendered -> throw IllegalArgumentException(

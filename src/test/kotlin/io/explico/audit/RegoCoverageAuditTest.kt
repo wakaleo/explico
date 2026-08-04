@@ -97,12 +97,17 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun someKeyValueInObjectFallsBackForTheBindingButRendersFollowUpComparisons() {
+    fun someKeyValueInObjectNowRendersFaithfullyPromotedThisSession() {
+        // Promoted (spec §14 backlog rank #1): `some k, v in obj` desugars to internal.member_3
+        // and now binds BOTH k and v as iteration variables against the same collection, exactly
+        // like the single-variable form already binds one -- so later bare uses of either extend
+        // the collection's own breadcrumb with "[each k]"/"[each v]", instead of rendering as a
+        // bare, untraced `Operand.Variable`.
         val conditions = conditionsOf(loadProbe("06-some-kv-in-object.rego"), "deny")
         assertThat(conditions).hasSize(3)
-        assertUnrendered(conditions[0], "unclassified")
-        assertThat(render(conditions[1])).isEqualTo("`k` is `\"signed_off_by\"`")
-        assertThat(render(conditions[2])).isEqualTo("`v` is `\"\"`")
+        assertThat(render(conditions[0])).isEqualTo("for some k, v in `change ▸ metadata`")
+        assertThat(render(conditions[1])).isEqualTo("`change ▸ metadata ▸ [each k]` is `\"signed_off_by\"`")
+        assertThat(render(conditions[2])).isEqualTo("`change ▸ metadata ▸ [each v]` is `\"\"`")
     }
 
     @Test

@@ -127,4 +127,30 @@ class CanonicalizerTest {
         val base = denyRule("base")
         assertThat(Canonicalizer.metadataHash(noMetadataRule)).isNotEqualTo(Canonicalizer.metadataHash(base))
     }
+
+    @Test
+    fun someKeyValueRenamingBothVariablesYieldsTheSameLogicHash() {
+        // spec §14 promotion: `some k, v in ...` renamed to `some key, val in ...`, with every
+        // later use renamed to match, is pure alpha-renaming -- same invariant already proven for
+        // the single-variable form above (positionalVariableRenameYieldsTheSameLogicHash).
+        val base = denyRule("some-kv-base")
+        val renamed = denyRule("some-kv-renamed-vars")
+        assertThat(Canonicalizer.logicHash(renamed)).isEqualTo(Canonicalizer.logicHash(base))
+    }
+
+    @Test
+    fun someKeyValueTestingTheKeyInsteadOfTheValueYieldsADifferentLogicHash() {
+        // Real gap this promotion closes: before it, BOTH `k` and `v` fell back to the generic
+        // `Operand.Variable` fallback, alpha-aliased purely by order of first appearance -- since
+        // both variants introduce exactly one new variable name at the same position (right after
+        // the identical, unclassified `some k, v in ...` fallback line), "k == \"pending\"" and
+        // "v == \"pending\"" aliased to the SAME v1 and hashed IDENTICALLY, even though one checks
+        // the collection's keys and the other its values -- genuinely different logic silently
+        // reported as UNCHANGED. Promoting the two-variable form fixes this: k and v now alias by
+        // their distinct introduction order in the SomeIn condition itself (key before value), so
+        // testing one vs. the other is correctly a different canonical shape.
+        val base = denyRule("some-kv-base") // tests v (the value)
+        val keyInstead = denyRule("some-kv-key-vs-value") // tests k (the key), same variable names throughout
+        assertThat(Canonicalizer.logicHash(keyInstead)).isNotEqualTo(Canonicalizer.logicHash(base))
+    }
 }

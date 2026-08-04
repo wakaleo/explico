@@ -77,11 +77,14 @@ internal object Canonicalizer {
             put("type", JsonPrimitive("BuiltinCall"))
         }
         is Condition.SomeIn -> buildJsonObject {
-            // The bound variable is aliased first: textually `some x in ...` introduces `x`
-            // before its collection is even read, and later references to `x` must resolve to
-            // the same alias this assigns.
+            // Both bound variables are aliased first, key before variable: textually
+            // `some k, v in ...` (or single-variable `some v in ...`) introduces them left-to-right
+            // before the collection is even read, and later references must resolve to the same
+            // aliases this assigns.
+            val keyAlias = condition.key?.let { aliasFor(it, aliases) }
             val alias = aliasFor(condition.variable, aliases)
             put("collection", canonicalOperand(condition.collection, aliases))
+            put("key", keyAlias?.let { JsonPrimitive(it) } ?: JsonNull)
             put("type", JsonPrimitive("SomeIn"))
             put("variable", JsonPrimitive(alias))
         }

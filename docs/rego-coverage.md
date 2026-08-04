@@ -42,6 +42,7 @@ guessing.
 | `Truthy`, negated (`not input.x`) | `<p> is absent or false` | Type-agnostic and exactly matches Rego's real `not` semantics (succeeds iff undefined or exactly `false`), regardless of the field's actual type. |
 | `Truthy`, non-negated (bare `input.x`) | `<p> is present and not false` | **Fixed this session** — see below. |
 | `SomeIn` (`some x in y`) | `for some x in <y>` | Exercised by the pack and probe 08 (multiple independent `some...in` in one body both render correctly). |
+| `SomeIn`, two-variable form (`some k, v in obj`) | `for some k, v in <obj>` | **Promoted, further follow-up session** — see below. Probe 06. |
 | `RuleReference`, complete/boolean rule (negated or not, same- or cross-package) | `see rule X` / `rule X does not match` | Exercised by the pack (REL-002/REL-004) and probe 21 (with an explicit `default`) — "does not match" is accurate because a complete rule's undefined and explicit-`false` states are both real "doesn't match" outcomes. |
 | `BuiltinCall`: `startswith` | `<a> starts with <b>` | Exercised by the pack (REL-003). |
 | `BuiltinCall`: `regex.match` | `<v> matches pattern <p>` | Probe 33 — closes a previously-disclosed gap (CLAUDE.md session 4: "untested against real opa output"); now confirmed correct against real parse output. |
@@ -146,10 +147,12 @@ part of the original audit:
   golden or shipped behavior was affected, since none of the acceptance
   pack's 5 policies uses any of these idioms.
 
-## Promoted in a further follow-up session (`time.now_ns`)
+## Promoted in further follow-up sessions
 
-Backlog rank #1, selected on its own (not bundled with the earlier
-follow-up pass above):
+Each selected on its own (not bundled with the earlier follow-up pass
+above), one backlog item per pass:
+
+### `time.now_ns()`
 
 - **`time.now_ns()` in operand position** now renders as the fixed phrase
   "the current time" via the same `Operand.BuiltinCall(name, args)` shape --
@@ -170,6 +173,45 @@ follow-up pass above):
 - Verified via `check`/`acceptanceTest` staying green and
   `docs/sample-output/` staying drift-free -- no existing golden or shipped
   behavior was affected, since no acceptance-pack policy uses `time.now_ns`.
+
+### `some k, v in obj` (two-variable form)
+
+- **`Condition.SomeIn` gained a third field, `key: String? = null`** (spec
+  §14 promotion) -- `null` for the pre-existing single-variable form, set
+  for the two-variable one. Confirmed via a real `opa parse` run that
+  `some k, v in c` desugars to `internal.member_3(k, v, c)`, the natural
+  three-argument sibling of the single-variable form's already-handled
+  `internal.member_2(v, c)`. `AstMapper.mapSomeIn` now dispatches on args
+  count/shape between the two, and -- the actual point of the promotion --
+  binds **both** `k` and `v` as `VarBinding.Iteration` against the same
+  collection. This needed no new substitution mechanism: the existing
+  per-body symbol table (spec §14.4) is already keyed by variable name and
+  fully general per name, so a later bare or ref-chain-root use of either
+  variable extends the collection's own breadcrumb with `[each k]`/
+  `[each v]` exactly like the single-variable form's `[each x]` already
+  does -- `PathHumanizer` needed no change at all.
+- `ExpressionRenderer`'s `SomeIn` phrase gains "k, v" instead of a single
+  name when `key` is non-null: `"for some ${key}, ${variable} in ..."`.
+- **`Canonicalizer`'s `SomeIn` canonicalization aliases `key` before
+  `variable`, matching their left-to-right introduction order in the real
+  source** (`some k, v in ...` introduces `k` before `v`, both before the
+  collection is even read) -- consistent with the existing single-variable
+  comment this extends. This closes a genuine, real diff-hash gap, not just
+  a rendering one: **before** this promotion, both `k` and `v` fell back to
+  the generic `Operand.Variable` fallback wherever later used bare, aliased
+  purely by first-appearance order -- so `some k, v in obj; k == "x"` and
+  `some k, v in obj; v == "x"` (testing the *key* vs. the *value* -- a
+  genuinely different check) hashed **identically**, since each variant
+  introduces exactly one new name at the same structural position. Proven
+  empirically with two new `CanonicalizerTest` fixtures
+  (`some-kv-base`/`some-kv-key-vs-value`) run through the real pipeline --
+  confirmed `isNotEqualTo` now, not assumed from reading the code alone.
+  Rename invariance (`some k, v` -> `some key, val`, matching the existing
+  single-variable rename test) is confirmed unaffected by a third fixture
+  (`some-kv-renamed-vars`).
+- Verified via `check`/`acceptanceTest` staying green and
+  `docs/sample-output/` staying drift-free -- no acceptance-pack policy uses
+  the two-variable form.
 
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
@@ -198,20 +240,20 @@ own review, not as a byproduct of this one.
 Constructs currently in the fallback bucket that a future increment could
 render faithfully, ranked by estimated real-world policy-authoring
 frequency. The top four ranks (`count`/`lower`/`upper`/`object.get`, and
-local-variable substitution) plus former rank 1 (`time.now_ns`) were
-selected and implemented in follow-up passes — see "Promoted this session"
-and "Promoted in a further follow-up session" above; the rest remain a
-ranked list for selection, not a plan.
+local-variable substitution) plus former rank 1 (`time.now_ns`) plus former
+rank 1 of the next round (`some k, v in obj`) were selected and implemented
+in follow-up passes — see "Promoted this session" and "Promoted in further
+follow-up sessions" above; the rest remain a ranked list for selection, not
+a plan.
 
 | Rank | Construct | Proposed template | Risk |
 |---|---|---|---|
-| 1 | `some k, v in obj` (two-variable form) | "for some k, v in X", with both `k` and `v` in scope for later var-rooted paths | **Medium.** Touches `PathHumanizer`'s `[each x]` convention, which has no two-variable form yet. |
-| 2 | `=` used as a pure comparison (both sides already bound, no new binding introduced) | Treat identically to `==` | **Medium.** Must positively confirm *neither* side introduces an unbound variable before promoting — a destructuring `=` is assignment, not comparison, and conflating the two would be exactly the "widen a template to swallow a construct approximately" failure mode this audit exists to catch. |
-| 3 | Arithmetic operands (`x + 1`, etc.) | A small infix expression renderer | **Medium-high.** More design surface than the others (multiple operators, precedence, humanizing the operand sub-tree). |
-| 4 | `concat(sep, [...])` string-join operand | "X joined with Y" (no spec precedent) | **Medium.** New design, not just new wiring. |
-| 5 | `null` literal operand | `Operand.Literal("null")` | **Low.** Trivial, just never added. |
-| 6 | Small flat object literal operand | Same mechanism as the existing small-array-literal rendering | **Medium.** Needs a deterministic key-ordering and size-cap decision (mirroring the existing ≤5-element array rule). |
-| 7 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
+| 1 | `=` used as a pure comparison (both sides already bound, no new binding introduced) | Treat identically to `==` | **Medium.** Must positively confirm *neither* side introduces an unbound variable before promoting — a destructuring `=` is assignment, not comparison, and conflating the two would be exactly the "widen a template to swallow a construct approximately" failure mode this audit exists to catch. |
+| 2 | Arithmetic operands (`x + 1`, etc.) | A small infix expression renderer | **Medium-high.** More design surface than the others (multiple operators, precedence, humanizing the operand sub-tree). |
+| 3 | `concat(sep, [...])` string-join operand | "X joined with Y" (no spec precedent) | **Medium.** New design, not just new wiring. |
+| 4 | `null` literal operand | `Operand.Literal("null")` | **Low.** Trivial, just never added. |
+| 5 | Small flat object literal operand | Same mechanism as the existing small-array-literal rendering | **Medium.** Needs a deterministic key-ordering and size-cap decision (mirroring the existing ≤5-element array rule). |
+| 6 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
 | — | `else`-chains rendered as multiple "Situation N" entries | *Not recommended near-term* | **High — explicitly deferred.** An else-chain's branches are priority-ordered and mutually exclusive (first match wins), not a simple OR of situations the way multiple `deny` bodies are. Modeling this incorrectly would reintroduce a MISLEADING finding of exactly the kind this session just fixed; needs its own design pass, not an incremental template tweak. |
 | — | `walk()` builtin | *Not recommended* | Niche in this project's target domain (compliance/authz policies rarely need generic tree traversal); low estimated frequency doesn't justify the design cost. |
 

@@ -11,6 +11,10 @@
  * == 0` wraps a comprehension, which forces the whole condition to fall back regardless of the
  * builtin promotion above -- see [ConstructResult.Unsupported].
  *
+ * [mapSomeIn] additionally recognises the two-variable form `some k, v in c` (spec §14 promotion,
+ * `internal.member_3`), not just the single-variable `some v in c` (`internal.member_2`) -- both
+ * `k` and `v` bind as iteration variables against the same collection.
+ *
  * Metadata attachment (`opa inspect` -> `RuleMetadata`, see [buildMetadataIndex])
  * matches by `opa inspect`'s own `path` field rather than the file/row-proximity
  * spec §5 literally describes -- opa has already resolved which rule an
@@ -340,15 +344,24 @@ internal object AstMapper {
         // whole render, not just this one condition, before the guard existed).
         if (callTerm.type != "call") return Condition.Unrendered(sourceText(expr.location), "unclassified")
         val (name, args) = decodeCallShape(decodeTermList(callTerm.value)) ?: return Condition.Unrendered(sourceText(expr.location), "unclassified")
-        if (name != "internal.member_2" || args.size != 2 || args[0].type != "var") {
-            return Condition.Unrendered(sourceText(expr.location), "unclassified")
+        // `some v in c` desugars to internal.member_2(v, c); the two-variable form
+        // `some k, v in c` (spec §14 backlog rank #1) desugars to internal.member_3(k, v, c) --
+        // confirmed via real `opa parse` output. Both k and v bind as VarBinding.Iteration against
+        // the same collection: Rego doesn't distinguish how a key vs. value loop variable can later
+        // be used, so neither does this mapper.
+        val (key, variable, collectionTerm) = when {
+            name == "internal.member_2" && args.size == 2 && args[0].type == "var" ->
+                Triple(null, stringValueOf(args[0]), args[1])
+            name == "internal.member_3" && args.size == 3 && args[0].type == "var" && args[1].type == "var" ->
+                Triple(stringValueOf(args[0]), stringValueOf(args[1]), args[2])
+            else -> return Condition.Unrendered(sourceText(expr.location), "unclassified")
         }
-        val variable = stringValueOf(args[0])
-        val collection = mapOperand(args[1], symbolTable)
+        val collection = mapOperand(collectionTerm, symbolTable)
         val collectionPath = (collection as? ConstructResult.Ok)?.operand as? Operand.Path
             ?: return Condition.Unrendered(sourceText(expr.location), (collection as? ConstructResult.Unsupported)?.reason ?: "unclassified")
+        if (key != null) symbolTable[key] = VarBinding.Iteration(collectionPath)
         symbolTable[variable] = VarBinding.Iteration(collectionPath)
-        return Condition.SomeIn(variable, collectionPath)
+        return Condition.SomeIn(variable, collectionPath, key)
     }
 
     private fun mapSingleTermCondition(

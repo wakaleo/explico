@@ -193,7 +193,8 @@ sealed interface Condition {
     data class Membership(val negated: Boolean, val member: Operand, val collection: Operand) : Condition
     data class Truthy(val operand: Operand, val negated: Boolean) : Condition   // bare ref / not ref
     data class BuiltinCall(val name: String, val args: List<Operand>, val negated: Boolean) : Condition
-    data class SomeIn(val variable: String, val collection: Operand) : Condition
+    // §14 promotion (§14.6): key is non-null for the two-variable form (`some k, v in c`).
+    data class SomeIn(val variable: String, val collection: Operand, val key: String? = null) : Condition
     data class RuleReference(val packagePath: String, val ruleName: String, val negated: Boolean) : Condition
     /** Fallback: anything the mapper cannot classify. */
     data class Unrendered(val sourceText: String, val reason: String) : Condition
@@ -351,6 +352,7 @@ Formatting rules:
 | `Truthy(p, false)` | `<p> is true` (for a bare reference) |
 | `Truthy(p, true)` | `<p> is absent or false` |
 | `SomeIn(v, c)` | `for some <v> in <c>` |
+| `SomeIn(v, c, k)` (two-variable form, §14.6) | `for some <k>, <v> in <c>` |
 | `RuleReference` | `see rule [\`name\`](#anchor)` / negated: `rule [\`name\`](#anchor) does not match` |
 
 Builtin templates (`BuiltinCall`) — implement exactly this set; anything else is
@@ -1112,3 +1114,32 @@ own rather than bundled into that earlier pass:
 Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
 content changed. Full rationale is in `docs/rego-coverage.md`, not
 duplicated here.
+
+### 14.6 Further promotion: `some k, v in obj` two-variable form (follow-up session)
+
+Backlog rank #1 of the ranked list remaining after §14.5, selected on its
+own:
+
+- `Condition.SomeIn` gains a third field, `key: String? = null` -- `null`
+  for the existing single-variable form, set for the two-variable one.
+  `some k, v in c` desugars to `internal.member_3(k, v, c)` (confirmed via a
+  real `opa parse` run), the natural three-argument sibling of the
+  single-variable form's `internal.member_2(v, c)`. Both `k` and `v` bind
+  as iteration variables against the same collection -- the pre-existing
+  per-body symbol table (§14.4) is already fully general per variable name,
+  so no new substitution mechanism was needed: a later bare or ref-chain-
+  root use of either variable extends the collection's own breadcrumb with
+  `[each k]`/`[each v]`, exactly like the single-variable form's `[each x]`
+  already does.
+- The diff canonicalizer aliases `key` before `variable`, matching their
+  left-to-right introduction order in the real source. This closes a real
+  gap, not just a rendering one: before this promotion, a bare later use of
+  either `k` or `v` fell back to the generic `Operand.Variable` case,
+  aliased purely by first-appearance order -- so testing the *key*
+  (`k == "x"`) vs. the *value* (`v == "x"`) of the same collection hashed
+  identically, silently reporting a genuine logic change as `UNCHANGED`.
+
+Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
+content changed. Full rationale, including the empirical fixture proving
+the hash-collision gap above, is in `docs/rego-coverage.md`, not duplicated
+here.
