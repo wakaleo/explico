@@ -1775,4 +1775,102 @@ class AstMapperTest {
             assertThat((condition.right as Operand.Literal).rendered).isEqualTo("{\"k\": null}")
         }
     }
+
+    @Nested
+    inner class RefHeadRuleReference {
+
+        /** `fruit.apple.seeds := 12` -- head.name null, head.ref fully literal (probe 13's own real shape, confirmed via opa parse). */
+        private val refHeadRuleJson = """
+            {
+              "head": {"ref": [{"type":"var","value":"fruit"},{"type":"string","value":"apple"},{"type":"string","value":"seeds"}], "value": {"type":"number","value":12}, "assign": true}
+            }
+        """.trimIndent()
+
+        @Test
+        fun aReferenceWithExtraSegmentsBeyondTheRulesOwnPathStaysUnrenderedNeverGuessed() {
+            // `fruit.apple.seeds.extra` -- one segment beyond the registered rule's own exact
+            // path. The FULL-chain-only match requirement means this correctly does NOT match,
+            // rather than guessing that ".extra" indexes into whatever `fruit.apple.seeds`
+            // produces.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    $refHeadRuleJson,
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("fruit.apple.seeds.extra > 10")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"gt"}]},
+                            {"type":"ref","location":{"text":"${b64("fruit.apple.seeds.extra")}"},"value":[{"type":"var","value":"fruit"},{"type":"string","value":"apple"},{"type":"string","value":"seeds"},{"type":"string","value":"extra"}]},
+                            {"type":"number","value":10}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val allowBody = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.single { it.name == "allow" }.bodies[0]
+            val comparison = allowBody.conditions.single() as Condition.Comparison
+            assertThat((comparison.left as Operand.Unrendered).sourceText).isEqualTo("fruit.apple.seeds.extra")
+        }
+
+        @Test
+        fun aLocalBindingWithTheSameRootNameTakesPriorityOverTheRefHeadRegistry() {
+            // `some fruit in input.baskets; fruit.apple.seeds > 10` -- "fruit" is ALSO the ref-head
+            // rule's own root name, but a local `some...in` binding must win: the reference resolves
+            // through VarBinding.Iteration (breadcrumb + "[each fruit]"), never the ref-head registry,
+            // avoiding any possible ambiguity between a local variable and a same-named rule.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    $refHeadRuleJson,
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("some fruit in input.baskets")}"},
+                          "terms": {
+                            "symbols": [
+                              {"type":"call","value":[
+                                {"type":"ref","value":[{"type":"var","value":"internal"},{"type":"string","value":"member_2"}]},
+                                {"type":"var","value":"fruit"},
+                                {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"baskets"}]}
+                              ]}
+                            ]
+                          }
+                        },
+                        {
+                          "index": 1,
+                          "location": {"file":"scratch.rego","row":2,"text":"${b64("fruit.apple.seeds > 10")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"gt"}]},
+                            {"type":"ref","value":[{"type":"var","value":"fruit"},{"type":"string","value":"apple"},{"type":"string","value":"seeds"}]},
+                            {"type":"number","value":10}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val allowBody = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.single { it.name == "allow" }.bodies[0]
+            assertThat(allowBody.conditions).hasSize(2)
+            val comparison = allowBody.conditions[1] as Condition.Comparison
+            assertThat((comparison.left as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("baskets"), PathSegment.VarIndex("fruit"),
+                PathSegment.Field("apple"), PathSegment.Field("seeds"),
+            )
+        }
+    }
 }

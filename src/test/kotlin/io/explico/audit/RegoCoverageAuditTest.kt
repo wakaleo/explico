@@ -195,14 +195,25 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun refHeadRuleReferenceRendersAsUnhumanizedVerbatimOperand() {
+    fun refHeadRuleReferenceNowRendersAsAHumanizedBreadcrumbPromotedThisSession() {
+        // Promoted (spec §14 backlog rank #1, scoped to "exact full-path match" only): opa gives
+        // `fruit.apple.seeds := 12` head.name == null (only head.ref, the full dotted path, is
+        // populated) -- confirmed via a real `opa parse` run. A reference elsewhere that spells out
+        // the SAME full path now resolves against the ref-head registry and humanizes exactly like
+        // any other Field-segment path, rather than staying raw verbatim source.
         val conditions = conditionsOf(loadProbe("13-ref-head-rule.rego"), "deny")
         assertThat(conditions).hasSize(1)
-        assertThat(render(conditions.single())).isEqualTo("`fruit.apple.seeds` is greater than `10`")
+        assertThat(render(conditions.single())).isEqualTo("`fruit ▸ apple ▸ seeds` is greater than `10`")
     }
 
     @Test
-    fun variableInRuleHeadReferenceRendersAsUnhumanizedVerbatimOperand() {
+    fun variableInRuleHeadReferenceStaysUnrenderedNotPromoted() {
+        // Deliberately NOT promoted (operator's explicit scoping choice): `users_by_role[role][id]`
+        // has head.ref == [var(users_by_role), var(role), var(id)] -- confirmed via a real
+        // `opa parse` run -- the 2nd/3rd segments are the rule's OWN local variables (dynamic keys),
+        // not literal path segments, so there's no single static "full path" to register or match
+        // against. buildRefHeadRuleRegistry's own type filter (every ref segment after the root must
+        // be "string", never "var") excludes this rule naturally, with no separate check needed.
         val conditions = conditionsOf(loadProbe("14-var-in-rule-head-ref.rego"), "deny")
         assertThat(conditions).hasSize(1)
         assertThat(render(conditions.single())).isEqualTo("`users_by_role.admin.u1.name` is `\"asmith\"`")

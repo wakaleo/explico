@@ -59,6 +59,7 @@ guessing.
 | `Operand.BuiltinCall`: `concat(sep, collection)` — a literal array/set explodes into one operand per element; a path/var reference maps as a single whole-collection operand | `<elem>, <elem>, ... joined with <sep>` (one element needs no comma) | **Promoted, further follow-up session** — see below. Probes 26 (exploded array literal), 42 (whole-collection reference). |
 | `null` literal operand | `null` | **Promoted, further follow-up session** — see below. Probe 01. |
 | Small flat object literal (≤5 pairs, string keys, scalar values) as an operand | `{"key": value, ...}`, opa's own already-sorted key order | **Promoted, further follow-up session** — see below. Probe 02. |
+| Ref-head rule reference, EXACT full-path match only (`fruit.apple.seeds`, where `fruit.apple.seeds := 12` — opa gives this rule `head.name == null`, only `head.ref` populated) | Humanized breadcrumb, same as any other path | **Promoted, further follow-up session, deliberately scoped** — see below. Probe 13. A dynamic-keyed ref-head rule reference (`users_by_role.admin.u1.name`) is NOT promoted — see "Falls back by design" below. |
 
 ### Falls back by design (confirmed correct, not a gap)
 
@@ -71,7 +72,7 @@ guessing.
 | `count(...)` bare in condition position | `function-call` | Spec's explicit rule: operand-position builtins never render as conditions. Probe 37. |
 | `=` unification used as **binding/destructuring** (`[x, y] = [...]`, a fresh var on either side) | `function-call` | **Partially promoted, further follow-up session** — the pure-comparison case (both sides already bound) is now `Comparison` (see "Rendered faithfully" above); a genuine bind still falls back, since `Condition.Comparison` can't represent "this also assigns x and y" — the mapper positively confirms neither side maps to `Operand.Unrendered` (its signal that a fresh binding may be in play) before promoting. Probe 04. A **negated** `=` (`not x = input.y`) also still falls back regardless of whether it's a pure comparison — see the disclosed gap below. |
 | Object literal — more than 5 pairs, a non-string key, or a nested (non-scalar) value | n/a (`Operand.Unrendered`, condition itself still classifies) | Same conservative scope as the small array/set literal's own ≤5-element/scalar-only restriction, extended to objects (see "Rendered faithfully" above and the promotion write-up below). New `AstMapperTest` cases; not exercised by any probe file. |
-| Ref-head rule reference used as an operand (`fruit.apple.seeds`, `users_by_role.admin.u1.name`) | n/a (`Operand.Unrendered`) | Neither `input`/`data`-rooted nor a known local-variable binding, so `mapRefChain` correctly falls back to verbatim rather than guessing a breadcrumb for a rule it doesn't recognise as such. Probes 13/14. |
+| Ref-head rule reference with a DYNAMIC key (`users_by_role.admin.u1.name`, where `users_by_role[role][id] := user` is keyed by the rule's own local variables) | n/a (`Operand.Unrendered`) | **Deliberately not promoted** — see the promotion write-up below. An exact-full-path ref-head reference (`fruit.apple.seeds`) IS promoted now, see "Rendered faithfully" above. Probe 14. |
 | `default` declarations (rule and function) | `unclassified` | No recognised body shape; RuleGroup's own `.default` field stays null (pre-existing, disclosed gap). **Quirk found this session**: opa's own AST gives a `default` rule's whole-rule `location.text` as just the literal word `default` — not the full `default allow := false` statement — so the fallback block, while honestly verbatim, is unhelpfully short. This is opa's own location-span behaviour, not an AstMapper defect. Probes 27/28. |
 | Declare-only `some` (`some key`, `some i, j` — no `in`) | `unclassified` | Correctly falls back once the confirmed crash (below) was fixed; `i`/`j` never become iteration bindings, so a later `arr[i]` still falls back too even though `arr` itself may now be a promoted substitution binding. Probes 07/12. |
 | `walk(input, [path, value])` | `unclassified` (binding) + `function-call` (the call) | Probe 11 — the binding and the call both fall back independently; a later comparison using the bound `value` still renders. |
@@ -472,12 +473,74 @@ steps up to "Medium-high":
   `docs/sample-output/` staying drift-free -- no acceptance-pack policy
   compares against an object literal.
 
+### Ref-head rule reference, exact full-path match only
+
+The last ranked backlog item -- Medium-high risk, the highest of any
+promotion this project has done. **Deliberately scoped down from its
+original two-probe framing on the operator's explicit instruction**, after
+investigation surfaced that the full scope was materially bigger and
+riskier than the backlog entry's own description implied:
+
+- **The backlog undersold the real scope.** `fruit.apple.seeds := 12`
+  (probe 13) -- confirmed via a real `opa parse` run -- has `head.name ==
+  null`; opa only populates `head.ref`, the rule's full dotted path.
+  `mapRuleGroups`/`buildRuleRegistry`/`buildPartialRuleRegistry` all
+  already filtered these rules out ENTIRELY (no card, not in any
+  registry) before this promotion -- not just "unresolved as an operand
+  reference" as the backlog's phrasing suggested. Making ref-headed rules
+  first-class (their own cards, index.md entries, anchors) was judged a
+  separate, materially larger concern and stays out of scope; this
+  promotion only makes a REFERENCE to a ref-headed rule's own exact path
+  resolve, not the rule's own visibility.
+- **Two probes needed genuinely different treatment, confirmed via real
+  `opa parse` runs, not assumed**: probe 13's `head.ref` is
+  `[var(fruit), string(apple), string(seeds))]` -- every segment after the
+  root is a literal. Probe 14's rule, `users_by_role[role][id] := user`,
+  has `head.ref == [var(users_by_role), var(role), var(id)]` -- the 2nd/3rd
+  segments are the rule's OWN local parameter variables (dynamic keys),
+  not literal path segments. **Chose to promote only probe 13's shape**:
+  a new `buildRefHeadRuleRegistry` registers a ref-headed rule (per
+  package) ONLY when every `head.ref` segment after the root is a
+  `"string"` term -- this type filter naturally excludes probe 14's rule
+  with no separate check needed, since `role`/`id` have no single static
+  path to register in the first place.
+- **A reference resolves only on an EXACT full-chain match** against the
+  registry, checked in `mapRefChain` before falling through to the
+  existing unresolved-root handling -- `fruit.apple.seeds.extra` (one
+  segment beyond the rule's own declaration) correctly does NOT match and
+  stays `Operand.Unrendered`, the same conservative "only the unambiguous
+  shape, never guess" posture every other promotion in this file follows.
+  New `AstMapperTest` case.
+- **A local variable binding with the same root name always takes
+  priority** over the ref-head registry (`symbolTable[rootName] == null`
+  is checked before attempting the ref-head match) -- avoids any possible
+  ambiguity between a same-package rule name and a local `some...in`/`:=`
+  binding. New `AstMapperTest` case
+  (`some fruit in input.baskets; fruit.apple.seeds > 10` resolves through
+  the LOCAL binding, not the rule).
+- **Required threading a shared registry through the entire
+  operand-mapping call chain** (`mapOperand` and everything it calls --
+  roughly a dozen functions) rather than a single localized change, since
+  a ref-head reference can appear as any operand, not just a comparison's
+  top-level side. This is architecturally the largest promotion in the
+  series so far -- flagged to the operator before implementation, with
+  three explicit scoping options offered (probe 13 only / both probes /
+  skip entirely), rather than unilaterally deciding the scope.
+- `ExpressionRenderer`/`Coverage`/`Canonicalizer` needed no change -- the
+  new registry only affects how `Operand.Path` gets BUILT in `AstMapper`,
+  never a new `Operand`/`Condition` shape.
+- Verified via `check`/`acceptanceTest` staying green and
+  `docs/sample-output/` staying drift-free -- no acceptance-pack policy
+  uses a ref-headed rule.
+
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
 **Operand-level fallback (`Operand.Unrendered`) renders as plain backticked
-verbatim source — visually identical to a real humanized path.** A ref-head
-rule reference (`` `fruit.apple.seeds` ``), an untraced non-plain-path-assigned
-variable, or an operand-position builtin call the promotion above doesn't
+verbatim source — visually identical to a real humanized path.** A
+dynamic-keyed ref-head rule reference (`` `users_by_role.admin.u1.name` ``,
+deliberately not promoted — see the ref-head promotion write-up), an
+untraced non-plain-path-assigned variable, or an operand-position builtin
+call the promotion above doesn't
 cover (`` `object.get(input.x, "y", "z")` ``) all look exactly like a real
 breadcrumb (`` `deployment ▸ environment` ``) in the rendered bullet — there
 is no inline marker, only the aggregate "contains N unrendered value(s)"
@@ -505,17 +568,18 @@ round after that (`=` as pure comparison) plus former rank 1 of the round
 after that (arithmetic operands) plus former rank 1 of the round after that
 (`concat`) plus former rank 1 of the round after that (`null` literal
 operand) plus former rank 1 of the round after that (small flat object
-literal operand) were selected and implemented in follow-up passes — see
-"Promoted this session" and "Promoted in further follow-up sessions" above;
-the rest remain a ranked list for selection, not a plan. (The
-negated-comparisons correctness bug that used to appear here as an
-unranked, un-prioritized entry is now fixed -- see "Fixed, follow-up
-session" above; it was never really part of this frequency-ranked list to
-begin with, since it's a bug fix rather than a coverage promotion.)
+literal operand) plus former rank 1 of the round after that (ref-head rule
+reference, exact-match only) were selected and implemented in follow-up
+passes — see "Promoted this session" and "Promoted in further follow-up
+sessions" above. **The frequency-ranked list is now empty** -- every ranked
+item has been promoted; only the two explicitly-deferred, not-ranked items
+below remain. (The negated-comparisons correctness bug that used to appear
+here as an unranked, un-prioritized entry is now fixed -- see "Fixed,
+follow-up session" above; it was never really part of this frequency-ranked
+list to begin with, since it's a bug fix rather than a coverage promotion.)
 
 | Rank | Construct | Proposed template | Risk |
 |---|---|---|---|
-| 1 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
 | — | `else`-chains rendered as multiple "Situation N" entries | *Not recommended near-term* | **High — explicitly deferred.** An else-chain's branches are priority-ordered and mutually exclusive (first match wins), not a simple OR of situations the way multiple `deny` bodies are. Modeling this incorrectly would reintroduce a MISLEADING finding of exactly the kind this session just fixed; needs its own design pass, not an incremental template tweak. |
 | — | `walk()` builtin | *Not recommended* | Niche in this project's target domain (compliance/authz policies rarely need generic tree traversal); low estimated frequency doesn't justify the design cost. |
 

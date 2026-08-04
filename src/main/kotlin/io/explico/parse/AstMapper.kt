@@ -104,12 +104,13 @@ internal object AstMapper {
     fun mapPolicySet(files: List<ParsedFile>, inspectResult: OpaInspectResult? = null): PolicySet {
         val registry = buildRuleRegistry(files)
         val partialRegistry = buildPartialRuleRegistry(files)
+        val refHeadRegistry = buildRefHeadRuleRegistry(files)
         val metadataIndex = buildMetadataIndex(inspectResult)
         val packages = files
             .groupBy { packagePath(it.module) }
             .map { (path, filesInPackage) ->
                 val rules = filesInPackage
-                    .flatMap { mapRuleGroups(it, registry, partialRegistry, metadataIndex) }
+                    .flatMap { mapRuleGroups(it, registry, partialRegistry, refHeadRegistry, metadataIndex) }
                     .sortedBy { it.name }
                 PolicyPackage(
                     path = path,
@@ -170,10 +171,39 @@ internal object AstMapper {
                 modules.flatMap { it.rules }.filter { it.head.key != null }.mapNotNull { it.head.name }.toSet()
             }
 
+    /**
+     * Ref-headed rules (spec §14 promotion, backlog rank #1 after §14.12) -- e.g.
+     * `fruit.apple.seeds := 12` -- have `head.name == null` (confirmed via a real `opa parse` run):
+     * opa only populates `head.ref`, the rule's full dotted-path "name". `mapRuleGroups` still
+     * filters these out entirely (a materially larger, separate concern -- surfacing them as their
+     * own cards -- deliberately out of scope here, per the operator's explicit choice to scope this
+     * promotion to "exact full-path reference only"), but a bare reference elsewhere in the policy
+     * that spells out the SAME full path (`fruit.apple.seeds > 10`) can still resolve against this
+     * registry and render as a proper breadcrumb instead of raw verbatim source.
+     *
+     * Only rules whose `head.ref` is ENTIRELY literal -- every segment after the root is a `"string"`
+     * term, never `"var"` -- are registered. This is the exact, load-bearing distinction between
+     * probe 13's shape (`fruit.apple.seeds`, all-literal) and probe 14's
+     * (`users_by_role[role][id]`, whose `head.ref` is `[var(users_by_role), var(role), var(id)]` --
+     * confirmed via a real `opa parse` run) -- a partial rule keyed by its OWN local variables has no
+     * single static "full path" to match a reference against; `role`/`id` are placeholders, not
+     * literal segments. Excluding non-literal refs here means probe 14 stays correctly unpromoted
+     * with no separate check needed -- the type filter does the work.
+     */
+    private fun buildRefHeadRuleRegistry(files: List<ParsedFile>): Map<String, Set<String>> =
+        files.groupBy({ packagePath(it.module) }, { it.module })
+            .mapValues { (_, modules) ->
+                modules.flatMap { it.rules }
+                    .filter { it.head.name == null && it.head.ref.isNotEmpty() && it.head.ref.drop(1).all { segment -> segment.type == "string" } }
+                    .map { it.head.ref.joinToString(".") { segment -> stringValueOf(segment) } }
+                    .toSet()
+            }
+
     private fun mapRuleGroups(
         file: ParsedFile,
         registry: Map<String, Set<String>>,
         partialRegistry: Map<String, Set<String>>,
+        refHeadRegistry: Map<String, Set<String>>,
         metadataIndex: Map<Pair<String, String>, RuleMetadata>,
     ): List<RuleGroup> {
         val currentPackage = packagePath(file.module)
@@ -182,6 +212,7 @@ internal object AstMapper {
             importAliases = resolveImportAliases(file.module),
             registry = registry,
             partialRegistry = partialRegistry,
+            refHeadRegistry = refHeadRegistry,
             sourceFile = file.sourceFile,
         )
         return file.module.rules
@@ -244,7 +275,7 @@ internal object AstMapper {
             val assignment = matchAssignment(expr)
             if (assignment != null) {
                 val (targetVar, valueTerm) = assignment
-                val plainPath = plainPathOperandOrNull(valueTerm, symbolTable)
+                val plainPath = plainPathOperandOrNull(valueTerm, symbolTable, ctx)
                 symbolTable[targetVar] = if (plainPath != null) VarBinding.Substitution(plainPath) else VarBinding.NonPath
                 if (plainPath == null) conditions += Condition.Unrendered(sourceText(expr.location), "function-call")
                 continue
@@ -286,9 +317,9 @@ internal object AstMapper {
      * NOT qualify -- the assignment stays a visible fallback bullet instead of silently vanishing
      * while pointing nowhere.
      */
-    private fun plainPathOperandOrNull(term: OpaTerm, symbolTable: Map<String, VarBinding>): Operand.Path? {
+    private fun plainPathOperandOrNull(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): Operand.Path? {
         if (term.type != "ref") return null
-        val result = mapRefChain(decodeTermList(term.value), symbolTable, term.location)
+        val result = mapRefChain(decodeTermList(term.value), symbolTable, ctx, term.location)
         return (result as? ConstructResult.Ok)?.operand as? Operand.Path
     }
 
@@ -296,7 +327,7 @@ internal object AstMapper {
         return when (val terms = expr.terms) {
             is JsonArray -> mapCallShapedCondition(expr, decodeTermList(terms), symbolTable, ctx)
             is JsonObject -> when {
-                "symbols" in terms -> mapSomeIn(expr, terms, symbolTable)
+                "symbols" in terms -> mapSomeIn(expr, terms, symbolTable, ctx)
                 "domain" in terms -> Condition.Unrendered(sourceText(expr.location), "every")
                 "type" in terms -> mapSingleTermCondition(expr, opaJson.decodeFromJsonElement(OpaTerm.serializer(), terms), symbolTable, ctx)
                 else -> Condition.Unrendered(sourceText(expr.location), "unclassified")
@@ -314,18 +345,18 @@ internal object AstMapper {
         val (name, args) = decodeCallShape(terms) ?: return Condition.Unrendered(sourceText(expr.location), "unclassified")
         val comparisonOp = COMPARISON_OPERATORS[name]
         if (comparisonOp != null && args.size == 2) {
-            return buildComparisonLike(expr, args, symbolTable) { left, right -> Condition.Comparison(left, comparisonOp, right, expr.negated) }
+            return buildComparisonLike(expr, args, symbolTable, ctx) { left, right -> Condition.Comparison(left, comparisonOp, right, expr.negated) }
         }
         if (name == "eq" && args.size == 2) {
-            eqAsPureComparisonOrNull(args, expr.negated, symbolTable)?.let { return it }
+            eqAsPureComparisonOrNull(args, expr.negated, symbolTable, ctx)?.let { return it }
         }
         if (name == "internal.member_2" && args.size == 2) {
-            return buildComparisonLike(expr, args, symbolTable) { member, collection ->
+            return buildComparisonLike(expr, args, symbolTable, ctx) { member, collection ->
                 Condition.Membership(expr.negated, member, collection)
             }
         }
         if (name in CONDITION_BUILTINS) {
-            val mapped = args.map { mapOperand(it, symbolTable) }
+            val mapped = args.map { mapOperand(it, symbolTable, ctx) }
             val unsupported = mapped.filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
             if (unsupported != null) return Condition.Unrendered(sourceText(expr.location), unsupported.reason)
             val operands = mapped.filterIsInstance<ConstructResult.Ok>().map { it.operand }
@@ -338,10 +369,11 @@ internal object AstMapper {
         expr: OpaExpr,
         args: List<OpaTerm>,
         symbolTable: Map<String, VarBinding>,
+        ctx: MappingContext,
         build: (Operand, Operand) -> Condition,
     ): Condition {
-        val left = mapOperand(args[0], symbolTable)
-        val right = mapOperand(args[1], symbolTable)
+        val left = mapOperand(args[0], symbolTable, ctx)
+        val right = mapOperand(args[1], symbolTable, ctx)
         val unsupported = listOf(left, right).filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
         if (unsupported != null) return Condition.Unrendered(sourceText(expr.location), unsupported.reason)
         return build((left as ConstructResult.Ok).operand, (right as ConstructResult.Ok).operand)
@@ -362,15 +394,15 @@ internal object AstMapper {
      * also valid Rego) is orthogonal to the binding-vs-comparison question above and threads straight
      * through to the built [Condition.Comparison] -- see spec §14's negated-comparison amendment.
      */
-    private fun eqAsPureComparisonOrNull(args: List<OpaTerm>, negated: Boolean, symbolTable: Map<String, VarBinding>): Condition? {
-        val left = mapOperand(args[0], symbolTable)
-        val right = mapOperand(args[1], symbolTable)
+    private fun eqAsPureComparisonOrNull(args: List<OpaTerm>, negated: Boolean, symbolTable: Map<String, VarBinding>, ctx: MappingContext): Condition? {
+        val left = mapOperand(args[0], symbolTable, ctx)
+        val right = mapOperand(args[1], symbolTable, ctx)
         if (left !is ConstructResult.Ok || right !is ConstructResult.Ok) return null
         if (left.operand is Operand.Unrendered || right.operand is Operand.Unrendered) return null
         return Condition.Comparison(left.operand, Operator.EQ, right.operand, negated)
     }
 
-    private fun mapSomeIn(expr: OpaExpr, terms: JsonObject, symbolTable: MutableMap<String, VarBinding>): Condition {
+    private fun mapSomeIn(expr: OpaExpr, terms: JsonObject, symbolTable: MutableMap<String, VarBinding>, ctx: MappingContext): Condition {
         val symbols = opaJson.decodeFromJsonElement(ListSerializer(OpaTerm.serializer()), terms.getValue("symbols"))
         val callTerm = symbols.singleOrNull() ?: return Condition.Unrendered(sourceText(expr.location), "unclassified")
         // A declare-only `some x` (no `in`) has exactly one symbol too, but its value is a bare var
@@ -391,7 +423,7 @@ internal object AstMapper {
                 Triple(stringValueOf(args[0]), stringValueOf(args[1]), args[2])
             else -> return Condition.Unrendered(sourceText(expr.location), "unclassified")
         }
-        val collection = mapOperand(collectionTerm, symbolTable)
+        val collection = mapOperand(collectionTerm, symbolTable, ctx)
         val collectionPath = (collection as? ConstructResult.Ok)?.operand as? Operand.Path
             ?: return Condition.Unrendered(sourceText(expr.location), (collection as? ConstructResult.Unsupported)?.reason ?: "unclassified")
         if (key != null) symbolTable[key] = VarBinding.Iteration(collectionPath)
@@ -434,7 +466,7 @@ internal object AstMapper {
                     ?: Condition.Unrendered(sourceText(expr.location), "partial-rule-reference")
             }
         }
-        val operand = mapRefChain(chain, symbolTable, term.location)
+        val operand = mapRefChain(chain, symbolTable, ctx, term.location)
         return when (operand) {
             is ConstructResult.Ok -> Condition.Truthy(operand.operand, expr.negated)
             is ConstructResult.Unsupported -> Condition.Unrendered(sourceText(expr.location), operand.reason)
@@ -460,16 +492,16 @@ internal object AstMapper {
 
     // --- Operands ---
 
-    private fun mapOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult = when (term.type) {
+    private fun mapOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): ConstructResult = when (term.type) {
         "string" -> ConstructResult.Ok(Operand.Literal(quoted(stringValueOf(term))))
         "number" -> ConstructResult.Ok(Operand.Literal(term.value?.jsonPrimitive?.content ?: "0"))
         "boolean" -> ConstructResult.Ok(Operand.Literal(term.value?.jsonPrimitive?.content ?: "false"))
         "null" -> ConstructResult.Ok(Operand.Literal("null")) // spec §14 promotion, backlog rank #1 after §14.10 -- trivial, just never added.
-        "ref" -> mapRefChain(decodeTermList(term.value), symbolTable, term.location)
+        "ref" -> mapRefChain(decodeTermList(term.value), symbolTable, ctx, term.location)
         "var" -> mapVarOperand(term, symbolTable)
-        "array", "set" -> mapCollectionLiteral(term, symbolTable)
-        "object" -> mapObjectLiteral(term, symbolTable)
-        "call" -> mapCallOperand(term, symbolTable)
+        "array", "set" -> mapCollectionLiteral(term, symbolTable, ctx)
+        "object" -> mapObjectLiteral(term, symbolTable, ctx)
+        "call" -> mapCallOperand(term, symbolTable, ctx)
         "setcomprehension", "arraycomprehension", "objectcomprehension" -> ConstructResult.Unsupported("comprehension")
         else -> ConstructResult.Unsupported("unclassified")
     }
@@ -484,16 +516,26 @@ internal object AstMapper {
         }
 
     /**
-     * Builds a Path from a decoded ref chain: `input`/`data` root, or a var-rooted path resolved via
-     * [symbolTable] (spec §6.4 rule 7 for [VarBinding.Iteration]; spec §5's promotion for
-     * [VarBinding.Substitution], which continues the chain with no extra segment since the
-     * variable stands for the exact value, not one element of a collection). [wholeRefLocation] is
-     * used only for the unbound-variable fallback, so its source text covers the whole reference,
-     * not just the root token. A [VarBinding.NonPath] root (assigned, but not to a plain path)
-     * falls back to `Operand.Unrendered` rather than `Operand.Variable` -- spec §5 only specifies
-     * `Operand.Variable` for a *bare* use of such a variable, not a field chained off it.
+     * Builds a Path from a decoded ref chain: `input`/`data` root, a known ref-headed rule's own
+     * exact full path (spec §14 promotion, see [buildRefHeadRuleRegistry]'s own KDoc), or a
+     * var-rooted path resolved via [symbolTable] (spec §6.4 rule 7 for [VarBinding.Iteration]; spec
+     * §5's promotion for [VarBinding.Substitution], which continues the chain with no extra segment
+     * since the variable stands for the exact value, not one element of a collection).
+     * [wholeRefLocation] is used only for the unbound-variable fallback, so its source text covers
+     * the whole reference, not just the root token. A [VarBinding.NonPath] root (assigned, but not
+     * to a plain path) falls back to `Operand.Unrendered` rather than `Operand.Variable` -- spec §5
+     * only specifies `Operand.Variable` for a *bare* use of such a variable, not a field chained off
+     * it.
+     *
+     * The ref-head check requires [symbolTable] to have NO binding at all for the root name -- a
+     * local variable always takes priority over a same-package rule name, avoiding any possible
+     * ambiguity. It also requires the FULL chain (not just a prefix) to match a registered
+     * ref-headed rule's own path exactly -- `fruit.apple.seeds.extra` (one segment beyond the
+     * rule's own declaration) correctly does NOT match and falls through to the existing unresolved
+     * fallback, the same deliberately conservative posture as every other promotion in this file:
+     * only the unambiguous common shape is promoted, never guessed.
      */
-    private fun mapRefChain(chain: List<OpaTerm>, symbolTable: Map<String, VarBinding>, wholeRefLocation: io.explico.opa.OpaLocation?): ConstructResult {
+    private fun mapRefChain(chain: List<OpaTerm>, symbolTable: Map<String, VarBinding>, ctx: MappingContext, wholeRefLocation: io.explico.opa.OpaLocation?): ConstructResult {
         if (chain.isEmpty()) return ConstructResult.Ok(Operand.Unrendered(""))
         val root = chain.first()
         val rootName = stringValueOf(root)
@@ -501,6 +543,13 @@ internal object AstMapper {
         if (rootName == "input" || rootName == "data") {
             val segments = mapPathSegments(remaining, symbolTable) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
             return ConstructResult.Ok(Operand.Path(listOf(PathSegment.Field(rootName)) + segments))
+        }
+        if (symbolTable[rootName] == null) {
+            val dottedPath = chain.joinToString(".") { stringValueOf(it) }
+            if (ctx.refHeadRegistry[ctx.currentPackage]?.contains(dottedPath) == true) {
+                val segments = mapPathSegments(remaining, symbolTable) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+                return ConstructResult.Ok(Operand.Path(listOf(PathSegment.Field(rootName)) + segments))
+            }
         }
         return when (val binding = symbolTable[rootName]) {
             is VarBinding.Iteration -> {
@@ -549,12 +598,12 @@ internal object AstMapper {
         return segments
     }
 
-    private fun mapCollectionLiteral(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult {
+    private fun mapCollectionLiteral(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): ConstructResult {
         val elements = decodeTermList(term.value)
         val allScalar = elements.all { it.type in SCALAR_TERM_TYPES }
         if (elements.size > 5 || !allScalar) return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
         val rendered = elements.joinToString(", ") { el ->
-            (mapOperand(el, symbolTable) as ConstructResult.Ok).let { (it.operand as Operand.Literal).rendered }
+            (mapOperand(el, symbolTable, ctx) as ConstructResult.Ok).let { (it.operand as Operand.Literal).rendered }
         }
         return ConstructResult.Ok(Operand.Literal(rendered))
     }
@@ -574,13 +623,13 @@ internal object AstMapper {
      * "apple":2,"mango":3}` parses with pairs in `apple, mango, zebra` order) -- this mapper never
      * re-sorts anything itself, it only renders opa's own already-deterministic order.
      */
-    private fun mapObjectLiteral(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult {
+    private fun mapObjectLiteral(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): ConstructResult {
         val pairs = opaJson.decodeFromJsonElement(ListSerializer(ListSerializer(OpaTerm.serializer())), term.value ?: JsonArray(emptyList()))
             .map { it[0] to it[1] }
         val allFlat = pairs.all { (key, value) -> key.type == "string" && value.type in SCALAR_TERM_TYPES }
         if (pairs.size > 5 || !allFlat) return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
         val rendered = pairs.joinToString(", ") { (key, value) ->
-            val valueText = (mapOperand(value, symbolTable) as ConstructResult.Ok).let { (it.operand as Operand.Literal).rendered }
+            val valueText = (mapOperand(value, symbolTable, ctx) as ConstructResult.Ok).let { (it.operand as Operand.Literal).rendered }
             "${quoted(stringValueOf(key))}: $valueText"
         }
         return ConstructResult.Ok(Operand.Literal("{$rendered}"))
@@ -610,9 +659,9 @@ internal object AstMapper {
      * than re-deriving grouping. Anything else (still a documented gap, file header) falls back, as
      * does any promotable builtin above if an argument doesn't resolve -- never a guessed rendering.
      */
-    private fun mapCallOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult {
+    private fun mapCallOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): ConstructResult {
         val (name, args) = decodeCallShape(decodeTermList(term.value)) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
-        val mapped = args.map { mapOperand(it, symbolTable) }
+        val mapped = args.map { mapOperand(it, symbolTable, ctx) }
         val unsupported = mapped.filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
         if (unsupported != null) return unsupported
         val operands = mapped.map { (it as ConstructResult.Ok).operand }
@@ -629,7 +678,7 @@ internal object AstMapper {
             return ConstructResult.Ok(Operand.BuiltinCall(name, operands))
         }
         if (name == "concat" && args.size == 2) {
-            return mapConcatOperand(args[0], args[1], symbolTable)
+            return mapConcatOperand(args[0], args[1], symbolTable, ctx)
         }
         return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
     }
@@ -647,13 +696,13 @@ internal object AstMapper {
      * by convention that args[0] is the separator and the rest are the joined items (one item for
      * the whole-collection-reference case, N items for the exploded-literal case).
      */
-    private fun mapConcatOperand(separatorTerm: OpaTerm, collectionTerm: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult {
+    private fun mapConcatOperand(separatorTerm: OpaTerm, collectionTerm: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): ConstructResult {
         val collectionElementTerms = if (collectionTerm.type == "array" || collectionTerm.type == "set") {
             decodeTermList(collectionTerm.value)
         } else {
             listOf(collectionTerm)
         }
-        val results = (listOf(separatorTerm) + collectionElementTerms).map { mapOperand(it, symbolTable) }
+        val results = (listOf(separatorTerm) + collectionElementTerms).map { mapOperand(it, symbolTable, ctx) }
         val unsupported = results.filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
         if (unsupported != null) return unsupported
         return ConstructResult.Ok(Operand.BuiltinCall("concat", results.map { (it as ConstructResult.Ok).operand }))
@@ -757,5 +806,6 @@ private data class MappingContext(
     val importAliases: Map<String, String>,
     val registry: Map<String, Set<String>>,
     val partialRegistry: Map<String, Set<String>>,
+    val refHeadRegistry: Map<String, Set<String>>,
     val sourceFile: String,
 )

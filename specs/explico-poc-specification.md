@@ -1297,3 +1297,34 @@ own:
 Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
 content changed. Full rationale is in `docs/rego-coverage.md`, not
 duplicated here.
+
+### 14.13 Further promotion: ref-head rule reference, exact full-path match only (follow-up session)
+
+The last ranked backlog item -- Medium-high risk, the highest of any
+promotion in this series. **Deliberately scoped down from its original
+two-probe framing on the operator's explicit instruction**, after
+investigation found the backlog entry undersold the real scope:
+
+- `fruit.apple.seeds := 12` (probe 13) has `head.name == null` -- opa only
+  populates `head.ref`, confirmed via a real `opa parse` run. Existing
+  registry-building functions already filtered these rules out entirely
+  (no card, not in any registry); making them first-class is a separate,
+  larger concern, out of scope here. This promotion only resolves a
+  REFERENCE to such a rule's own exact path, not the rule's own visibility.
+- A new `buildRefHeadRuleRegistry` registers a ref-headed rule (per
+  package) only when every `head.ref` segment after the root is a
+  `"string"` term -- excluding probe 14's `users_by_role[role][id]`
+  (`head.ref == [var, var, var]`, keyed by the rule's OWN local variables,
+  confirmed via a real `opa parse` run) with no separate check needed.
+- `mapRefChain` resolves a reference only on an EXACT full-chain match
+  against the registry, and only when no local variable already binds the
+  root name (local bindings always take priority). An extra segment beyond
+  the rule's own declaration (`fruit.apple.seeds.extra`) correctly stays
+  `Operand.Unrendered`.
+- Required threading the registry through `mapOperand`'s entire call
+  graph, since a ref-head reference can appear as any operand -- the
+  largest single change of this promotion series.
+
+Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
+content changed. Full rationale is in `docs/rego-coverage.md`, not
+duplicated here.
