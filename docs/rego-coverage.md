@@ -37,7 +37,7 @@ guessing.
 
 | Construct | Rendered as | Rationale |
 |---|---|---|
-| `Comparison` (`==`/`!=`/`>`/`>=`/`<`/`<=`) | `<l> is/is not/is greater than/... <r>` | Spec §6.3's frozen template; exercised by the pack and probes 08/13/14/16/22/23/25/26/31/34/35/36. Doesn't attempt to describe undefined-propagation (if either side is absent the comparison is undefined, not false) — an already-accepted simplification for `==` (REL-001) extended consistently to the other operators, not a new deviation. |
+| `Comparison` (`==`/`!=`/`>`/`>=`/`<`/`<=`), positive or negated (`not x == y`) | `<l> is/is not/is greater than/... <r>` (negated: literal negation of each verb) | Spec §6.3's frozen template; exercised by the pack and probes 08/13/14/16/22/23/25/26/31/34/35/36/41. Doesn't attempt to describe undefined-propagation (if either side is absent the comparison is undefined, not false) — an already-accepted simplification for `==` (REL-001) extended consistently to the other operators, not a new deviation. Negation support **fixed, further follow-up session** — see below. |
 | `Membership` (`in` / `not in`) | `<m> is/is not one of <c>` | Identical wording for set and array collections (probe 24) — correct, since "is one of" doesn't claim anything about ordering or uniqueness that would differ between the two. |
 | `Truthy`, negated (`not input.x`) | `<p> is absent or false` | Type-agnostic and exactly matches Rego's real `not` semantics (succeeds iff undefined or exactly `false`), regardless of the field's actual type. |
 | `Truthy`, non-negated (bare `input.x`) | `<p> is present and not false` | **Fixed this session** — see below. |
@@ -247,41 +247,55 @@ above), one backlog item per pass:
   `docs/sample-output/` staying drift-free -- no acceptance-pack policy uses
   `=`.
 
-### Disclosed, not fixed: negated comparisons silently drop the negation
+### Fixed, follow-up session: negated comparisons were silently dropping the negation
 
-**Discovered while implementing the `=` promotion above, confirmed via a
-real `opa parse` run, and deliberately NOT fixed in this pass** -- it's a
-pre-existing gap in `buildComparisonLike` (the code path shared by `==`,
-`!=`, `>`, `>=`, `<`, `<=`, and now the promoted pure-`=` case), not
-something this promotion introduced, and fixing it is a materially larger
-change than "promote the next backlog item": it needs a new `negated` field
-on the public `Condition.Comparison` (a spec-frozen model type), a spec
-amendment, new `ExpressionRenderer` templates for six negated operators, and
-a `Canonicalizer` update.
+**Discovered while implementing the `=` promotion above** (flagged to the
+operator rather than fixed unilaterally at the time, since it's a materially
+larger change than "promote the next backlog item"), **fixed in a dedicated
+follow-up pass on the operator's explicit instruction.**
 
-- **The gap**: `not input.a == input.b` is real, valid Rego -- confirmed via
+- **The bug**: `not input.a == input.b` is real, valid Rego -- confirmed via
   `opa parse`: `negated: true` on the expr, terms name still `equal`. But
-  `Condition.Comparison` has no `negated` field, and `buildComparisonLike`
-  never reads `expr.negated` at all -- so this renders as `` `input.a` is
-  `input.b` `` (the POSITIVE statement), when the real logic is testing that
-  they're **not** equal. This is a genuine MISLEADING finding by this
-  audit's own definition (spec §14's cardinal sin: a rendered template whose
-  English doesn't match the construct's exact semantics), just discovered a
-  session later than the original audit, via unrelated work.
-- **This promotion's own new code does NOT add a new instance of it**: the
-  `=`-promotion path explicitly requires `!expr.negated` before even
-  attempting the pure-comparison check (`mapCallShapedCondition`) -- a
-  negated `=` (`not x = input.y`) stays in the pre-existing `function-call`
-  fallback, exactly as it already did before this promotion existed. New
-  `AstMapperTest` case
-  (`negatedUnificationStaysUnclassifiedRatherThanSilentlyDroppingTheNegation`)
-  proves this directly.
+  `Condition.Comparison` had no `negated` field, and `buildComparisonLike`
+  (the code path shared by `==`, `!=`, `>`, `>=`, `<`, `<=`, and the promoted
+  pure-`=` case) never read `expr.negated` at all -- so this rendered as
+  `` `input.a` is `input.b` `` (the POSITIVE statement), when the real logic
+  tests that they're **not** equal. A genuine MISLEADING finding by this
+  audit's own definition (spec §14's cardinal sin), discovered a session
+  after the original audit, via unrelated work.
+- **The fix**: `Condition.Comparison` gains `negated: Boolean = false` (spec
+  §14 amendment). `buildComparisonLike`'s comparison-operator branch and the
+  promoted `=` path (`eqAsPureComparisonOrNull`) both now thread
+  `expr.negated` straight through -- the `=`-promotion's earlier
+  `!expr.negated` guard is removed entirely (it's no longer needed; negation
+  is orthogonal to the binding-vs-comparison question that guard was
+  actually protecting against). `ExpressionRenderer` gains a
+  `NEGATED_COMPARISON_VERBS` map, mirroring `COMPARISON_VERBS` with a
+  literal negation of each verb ("is not greater than", never a different
+  operator's positive form like "is at most" -- the same
+  undefined-propagation simplification already accepted for the positive
+  wording). `Canonicalizer` adds `negated` to `Comparison`'s canonical JSON
+  (alphabetically ordered: `left`, `negated`, `op`, `right`, `type`).
+- **Real diff-quality fix too, not just a rendering one**: before this fix,
+  `input.a == input.b` and `not input.a == input.b` -- genuinely opposite
+  logic -- hashed IDENTICALLY, since `negated` didn't exist in the canonical
+  shape at all. Confirmed empirically with a new `CanonicalizerTest` fixture
+  pair (`negated-comparison-base`/`negated-comparison-negated`), not
+  assumed.
+- **All six operators confirmed via a real `opa parse` run**, not just
+  `equal`: `not input.a != input.b`, `not input.a > input.b`, `>=`, `<`,
+  `<=` all parse with `negated: true` too -- this isn't an `equal`-specific
+  quirk. New probe (`41-negated-comparison.rego`) exercises `equal`'s case
+  through the real pipeline (`RegoCoverageAuditTest`); the other five
+  operators are covered by hand-built `Condition.Comparison` cases in
+  `ExpressionRendererTest`'s phrasing table (all six operators × negated),
+  since no real Rego syntax difference exists between them at the AST level
+  that would need separate probe coverage -- `buildComparisonLike` treats
+  `expr.negated` identically regardless of which comparison operator it's
+  attached to.
 - **Not exercised by the acceptance pack** -- none of the 5 real policies
-  negate a comparison operator (`not input.x == "y"` doesn't appear
-  anywhere; the pack's own negations are all over `Truthy`, `Membership`,
-  `BuiltinCall`, or `RuleReference`, which already carry `negated`
-  correctly). Flagged to the operator as a discovered issue for a
-  deliberate future session, not silently left undocumented.
+  negate a comparison operator, so no golden or `docs/sample-output/`
+  content changed.
 
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
@@ -315,7 +329,10 @@ rank 1 of the next round (`some k, v in obj`) plus former rank 1 of the
 round after that (`=` as pure comparison) were selected and implemented in
 follow-up passes — see "Promoted this session" and "Promoted in further
 follow-up sessions" above; the rest remain a ranked list for selection, not
-a plan.
+a plan. (The negated-comparisons correctness bug that used to appear here
+as an unranked, un-prioritized entry is now fixed -- see "Fixed, follow-up
+session" above; it was never really part of this frequency-ranked list to
+begin with, since it's a bug fix rather than a coverage promotion.)
 
 | Rank | Construct | Proposed template | Risk |
 |---|---|---|---|
@@ -324,7 +341,6 @@ a plan.
 | 3 | `null` literal operand | `Operand.Literal("null")` | **Low.** Trivial, just never added. |
 | 4 | Small flat object literal operand | Same mechanism as the existing small-array-literal rendering | **Medium.** Needs a deterministic key-ordering and size-cap decision (mirroring the existing ≤5-element array rule). |
 | 5 | Ref-head / partial-object rule references used as operands (`fruit.apple.seeds`) | Humanize as a breadcrumb once resolved against the rule registry | **Medium-high.** Needs to distinguish "known local rule reference" from a real input/data path, and to handle a partial-object's dynamic keys. |
-| — | **Correctness bug, not a coverage gap**: negated comparisons (`not x == y`) silently render the positive form | Add `negated: Boolean` to `Condition.Comparison`, thread `expr.negated` through `buildComparisonLike` and the promoted `=` path, add negated `ExpressionRenderer` templates for all six operators, update `Canonicalizer` | **High priority despite not being ranked with the others above** — this is a MISLEADING finding (spec §14's cardinal sin), not a missing-coverage nicety; see "Disclosed, not fixed" above for the full write-up. Not bumped ahead of the frequency-ranked list above only because it's a different KIND of work (a model/renderer/diff fix touching six operators at once, not a single new construct), and the operator hasn't yet chosen to prioritize it over the ranked list. |
 | — | `else`-chains rendered as multiple "Situation N" entries | *Not recommended near-term* | **High — explicitly deferred.** An else-chain's branches are priority-ordered and mutually exclusive (first match wins), not a simple OR of situations the way multiple `deny` bodies are. Modeling this incorrectly would reintroduce a MISLEADING finding of exactly the kind this session just fixed; needs its own design pass, not an incremental template tweak. |
 | — | `walk()` builtin | *Not recommended* | Niche in this project's target domain (compliance/authz policies rarely need generic tree traversal); low estimated frequency doesn't justify the design cost. |
 

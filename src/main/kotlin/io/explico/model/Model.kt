@@ -59,8 +59,12 @@ public data class RuleBody(
 
 /** A single leaf condition within a rule body. */
 public sealed interface Condition {
-    /** `left <op> right`, e.g. `input.deployment.environment == "production"`. */
-    public data class Comparison(val left: Operand, val op: Operator, val right: Operand) : Condition
+    /**
+     * `left <op> right`, e.g. `input.deployment.environment == "production"`, or its negation
+     * (`not input.a == input.b`, spec §14 amendment) when [negated] is true. Rego allows `not` to
+     * wrap any comparison operator, not just a bare reference or membership test.
+     */
+    public data class Comparison(val left: Operand, val op: Operator, val right: Operand, val negated: Boolean = false) : Condition
 
     /** `member in collection` (or its negation `not ... in ...`), e.g. a value-in-set test. */
     public data class Membership(val negated: Boolean, val member: Operand, val collection: Operand) : Condition

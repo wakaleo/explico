@@ -189,7 +189,8 @@ data class RuleBody(
 )
 
 sealed interface Condition {
-    data class Comparison(val left: Operand, val op: Operator, val right: Operand) : Condition
+    // §14 amendment (§14.8): negated is true for `not x == y` etc -- Rego allows `not` on any comparison.
+    data class Comparison(val left: Operand, val op: Operator, val right: Operand, val negated: Boolean = false) : Condition
     data class Membership(val negated: Boolean, val member: Operand, val collection: Operand) : Condition
     data class Truthy(val operand: Operand, val negated: Boolean) : Condition   // bare ref / not ref
     data class BuiltinCall(val name: String, val args: List<Operand>, val negated: Boolean) : Condition
@@ -347,6 +348,7 @@ Formatting rules:
 | `Comparison(l, EQ, r)` | `<l> is <r>` |
 | `Comparison(l, NEQ, r)` | `<l> is not <r>` |
 | `Comparison(l, GT, r)` | `<l> is greater than <r>` (analogous for GTE/LT/LTE: "at least", "less than", "at most") |
+| `Comparison(l, op, r, negated=true)` (§14.8) | literal negation of the positive wording above, e.g. EQ→`is not`, NEQ→`is`, GT→`is not greater than` (never a different operator's positive form, e.g. never "is at most" for negated GT) |
 | `Membership(false, m, c)` | `<m> is one of <c>` |
 | `Membership(true, m, c)` | `<m> is not one of <c>` |
 | `Truthy(p, false)` | `<p> is true` (for a bare reference) |
@@ -1158,19 +1160,42 @@ own:
   var or a composite literal containing one maps to `Operand.Unrendered`
   (never `Unsupported`), which this promotion treats as a positive signal a
   binding may be in play, and declines to promote rather than guess.
-- **Disclosed, not fixed, in the same pass**: implementing this promotion
+- ~~**Disclosed, not fixed, in the same pass**: implementing this promotion
   surfaced a pre-existing gap shared by `==`/`!=`/`>`/`>=`/`<`/`<=`:
   `Condition.Comparison` has no `negated` field, so `not x == y` (real,
   valid Rego -- confirmed via `opa parse`) silently renders the POSITIVE
-  form. This promotion's own new code does not add a new instance of it (a
-  negated `=` is explicitly excluded before the promotion check even runs),
-  but fixing the pre-existing gap itself needs a model field, a spec
-  amendment, six new renderer templates, and a `Canonicalizer` update --
-  larger than this promotion's own scope, so it was flagged to the operator
-  rather than fixed unilaterally. See `docs/rego-coverage.md` for the full
-  write-up.
+  form.~~ **Fixed in a dedicated follow-up pass -- see §14.8.**
 
 Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
 content changed. Full rationale, including the empirical fixture proving
 `=` and `==` now hash identically for equivalent logic, is in
 `docs/rego-coverage.md`, not duplicated here.
+
+### 14.8 Fix: negated comparisons (follow-up session)
+
+The correctness bug disclosed in §14.7 above, fixed on the operator's
+explicit instruction:
+
+- `Condition.Comparison` gains `negated: Boolean = false`. Both
+  `buildComparisonLike`'s comparison-operator branch and the promoted `=`
+  path (`eqAsPureComparisonOrNull`) now thread `expr.negated` through --
+  the `=` path's earlier `!expr.negated` exclusion is removed, since
+  negation is orthogonal to the binding-vs-comparison question that guard
+  actually protects.
+- `ExpressionRenderer` gains `NEGATED_COMPARISON_VERBS`, the literal
+  negation of each positive verb (e.g. "is not greater than" for negated
+  GT -- never a different operator's positive wording like "is at most"),
+  consistent with the same undefined-propagation simplification already
+  accepted for the positive form.
+- `Canonicalizer` adds `negated` to `Comparison`'s canonical JSON. This
+  closes a real diff-hash gap, not just a rendering one: before this fix,
+  `x == y` and `not x == y` -- genuinely opposite logic -- hashed
+  identically, since `negated` didn't exist in the canonical shape at all.
+  Confirmed empirically with a new `CanonicalizerTest` fixture pair.
+- Confirmed via a real `opa parse` run that all six comparison operators
+  (not just `equal`) can carry `negated: true` -- this isn't an
+  `equal`-specific quirk.
+
+Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
+content changed. Full rationale is in `docs/rego-coverage.md`, not
+duplicated here.

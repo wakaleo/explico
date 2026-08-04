@@ -40,6 +40,36 @@ class ExpressionRendererTest {
                 Case("Comparison GTE", Condition.Comparison(approved, Operator.GTE, zero), "`change ▸ ticket ▸ approved` is at least `0`"),
                 Case("Comparison LT", Condition.Comparison(approved, Operator.LT, zero), "`change ▸ ticket ▸ approved` is less than `0`"),
                 Case("Comparison LTE", Condition.Comparison(approved, Operator.LTE, zero), "`change ▸ ticket ▸ approved` is at most `0`"),
+                Case(
+                    "Comparison EQ, negated (spec §14 amendment: not x == y)",
+                    Condition.Comparison(env, Operator.EQ, prod, negated = true),
+                    "`deployment ▸ environment` is not `\"production\"`",
+                ),
+                Case(
+                    "Comparison NEQ, negated",
+                    Condition.Comparison(env, Operator.NEQ, prod, negated = true),
+                    "`deployment ▸ environment` is `\"production\"`",
+                ),
+                Case(
+                    "Comparison GT, negated",
+                    Condition.Comparison(approved, Operator.GT, zero, negated = true),
+                    "`change ▸ ticket ▸ approved` is not greater than `0`",
+                ),
+                Case(
+                    "Comparison GTE, negated",
+                    Condition.Comparison(approved, Operator.GTE, zero, negated = true),
+                    "`change ▸ ticket ▸ approved` is not at least `0`",
+                ),
+                Case(
+                    "Comparison LT, negated",
+                    Condition.Comparison(approved, Operator.LT, zero, negated = true),
+                    "`change ▸ ticket ▸ approved` is not less than `0`",
+                ),
+                Case(
+                    "Comparison LTE, negated",
+                    Condition.Comparison(approved, Operator.LTE, zero, negated = true),
+                    "`change ▸ ticket ▸ approved` is not at most `0`",
+                ),
                 Case("Membership positive", Condition.Membership(false, env, Operand.Literal("\"production\", \"staging\"")), "`deployment ▸ environment` is one of `\"production\", \"staging\"`"),
                 Case("Membership negated", Condition.Membership(true, env, Operand.Literal("\"production\", \"staging\"")), "`deployment ▸ environment` is not one of `\"production\", \"staging\"`"),
                 Case("Truthy positive (bare reference)", Condition.Truthy(approved, false), "`change ▸ ticket ▸ approved` is present and not false"),

@@ -55,6 +55,7 @@ internal object Canonicalizer {
     private fun canonicalCondition(condition: Condition, aliases: MutableMap<String, String>): JsonObject = when (condition) {
         is Condition.Comparison -> buildJsonObject {
             put("left", canonicalOperand(condition.left, aliases))
+            put("negated", JsonPrimitive(condition.negated))
             put("op", JsonPrimitive(condition.op.name))
             put("right", canonicalOperand(condition.right, aliases))
             put("type", JsonPrimitive("Comparison"))

@@ -305,10 +305,10 @@ internal object AstMapper {
         val (name, args) = decodeCallShape(terms) ?: return Condition.Unrendered(sourceText(expr.location), "unclassified")
         val comparisonOp = COMPARISON_OPERATORS[name]
         if (comparisonOp != null && args.size == 2) {
-            return buildComparisonLike(expr, args, symbolTable) { left, right -> Condition.Comparison(left, comparisonOp, right) }
+            return buildComparisonLike(expr, args, symbolTable) { left, right -> Condition.Comparison(left, comparisonOp, right, expr.negated) }
         }
-        if (name == "eq" && args.size == 2 && !expr.negated) {
-            eqAsPureComparisonOrNull(args, symbolTable)?.let { return it }
+        if (name == "eq" && args.size == 2) {
+            eqAsPureComparisonOrNull(args, expr.negated, symbolTable)?.let { return it }
         }
         if (name == "internal.member_2" && args.size == 2) {
             return buildComparisonLike(expr, args, symbolTable) { member, collection ->
@@ -349,21 +349,16 @@ internal object AstMapper {
      * [mapCollectionLiteral]/[mapVarOperand]), which is this function's positive signal that a new
      * binding may be in play, not a comparison. Returns null (never a guess) for that case, and for
      * a comprehension/every on either side too -- the caller's existing "function-call" fallback
-     * handles both exactly as it already did before this promotion existed.
-     *
-     * The caller additionally requires `!expr.negated` before calling this at all: `not x = y` is
-     * valid Rego (confirmed via a real `opa parse` run: `negated: true`, terms name still "eq") --
-     * `Condition.Comparison` has no `negated` field to carry that through faithfully (a pre-existing
-     * gap shared by `==`/`!=`/`>`/`>=`/`<`/`<=` too, all built via [buildComparisonLike], out of
-     * scope for this promotion), so a negated `=` stays in the existing "function-call" fallback
-     * rather than silently dropping the negation.
+     * handles both exactly as it already did before this promotion existed. [negated] (`not x = y`,
+     * also valid Rego) is orthogonal to the binding-vs-comparison question above and threads straight
+     * through to the built [Condition.Comparison] -- see spec §14's negated-comparison amendment.
      */
-    private fun eqAsPureComparisonOrNull(args: List<OpaTerm>, symbolTable: Map<String, VarBinding>): Condition? {
+    private fun eqAsPureComparisonOrNull(args: List<OpaTerm>, negated: Boolean, symbolTable: Map<String, VarBinding>): Condition? {
         val left = mapOperand(args[0], symbolTable)
         val right = mapOperand(args[1], symbolTable)
         if (left !is ConstructResult.Ok || right !is ConstructResult.Ok) return null
         if (left.operand is Operand.Unrendered || right.operand is Operand.Unrendered) return null
-        return Condition.Comparison(left.operand, Operator.EQ, right.operand)
+        return Condition.Comparison(left.operand, Operator.EQ, right.operand, negated)
     }
 
     private fun mapSomeIn(expr: OpaExpr, terms: JsonObject, symbolTable: MutableMap<String, VarBinding>): Condition {

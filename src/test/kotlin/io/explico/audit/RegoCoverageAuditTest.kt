@@ -103,6 +103,17 @@ class RegoCoverageAuditTest {
     }
 
     @Test
+    fun negatedComparisonNowRendersTheActualNegatedMeaningFixedThisSession() {
+        // Fixed (spec §14 amendment): `not input.a == input.b` is real, valid Rego (negated: true,
+        // terms name still "equal") that previously silently rendered the POSITIVE form -- a
+        // genuine MISLEADING finding, discovered while implementing the `=` promotion above.
+        // Condition.Comparison now carries `negated`, so this renders "is not", not "is".
+        val conditions = conditionsOf(loadProbe("41-negated-comparison.rego"), "deny")
+        assertThat(conditions).hasSize(1)
+        assertThat(render(conditions.single())).isEqualTo("`change ▸ author` is not `change ▸ approver`")
+    }
+
+    @Test
     fun someKeyValueInObjectNowRendersFaithfullyPromotedThisSession() {
         // Promoted (spec §14 backlog rank #1): `some k, v in obj` desugars to internal.member_3
         // and now binds BOTH k and v as iteration variables against the same collection, exactly

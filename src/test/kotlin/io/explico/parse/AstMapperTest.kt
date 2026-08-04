@@ -1433,11 +1433,11 @@ class AstMapperTest {
         }
 
         @Test
-        fun negatedUnificationStaysUnclassifiedRatherThanSilentlyDroppingTheNegation() {
+        fun negatedUnificationPromotesToAComparisonWithNegatedSetRatherThanSilentlyDroppingIt() {
             // `not input.change.author = input.change.approver` -- real, valid Rego (confirmed via a
-            // real `opa parse` run: negated: true, terms name still "eq"). Condition.Comparison has
-            // no negated field, so promoting this would silently render the OPPOSITE of what the
-            // source actually checks -- must stay in the existing "function-call" fallback instead.
+            // real `opa parse` run: negated: true, terms name still "eq"). Promoted (spec §14
+            // amendment): Condition.Comparison now carries negated, so this renders the ACTUAL
+            // "is not" semantics rather than the previously-fallback verbatim source.
             val module = moduleOf(
                 """
                 {
@@ -1464,8 +1464,15 @@ class AstMapperTest {
             )
             val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
             assertThat(body.conditions).hasSize(1)
-            val fallback = body.conditions.single() as Condition.Unrendered
-            assertThat(fallback.reason).isEqualTo("function-call")
+            val comparison = body.conditions.single() as Condition.Comparison
+            assertThat(comparison.negated).isTrue()
+            assertThat(comparison.op).isEqualTo(Operator.EQ)
+            assertThat((comparison.left as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("author"),
+            )
+            assertThat((comparison.right as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("approver"),
+            )
         }
     }
 }

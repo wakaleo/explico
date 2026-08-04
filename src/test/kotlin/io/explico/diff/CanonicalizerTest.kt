@@ -166,4 +166,16 @@ class CanonicalizerTest {
         val singleEquals = denyRule("eq-unification-equivalent")
         assertThat(Canonicalizer.logicHash(singleEquals)).isEqualTo(Canonicalizer.logicHash(doubleEquals))
     }
+
+    @Test
+    fun negatingAComparisonYieldsADifferentLogicHash() {
+        // spec §14 amendment: `not input.a == input.b` vs. `input.a == input.b` -- genuinely
+        // opposite logic (Condition.Comparison.negated is now part of the canonical shape), even
+        // though every operand and the produced message are byte-identical. Before this fix,
+        // Condition.Comparison had no negated field at all, so these would have hashed IDENTICALLY
+        // -- a real, silent LOGIC_CHANGED-reported-as-UNCHANGED gap this fix closes.
+        val positive = denyRule("negated-comparison-base")
+        val negated = denyRule("negated-comparison-negated")
+        assertThat(Canonicalizer.logicHash(negated)).isNotEqualTo(Canonicalizer.logicHash(positive))
+    }
 }

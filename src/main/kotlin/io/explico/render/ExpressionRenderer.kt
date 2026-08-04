@@ -12,6 +12,12 @@
  * ([renderObjectGet]). Anything else remains a documented gap and still
  * falls back to `Operand.Unrendered`.
  *
+ * `Condition.Comparison.negated` (spec §14 amendment: `not x == y` is real, valid Rego) picks
+ * [NEGATED_COMPARISON_VERBS] instead of [COMPARISON_VERBS] -- a literal negation of the positive
+ * wording ("is not greater than", not the different operator "is at most"), the same
+ * undefined-propagation simplification already accepted for the positive form (spec §6.3's own
+ * frozen template doesn't describe it either).
+ *
  * `Condition.Unrendered` is deliberately NOT part of spec §6.3's phrasing table
  * -- it gets a structurally different, multi-line "shown as source" block
  * (spec §6.2), which is a card-assembly concern for a later renderer. Passing
@@ -29,7 +35,10 @@ internal object ExpressionRenderer {
 
     /** [anchorFor] resolves a RuleReference's link target -- anchor computation is spec §6.5, not built yet; injected so phrasing can be tested independently of it. */
     fun render(condition: Condition, anchorFor: (Condition.RuleReference) -> String): String = when (condition) {
-        is Condition.Comparison -> renderOperandPair(condition.left, condition.right) { l, r -> "$l ${COMPARISON_VERBS.getValue(condition.op)} $r" }
+        is Condition.Comparison -> renderOperandPair(condition.left, condition.right) { l, r ->
+            val verbs = if (condition.negated) NEGATED_COMPARISON_VERBS else COMPARISON_VERBS
+            "$l ${verbs.getValue(condition.op)} $r"
+        }
         is Condition.Membership -> renderOperandPair(condition.member, condition.collection) { m, c ->
             "$m ${if (condition.negated) "is not one of" else "is one of"} $c"
         }
@@ -123,6 +132,16 @@ private val COMPARISON_VERBS = mapOf(
     Operator.GTE to "is at least",
     Operator.LT to "is less than",
     Operator.LTE to "is at most",
+)
+
+/** `not <comparison>` (spec §14 amendment) -- the literal negation of [COMPARISON_VERBS]'s wording, not a different operator's positive form (e.g. "is not greater than", never "is at most"). */
+private val NEGATED_COMPARISON_VERBS = mapOf(
+    Operator.EQ to "is not",
+    Operator.NEQ to "is",
+    Operator.GT to "is not greater than",
+    Operator.GTE to "is not at least",
+    Operator.LT to "is not less than",
+    Operator.LTE to "is not at most",
 )
 
 /** [argOrder] picks (subject, other) from the raw args list -- e.g. regex.match(pattern, value) renders subject-first: "<value> matches pattern <pattern>". */
