@@ -84,6 +84,17 @@ internal object ExpressionRenderer {
     }
 
     /**
+     * Renders a bare [Operand] standalone -- a rule's own yielded value (follow-up to review
+     * item 10: `RuleBody.yieldsValue`), not one embedded in a [Condition]'s phrase. Reuses
+     * [renderOperand] directly, so a value that happens to be a path, a link, a builtin call, or a
+     * fallback renders exactly the same way it would inside any other phrase.
+     */
+    fun renderValue(operand: Operand, ruleValueAnchorFor: (Operand.RuleValueReference) -> String = { throw IllegalStateException("ruleValueAnchorFor not supplied for an Operand.RuleValueReference") }): String {
+        val (text, hasAnyIndex) = renderOperand(operand, ruleValueAnchorFor)
+        return withAnyOfPrefix(text, hasAnyIndex)
+    }
+
+    /**
      * `count(x) == 0` / `count(x) != 0` / `count(x) > 0` (review item 15) read "`x` is empty" /
      * "`x` is not empty". Exact for everything `count` accepts (string, array, object, set): the
      * condition can only hold when `x` is countable, and then "zero elements" IS "empty".

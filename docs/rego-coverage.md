@@ -718,6 +718,37 @@ value it yields in its card -- only its conditions. Showing it would need decidi
 display a value that depends on which Situation matched (possibly a different value per
 Situation), a materially different design question from a single unconditional value.
 
+## Follow-up: a conditional complete rule shows the value it yields (item 10 continued)
+
+Found by the operator's own explicit follow-up request after item 10 disclosed this as out of
+scope. Fixture `src/test/resources/realistic/values/values.rego`, pinned by
+`RealisticConditionalValuesAcceptanceIT` plus `AstMapperTest.ConditionalYieldedValuesFollowUp`,
+`MarkdownRendererTest.ConditionalYieldedValuesFollowUp`, and a new `CanonicalizerTest` case.
+
+| Finding | Was | Now |
+|---|---|---|
+| A conditional complete rule, e.g. `tier := "high" if input.risk > 80`, showed only its condition -- the value it yields was invisible, so a two-body rule like `tier` read as a boolean with two unrelated Situations rather than a value that varies by situation. | No value shown anywhere on the card. | A new `RuleBody.yieldsValue: Operand?`, reusing the ordinary operand model and its full rendering (humanized paths, links, builtin templates, fallback) -- a rule's own value is mechanically the same thing an operand already is. Rendered as a `**Value:**` line, once per Situation for a multi-body rule, right after that Situation's own conditions. |
+| `limit := n if { n := input.limit }` (a body whose only expr is a local-variable assignment) rendered an EMPTY "All of the following are true:" list -- the assignment is consumed silently by the existing substitution mechanism, leaving nothing under the header. | A misleading empty bulleted section. | The header is now skipped entirely when a body has zero real conditions (a general fix, not special-cased to this promotion) -- `n` substitutes inline into the Value line (`` `limit` ``) the same way it would inside any other phrase. |
+
+Detection (`AstMapper.yieldsValueOrNull`) excludes two cases, both via a mechanical, non-guessing
+signal, no new design: a PARTIAL rule (`head.key != null`) has no single scalar value -- its own
+message is a separate, pre-existing mechanism (`messageVarOf`); and a plain boolean rule's
+IMPLICIT `true` (`flag if input.enabled`, never written explicitly) has `head.value` with NO
+`location` at all, confirmed via a real `opa parse` run -- opa synthesizes this term with no
+source span, the exact signal that tells it apart from an EXPLICIT `:= true` (real location text
+"true"). An unrenderable value (a bare `sprintf(...)` call, not in any operand-builtin template)
+falls back to verbatim `Operand.Unrendered`, same as any other operand -- and, like
+`producesValue`/`messageTemplate` before it, a `yieldsValue` fallback does NOT add to the card's
+"unrendered value" coverage count: the value is still shown, honestly, just not humanized.
+
+`Canonicalizer.canonicalBody` gained a `yieldsValue` field in the hash (same reasoning as
+`messageTemplate`'s own inclusion): a changed value with identical conditions must be
+LOGIC_CHANGED. `DiffRenderer`'s unified source diff needed no change -- a body's `sourceText` is
+the whole rule's verbatim source, which already includes the value.
+
+Zero acceptance-pack impact: no pack policy has a conditional complete rule, confirmed by
+`generateSampleDocs` producing no diff against the committed `docs/sample-output/`.
+
 ## Review pass: link anchors that resolve (item 18)
 
 Found by the new corpus-wide invariant tier (`RealisticCorpusInvariantsAcceptanceIT`: no crash,

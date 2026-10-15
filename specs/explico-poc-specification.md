@@ -1483,3 +1483,17 @@ never shows the value it yields, only its conditions. Rationale in `docs/rego-co
   no crash, determinism, link integrity, coverage arithmetic, heading uniqueness, no leaks.
 
 Disclosed: links inside diff cards to rules outside the diff remain unresolved. Rationale in `docs/rego-coverage.md`.
+
+### 14.22 Follow-up: a conditional complete rule shows the value it yields
+
+- **§5/§6.2 amendment.** `RuleBody.yieldsValue: Operand?` -- the value a conditional complete
+  rule's body yields, reusing the ordinary operand model/rendering. Rendered as a `**Value:**`
+  line after that body's conditions (once per Situation for a multi-body rule). Null for a
+  partial rule and for a plain boolean rule's IMPLICIT `true` (no `location` on `head.value`,
+  the mechanical signal distinguishing it from an explicit `:= true`).
+- **§6.2 fix.** A body with zero real conditions (every expr consumed by a local-variable
+  assignment) no longer shows an empty "All of the following are true" header.
+- **§7.1 amendment.** `Canonicalizer.canonicalBody` hashes `yieldsValue` -- a changed value with
+  identical conditions is LOGIC_CHANGED.
+
+Rationale in `docs/rego-coverage.md`.

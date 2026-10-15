@@ -13,6 +13,7 @@ import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.nio.file.Path
 
@@ -104,6 +105,14 @@ class CanonicalizerTest {
         val base = denyRule("base")
         val messageChanged = denyRule("message-changed")
         assertThat(Canonicalizer.logicHash(messageChanged)).isNotEqualTo(Canonicalizer.logicHash(base))
+    }
+
+    @Test
+    @DisplayName("CHALLENGE edge case (follow-up to review item 10): a conditional rule's yielded value is part of its logic -- \"high\" -> \"medium\" with identical conditions changes the hash")
+    fun aYieldedValueChangeYieldsADifferentLogicHashEvenWithIdenticalConditions() {
+        val base = denyRule("conditional-value-base")
+        val changed = denyRule("conditional-value-changed")
+        assertThat(Canonicalizer.logicHash(changed)).isNotEqualTo(Canonicalizer.logicHash(base))
     }
 
     @Test

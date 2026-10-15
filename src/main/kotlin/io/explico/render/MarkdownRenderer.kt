@@ -139,6 +139,7 @@ internal object MarkdownRenderer {
             sb.appendLine()
             appendConditions(sb, body.conditions, anchorFor, functionAnchorFor, ruleValueAnchorFor)
             sb.appendLine()
+            if (body.yieldsValue != null) appendYieldsValueLine(sb, body.yieldsValue, ruleValueAnchorFor)
             if (body.producesValue != null) {
                 sb.appendLine("*Produces:* \"${body.producesValue}\"")
                 sb.appendLine()
@@ -153,10 +154,17 @@ internal object MarkdownRenderer {
         functionAnchorFor: (Condition.FunctionCall) -> String,
         ruleValueAnchorFor: (Operand.RuleValueReference) -> String,
     ) {
-        sb.appendLine("**All of the following are true:**")
-        sb.appendLine()
+        // Follow-up to review item 10: a body with no real conditions at all -- every expr was a
+        // local-variable assignment, e.g. `limit := n if { n := input.limit }` -- has nothing to
+        // put under "All of the following are true", and an empty list there read as a bug, not a
+        // feature. The header is skipped entirely rather than shown over nothing.
+        if (body.conditions.isNotEmpty()) {
+            sb.appendLine("**All of the following are true:**")
+            sb.appendLine()
+        }
         appendConditions(sb, body.conditions, anchorFor, functionAnchorFor, ruleValueAnchorFor)
-        sb.appendLine()
+        if (body.conditions.isNotEmpty()) sb.appendLine()
+        if (body.yieldsValue != null) appendYieldsValueLine(sb, body.yieldsValue, ruleValueAnchorFor)
         if (body.producesValue != null) {
             sb.appendLine("*Produces:* \"${body.producesValue}\"")
             sb.appendLine()
@@ -166,6 +174,12 @@ internal object MarkdownRenderer {
     /** A complete rule's unconditional constant value (review item 10, finding 4) -- no conditions, no Situations, just the value it is. */
     private fun appendConstantValueLine(sb: StringBuilder, value: io.explico.model.ConstantValue) {
         sb.appendLine("**Value:** ${value.rendered}")
+        sb.appendLine()
+    }
+
+    /** The value a CONDITIONAL complete rule's body yields (follow-up to review item 10) -- see [RuleBody.yieldsValue]'s own KDoc. */
+    private fun appendYieldsValueLine(sb: StringBuilder, value: Operand, ruleValueAnchorFor: (Operand.RuleValueReference) -> String) {
+        sb.appendLine("**Value:** ${ExpressionRenderer.renderValue(value, ruleValueAnchorFor)}")
         sb.appendLine()
     }
 

@@ -1215,3 +1215,19 @@ was proposed in, not deferred to a separate increment.
   stay unresolved (disclosed).
 - Test-authoring lessons: the invariant sweep must skip `index.md` for package-footer checks, and
   allow the legitimate `is null` / `is not null` phrasing.
+
+## Follow-up: a conditional complete rule shows the value it yields (item 10 continued)
+
+- `RuleBody.yieldsValue: Operand?`, computed in `AstMapper.yieldsValueOrNull` AFTER a body's own
+  conditions are mapped (so a local assignment like `n := input.limit` is already in
+  `symbolTable` when `limit := n` itself is resolved). Reuses `mapOperand` directly -- no new
+  rendering design, since a rule's own value is mechanically the same shape as any other operand
+  (including links via `Operand.RuleValueReference`, and the ordinary `Operand.Unrendered`
+  fallback for something it can't classify, e.g. a bare `sprintf(...)` call).
+- Excluded, via mechanical signals only: a partial rule (`head.key != null`); an IMPLICIT
+  boolean `true` (`head.value.location == null`, confirmed via real `opa parse` output -- an
+  EXPLICIT `:= true` has real location text and DOES yield a value).
+- Fixed in the same pass: a body with zero real conditions no longer shows an empty "All of the
+  following are true" header (general fix, not special-cased to this promotion).
+- `Canonicalizer.canonicalBody` hashes `yieldsValue`; `DiffRenderer` needed no change since
+  `sourceText` already includes it. Zero acceptance-pack impact (`generateSampleDocs` unchanged).

@@ -565,7 +565,37 @@ internal object AstMapper {
             messageTemplate = messageTemplate,
             sourceLocation = SourceRef(ctx.sourceFile, rule.location?.row ?: 0),
             sourceText = sourceText(rule.location),
+            // Computed AFTER the loop above, so a `n := input.limit`-style local assignment is
+            // already in `symbolTable` when `limit := n` itself is resolved (follow-up to review
+            // item 10).
+            yieldsValue = yieldsValueOrNull(rule, symbolTable, ctx),
         )
+    }
+
+    /**
+     * The value a CONDITIONAL complete rule's body yields, e.g. `"high"` for `tier := "high" if
+     * input.risk > 80` (follow-up to review item 10). Reuses [mapOperand] directly -- a rule's own
+     * value is mechanically the same shape as any other operand, including an unrecognised one
+     * ([ConstructResult.Unsupported] becomes the ordinary verbatim [Operand.Unrendered] fallback,
+     * never a guess).
+     *
+     * Two cases return null, deliberately: a partial rule (`head.key != null`, bracket/contains
+     * sugar) has no single scalar value to show -- its own message is handled separately via
+     * [messageVarOf]/[renderProducesValue]; and a plain boolean rule's IMPLICIT `true`
+     * (`flag if input.enabled`, never written explicitly) has no `location` at all on
+     * `head.value` -- confirmed via a real `opa parse` run that opa synthesizes this term with no
+     * source span, the one mechanical signal that distinguishes it from an EXPLICIT `:= true`
+     * (which has real location text, "true"). Showing a value line for the implicit case would
+     * imply the author wrote something they didn't.
+     */
+    private fun yieldsValueOrNull(rule: OpaRule, symbolTable: Map<String, VarBinding>, ctx: MappingContext): Operand? {
+        if (rule.head.key != null) return null
+        val value = rule.head.value ?: return null
+        if (value.location == null) return null
+        return when (val result = mapOperand(value, symbolTable, ctx)) {
+            is ConstructResult.Ok -> result.operand
+            is ConstructResult.Unsupported -> Operand.Unrendered(sourceText(value.location))
+        }
     }
 
     /**

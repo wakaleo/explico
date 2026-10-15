@@ -3608,4 +3608,198 @@ class AstMapperTest {
             assertThat(rule.bodies).hasSize(2)
         }
     }
+
+    @Nested
+    inner class ConditionalYieldedValuesFollowUp {
+
+        @Test
+        fun anExplicitStringValueOnABodyWithRealConditionsPromotesToYieldsValue() {
+            // `tier := "high" if input.risk > 80`.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "tier", "value": {"type":"string","value":"high","location":{"text":"${b64("\"high\"")}"}}},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("input.risk > 80")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"gt"}]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"risk"}]},
+                            {"type":"number","value":80}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "tier" }.bodies.single()
+            assertThat(body.conditions).hasSize(1)
+            assertThat((body.yieldsValue as Operand.Literal).rendered).isEqualTo("\"high\"")
+        }
+
+        @Test
+        @DisplayName("guard: an implicit boolean true (no location on head.value) never gets a yielded value")
+        fun anImplicitBooleanTrueNeverYieldsAValue() {
+            // `flag if input.enabled` -- opa synthesizes head.value with NO location at all.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "flag", "value": {"type":"boolean","value":true}},
+                      "body": [
+                        {"index":0,"location":{"row":1,"text":"${b64("input.enabled")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"enabled"}]}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "flag" }.bodies.single()
+            assertThat(body.yieldsValue).isNull()
+        }
+
+        @Test
+        @DisplayName("an EXPLICIT boolean true (head.value has a real location) is distinguished from the implicit case and DOES yield a value")
+        fun anExplicitBooleanTrueDoesYieldAValue() {
+            // `explicit := true if input.on`.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "explicit", "value": {"type":"boolean","value":true,"location":{"text":"${b64("true")}"}}},
+                      "body": [
+                        {"index":0,"location":{"row":1,"text":"${b64("input.on")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"on"}]}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "explicit" }.bodies.single()
+            assertThat((body.yieldsValue as Operand.Literal).rendered).isEqualTo("true")
+        }
+
+        @Test
+        @DisplayName("guard: a PARTIAL rule (head.key != null) never yields a value, even with an explicit head.value")
+        fun aPartialRuleNeverYieldsAValueEvenWithAnExplicitHeadValue() {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "x", "key": {"type":"var","value":"k"}, "value": {"type":"string","value":"v","location":{"text":"${b64("\"v\"")}"}}, "ref": [{"type":"var","value":"x"}]},
+                      "body": [
+                        {"index":0,"location":{"row":1,"text":"${b64("input.y")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"y"}]}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "x" }.bodies.single()
+            assertThat(body.yieldsValue).isNull()
+        }
+
+        @Test
+        @DisplayName("a local variable assigned then used as the head value substitutes inline, computed AFTER the body's own assignments are mapped")
+        fun aLocalVariableAssignedThenUsedAsTheHeadValueSubstitutesInline() {
+            // `limit := n if { n := input.limit }`.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "limit", "value": {"type":"var","value":"n","location":{"text":"${b64("n")}"}}},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("n := input.limit")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"assign"}]},
+                            {"type":"var","value":"n"},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"limit"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "limit" }.bodies.single()
+            assertThat(body.conditions).isEmpty()
+            assertThat((body.yieldsValue as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("limit"))
+        }
+
+        @Test
+        @DisplayName("an unrenderable head value (e.g. a bare sprintf call) falls back to verbatim Operand.Unrendered, never a guess")
+        fun anUnrenderableHeadValueFallsBackToVerbatimUnrendered() {
+            // `label := sprintf("%v-x", [input.name]) if input.named`.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "label", "value": {"type":"call","location":{"text":"${b64("sprintf(\"%v-x\", [input.name])")}"},"value":[
+                        {"type":"ref","value":[{"type":"var","value":"sprintf"}]},
+                        {"type":"string","value":"%v-x"},
+                        {"type":"array","value":[{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"name"}]}]}
+                      ]}},
+                      "body": [
+                        {"index":0,"location":{"row":1,"text":"${b64("input.named")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"named"}]}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "label" }.bodies.single()
+            val fallback = body.yieldsValue as Operand.Unrendered
+            assertThat(fallback.sourceText).isEqualTo("sprintf(\"%v-x\", [input.name])")
+        }
+
+        @Test
+        @DisplayName("a bare reference to another rule as the head value promotes to a RuleValueReference, same as any other operand position")
+        fun aBareReferenceToAnotherRuleAsTheHeadValuePromotes() {
+            // `tier := threshold if input.x` -- combines this follow-up with review item 10's own promotion.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "threshold", "value": {"type":"number","value":5}},
+                      "body": [
+                        {"index":0,"location":{"row":1,"text":"${b64("input.enabled")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"enabled"}]}}
+                      ]
+                    },
+                    {
+                      "head": {"name": "tier", "value": {"type":"var","value":"threshold","location":{"text":"${b64("threshold")}"}}},
+                      "body": [
+                        {"index":0,"location":{"row":2,"text":"${b64("input.x")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}]}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "tier" }.bodies.single()
+            val reference = body.yieldsValue as Operand.RuleValueReference
+            assertThat(reference.packagePath).isEqualTo("scratch")
+            assertThat(reference.ruleName).isEqualTo("threshold")
+        }
+    }
 }

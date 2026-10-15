@@ -102,6 +102,19 @@ public data class RuleBody(
      * LOGIC_CHANGED unified text diff.
      */
     val sourceText: String,
+    /**
+     * The value THIS body yields when it matches, for a CONDITIONAL complete rule (follow-up to
+     * review item 10), e.g. `"high"` for `tier := "high" if input.risk > 80`. Reuses the ordinary
+     * [Operand] model and its rendering (humanized paths, links, builtin templates, fallback) --
+     * the value is mechanically the same thing an operand already is, just read from the rule's
+     * own `head.value` rather than from a condition. Null for a partial rule (`head.key != null`,
+     * no single scalar value to show) and for a plain boolean rule with no EXPLICIT value written
+     * (`flag if input.enabled` -- opa synthesizes an implicit `true` with no source location,
+     * confirmed via a real `opa parse` run, the mechanical signal that distinguishes it from an
+     * explicit `:= true`). Distinct from [RuleGroup.constantValue] (session 10/14.20): that one is
+     * for a rule with NO body at all; this is for a rule whose body has real conditions.
+     */
+    val yieldsValue: Operand? = null,
 )
 
 /** A single leaf condition within a rule body. */

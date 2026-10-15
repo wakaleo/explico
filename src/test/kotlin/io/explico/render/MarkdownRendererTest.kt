@@ -20,6 +20,7 @@ import io.explico.model.SourceRef
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
@@ -35,8 +36,8 @@ class MarkdownRendererTest {
         negated = true,
     )
 
-    private fun body(conditions: List<Condition>, producesValue: String? = null, messageTemplate: String? = null, row: Int = 16, file: String = "approvals/change_approval.rego") =
-        RuleBody(conditions, producesValue, messageTemplate, SourceRef(file, row), "")
+    private fun body(conditions: List<Condition>, producesValue: String? = null, messageTemplate: String? = null, row: Int = 16, file: String = "approvals/change_approval.rego", yieldsValue: Operand? = null) =
+        RuleBody(conditions, producesValue, messageTemplate, SourceRef(file, row), "", yieldsValue)
 
     @Nested
     inner class ControlCard {
@@ -761,6 +762,64 @@ class MarkdownRendererTest {
             val pkg = PolicyPackage("p.q", listOf(a, b), listOf("a.rego"))
             val markdown = MarkdownRenderer.renderPackage(pkg, PolicySet(listOf(pkg)))
             assertThat(markdown).contains("(#x-1)").contains("<a id=\"x-1\"></a>")
+        }
+    }
+
+    @Nested
+    inner class ConditionalYieldedValuesFollowUp {
+
+        @Test
+        fun aYieldedValueAppearsAsItsOwnLineAfterTheConditions() {
+            val rule = RuleGroup(
+                name = "tier",
+                metadata = null,
+                default = null,
+                bodies = listOf(body(listOf(envIsProd), yieldsValue = Operand.Literal("\"high\""))),
+            )
+            val pkg = PolicyPackage("p", listOf(rule), listOf("a.rego"))
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
+            assertThat(markdown).contains("**Value:** `\"high\"`")
+            assertThat(markdown.indexOf("**Value:**")).isGreaterThan(markdown.indexOf("`deployment ▸ environment`"))
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: an unrendered yielded value never adds to the coverage footer's unrendered-value count")
+        fun anUnrenderedYieldedValueDoesNotAffectTheCoverageFooter() {
+            val rule = RuleGroup(
+                name = "label",
+                metadata = null,
+                default = null,
+                bodies = listOf(body(listOf(envIsProd), yieldsValue = Operand.Unrendered("sprintf(...)"))),
+            )
+            val pkg = PolicyPackage("p", listOf(rule), listOf("a.rego"))
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
+            assertThat(markdown).contains("**Value:** `sprintf(...)`")
+            assertThat(markdown).contains("*Rendering coverage: 1 of 1 conditions*")
+            assertThat(markdown).doesNotContain("unrendered value")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: a body with zero conditions (every expr was an assignment) omits the empty 'All of the following are true' header")
+        fun aZeroConditionBodyOmitsTheEmptyHeader() {
+            val rule = RuleGroup(
+                name = "limit",
+                metadata = null,
+                default = null,
+                bodies = listOf(body(emptyList(), yieldsValue = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("limit"))))),
+            )
+            val pkg = PolicyPackage("p", listOf(rule), listOf("a.rego"))
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
+            assertThat(markdown).doesNotContain("All of the following are true")
+            assertThat(markdown).contains("**Value:** `limit`")
+        }
+
+        @Test
+        @DisplayName("guard: a body with no yielded value renders no Value line at all (unaffected by this promotion)")
+        fun aBodyWithNoYieldedValueRendersNoValueLine() {
+            val rule = RuleGroup(name = "flag", metadata = null, default = null, bodies = listOf(body(listOf(envIsProd))))
+            val pkg = PolicyPackage("p", listOf(rule), listOf("a.rego"))
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
+            assertThat(markdown).doesNotContain("**Value:**")
         }
     }
 }
