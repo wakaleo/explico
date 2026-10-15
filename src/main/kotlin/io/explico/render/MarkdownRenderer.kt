@@ -20,6 +20,19 @@ internal object MarkdownRenderer {
         sb.appendLine("*Source files: ${pkg.sourceFiles.joinToString(", ") { "`$it`" }}*")
         sb.appendLine()
 
+        // Package-scope METADATA (review item 4), shown before the first card -- title bold (no
+        // separate heading level: the package already has its own "# Package" heading above), the
+        // description verbatim (trimEnd(): same YAML block-literal trailing-newline fix as a rule's
+        // own description, spec §6.2).
+        pkg.metadata?.title?.let { title ->
+            sb.appendLine("**$title**")
+            sb.appendLine()
+        }
+        pkg.metadata?.description?.let { description ->
+            sb.appendLine(description.trimEnd())
+            sb.appendLine()
+        }
+
         for (rule in pkg.rules) {
             sb.append(renderCard(rule, pkg, policySet, examplesByRule[rule.name] ?: emptyList()))
             sb.appendLine()
@@ -38,10 +51,12 @@ internal object MarkdownRenderer {
         appendMetadataLines(sb, rule, pkg)
 
         val anchorFor: (Condition.RuleReference) -> String = { ref -> resolveAnchor(pkg.path, ref, policySet) }
-        if (rule.bodies.size > 1) {
-            appendMultiBodySituations(sb, rule, anchorFor)
-        } else {
-            appendSingleBody(sb, rule.bodies.single(), anchorFor)
+        when {
+            // A rule that's only ever a `default` declaration (review item 3) has no body at all --
+            // nothing to say beyond the heading/metadata/default lines already appended above.
+            rule.bodies.isEmpty() -> Unit
+            rule.bodies.size > 1 -> appendMultiBodySituations(sb, rule, anchorFor)
+            else -> appendSingleBody(sb, rule.bodies.single(), anchorFor)
         }
 
         appendWorkedExamples(sb, rule, workedExamples)
@@ -57,7 +72,10 @@ internal object MarkdownRenderer {
 
     private fun appendMetadataLines(sb: StringBuilder, rule: RuleGroup, pkg: PolicyPackage) {
         val metadata = rule.metadata
-        val sourceFile = rule.bodies.first().sourceLocation.file.substringAfterLast('/')
+        // "?" only for a default-only rule with zero bodies in this file (review item 3) -- should
+        // never actually surface, since a RuleGroup is only ever constructed with at least one of
+        // bodies/default non-empty, but this stays a graceful fallback rather than a crash either way.
+        val sourceFile = rule.bodies.firstOrNull()?.sourceLocation?.file?.substringAfterLast('/') ?: "?"
         sb.appendLine("*Rule `${rule.name}` in package `${pkg.path}` — defined in `$sourceFile`*")
         if (!metadata?.frameworks.isNullOrEmpty()) {
             sb.appendLine("*Frameworks: ${metadata.frameworks.joinToString(", ")}*")
@@ -186,7 +204,7 @@ internal object MarkdownRenderer {
                     packagePath = pkg.path,
                     ruleName = rule.name,
                     coverage = Coverage.of(rule),
-                    sourceFile = rule.bodies.first().sourceLocation.file,
+                    sourceFile = rule.bodies.firstOrNull()?.sourceLocation?.file ?: "?",
                     hasMatching = outcomes.any { it.matched },
                     hasNotMatching = outcomes.any { !it.matched },
                 )

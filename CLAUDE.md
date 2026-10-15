@@ -1077,3 +1077,19 @@ was proposed in, not deferred to a separate increment.
   assertion, and it was repointed at `time.now_ns` (a builtin that's
   still, and deliberately, unpromoted) rather than patched to keep using a
   now-inaccurate example.
+
+## Review pass: realistic policies (items 1-4)
+
+- **Metadata is per rule, not per name.** `buildMetadataIndex` keys by `(sourceFile, row)`.
+  `opa inspect`'s `location.row` is the *decorated rule's* row (not the comment's) and its
+  `location.file` carries the invoked directory prefix, so files are matched by package then
+  `endsWith(sourceFile)`. `mapRuleGroups` groups by `(name, metadata)`: same-named rules with
+  different annotations are separate cards.
+- **`effectiveName`**: bracket-form partial rules (`violation[{"msg": m}]`) have `head.name == null`;
+  `ref[0]` is used only when `head.key != null`, so ref-headed document rules stay excluded.
+- **`default` declarations** populate `RuleGroup.default` (verbatim value source) and are never
+  bodies; a default-only name gets a body-less card (renderer guards `bodies.isEmpty()`).
+- **`PolicyPackage.metadata`** (package-scope title/description) comes from `opa parse`'s
+  `module.annotations`; rendered under the package heading.
+- `RealisticPoliciesAcceptanceIT` is authored from the review, **not** the frozen README contract.
+- Disclosed gaps: cross-file `default`; `Canonicalizer` ignores `default`; anchors for split names.

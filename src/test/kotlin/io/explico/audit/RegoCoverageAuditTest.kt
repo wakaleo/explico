@@ -357,25 +357,32 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun defaultDeclarationFallsBackWithOpasOwnTruncatedLocationSpan() {
-        // Disclosed opa quirk (spec §14): opa's own location span for a `default` rule covers only
-        // the keyword itself, not the full "default allow := false" statement -- explico's fallback
-        // is honest about what it received, but the received text is itself unhelpfully short.
+    fun defaultDeclarationIsNoLongerARenderedBodyPromotedThisSession() {
+        // Was: opa's own location span for a `default` rule covers only the keyword itself
+        // ("default"), not the full "default allow := false" statement, so explico's fallback --
+        // while honest about what it received -- was unhelpfully short, AND counted as a Situation
+        // it isn't (review item 3). Fixed: `default` no longer becomes a body at all; it populates
+        // RuleGroup.default (rendered from its own value's verbatim source, "false") instead, and
+        // the rule's one real body is no longer pushed to index 1.
         val policySet = loadProbe("27-default-declaration.rego")
-        val defaultBody = policySet.packages.single().rules.single { it.name == "allow" }.bodies[0]
-        assertUnrendered(defaultBody.conditions.single(), "unclassified")
-        assertThat((defaultBody.conditions.single() as Condition.Unrendered).sourceText).isEqualTo("default")
-        val realBody = conditionsOf(policySet, "allow", 1)
+        val rule = policySet.packages.single().rules.single { it.name == "allow" }
+        assertThat(rule.bodies).hasSize(1)
+        assertThat(rule.default?.rendered).isEqualTo("false")
+        val realBody = conditionsOf(policySet, "allow", 0)
         assertThat(render(realBody[0])).isEqualTo("`deployment ▸ environment` is `\"production\"`")
         assertThat(render(realBody[1])).isEqualTo("`change ▸ ticket ▸ approved` is present and not false")
     }
 
     @Test
-    fun defaultFunctionFallsBackTheSameWayAsADefaultRule() {
+    fun defaultFunctionIsNoLongerARenderedBodyPromotedThisSession() {
+        // Same fix as the default-rule case above, applied to a default FUNCTION declaration
+        // (`default risk_score(_) := 0`) -- effectiveName/mapRuleGroups treat it identically, since
+        // a function's parameter list doesn't change how `head.name`/`head.default` are populated.
         val policySet = loadProbe("28-default-function.rego")
-        val defaultBody = policySet.packages.single().rules.single { it.name == "risk_score" }.bodies[0]
-        assertUnrendered(defaultBody.conditions.single(), "unclassified")
-        val realBody = conditionsOf(policySet, "risk_score", 1)
+        val rule = policySet.packages.single().rules.single { it.name == "risk_score" }
+        assertThat(rule.bodies).hasSize(1)
+        assertThat(rule.default?.rendered).isEqualTo("0")
+        val realBody = conditionsOf(policySet, "risk_score", 0)
         assertThat(render(realBody.single())).isEqualTo("`finding.severity` is `\"critical\"`")
     }
 

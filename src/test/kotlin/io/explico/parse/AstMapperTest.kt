@@ -1873,4 +1873,346 @@ class AstMapperTest {
             )
         }
     }
+
+    @Nested
+    inner class MultipleAnnotatedBodiesSharingAName {
+        // Review item 1: several independently-`scope: rule`-annotated rules can share one Rego
+        // name (e.g. three separately-annotated `deny contains msg if {...}` bodies) -- the old
+        // (package, name) -> metadata index collapsed all of them into one card. Fixed by resolving
+        // each `opa inspect` entry against the SPECIFIC OpaRule it decorates (file + row).
+
+        @Test
+        fun separatelyRuleScopedAnnotationsOnTheSameNameProduceSeparateRuleGroups() {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "location": {"row": 5},
+                      "head": {"name": "deny", "key": {"type":"var","value":"msg"}, "ref": [{"type":"var","value":"deny"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":6,"text":"${b64("input.a")}"},
+                          "terms": {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"a"}],"location":{"text":"${b64("input.a")}"}}
+                        }
+                      ]
+                    },
+                    {
+                      "location": {"row": 10},
+                      "head": {"name": "deny", "key": {"type":"var","value":"msg"}, "ref": [{"type":"var","value":"deny"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":11,"text":"${b64("input.b")}"},
+                          "terms": {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"b"}],"location":{"text":"${b64("input.b")}"}}
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val inspectResult = opaJson.decodeFromString(
+                OpaInspectResult.serializer(),
+                """
+                {
+                  "annotations": [
+                    {
+                      "annotations": {"scope":"rule","title":"First control","custom":{"control-id":"X-001"}},
+                      "location": {"file":"scratch.rego","row":5},
+                      "path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"},{"type":"string","value":"deny"}]
+                    },
+                    {
+                      "annotations": {"scope":"rule","title":"Second control","custom":{"control-id":"X-002"}},
+                      "location": {"file":"scratch.rego","row":10},
+                      "path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"},{"type":"string","value":"deny"}]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+
+            val rules = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module)), inspectResult).packages.single().rules
+            assertThat(rules).hasSize(2)
+            assertThat(rules.map { it.metadata?.controlId }).containsExactlyInAnyOrder("X-001", "X-002")
+
+            val first = rules.single { it.metadata?.controlId == "X-001" }
+            assertThat(first.bodies).hasSize(1)
+            val firstCondition = first.bodies.single().conditions.single() as Condition.Truthy
+            assertThat((firstCondition.operand as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("a"))
+
+            val second = rules.single { it.metadata?.controlId == "X-002" }
+            assertThat(second.bodies).hasSize(1)
+            val secondCondition = second.bodies.single().conditions.single() as Condition.Truthy
+            assertThat((secondCondition.operand as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("b"))
+        }
+
+        @Test
+        fun unannotatedBodiesSharingANameWithAnnotatedOnesStillGroupTogetherSeparately() {
+            // A third, unannotated body with the same name must not merge into either annotated
+            // card, nor get lost -- it forms its own (name, null-metadata) group.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "location": {"row": 5},
+                      "head": {"name": "deny", "key": {"type":"var","value":"msg"}, "ref": [{"type":"var","value":"deny"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":6,"text":"${b64("input.a")}"},
+                          "terms": {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"a"}],"location":{"text":"${b64("input.a")}"}}
+                        }
+                      ]
+                    },
+                    {
+                      "location": {"row": 10},
+                      "head": {"name": "deny", "key": {"type":"var","value":"msg"}, "ref": [{"type":"var","value":"deny"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":11,"text":"${b64("input.c")}"},
+                          "terms": {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"c"}],"location":{"text":"${b64("input.c")}"}}
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val inspectResult = opaJson.decodeFromString(
+                OpaInspectResult.serializer(),
+                """
+                {
+                  "annotations": [
+                    {
+                      "annotations": {"scope":"rule","title":"First control","custom":{"control-id":"X-001"}},
+                      "location": {"file":"scratch.rego","row":5},
+                      "path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"},{"type":"string","value":"deny"}]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+
+            val rules = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module)), inspectResult).packages.single().rules
+            assertThat(rules).hasSize(2)
+            val unannotated = rules.single { it.metadata == null }
+            assertThat(unannotated.bodies).hasSize(1)
+        }
+    }
+
+    @Nested
+    inner class DefaultDeclarations {
+        // Review item 3: `default <name> := <value>` must never become a Situation/body -- it
+        // populates RuleGroup.default instead.
+
+        @Test
+        fun defaultDeclarationIsExcludedFromBodiesAndPopulatesRuleGroupDefault() {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "default": true,
+                      "location": {"row": 1},
+                      "head": {"name":"allow","value":{"type":"boolean","value":false,"location":{"text":"${b64("false")}"}},"ref":[{"type":"var","value":"allow"}]},
+                      "body": []
+                    },
+                    {
+                      "location": {"row": 3},
+                      "head": {"name":"allow","ref":[{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":4,"text":"${b64("input.x")}"},
+                          "terms": {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}],"location":{"text":"${b64("input.x")}"}}
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val rule = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages.single().rules.single()
+            assertThat(rule.bodies).hasSize(1)
+            assertThat(rule.default?.rendered).isEqualTo("false")
+        }
+
+        @Test
+        fun aRuleThatIsOnlyEverADefaultDeclarationStillProducesACard() {
+            // CHALLENGE edge case: no other body in the file at all shares this name.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "default": true,
+                      "location": {"row": 1},
+                      "head": {"name":"risk_score","value":{"type":"number","value":0,"location":{"text":"${b64("0")}"}},"ref":[{"type":"var","value":"risk_score"}]},
+                      "body": []
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val pkg = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages.single()
+            val rule = pkg.rules.single()
+            assertThat(rule.name).isEqualTo("risk_score")
+            assertThat(rule.bodies).isEmpty()
+            assertThat(rule.default?.rendered).isEqualTo("0")
+        }
+    }
+
+    @Nested
+    inner class BracketFormPartialRuleGetsAName {
+        // Review item 2: `violation[{"msg": m}] if {...}` -- the older bracket-key partial-rule
+        // sugar (common in Gatekeeper-style policies) -- has `head.name == null`; opa only
+        // populates `head.ref == [var(violation), object(...)]`. Must not be silently dropped.
+
+        @Test
+        fun bracketFormPartialRuleIsNamedAndItsConditionRenders() {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "location": {"row": 1},
+                      "head": {
+                        "key": {"type":"object","value":[[{"type":"string","value":"msg"},{"type":"var","value":"m"}]]},
+                        "value": {"type":"boolean","value":true},
+                        "ref": [
+                          {"type":"var","value":"violation"},
+                          {"type":"object","value":[[{"type":"string","value":"msg"},{"type":"var","value":"m"}]]}
+                        ]
+                      },
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":2,"text":"${b64("input.tags.env != \"prod\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"neq"}]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"tags"},{"type":"string","value":"env"}]},
+                            {"type":"string","value":"prod"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val pkg = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages.single()
+            val rule = pkg.rules.single()
+            assertThat(rule.name).isEqualTo("violation")
+            val comparison = rule.bodies.single().conditions.single() as Condition.Comparison
+            assertThat(comparison.op).isEqualTo(Operator.NEQ)
+            assertThat((comparison.left as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("tags"), PathSegment.Field("env"),
+            )
+        }
+
+        @Test
+        fun refHeadedDocumentRuleWithNoKeyIsStillExcludedUnaffectedByTheBracketPartialRulePromotion() {
+            // CHALLENGE edge case: effectiveName must NOT also start recognising the genuinely
+            // different, deliberately out-of-scope ref-headed document-rule case
+            // (`fruit.apple.seeds := 12`, spec §14) -- that shape has `head.key == null`.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "location": {"row": 1},
+                      "head": {
+                        "value": {"type":"number","value":12},
+                        "ref": [
+                          {"type":"var","value":"fruit"},
+                          {"type":"string","value":"apple"},
+                          {"type":"string","value":"seeds"}
+                        ]
+                      },
+                      "body": []
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val pkg = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages.single()
+            assertThat(pkg.rules).isEmpty()
+        }
+    }
+
+    @Nested
+    inner class PackageScopeMetadata {
+        // Review item 4: package-scope METADATA (opa's own `module.annotations`, no `opa inspect`
+        // needed) is shown on the package page.
+
+        @Test
+        fun packageScopeAnnotationPopulatesPolicyPackageMetadata() {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "annotations": [
+                    {"scope":"package","title":"Container hardening","description":"Containers must not be privileged."}
+                  ],
+                  "rules": []
+                }
+                """.trimIndent()
+            )
+            val pkg = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages.single()
+            assertThat(pkg.metadata?.title).isEqualTo("Container hardening")
+            assertThat(pkg.metadata?.description).isEqualTo("Containers must not be privileged.")
+        }
+
+        @Test
+        fun noPackageAnnotationLeavesPackageMetadataNull() {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": []
+                }
+                """.trimIndent()
+            )
+            val pkg = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages.single()
+            assertThat(pkg.metadata).isNull()
+        }
+
+        @Test
+        fun ruleScopedAnnotationIsNeverMistakenForPackageScopeMetadata() {
+            // CHALLENGE edge case: a rule-scoped annotation must not leak into PolicyPackage.metadata.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "location": {"row": 1},
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "annotations": [{"scope":"rule","title":"Not a package title"}],
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":2,"text":"${b64("input.x")}"},
+                          "terms": {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}],"location":{"text":"${b64("input.x")}"}}
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val pkg = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages.single()
+            assertThat(pkg.metadata).isNull()
+        }
+    }
 }

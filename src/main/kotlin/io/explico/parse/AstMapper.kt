@@ -18,18 +18,29 @@
  * `internal.member_3`), not just the single-variable `some v in c` (`internal.member_2`) -- both
  * `k` and `v` bind as iteration variables against the same collection.
  *
- * Metadata attachment (`opa inspect` -> `RuleMetadata`, see [buildMetadataIndex])
- * matches by `opa inspect`'s own `path` field rather than the file/row-proximity
- * spec §5 literally describes -- opa has already resolved which rule an
- * annotation belongs to. `default` declarations are still not handled: no
- * policy in the acceptance pack exercises one, so `RuleGroup.default` is
- * always null.
+ * Metadata attachment (`opa inspect` -> `RuleMetadata`, see [buildMetadataIndex]) resolves each
+ * annotation entry against the SPECIFIC [io.explico.opa.OpaRule] it decorates (keyed by file+row),
+ * not just the (package, ruleName) pair -- see [buildMetadataIndex]'s own KDoc: a review finding
+ * (not in the original spec §5 text) found several independently-`scope: rule`-annotated rules
+ * sharing one name silently collapsed into one card under the old (package, name) index.
+ * `default` declarations are handled too (same review pass): [mapRuleGroups] excludes a rule whose
+ * `OpaRule.default` is true from `bodies` entirely and populates
+ * [io.explico.model.RuleGroup.default] instead, via [defaultValueOf].
+ *
+ * A rule's own name may come from `head.name` (the `contains` keyword, and every complete-rule
+ * head) or, when that's null, from `head.ref`'s own first segment -- see [effectiveName]'s KDoc.
+ * This recognises the older bracket-key partial-rule sugar (`violation[{"msg": m}] if {...}`,
+ * common in Gatekeeper-style policies predating `rego.v1`'s `contains` keyword) as a real, named
+ * rule instead of silently dropping it, while deliberately leaving the genuinely different
+ * ref-headed DOCUMENT-rule case (`fruit.apple.seeds := 12`, spec §14) excluded, exactly as before.
  */
 package io.explico.parse
 
 import io.explico.model.Condition
+import io.explico.model.DefaultValue
 import io.explico.model.Operand
 import io.explico.model.Operator
+import io.explico.model.PackageMetadata
 import io.explico.model.PathSegment
 import io.explico.model.PolicyPackage
 import io.explico.model.PolicySet
@@ -41,6 +52,7 @@ import io.explico.opa.OpaExpr
 import io.explico.opa.OpaInspectResult
 import io.explico.opa.OpaModule
 import io.explico.opa.OpaRule
+import io.explico.opa.OpaRuleHead
 import io.explico.opa.OpaTerm
 import io.explico.opa.opaJson
 import io.explico.render.PathHumanizer
@@ -105,37 +117,119 @@ internal object AstMapper {
         val registry = buildRuleRegistry(files)
         val partialRegistry = buildPartialRuleRegistry(files)
         val refHeadRegistry = buildRefHeadRuleRegistry(files)
-        val metadataIndex = buildMetadataIndex(inspectResult)
+        val metadataIndex = buildMetadataIndex(inspectResult, files)
         val packages = files
             .groupBy { packagePath(it.module) }
             .map { (path, filesInPackage) ->
-                val rules = filesInPackage
+                val orderedFiles = filesInPackage.sortedBy { it.sourceFile }
+                val rules = orderedFiles
                     .flatMap { mapRuleGroups(it, registry, partialRegistry, refHeadRegistry, metadataIndex) }
                     .sortedBy { it.name }
                 PolicyPackage(
                     path = path,
                     rules = rules,
-                    sourceFiles = filesInPackage.map { it.sourceFile }.sorted(),
+                    sourceFiles = orderedFiles.map { it.sourceFile },
+                    metadata = packageMetadataOf(orderedFiles),
                 )
             }
             .sortedBy { it.path }
         return PolicySet(packages)
     }
 
-    private fun buildMetadataIndex(inspectResult: OpaInspectResult?): Map<Pair<String, String>, RuleMetadata> =
-        (inspectResult?.annotations ?: emptyList())
-            .filter { it.annotations.scope != "package" }
-            .mapNotNull { entry ->
-                val segments = entry.path.drop(1).map { stringValueOf(it) }
-                if (segments.size < 2) return@mapNotNull null
-                val key = segments.dropLast(1).joinToString(".") to segments.last()
-                key to RuleMetadata(
-                    title = entry.annotations.title,
-                    description = entry.annotations.description,
-                    controlId = entry.annotations.custom?.controlId,
-                    frameworks = entry.annotations.custom?.frameworks ?: emptyList(),
-                )
-            }.toMap()
+    /**
+     * Package-scope METADATA (review item 4) -- `opa parse`'s own [io.explico.opa.OpaModule.annotations]
+     * already carries a `scope: package` annotation directly (confirmed via a real `opa parse` run:
+     * identical title/description to the matching `opa inspect` entry), so this needs no `opa inspect`
+     * matching at all. [filesInPackage] must already be sorted by source file (spec §2 determinism):
+     * the first one (in that order) carrying a package-scope annotation wins, in the unlikely case more
+     * than one file in the same package declares one.
+     */
+    private fun packageMetadataOf(filesInPackage: List<ParsedFile>): PackageMetadata? =
+        filesInPackage
+            .flatMap { it.module.annotations }
+            .firstOrNull { it.scope == "package" }
+            ?.let { PackageMetadata(title = it.title, description = it.description) }
+
+    /**
+     * Per-rule metadata (review item 1): an `opa inspect` annotation entry's own `path` field names
+     * only the package and rule name, not which specific [OpaRule] statement it decorates -- fine
+     * when every rule sharing that name shares ONE `scope: document` annotation (the acceptance
+     * pack's own `release.approvals.deny`, 2 bodies, 1 inspect entry), but wrong when several
+     * DIFFERENT `scope: rule` annotations (opa's own default when no scope is declared) decorate
+     * SEPARATE same-named rule statements -- e.g. three independently-annotated
+     * `deny contains msg if {...}` bodies. The old (package, name) -> metadata map collapsed all
+     * three into one, silently discarding two (last-write-wins via `.toMap()`).
+     *
+     * Resolved here using facts opa itself already exposes, never a guess of our own. An inspect
+     * entry's own `location` is NOT the METADATA comment's position -- it's the SAME row as the
+     * decorated rule's own `OpaRule.location` (confirmed via real `opa parse`/`opa inspect` runs
+     * on the same file: a `scope: rule` annotation's entry.row is an EXACT match for the one rule
+     * it decorates, and a `scope: document` annotation covering several bodies gets exactly one
+     * entry, whose row is an exact match for the FIRST decorated body -- never the comment's own
+     * row, several lines earlier):
+     * - `scope: document`/`subpackages` -- applies to EVERY rule in the same file sharing that
+     *   name, exactly as the old index already did.
+     * - anything else (opa's own default is `rule`) -- applies to exactly the ONE rule whose own
+     *   row exactly matches the entry's row.
+     *
+     * Keyed by ([ParsedFile.sourceFile], row): a rule's own [io.explico.opa.OpaLocation.row] is
+     * unique within a file, and [mapRuleGroups] looks this up once per individual [OpaRule]
+     * rather than once per (package, name) group.
+     *
+     * `opa inspect --annotations <dir>`'s own `location.file` is `<dir>` plus the file's path
+     * underneath it (confirmed via a real run: `src/.../policies/k8s.rego` for
+     * `opa inspect ... src/.../policies`) -- NOT the same string as [ParsedFile.sourceFile], which
+     * is relative to `dir` (spec §8.1, `Explico.load`'s own `policyDir.relativize`). Matching by
+     * package first, then by [String.endsWith] against each candidate file's own `sourceFile`,
+     * sidesteps needing to know or reconstruct that directory prefix at all.
+     */
+    private fun buildMetadataIndex(inspectResult: OpaInspectResult?, files: List<ParsedFile>): Map<Pair<String, Int>, RuleMetadata> {
+        val filesByPackage: Map<String, List<ParsedFile>> = files.groupBy { packagePath(it.module) }
+        val index = mutableMapOf<Pair<String, Int>, RuleMetadata>()
+        for (entry in (inspectResult?.annotations ?: emptyList())) {
+            if (entry.annotations.scope == "package") continue
+            val segments = entry.path.drop(1).map { stringValueOf(it) }
+            if (segments.size < 2) continue
+            val entryPackage = segments.dropLast(1).joinToString(".")
+            val ruleName = segments.last()
+            val entryFile = entry.location.file
+            val entryRow = entry.location.row
+            val metadata = RuleMetadata(
+                title = entry.annotations.title,
+                description = entry.annotations.description,
+                controlId = entry.annotations.custom?.controlId,
+                frameworks = entry.annotations.custom?.frameworks ?: emptyList(),
+            )
+            val candidateFiles = (filesByPackage[entryPackage] ?: emptyList())
+                .filter { entryFile == null || entryFile.endsWith(it.sourceFile) }
+            val sameNameRules = candidateFiles.flatMap { pf -> pf.module.rules.filter { effectiveName(it.head) == ruleName }.map { pf.sourceFile to it } }
+            val targets = if (entry.annotations.scope == "document" || entry.annotations.scope == "subpackages") {
+                sameNameRules
+            } else {
+                sameNameRules.filter { (it.second.location?.row ?: 0) == entryRow }
+            }
+            for ((sourceFile, rule) in targets) {
+                index[sourceFile to (rule.location?.row ?: 0)] = metadata
+            }
+        }
+        return index
+    }
+
+    /**
+     * The rule's name however opa's parser happened to populate it (review item 2). The `contains`
+     * keyword populates `head.name` directly; the older bracket-key sugar
+     * (`violation[{"msg": m}] if {...}`, a common Gatekeeper-style partial rule predating
+     * `rego.v1`'s `contains` keyword) does NOT -- opa leaves `head.name` null and only populates
+     * `head.ref` (confirmed via a real `opa parse` run: `ref == [var(violation), object(...)]`).
+     * `ref.first()` is the rule's real name in that case, exactly like `head.name` already is for
+     * the `contains` form -- reading it is not a guess, just a second place the SAME fact lives.
+     * Requires `head.key != null` to stay clear of the genuinely different, deliberately
+     * out-of-scope ref-HEADED document-rule case (`fruit.apple.seeds := 12`, spec §14 promotion) --
+     * that shape has `head.key == null` and a multi-segment, ALL-literal path, not a single var
+     * root plus one key term.
+     */
+    private fun effectiveName(head: OpaRuleHead): String? =
+        head.name ?: head.ref.firstOrNull()?.takeIf { it.type == "var" && head.key != null }?.let { stringValueOf(it) }
 
     private fun packagePath(module: OpaModule): String =
         module.pkg.path.drop(1).joinToString(".") { stringValueOf(it) }
@@ -153,7 +247,7 @@ internal object AstMapper {
     private fun buildRuleRegistry(files: List<ParsedFile>): Map<String, Set<String>> =
         files.groupBy({ packagePath(it.module) }, { it.module })
             .mapValues { (_, modules) ->
-                modules.flatMap { it.rules }.mapNotNull { it.head.name }.toSet()
+                modules.flatMap { it.rules }.mapNotNull { effectiveName(it.head) }.toSet()
             }
 
     /**
@@ -168,7 +262,7 @@ internal object AstMapper {
     private fun buildPartialRuleRegistry(files: List<ParsedFile>): Map<String, Set<String>> =
         files.groupBy({ packagePath(it.module) }, { it.module })
             .mapValues { (_, modules) ->
-                modules.flatMap { it.rules }.filter { it.head.key != null }.mapNotNull { it.head.name }.toSet()
+                modules.flatMap { it.rules }.filter { it.head.key != null }.mapNotNull { effectiveName(it.head) }.toSet()
             }
 
     /**
@@ -199,12 +293,15 @@ internal object AstMapper {
                     .toSet()
             }
 
+    /** One real-opa-rule statement paired with its resolved name and per-rule metadata (review items 1/2/3). */
+    private data class NamedRule(val rule: OpaRule, val name: String, val metadata: RuleMetadata?)
+
     private fun mapRuleGroups(
         file: ParsedFile,
         registry: Map<String, Set<String>>,
         partialRegistry: Map<String, Set<String>>,
         refHeadRegistry: Map<String, Set<String>>,
-        metadataIndex: Map<Pair<String, String>, RuleMetadata>,
+        metadataIndex: Map<Pair<String, Int>, RuleMetadata>,
     ): List<RuleGroup> {
         val currentPackage = packagePath(file.module)
         val ctx = MappingContext(
@@ -215,19 +312,51 @@ internal object AstMapper {
             refHeadRegistry = refHeadRegistry,
             sourceFile = file.sourceFile,
         )
-        return file.module.rules
-            .filter { it.head.name != null }
-            .groupBy { it.head.name!! }
-            .map { (name, rules) ->
-                val orderedRules = rules.sortedBy { it.location?.row ?: 0 }
+        val named = file.module.rules.mapNotNull { rule ->
+            effectiveName(rule.head)?.let { name -> NamedRule(rule, name, metadataIndex[file.sourceFile to (rule.location?.row ?: 0)]) }
+        }
+
+        // A `default` declaration (review item 3) is never a Situation -- it's the one value the
+        // rule takes when every real body falls through. Rego disallows more than one default per
+        // rule name within a package, so this is a straight name -> value map, never a collision.
+        val defaultsByName: Map<String, DefaultValue> = named
+            .filter { it.rule.default }
+            .associate { it.name to defaultValueOf(it.rule) }
+
+        // Several independently-annotated rules can share a Rego-level name (review item 1) -- e.g.
+        // three separately-`scope: rule`-annotated `deny contains msg if {...}` bodies. Grouping by
+        // (name, metadata) rather than name alone keeps those as separate cards while still merging
+        // bodies that genuinely share one annotation (document scope, or no annotation at all).
+        val groups = named.filterNot { it.rule.default }
+            .groupBy { it.name to it.metadata }
+            .map { (key, items) ->
+                val (name, metadata) = key
+                val orderedRules = items.map { it.rule }.sortedBy { it.location?.row ?: 0 }
                 RuleGroup(
                     name = name,
-                    metadata = metadataIndex[currentPackage to name],
-                    default = null,
+                    metadata = metadata,
+                    default = defaultsByName[name],
                     bodies = orderedRules.map { mapBody(it, ctx) },
                 )
             }
+
+        // A rule name that's only ever a `default` declaration in this file, with no other body,
+        // still deserves a card (the same "never silently drop a rule" principle as review item 2)
+        // rather than vanishing because the loop above only ever emits a group for a non-default body.
+        val namesAlreadyCovered = groups.map { it.name }.toSet()
+        val defaultOnlyGroups = defaultsByName.filterKeys { it !in namesAlreadyCovered }
+            .map { (name, defaultValue) -> RuleGroup(name = name, metadata = null, default = defaultValue, bodies = emptyList()) }
+
+        return groups + defaultOnlyGroups
     }
+
+    /**
+     * `default <name> := <value>`'s value, rendered as its own verbatim source text (review item
+     * 3) -- never a guessed re-formatting, the same "always true by construction" posture as every
+     * other fallback/literal rendering in this mapper. A default's value is always a scalar or
+     * composite literal (Rego disallows referencing `input`/`data`/a var in one), so this is exact.
+     */
+    private fun defaultValueOf(rule: OpaRule): DefaultValue = DefaultValue(sourceText(rule.head.value?.location))
 
     private fun mapBody(rule: OpaRule, ctx: MappingContext): RuleBody {
         // An else-chain (spec §14 finding): opa's own top-level `rule.location` already spans the

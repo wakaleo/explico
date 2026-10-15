@@ -60,6 +60,10 @@ guessing.
 | `null` literal operand | `null` | **Promoted, further follow-up session** — see below. Probe 01. |
 | Small flat object literal (≤5 pairs, string keys, scalar values) as an operand | `{"key": value, ...}`, opa's own already-sorted key order | **Promoted, further follow-up session** — see below. Probe 02. |
 | Ref-head rule reference, EXACT full-path match only (`fruit.apple.seeds`, where `fruit.apple.seeds := 12` — opa gives this rule `head.name == null`, only `head.ref` populated) | Humanized breadcrumb, same as any other path | **Promoted, further follow-up session, deliberately scoped** — see below. Probe 13. A dynamic-keyed ref-head rule reference (`users_by_role.admin.u1.name`) is NOT promoted — see "Falls back by design" below. |
+| `default` declarations (rule and function), e.g. `default allow := false` | A distinct `**Default outcome:** <value>` line on the card; never a Situation | **Promoted, review pass (items 1-4).** `RuleGroup.default` is populated from the declaration's own value, rendered as that value's verbatim source; the declaration is excluded from `bodies`. Before, opa's whole-rule `location.text` (just the word `default`) became a bogus "Situation" containing a bare-`default` fallback block. A name that is *only* a `default` (no other body in the file) still gets a body-less card. Limitation: a default in a different file from its rule's bodies is not linked (per-file mapping). Probes 27/28. |
+| Bracket-form partial rule (`violation[{"msg": m}] if {...}`, Gatekeeper style) | Ordinary card named `violation` | **Fixed, review pass.** opa leaves `head.name` null and only populates `head.ref == [var, object]`; the rule used to be silently dropped (no card, no index row). `effectiveName` reads `ref[0]` only when `head.key != null`, so ref-headed *document* rules (`fruit.apple.seeds := 12`) stay excluded. A message built from an object key is not extracted as "Produces". |
+| Several `scope: rule`-annotated rules sharing one name (e.g. three `deny contains msg if` bodies, K8S-001/002/003) | One card per distinct annotation; unannotated bodies group into their own card | **Fixed, review pass.** The old (package, name) metadata index collapsed them via `.toMap()` last-wins, so two controls vanished and one card carried all bodies. Metadata now resolves per rule by (file, row); `scope: document` still applies to every same-named rule in the file. |
+| Package-scope METADATA | Title (bold) and description under the package heading | **Added, review pass.** Read from `opa parse`'s `module.annotations` (`scope: package`) into `PolicyPackage.metadata`. |
 
 ### Falls back by design (confirmed correct, not a gap)
 
@@ -73,7 +77,6 @@ guessing.
 | `=` unification used as **binding/destructuring** (`[x, y] = [...]`, a fresh var on either side) | `function-call` | **Partially promoted, further follow-up session** — the pure-comparison case (both sides already bound) is now `Comparison` (see "Rendered faithfully" above); a genuine bind still falls back, since `Condition.Comparison` can't represent "this also assigns x and y" — the mapper positively confirms neither side maps to `Operand.Unrendered` (its signal that a fresh binding may be in play) before promoting. Probe 04. A **negated** `=` (`not x = input.y`) also still falls back regardless of whether it's a pure comparison — see the disclosed gap below. |
 | Object literal — more than 5 pairs, a non-string key, or a nested (non-scalar) value | n/a (`Operand.Unrendered`, condition itself still classifies) | Same conservative scope as the small array/set literal's own ≤5-element/scalar-only restriction, extended to objects (see "Rendered faithfully" above and the promotion write-up below). New `AstMapperTest` cases; not exercised by any probe file. |
 | Ref-head rule reference with a DYNAMIC key (`users_by_role.admin.u1.name`, where `users_by_role[role][id] := user` is keyed by the rule's own local variables) | n/a (`Operand.Unrendered`) | **Deliberately not promoted** — see the promotion write-up below. An exact-full-path ref-head reference (`fruit.apple.seeds`) IS promoted now, see "Rendered faithfully" above. Probe 14. |
-| `default` declarations (rule and function) | `unclassified` | No recognised body shape; RuleGroup's own `.default` field stays null (pre-existing, disclosed gap). **Quirk found this session**: opa's own AST gives a `default` rule's whole-rule `location.text` as just the literal word `default` — not the full `default allow := false` statement — so the fallback block, while honestly verbatim, is unhelpfully short. This is opa's own location-span behaviour, not an AstMapper defect. Probes 27/28. |
 | Declare-only `some` (`some key`, `some i, j` — no `in`) | `unclassified` | Correctly falls back once the confirmed crash (below) was fixed; `i`/`j` never become iteration bindings, so a later `arr[i]` still falls back too even though `arr` itself may now be a promoted substitution binding. Probes 07/12. |
 | `walk(input, [path, value])` | `unclassified` (binding) + `function-call` (the call) | Probe 11 — the binding and the call both fall back independently; a later comparison using the bound `value` still renders. |
 | Composite-value membership (`[1, 2] in pairs`) | `function-call` (the `pairs :=` binding) | `{[1, 2], [3, 4]}` is a set literal, not a plain path, so the promoted substitution rule doesn't apply -- the binding still falls back, with `pairs` shown as untraced bare text in the (still-rendered) `Membership` check. Probe 31. |
@@ -532,6 +535,16 @@ riskier than the backlog entry's own description implied:
 - Verified via `check`/`acceptanceTest` staying green and
   `docs/sample-output/` staying drift-free -- no acceptance-pack policy
   uses a ref-headed rule.
+
+## Review pass: realistic-policy fixes (items 1-4)
+
+Found by rendering Gatekeeper-, RBAC- and Terraform-style policies
+(`src/test/resources/realistic/policies/`, pinned by `RealisticPoliciesAcceptanceIT`
+plus new `AstMapperTest`/`MarkdownRendererTest` cases). See the table rows above.
+Disclosed, not fixed: `default` is shown on every card when one rule name is split
+across several cards (true, but repeated); `diff` does not hash `default` values or
+the new per-rule split; `resolveAnchor` picks the first card when several share a
+name; cross-file `default` is not linked.
 
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 

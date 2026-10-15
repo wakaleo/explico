@@ -133,6 +133,22 @@ class MarkdownRendererTest {
         }
 
         @Test
+        fun aRuleThatIsOnlyEverADefaultDeclarationRendersTheDefaultLineAndNoSituationOrAllOfHeading() {
+            // CHALLENGE edge case (review item 3): a rule name with NO other body in the file at
+            // all -- RuleGroup.bodies is empty. Must not crash (rule.bodies.single()/.first() on an
+            // empty list) and must not claim a Situation/condition section that doesn't exist.
+            val rule = RuleGroup("risk_score", metadata = null, default = DefaultValue("0"), bodies = emptyList())
+            val pkg = PolicyPackage("scratch", listOf(rule), listOf("scratch.rego"))
+
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
+
+            assertThat(markdown).contains("**Default outcome:** 0")
+            assertThat(markdown).doesNotContain("Situation")
+            assertThat(markdown).doesNotContain("All of the following are true")
+            assertThat(markdown).contains("*Rendering coverage: 0 of 0 conditions")
+        }
+
+        @Test
         fun singleBodyOmitsAnyPreambleAndSituationHeading() {
             val rule = RuleGroup("exempt_service", metadata = null, default = null, bodies = listOf(body(listOf(envIsProd))))
             val pkg = PolicyPackage("release.exemptions", listOf(rule), listOf("exemptions/exemptions.rego"))
@@ -290,6 +306,33 @@ class MarkdownRendererTest {
         }
 
         @Test
+        fun packageMetadataTitleAndDescriptionRenderBeforeFirstCard() {
+            // Review item 4: package-scope METADATA shown on the package page.
+            val rule = RuleGroup("deny", metadata = null, default = null, bodies = listOf(body(listOf(envIsProd))))
+            val pkg = PolicyPackage(
+                "k8s.admission", listOf(rule), listOf("k8s.rego"),
+                metadata = io.explico.model.PackageMetadata("Container hardening", "Containers must not be privileged."),
+            )
+            val markdown = MarkdownRenderer.renderPackage(pkg, PolicySet(listOf(pkg)))
+
+            assertThat(markdown).contains("**Container hardening**")
+            assertThat(markdown).contains("Containers must not be privileged.")
+            assertThat(markdown.indexOf("Container hardening")).isLessThan(markdown.indexOf("## "))
+        }
+
+        @Test
+        fun noPackageMetadataOmitsTheBlockEntirely() {
+            val rule = RuleGroup("deny", metadata = null, default = null, bodies = listOf(body(listOf(envIsProd))))
+            val pkg = PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))
+            val markdown = MarkdownRenderer.renderPackage(pkg, PolicySet(listOf(pkg)))
+
+            // No package metadata means no bold line at all between the source-files line and the
+            // first card's own heading.
+            val betweenSourcesAndFirstCard = markdown.substringAfter("*Source files:").substringBefore("## ")
+            assertThat(betweenSourcesAndFirstCard).doesNotContain("**")
+        }
+
+        @Test
         fun packageFooterReportsCoverageWithPercent() {
             val rule = RuleGroup("deny", metadata = null, default = null, bodies = listOf(body(listOf(envIsProd, approvedAbsent))))
             val pkg = PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))
@@ -357,6 +400,19 @@ class MarkdownRendererTest {
 
             assertThat(markdown).contains("| Control ID | Title | Package | Rule | Coverage | Source file |")
             assertThat(markdown).contains("Overall rendering coverage: 0 of 0 conditions (100%)")
+        }
+
+        @Test
+        fun aDefaultOnlyRuleWithNoBodiesStillGetsARowWithoutCrashing() {
+            // CHALLENGE edge case (review item 3): renderIndex's row-building also used to call
+            // rule.bodies.first() unguarded.
+            val rule = RuleGroup("risk_score", metadata = null, default = DefaultValue("0"), bodies = emptyList())
+            val policySet = PolicySet(listOf(PolicyPackage("scratch", listOf(rule), listOf("scratch.rego"))))
+
+            val markdown = MarkdownRenderer.renderIndex(policySet)
+
+            assertThat(markdown).contains("risk_score")
+            assertThat(markdown).contains("100%")
         }
 
         @Test

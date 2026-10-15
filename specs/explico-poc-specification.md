@@ -1328,3 +1328,21 @@ investigation found the backlog entry undersold the real scope:
 Not exercised by the acceptance pack, so no golden or `docs/sample-output/`
 content changed. Full rationale is in `docs/rego-coverage.md`, not
 duplicated here.
+
+### 14.14 Fix: per-rule metadata, bracket-form partial rules, `default`, package METADATA
+
+Found by rendering realistic policies (`src/test/resources/realistic/policies/`):
+
+- **§5 amendment — metadata attaches per rule.** Same-named rules with different
+  `scope: rule` annotations are separate `RuleGroup`s (grouped by name *and* metadata);
+  `scope: document` still spans every same-named rule in the file.
+- **Bracket-form partial rules** (`violation[{"msg": m}] if {...}`) are named from `head.ref[0]`
+  when `head.key != null`; they were previously dropped silently. Ref-headed document rules
+  remain excluded.
+- **`default` declarations** populate `RuleGroup.default` (verbatim value source) and are never
+  bodies/Situations. A default-only name yields a body-less card.
+- **`PolicyPackage.metadata`** (`PackageMetadata(title, description)`) holds package-scope
+  METADATA and is rendered under the package heading.
+
+Disclosed: cross-file `default` unlinked; `Canonicalizer` does not hash `default`; anchors for a
+name shared by several cards resolve to the first. Rationale in `docs/rego-coverage.md`.

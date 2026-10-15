@@ -13,7 +13,12 @@ public data class PolicyPackage(
     val path: String,
     val rules: List<RuleGroup>,
     val sourceFiles: List<String>,
+    /** Package-scope METADATA (review item 4), e.g. a `# METADATA\n# scope: package` block above the `package` declaration. Null when none is present. */
+    val metadata: PackageMetadata? = null,
 )
+
+/** METADATA annotations attached at package scope -- title/description only, since `custom`/control-id/frameworks are rule-level concepts (spec review item 4). */
+public data class PackageMetadata(val title: String?, val description: String?)
 
 /** All rule definitions sharing one name in one package. Bodies are OR-ed. */
 public data class RuleGroup(
