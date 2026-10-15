@@ -178,6 +178,10 @@ internal object MarkdownRenderer {
         val coverage = Coverage.of(rule)
         val unrenderedOperands = Coverage.unrenderedOperandCount(rule)
         val footer = StringBuilder("*Rendering coverage: ${coverage.rendered} of ${coverage.total} conditions")
+        val helpers = Coverage.helperAssignmentCount(rule)
+        if (helpers > 0) {
+            footer.append(" (including $helpers helper ${if (helpers == 1) "assignment" else "assignments"} shown as source)")
+        }
         if (unrenderedOperands > 0) {
             footer.append("; contains $unrenderedOperands unrendered ${if (unrenderedOperands == 1) "value" else "values"}")
         }
@@ -185,8 +189,8 @@ internal object MarkdownRenderer {
         sb.appendLine(footer.toString())
     }
 
-    /** The reason [AstMapper][io.explico.parse] gives a local-variable assignment it can't substitute to a plain path -- distinct from a bare unresolved CALL's "function-call" (review item 12). */
-    private const val HELPER_ASSIGNMENT_REASON = "helper-assignment"
+    private const val HELPER_ASSIGNMENT_REASON = Coverage.HELPER_ASSIGNMENT_REASON
+    private const val ELSE_CHAIN_REASON = "else-chain"
 
     private fun appendConditions(
         sb: StringBuilder,
@@ -211,6 +215,11 @@ internal object MarkdownRenderer {
                     i++
                 }
                 appendGroupedHelperAssignments(sb, run)
+            } else if (condition is Condition.Unrendered && condition.reason == ELSE_CHAIN_REASON) {
+                // Review item 13: a generic statement about how `else` works in Rego, NOT a claim
+                // about this rule's own logic -- the branches themselves stay verbatim source.
+                appendUnrenderedBlock(sb, "not rendered — else chain (branches are tried in order and the first that applies wins), shown as source", listOf(condition.sourceText))
+                i++
             } else if (condition is Condition.Unrendered) {
                 appendUnrenderedBlock(sb, "not rendered — shown as source", listOf(condition.sourceText))
                 i++
@@ -265,23 +274,35 @@ internal object MarkdownRenderer {
         val sb = StringBuilder()
         sb.appendLine("# Control index")
         sb.appendLine()
-        if (hasExamples) {
-            sb.appendLine("| Control ID | Title | Package | Rule | Coverage | Example coverage | Source file |")
-            sb.appendLine("|---|---|---|---|---|---|---|")
-        } else {
-            sb.appendLine("| Control ID | Title | Package | Rule | Coverage | Source file |")
-            sb.appendLine("|---|---|---|---|---|---|")
-        }
-        rows.forEach { row ->
-            val prefix = "| ${row.controlId ?: "—"} | ${row.title} | `${row.packagePath}` | `${row.ruleName}` | ${row.coverage.percent}%"
+        // Review item 17: controls (rows with a control id) first; rules without one -- helpers and
+        // unannotated rules -- in their own table, so a reader scanning for controls isn't wading
+        // through them. Same columns in both, including the example-coverage one.
+        fun appendTable(tableRows: List<Row>) {
             if (hasExamples) {
-                val exampleColumn = "${if (row.hasMatching) "✓" else "–"} / ${if (row.hasNotMatching) "✓" else "–"}"
-                sb.appendLine("$prefix | $exampleColumn | `${row.sourceFile}` |")
+                sb.appendLine("| Control ID | Title | Package | Rule | Coverage | Example coverage | Source file |")
+                sb.appendLine("|---|---|---|---|---|---|---|")
             } else {
-                sb.appendLine("$prefix | `${row.sourceFile}` |")
+                sb.appendLine("| Control ID | Title | Package | Rule | Coverage | Source file |")
+                sb.appendLine("|---|---|---|---|---|---|")
             }
+            tableRows.forEach { row ->
+                val prefix = "| ${row.controlId ?: "—"} | ${row.title} | `${row.packagePath}` | `${row.ruleName}` | ${row.coverage.percent}%"
+                if (hasExamples) {
+                    val exampleColumn = "${if (row.hasMatching) "✓" else "–"} / ${if (row.hasNotMatching) "✓" else "–"}"
+                    sb.appendLine("$prefix | $exampleColumn | `${row.sourceFile}` |")
+                } else {
+                    sb.appendLine("$prefix | `${row.sourceFile}` |")
+                }
+            }
+            sb.appendLine()
         }
-        sb.appendLine()
+        val (controls, withoutId) = rows.partition { it.controlId != null }
+        appendTable(controls)
+        if (withoutId.isNotEmpty()) {
+            sb.appendLine("## Rules without a control id")
+            sb.appendLine()
+            appendTable(withoutId)
+        }
 
         val overall = CoverageSummary(rows.sumOf { it.coverage.rendered }, rows.sumOf { it.coverage.total })
         sb.appendLine("*Overall rendering coverage: ${overall.rendered} of ${overall.total} conditions (${overall.percent}%)*")

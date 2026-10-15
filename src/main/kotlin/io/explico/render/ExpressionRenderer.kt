@@ -45,7 +45,7 @@ internal object ExpressionRenderer {
         anchorFor: (Condition.RuleReference) -> String,
         functionAnchorFor: (Condition.FunctionCall) -> String = { throw IllegalStateException("functionAnchorFor not supplied for a Condition.FunctionCall") },
     ): String = when (condition) {
-        is Condition.Comparison -> renderOperandPair(condition.left, condition.right) { l, r ->
+        is Condition.Comparison -> emptinessPhraseOrNull(condition) ?: renderOperandPair(condition.left, condition.right) { l, r ->
             val verbs = if (condition.negated) NEGATED_COMPARISON_VERBS else COMPARISON_VERBS
             "$l ${verbs.getValue(condition.op)} $r"
         }
@@ -72,6 +72,29 @@ internal object ExpressionRenderer {
         is Condition.Unrendered -> throw IllegalArgumentException(
             "Condition.Unrendered is not part of the §6.3 phrasing table; render it as a ⚠ source block instead."
         )
+    }
+
+    /**
+     * `count(x) == 0` / `count(x) != 0` / `count(x) > 0` (review item 15) read "`x` is empty" /
+     * "`x` is not empty". Exact for everything `count` accepts (string, array, object, set): the
+     * condition can only hold when `x` is countable, and then "zero elements" IS "empty".
+     * Deliberately narrow, never widened: only a non-negated comparison of a bare promoted `count`
+     * against exactly the literal `0`, and only those three operators -- `>= 1`, `> 1`, `< 1`, a
+     * negated form, or a `count` on the right all keep the ordinary "the number of" wording rather
+     * than risk a phrase that doesn't mean exactly the same thing.
+     */
+    private fun emptinessPhraseOrNull(condition: Condition.Comparison): String? {
+        if (condition.negated) return null
+        val count = condition.left as? Operand.BuiltinCall ?: return null
+        if (count.name != "count" || count.args.size != 1) return null
+        if ((condition.right as? Operand.Literal)?.rendered != "0") return null
+        val phrase = when (condition.op) {
+            Operator.EQ -> "is empty"
+            Operator.NEQ, Operator.GT -> "is not empty"
+            else -> return null
+        }
+        val (text, hasAnyIndex) = renderOperand(count.args.single())
+        return withAnyOfPrefix("$text $phrase", hasAnyIndex)
     }
 
     private fun renderRuleReference(condition: Condition.RuleReference, anchorFor: (Condition.RuleReference) -> String): String {

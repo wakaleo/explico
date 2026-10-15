@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
 
@@ -216,8 +217,8 @@ class ExpressionRendererTest {
     @DisplayName("Operand.BuiltinCall(count) renders as spec §6.3/§14's \"the number of X\" template")
     fun operandBuiltinCallCountRendersFaithfully() {
         val approvals = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("approvals")))
-        val condition = Condition.Comparison(Operand.BuiltinCall("count", listOf(approvals)), Operator.EQ, Operand.Literal("0"))
-        assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("the number of `change ▸ approvals` is `0`")
+        val condition = Condition.Comparison(Operand.BuiltinCall("count", listOf(approvals)), Operator.EQ, Operand.Literal("2"))
+        assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("the number of `change ▸ approvals` is `2`")
     }
 
     @Test
@@ -417,9 +418,9 @@ class ExpressionRendererTest {
         val pathWithAnyIndex = Operand.Path(
             listOf(PathSegment.Field("input"), PathSegment.Field("pipeline"), PathSegment.Field("checks"), PathSegment.AnyIndex, PathSegment.Field("name")),
         )
-        val condition = Condition.Comparison(Operand.BuiltinCall("count", listOf(pathWithAnyIndex)), Operator.GT, Operand.Literal("0"))
+        val condition = Condition.Comparison(Operand.BuiltinCall("count", listOf(pathWithAnyIndex)), Operator.GT, Operand.Literal("3"))
         assertThat(ExpressionRenderer.render(condition, noAnchor))
-            .isEqualTo("any of: the number of `pipeline ▸ checks ▸ name` is greater than `0`")
+            .isEqualTo("any of: the number of `pipeline ▸ checks ▸ name` is greater than `3`")
     }
 
     @Nested
@@ -483,6 +484,60 @@ class ExpressionRendererTest {
             val condition = Condition.Membership(negated = false, member = Operand.Parameter("ns"), collection = Operand.Literal("\"kube-system\", \"kube-public\""))
             assertThat(ExpressionRenderer.render(condition, noAnchor))
                 .isEqualTo("parameter `ns` is one of `\"kube-system\", \"kube-public\"`")
+        }
+    }
+
+    @Nested
+    @DisplayName("count(x) emptiness idioms (review item 15)")
+    inner class EmptinessIdioms {
+
+        private val items = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("items")))
+        private fun count(op: Operator, literal: String, negated: Boolean = false, arg: Operand = items) =
+            Condition.Comparison(Operand.BuiltinCall("count", listOf(arg)), op, Operand.Literal(literal), negated)
+        private fun render(c: Condition) = ExpressionRenderer.render(c, noAnchor)
+
+        @ParameterizedTest
+        @CsvSource("EQ,0,`items` is empty", "NEQ,0,`items` is not empty", "GT,0,`items` is not empty")
+        @DisplayName("== 0 is empty; != 0 and > 0 are not empty")
+        fun exactIdioms(op: Operator, literal: String, expected: String) {
+            assertThat(render(count(op, literal))).isEqualTo(expected)
+        }
+
+        @ParameterizedTest
+        @CsvSource(
+            "GTE,0", "GT,1", "GTE,1", "LT,1", "LTE,0", "LT,0", "EQ,1", "EQ,5", "NEQ,1",
+        )
+        @DisplayName("CHALLENGE: every other operator/literal keeps the number-of wording -- the idiom is never widened")
+        fun notWidened(op: Operator, literal: String) {
+            assertThat(render(count(op, literal))).startsWith("the number of ").doesNotContain("empty")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE: a negated comparison keeps the number-of wording (not asserting the opposite emptiness)")
+        fun negatedIsNotRewritten() {
+            assertThat(render(count(Operator.EQ, "0", negated = true))).isEqualTo("the number of `items` is not `0`")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE: `0.0`/`\"0\"` are not the literal 0 and keep the number-of wording")
+        fun otherZeroSpellingsAreNotMatched() {
+            assertThat(render(count(Operator.EQ, "0.0"))).startsWith("the number of ")
+            assertThat(render(count(Operator.EQ, "\"0\""))).startsWith("the number of ")
+        }
+
+        @Test
+        @DisplayName("AnyIndex in the argument keeps the any-of prefix; a non-path argument (Variable) works too")
+        fun anyOfPrefixAndVariableArgument() {
+            val pods = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("pods"), PathSegment.AnyIndex, PathSegment.Field("containers")))
+            assertThat(render(count(Operator.EQ, "0", arg = pods))).isEqualTo("any of: `pods ▸ containers` is empty")
+            assertThat(render(count(Operator.GT, "0", arg = Operand.Variable("missing")))).isEqualTo("`missing` is not empty")
+        }
+
+        @Test
+        @DisplayName("only `count` qualifies: another promoted builtin compared with 0 keeps its own wording")
+        fun otherBuiltinsUnaffected() {
+            val sum = Condition.Comparison(Operand.BuiltinCall("sum", listOf(items)), Operator.GT, Operand.Literal("0"))
+            assertThat(render(sum)).isEqualTo("the sum of `items` is greater than `0`")
         }
     }
 }

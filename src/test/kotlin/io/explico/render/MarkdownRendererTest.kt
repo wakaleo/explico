@@ -272,9 +272,9 @@ class MarkdownRendererTest {
             assertThat(fence.indexOf("required :=")).isGreaterThanOrEqualTo(0)
             assertThat(fence.indexOf("required :=")).isLessThan(fence.indexOf("provided :="))
             assertThat(fence.indexOf("provided :=")).isLessThan(fence.indexOf("missing :="))
-            assertThat(markdown.indexOf("the number of")).isGreaterThan(fenceEnd)
+            assertThat(markdown.indexOf("`missing` is not empty")).isGreaterThan(fenceEnd)
             // Presentation only: still 3 Unrendered + 1 rendered, same as before merging existed.
-            assertThat(markdown).contains("*Rendering coverage: 1 of 4 conditions*")
+            assertThat(markdown).contains("*Rendering coverage: 1 of 4 conditions (including 3 helper assignments shown as source)*")
         }
 
         @Test
@@ -315,7 +315,88 @@ class MarkdownRendererTest {
 
             assertThat(markdown.lines().count { it.trim().startsWith("- ⚠") }).isEqualTo(1)
             assertThat(markdown.split("```rego").size - 1).isEqualTo(1)
-            assertThat(markdown).contains("*Rendering coverage: 0 of 2 conditions*")
+            assertThat(markdown).contains("*Rendering coverage: 0 of 2 conditions (including 2 helper assignments shown as source)*")
+        }
+    }
+
+    @Nested
+    inner class ElseChainAndCoverageBreakdown {
+
+        private fun card(conditions: List<Condition>): String {
+            val rule = RuleGroup("risk_level", metadata = null, default = null, bodies = listOf(body(conditions)))
+            val pkg = PolicyPackage("authz", listOf(rule), listOf("authz.rego"))
+            return MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
+        }
+
+        @Test
+        fun anElseChainHeaderExplainsTheConstructAndKeepsTheSourceVerbatim() {
+            val chain = "risk_level := \"high\" if {\n\tinput.a > 1\n} else := \"low\""
+            val markdown = card(listOf(Condition.Unrendered(chain, "else-chain")))
+            val header = markdown.lines().single { it.startsWith("- ⚠") }
+            assertThat(header).containsIgnoringCase("else chain").contains("in order").contains("first")
+            assertThat(markdown).contains(chain.lines().first()).contains("} else := \"low\"")
+            assertThat(markdown).contains("0 of 1 conditions")
+        }
+
+        @Test
+        fun otherFallbackReasonsKeepTheGenericHeaderAndNeverMentionElse() {
+            val markdown = card(listOf(Condition.Unrendered("every x in y { true }", "every")))
+            assertThat(markdown.lines().single { it.startsWith("- ⚠") }).doesNotContainIgnoringCase("else")
+        }
+
+        @Test
+        fun theCoverageFooterCountsHelperAssignmentsWithoutChangingTheFigures() {
+            val markdown = card(listOf(Condition.Unrendered("a := count(x)", "helper-assignment"), envIsProd, Condition.Unrendered("json.is_valid(z)", "function-call")))
+            assertThat(markdown).contains("*Rendering coverage: 1 of 3 conditions (including 1 helper assignment shown as source)*")
+        }
+
+        @Test
+        fun noHelperAssignmentsMeansTheFooterIsExactlyAsBefore() {
+            val markdown = card(listOf(envIsProd, Condition.Unrendered("json.is_valid(z)", "function-call")))
+            assertThat(markdown).contains("*Rendering coverage: 1 of 2 conditions*").doesNotContain("helper")
+        }
+    }
+
+    @Nested
+    inner class IndexSplit {
+
+        private fun ruleGroup(name: String, controlId: String?) = RuleGroup(
+            name, metadata = controlId?.let { RuleMetadata("T-$it", "d", it, emptyList()) }, default = null, bodies = listOf(body(listOf(envIsProd))),
+        )
+
+        @Test
+        fun controlsComeFirstThenAHeadingAndASecondTableOfIdLessRules() {
+            val pkg = PolicyPackage("p", listOf(ruleGroup("helper", null), ruleGroup("deny", "C-2"), ruleGroup("allow", "C-1")), listOf("f.rego"))
+            val lines = MarkdownRenderer.renderIndex(PolicySet(listOf(pkg))).lines()
+            val heading = lines.indexOfFirst { it.startsWith("## ") }
+            assertThat(lines[heading]).containsIgnoringCase("without a control id")
+            assertThat(lines.take(heading).filter { it.startsWith("| C-") }.map { it.split("|")[1].trim() }).containsExactly("C-1", "C-2")
+            assertThat(lines.drop(heading).filter { it.startsWith("| —") }).hasSize(1)
+            assertThat(lines.count { it.startsWith("|---") }).isEqualTo(2)
+        }
+
+        @Test
+        fun noIdLessRulesMeansNoHeadingAndOneTable() {
+            val pkg = PolicyPackage("p", listOf(ruleGroup("deny", "C-1")), listOf("f.rego"))
+            val markdown = MarkdownRenderer.renderIndex(PolicySet(listOf(pkg)))
+            assertThat(markdown).doesNotContain("## ")
+            assertThat(markdown.lines().count { it.startsWith("|---") }).isEqualTo(1)
+        }
+
+        @Test
+        fun onlyIdLessRulesStillRenderTheControlsHeaderThenTheSecondTable() {
+            val pkg = PolicyPackage("p", listOf(ruleGroup("helper", null)), listOf("f.rego"))
+            val markdown = MarkdownRenderer.renderIndex(PolicySet(listOf(pkg)))
+            assertThat(markdown.lines().count { it.startsWith("|---") }).isEqualTo(2)
+            assertThat(markdown).contains("## Rules without a control id")
+        }
+
+        @Test
+        fun bothTablesKeepTheExampleCoverageColumnWhenExamplesAreSupplied() {
+            val pkg = PolicyPackage("p", listOf(ruleGroup("helper", null), ruleGroup("deny", "C-1")), listOf("f.rego"))
+            val markdown = MarkdownRenderer.renderIndex(PolicySet(listOf(pkg)), mapOf("p" to emptyMap<String, List<WorkedExample>>()).plus("q" to emptyMap()))
+            assertThat(markdown.lines().count { it.startsWith("| Control ID") && it.contains("Example coverage") }).isEqualTo(2)
+            assertThat(markdown.lines().filter { it.startsWith("| C-1") || it.startsWith("| —") }.all { it.contains("– / –") }).isTrue()
         }
     }
 

@@ -149,17 +149,43 @@ internal object WorkedExamples {
         return if (primitive.isString) "\"${primitive.content}\"" else primitive.content
     }
 
-    /** Spec §6.7's three verdict shapes: set rules (JSON array), boolean/complete rules, or an undefined/missing key (not matched, per spec, same as boolean false). */
+    /**
+     * Spec §6.7's verdict shapes: set rules (JSON array), partial-object rules, boolean/complete
+     * rules, or an undefined/missing key (not matched, per spec, same as boolean false).
+     *
+     * A set element is shown as its message text: a primitive's content, or -- for a Gatekeeper-style
+     * object (`deny contains {"msg": msg, ...}`) -- its string `"msg"` field (the same ecosystem
+     * convention `AstMapper.messageVarOf` keys on); an object with no string `msg` is shown as its
+     * verbatim JSON, never dropped or guessed at.
+     *
+     * A partial-OBJECT rule (`violation[{"msg": m}] if {...}`, no `contains`) evaluates to an object
+     * whose KEYS are the stringified key terms and whose values are all `true`. Matched means
+     * non-empty -- an empty `{}` is an always-defined rule that produced nothing, NOT a match --
+     * and each key is decoded the same way a set element is. An object with any non-`true` value is
+     * an ordinary complete-rule value and keeps the verbatim fallback below.
+     */
     private fun verdictFor(ruleName: String, packageValue: JsonObject): Pair<Boolean, List<String>> {
         val value = packageValue[ruleName] ?: return false to emptyList()
         return when {
-            value is JsonArray -> value.isNotEmpty() to value.map { it.jsonPrimitive.content }
+            value is JsonArray -> value.isNotEmpty() to value.map { messageOf(it) }
+            value is JsonObject && value.values.all { it == JsonPrimitive(true) } ->
+                value.isNotEmpty() to value.keys.map { key -> messageOf(parseOrString(key)) }
             value is JsonPrimitive && value.booleanOrNull != null -> value.jsonPrimitive.booleanOrNull!! to emptyList()
             // Any other value type (spec §6.7): render verbatim. Unexercised by the acceptance pack
             // (every pack rule is a set rule or a boolean rule) -- a minimal, disclosed simplification.
             else -> true to listOf(value.toString())
         }
     }
+
+    private fun messageOf(element: JsonElement): String = when {
+        element is JsonPrimitive -> element.content
+        element is JsonObject && (element["msg"] as? JsonPrimitive)?.isString == true -> (element["msg"] as JsonPrimitive).content
+        else -> element.toString()
+    }
+
+    /** A partial-object key is a stringified term (`{"msg":"x"}` or `"x"`); anything that isn't valid JSON is its own text. */
+    private fun parseOrString(key: String): JsonElement =
+        try { opaJson.parseToJsonElement(key) } catch (e: kotlinx.serialization.SerializationException) { JsonPrimitive(key) }
 
     /** Null if any body's [io.explico.model.RuleBody.messageTemplate] is missing or templates aren't all distinct (spec §6.7: "best effort, never guessed"). */
     private fun attributionRegexes(rule: RuleGroup): List<Regex>? {

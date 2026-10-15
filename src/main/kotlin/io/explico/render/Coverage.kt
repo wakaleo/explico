@@ -27,6 +27,18 @@ internal object Coverage {
 
     fun of(rule: RuleGroup): CoverageSummary = of(conditionsOf(rule))
 
+    /** The reason AstMapper gives a local-variable assignment it can't substitute to a plain path (review item 12) -- distinct from a bare unresolved call's "function-call". */
+    const val HELPER_ASSIGNMENT_REASON = "helper-assignment"
+
+    /**
+     * How many of [rule]'s unrendered conditions are helper assignments (review item 14) -- a
+     * breakdown shown ALONGSIDE the unchanged rendered/total figures, never subtracted from the
+     * denominator: an assignment whose right-hand side wasn't understood is still logic the card
+     * doesn't explain, so excluding it would flatter the metric.
+     */
+    fun helperAssignmentCount(rule: RuleGroup): Int =
+        conditionsOf(rule).count { it is Condition.Unrendered && it.reason == HELPER_ASSIGNMENT_REASON }
+
     fun of(pkg: PolicyPackage): CoverageSummary = of(pkg.rules.flatMap { conditionsOf(it) })
 
     /** Operand-level fallbacks don't count against coverage but are reported separately (spec §6.6). */

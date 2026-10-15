@@ -287,9 +287,9 @@ class RealisticBuiltinsAndHelpersAcceptanceIT {
         }
 
         @Test
-        @DisplayName("the later `the number of `missing`` bullet still follows the block")
+        @DisplayName("the later `missing` is not empty bullet still follows the block")
         fun laterConditionStillFollows() {
-            val bullet = bulletWith(card, "the number of `missing`")
+            val bullet = bulletWith(card, "`missing`", "not empty")
             assertThat(card.indexOf(bullet)).isGreaterThan(card.indexOf("missing := required - provided"))
         }
 

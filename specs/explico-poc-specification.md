@@ -1409,3 +1409,13 @@ assignment-fallbacks (probes 31/39, one hand-built AstMapperTest case); repointe
 acceptance-IT guards whose fallback premise this promotion supersedes. Disclosed, explicitly
 out of scope: the set-difference operand (`a - b`) and comprehension-argument partial credit.
 Rationale in `docs/rego-coverage.md`.
+
+### 14.18 Polish: else-chain header, coverage breakdown, emptiness idioms, object-valued verdicts, index split
+
+- **§6.2** else-chain fallback header states the construct's generic semantics (in order, first applying branch wins).
+- **§6.6** the card coverage footer appends `(including N helper assignment(s) shown as source)`; rendered/total unchanged.
+- **§6.3** non-negated `count(x) == 0` / `!= 0` / `> 0` render "`x` is empty" / "is not empty"; nothing else is widened.
+- **§6.7 fix** worked-example verdicts handle object set elements (their `msg`) and partial-object rules (non-empty ⇒ matched; keys decoded); previously a crash and a false "matched".
+- **§6.1** `index.md`: controls table, then a "Rules without a control id" table.
+
+Goldens: `index.md` only. Rationale in `docs/rego-coverage.md`.

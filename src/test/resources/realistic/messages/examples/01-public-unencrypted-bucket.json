@@ -1,0 +1,5 @@
+{
+  "name": "public unencrypted bucket",
+  "description": "A public, unencrypted bucket in a non-production environment.",
+  "input": { "name": "logs", "acl": "public-read", "encrypted": false, "env": "dev" }
+}

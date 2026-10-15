@@ -1147,3 +1147,13 @@ was proposed in, not deferred to a separate increment.
   guard, authz.md's `is_string`/`net.cidr_contains` guards -- premise superseded by item 11.
 - Disclosed, explicitly deferred by the operator: the set-difference operand (`a - b`) and
   comprehension-argument partial credit.
+
+## Review pass: presentation polish and worked-example verdicts (items 13-17)
+
+- `Examples.verdictFor` no longer crashes on object set elements and no longer calls an empty
+  partial-object rule "matched" (object with all-`true` values ⇒ partial object; non-empty ⇒ match).
+- `count(x)` emptiness phrasing lives in `ExpressionRenderer.emptinessPhraseOrNull`; keep it narrow.
+- `Coverage.HELPER_ASSIGNMENT_REASON` / `helperAssignmentCount` feed the footer breakdown only.
+- `renderIndex` splits controls from id-less rules into two tables (same columns).
+- Tier-2 `index.md` golden + `docs/sample-output/index.md` regenerated after diff review.
+- Deferred: comprehension-argument context (conflicts with REL-004's frozen Tier-1 assertions).

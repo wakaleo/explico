@@ -330,13 +330,13 @@ class RegoCoverageAuditTest {
 
     @Test
     fun countOfAPlainPathNowRendersFaithfullyPromotedThisSession() {
-        // Promoted (spec §14): count(x) with a plain-path argument now renders via
-        // Operand.BuiltinCall's "the number of X" template, per spec §6.3's own already-approved
-        // wording -- was previously in the promotion backlog as rank #1 (lowest risk).
+        // Promoted (spec §14): count(x) with a plain-path argument renders via Operand.BuiltinCall's
+        // "the number of X" template. Review item 15 then gave the exact `count(x) == 0` emptiness
+        // idiom this probe is named for its own phrase: "`x` is empty".
         val conditions = conditionsOf(loadProbe("23-count-emptiness-idiom-plain-path.rego"), "deny")
         assertThat(conditions).hasSize(1)
         assertThat(conditions.single()).isInstanceOf(Condition.Comparison::class.java)
-        assertThat(render(conditions.single())).isEqualTo("the number of `change ▸ approvals` is `0`")
+        assertThat(render(conditions.single())).isEqualTo("`change ▸ approvals` is empty")
     }
 
     @Test

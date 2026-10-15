@@ -348,4 +348,73 @@ class ExamplesTest {
             assertThat(WorkedExamples.resolvePathValue(path, input)).isEqualTo("0, 1, 2, …")
         }
     }
+
+    @Nested
+    inner class ObjectValuedVerdicts {
+        // Review item 16: Gatekeeper-style object elements and partial-object rules. Before, any
+        // object element threw IllegalArgumentException (jsonPrimitive) and an empty partial object
+        // was reported as matched.
+
+        private val rule = RuleGroup("deny", null, null, listOf(RuleBody(emptyList(), null, "x", SourceRef("f.rego", 1), "")))
+        private val pkg = io.explico.model.PolicyPackage("pkg", listOf(rule), listOf("f.rego"))
+        private fun outcome(value: kotlinx.serialization.json.JsonElement): WorkedExample =
+            WorkedExamples.evaluatePackage(listOf(Fixture("f", null, buildJsonObject { })), pkg, warn = {}) {
+                buildJsonObject { put("deny", value) }
+            }.getValue("deny").single()
+
+        private fun obj(vararg pairs: Pair<String, kotlinx.serialization.json.JsonElement>) = buildJsonObject { pairs.forEach { (k, v) -> put(k, v) } }
+
+        @Test
+        fun anObjectElementIsShownAsItsMsgField() {
+            val o = outcome(buildJsonArray { add(obj("msg" to JsonPrimitive("public acl"), "severity" to JsonPrimitive("high"))) })
+            assertThat(o.matched).isTrue()
+            assertThat(o.messages).containsExactly("public acl")
+        }
+
+        @Test
+        fun aMixedSetOfStringsAndObjectsKeepsEveryMessageInOrder() {
+            val o = outcome(buildJsonArray { add(JsonPrimitive("plain")); add(obj("msg" to JsonPrimitive("structured"))) })
+            assertThat(o.messages).containsExactly("plain", "structured")
+        }
+
+        @Test
+        fun anObjectElementWithoutAStringMsgIsShownAsVerbatimJsonNeverDropped() {
+            val o = outcome(buildJsonArray { add(obj("code" to JsonPrimitive(5))); add(obj("msg" to JsonPrimitive(7))) })
+            assertThat(o.matched).isTrue()
+            assertThat(o.messages).containsExactly("{\"code\":5}", "{\"msg\":7}")
+        }
+
+        @Test
+        fun aPartialObjectRuleDecodesItsStringifiedKeysAndMatchesWhenNonEmpty() {
+            val o = outcome(obj("{\"msg\":\"not prod\"}" to JsonPrimitive(true), "\"plain key\"" to JsonPrimitive(true)))
+            assertThat(o.matched).isTrue()
+            assertThat(o.messages).containsExactly("not prod", "plain key")
+        }
+
+        @Test
+        fun anEmptyPartialObjectIsNotAMatch() {
+            val o = outcome(buildJsonObject { })
+            assertThat(o.matched).isFalse()
+            assertThat(o.messages).isEmpty()
+        }
+
+        @Test
+        fun aPartialObjectKeyThatIsNotValidJsonIsItsOwnText() {
+            val o = outcome(obj("not json {" to JsonPrimitive(true)))
+            assertThat(o.messages).containsExactly("not json {")
+        }
+
+        @Test
+        fun anObjectWithANonTrueValueIsAnOrdinaryCompleteRuleValueKeptVerbatim() {
+            val o = outcome(obj("limit" to JsonPrimitive(5)))
+            assertThat(o.matched).isTrue()
+            assertThat(o.messages).containsExactly("{\"limit\":5}")
+        }
+
+        @Test
+        fun determinismTwoEvaluationsOfTheSameValueGiveIdenticalMessages() {
+            val value = obj("{\"msg\":\"b\"}" to JsonPrimitive(true), "{\"msg\":\"a\"}" to JsonPrimitive(true))
+            assertThat(outcome(value).messages).isEqualTo(outcome(value).messages)
+        }
+    }
 }

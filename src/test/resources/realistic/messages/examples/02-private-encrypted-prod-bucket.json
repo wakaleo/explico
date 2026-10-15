@@ -1,0 +1,5 @@
+{
+  "name": "private encrypted production bucket",
+  "description": "A private, encrypted bucket in production.",
+  "input": { "name": "vault", "acl": "private", "encrypted": true, "env": "prod" }
+}

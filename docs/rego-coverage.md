@@ -630,6 +630,26 @@ bare; and a comprehension argument still forces the WHOLE enclosing
 condition/operand to fall back, with no partial credit for "the rest of the
 expression around the comprehension is otherwise understood."
 
+## Review pass: presentation polish and worked-example verdicts (items 13-17)
+
+Fixtures: `realistic/builtins/idioms.rego`, `realistic/messages/{policies,examples}/`; pinned by
+`RealisticPresentationAcceptanceIT` plus unit cases in `ExpressionRendererTest`,
+`MarkdownRendererTest` and `ExamplesTest`.
+
+| Finding | Was | Now |
+|---|---|---|
+| `else` chains (13) | One generic "not rendered" block. | Same verbatim source, but the header states the construct's generic semantics: branches are tried in order and the first that applies wins. Nothing is claimed about the rule's own logic. |
+| Coverage with helper assignments (14) | `1 of 4 conditions` with no hint why. | Unchanged figures plus a breakdown: `(including 3 helper assignments shown as source)`. The assignments are NOT removed from the denominator -- an un-understood right-hand side is still logic the card doesn't explain. |
+| `count(x) == 0` / `!= 0` / `> 0` (15) | "the number of `x` is `0`". | "`x` is empty" / "`x` is not empty". Exact for everything `count` accepts. Deliberately narrow: non-negated, bare `count`, literal exactly `0`, those three operators only -- `>= 1`, `> 1`, negations, `0.0` and a `count` on the right keep the number-of wording. |
+| Worked examples for object-valued messages (16) | **Crash**: `verdictFor` called `jsonPrimitive` on every set element, throwing on a Gatekeeper-style object. Also a **wrong verdict**: an empty partial-object rule (`violation[{"msg": m}]`, evaluates to `{}`) was reported as matched. | A set element is shown as its string `msg` field (else verbatim JSON, never dropped). An object whose values are all `true` is a partial-object rule: matched iff non-empty, each stringified key decoded the same way. Any other object stays an ordinary complete-rule value, verbatim. |
+| Index (17) | One table, id-less rules sorted last. | Controls table, then `## Rules without a control id` with a second table of the same columns (including example coverage). No heading when there are none. |
+
+Tier-2 `index.md` golden and `docs/sample-output/index.md` regenerated deliberately after a
+diff review (heading plus table header only). Disclosed, not fixed: an empty `{}` that is a
+*complete* rule's value is now treated as not matched (indistinguishable from an empty partial
+object at this layer); a severity/other field on an object element is not displayed;
+comprehension-argument context remains deferred (conflicts with REL-004's frozen Tier-1).
+
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
 **Operand-level fallback (`Operand.Unrendered`) renders as plain backticked
