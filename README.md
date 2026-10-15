@@ -89,7 +89,7 @@ Rendered 6 documents to explico-demo/docs/ (91% coverage).
 Open explico-demo/docs/release-approvals.md to see a rendered control card.
 ```
 
-`explico-demo/docs/index.md` is worth a look too — a table of every control
+`explico-demo/docs/index.md` is worth a look too — tables of every rule
 across all 6 rendered documents, with a coverage column per control. Running
 `demo` again in the same directory refuses rather than overwriting
 (`'explico-demo' already exists...`, exit code `1`) — remove the directory

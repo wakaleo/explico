@@ -29,6 +29,11 @@ This writes one Markdown file per Rego package, plus `index.md`. Open
 | REL-002 | Pipeline evidence | `release.evidence` | `deny` | 100% | ✓ / ✓ | `evidence/pipeline_evidence.rego` |
 | REL-003 | Artifact provenance | `release.provenance` | `deny` | 100% | ✓ / ✓ | `provenance/artifact_provenance.rego` |
 | REL-004 | Release governance evidence | `release.governance` | `deny` | 87% | ✓ / ✓ | `governance/release_governance.rego` |
+
+## Rules without a control id
+
+| Control ID | Title | Package | Rule | Coverage | Example coverage | Source file |
+|---|---|---|---|---|---|---|
 | — | Release candidate environments | `release.evidence` | `is_release_candidate` | 100% | ✓ / – | `evidence/pipeline_evidence.rego` |
 | — | exempt_service | `release.exemptions` | `exempt_service` | 100% | ✓ / ✓ | `exemptions/exemptions.rego` |
 | — | Mandatory check completeness | `release.governance` | `all_checks_passed` | 0% | ✓ / – | `governance/release_governance.rego` |
@@ -36,10 +41,12 @@ This writes one Markdown file per Rego package, plus `index.md`. Open
 *Overall rendering coverage: 21 of 23 conditions (91%)*
 ```
 
-Seven rows for five files: `deny` rules get a `control-id` (REL-001
-through REL-004) and their own row; helper rules referenced *by* those
-`deny` rules (`is_release_candidate`, `exempt_service`,
-`all_checks_passed`) get rendered too, without a control-id, sorted last.
+Seven rows for five files, in two tables: `deny` rules get a `control-id`
+(REL-001 through REL-004) and sit in the first; helper rules referenced *by*
+those `deny` rules (`is_release_candidate`, `exempt_service`,
+`all_checks_passed`) are rendered too, without a control-id, in a second
+table under **Rules without a control id**. Both tables share the same
+columns.
 The **Example coverage** column (`✓ / ✓` = at least one matching and one
 non-matching fixture demonstrate this control; `✓ / –` = only one
 direction is demonstrated) is exactly the kind of gap-visibility spec §6.7
