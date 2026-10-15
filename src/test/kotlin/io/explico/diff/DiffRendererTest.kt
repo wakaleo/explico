@@ -233,4 +233,35 @@ class DiffRendererTest {
         // one per card section: REMOVED, ADDED and LOGIC_CHANGED render a card; DOCS_CHANGED a table.
         assertThat(ids).hasSize(Regex("(?m)^\\*\\*(REMOVED|ADDED|LOGIC_CHANGED)\\*\\*$").findAll(markdown).count())
     }
+
+    @Test
+    @DisplayName("follow-up to review item 18: a reference to a control with no card in the diff (UNCHANGED) renders unlinked; a reference to one that DOES have a card keeps its link")
+    fun referencesResolveOnlyAgainstControlsThatHaveACardInThisDiff() {
+        val root = Path.of("src/test/resources/realistic/diff-links")
+        val markdown = render(Explico.load(root.resolve("old")), Explico.load(root.resolve("new")))
+
+        // DL-001 references the UNCHANGED is_prod -- no card, so no link, but the name is kept.
+        assertThat(markdown).doesNotContain("](#difflinks-is-prod)").contains("`is_prod`")
+        // DL-002 references is_eu, which IS changed and therefore has its own card -- link kept.
+        assertThat(markdown).contains("[`is_eu`](#difflinks-is-eu)")
+        assertThat(Regex("<a id=\"difflinks-is-eu\"></a>").findAll(markdown).count()).isEqualTo(1)
+    }
+
+    @Test
+    @DisplayName("CHALLENGE edge case: every link in a diff report resolves to an anchor actually present in the same document (no dead links)")
+    fun everyDiffReportLinkResolvesToAnAnchorInTheSameDocument() {
+        val cases = listOf(
+            Path.of("src/test/resources/realistic/diff-links/old") to Path.of("src/test/resources/realistic/diff-links/new"),
+            Path.of("src/test/resources/realistic/diff-default/old") to Path.of("src/test/resources/realistic/diff-default/changed"),
+            Path.of("src/test/resources/diff/diff-all-categories/old") to Path.of("src/test/resources/diff/diff-all-categories/new"),
+        )
+        for ((oldDir, newDir) in cases) {
+            val markdown = render(Explico.load(oldDir), Explico.load(newDir))
+            var inFence = false
+            val unfenced = markdown.lines().filter { line -> if (line.trim().startsWith("```")) { inFence = !inFence; false } else !inFence }
+            val anchors = unfenced.flatMap { Regex("<a id=\"([^\"]+)\"></a>").findAll(it).map { m -> m.groupValues[1] }.toList() }.toSet()
+            val links = unfenced.flatMap { Regex("]\\(#([^)\\s]+)\\)").findAll(it).map { m -> m.groupValues[1] }.toList() }
+            assertThat(links.filter { it !in anchors }).describedAs("dead links in %s -> %s", oldDir, newDir).isEmpty()
+        }
+    }
 }

@@ -1231,3 +1231,14 @@ was proposed in, not deferred to a separate increment.
   following are true" header (general fix, not special-cased to this promotion).
 - `Canonicalizer.canonicalBody` hashes `yieldsValue`; `DiffRenderer` needed no change since
   `sourceText` already includes it. Zero acceptance-pack impact (`generateSampleDocs` unchanged).
+
+## Follow-up: links inside a diff report resolve (item 18 continued)
+
+- A diff report only gives a card to a REMOVED/ADDED/LOGIC_CHANGED control; a reference to an
+  UNCHANGED one pointed at an anchor that didn't exist in the document. Fixed by making the three
+  anchor callbacks return `String?` (null = no card here, render unlinked, same wording) and
+  threading a new `isLinkable: (packagePath, ruleName) -> Boolean` into `MarkdownRenderer
+  .renderCard` -- default always-true for an ordinary render, real predicate from `DiffRenderer
+  .linkableTargetsOf` inside a diff.
+- Zero acceptance-pack impact: `diff-all-categories`'s golden has no cross-references, confirmed
+  unchanged by both `acceptanceTest` and `generateSampleDocs`.

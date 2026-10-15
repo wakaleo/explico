@@ -822,4 +822,40 @@ class MarkdownRendererTest {
             assertThat(markdown).doesNotContain("**Value:**")
         }
     }
+
+    @Nested
+    @DisplayName("isLinkable (follow-up to review item 18, e.g. inside a diff report)")
+    inner class LinkabilityOfCardReferences {
+
+        private val targetPkg = PolicyPackage("other", listOf(RuleGroup("target", null, null, listOf(body(listOf(envIsProd))))), listOf("a.rego"))
+
+        private fun cardReferencing(reference: Condition.RuleReference, isLinkable: (String, String) -> Boolean): String {
+            val rule = RuleGroup("source", null, null, listOf(body(listOf(reference))))
+            val pkg = PolicyPackage("p", listOf(rule), listOf("a.rego"))
+            return MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg, targetPkg)), isLinkable = isLinkable)
+        }
+
+        @Test
+        fun defaultIsLinkableIsAlwaysTrueSoAnOrdinaryRenderIsUnaffected() {
+            val card = cardReferencing(Condition.RuleReference("other", "target", negated = false), isLinkable = { _, _ -> true })
+            assertThat(card).contains("[`target`](other.md#other-target)")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: when isLinkable says the target has no card here, the reference is kept but unlinked")
+        fun unlinkableTargetRendersWithoutALink() {
+            val card = cardReferencing(Condition.RuleReference("other", "target", negated = false), isLinkable = { _, _ -> false })
+            assertThat(card).doesNotContain("](").contains("`target`")
+        }
+
+        @Test
+        @DisplayName("isLinkable is checked per (packagePath, ruleName), not globally -- one target can be linkable while another in the same card is not")
+        fun isLinkableIsCheckedPerTarget() {
+            val linkOnlyToOther = { pkg: String, _: String -> pkg == "other" }
+            val samePkgRule = RuleGroup("source", null, null, listOf(body(listOf(Condition.RuleReference("p", "sibling", negated = false)))))
+            val pkg = PolicyPackage("p", listOf(samePkgRule, RuleGroup("sibling", null, null, listOf(body(listOf(envIsProd))))), listOf("a.rego"))
+            val card = MarkdownRenderer.renderCard(samePkgRule, pkg, PolicySet(listOf(pkg, targetPkg)), isLinkable = linkOnlyToOther)
+            assertThat(card).doesNotContain("](").contains("`sibling`")
+        }
+    }
 }

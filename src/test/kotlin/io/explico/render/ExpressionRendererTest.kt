@@ -160,6 +160,18 @@ class ExpressionRendererTest {
     }
 
     @Test
+    @DisplayName("CHALLENGE edge case (follow-up to review item 18): a null anchor -- the target has no card in THIS document (e.g. an unchanged control in a diff report) -- renders a plain backticked name, never a dead link")
+    fun rendersRuleReferenceUnlinkedWhenAnchorForReturnsNull() {
+        val noAnchorAvailable: (Condition.RuleReference) -> String? = { null }
+
+        val positive = Condition.RuleReference("release.evidence", "is_release_candidate", negated = false)
+        assertThat(ExpressionRenderer.render(positive, noAnchorAvailable)).isEqualTo("see rule `is_release_candidate`")
+
+        val negated = Condition.RuleReference("release.exemptions", "exempt_service", negated = true)
+        assertThat(ExpressionRenderer.render(negated, noAnchorAvailable)).isEqualTo("rule `exempt_service` does not match")
+    }
+
+    @Test
     @DisplayName("Condition.Unrendered is not part of the phrasing table -- rejected, not silently mis-rendered")
     fun rejectsConditionUnrendered() {
         val unrendered = Condition.Unrendered("count({a | ...})", "comprehension")
@@ -472,6 +484,15 @@ class ExpressionRendererTest {
         }
 
         @Test
+        @DisplayName("CHALLENGE edge case (follow-up to review item 18): a null functionAnchorFor result -- the function has no card in THIS document -- renders unlinked, not a dead link")
+        fun rendersUnlinkedWhenFunctionAnchorForReturnsNull() {
+            val noAnchorAvailable: (Condition.FunctionCall) -> String? = { null }
+            val condition = Condition.FunctionCall("k8s.admission", "is_exempt", listOf(namespacePath), negated = false)
+            assertThat(ExpressionRenderer.render(condition, noAnchor, noAnchorAvailable))
+                .isEqualTo("function `is_exempt` is satisfied for `request ▸ namespace`")
+        }
+
+        @Test
         @DisplayName("rendering a FunctionCall without supplying functionAnchorFor fails loudly rather than silently breaking the link")
         fun missingFunctionAnchorForFailsLoudly() {
             val condition = Condition.FunctionCall("scratch", "is_exempt", listOf(namespacePath), negated = false)
@@ -538,6 +559,45 @@ class ExpressionRendererTest {
         fun otherBuiltinsUnaffected() {
             val sum = Condition.Comparison(Operand.BuiltinCall("sum", listOf(items)), Operator.GT, Operand.Literal("0"))
             assertThat(render(sum)).isEqualTo("the sum of `items` is greater than `0`")
+        }
+    }
+
+    @Nested
+    @DisplayName("Operand.RuleValueReference (review item 10) / ExpressionRenderer.renderValue (follow-up to review item 10)")
+    inner class RuleValueReferenceRendering {
+
+        private val reference = Operand.RuleValueReference("rulevalues.config", "max_items")
+
+        @Test
+        fun rendersAsALinkToTheReferencedRulesOwnCard() {
+            val anchorFor: (Operand.RuleValueReference) -> String = { "rulevalues-config.md#${it.ruleName}" }
+            val condition = Condition.Comparison(Operand.Literal("5"), Operator.LT, reference)
+            assertThat(ExpressionRenderer.render(condition, noAnchor, ruleValueAnchorFor = anchorFor))
+                .isEqualTo("`5` is less than rule [`max_items`](rulevalues-config.md#max_items)")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case (follow-up to review item 18): a null ruleValueAnchorFor result -- no card in THIS document -- renders unlinked, not a dead link")
+        fun rendersUnlinkedWhenRuleValueAnchorForReturnsNull() {
+            val noAnchorAvailable: (Operand.RuleValueReference) -> String? = { null }
+            val condition = Condition.Comparison(Operand.Literal("5"), Operator.LT, reference)
+            assertThat(ExpressionRenderer.render(condition, noAnchor, ruleValueAnchorFor = noAnchorAvailable))
+                .isEqualTo("`5` is less than rule `max_items`")
+        }
+
+        @Test
+        @DisplayName("renderValue (used for RuleBody.yieldsValue, follow-up to review item 10) renders a bare operand standalone")
+        fun renderValueRendersABareOperandStandalone() {
+            val anchorFor: (Operand.RuleValueReference) -> String = { "#${it.ruleName}" }
+            assertThat(ExpressionRenderer.renderValue(reference, anchorFor)).isEqualTo("rule [`max_items`](#max_items)")
+            assertThat(ExpressionRenderer.renderValue(Operand.Literal("\"high\""))).isEqualTo("`\"high\"`")
+        }
+
+        @Test
+        @DisplayName("rendering a RuleValueReference without supplying ruleValueAnchorFor fails loudly rather than silently breaking the link")
+        fun missingRuleValueAnchorForFailsLoudly() {
+            val condition = Condition.Comparison(Operand.Literal("5"), Operator.LT, reference)
+            assertThatThrownBy { ExpressionRenderer.render(condition, noAnchor) }.isInstanceOf(IllegalStateException::class.java)
         }
     }
 }

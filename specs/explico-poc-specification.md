@@ -1497,3 +1497,15 @@ Disclosed: links inside diff cards to rules outside the diff remain unresolved. 
   identical conditions is LOGIC_CHANGED.
 
 Rationale in `docs/rego-coverage.md`.
+
+### 14.23 Follow-up: links inside a diff report resolve
+
+- **§6.5/§7.3 amendment.** `anchorFor`/`functionAnchorFor`/`ruleValueAnchorFor` now return
+  `String?` -- null means the target has no card (and therefore no anchor) in the document being
+  assembled, and the three render sites fall back to a plain backticked name instead of a dead
+  link. `MarkdownRenderer.renderCard` gained `isLinkable: (packagePath, ruleName) -> Boolean`
+  (default always true -- a whole-package render is unaffected, since every rule gets a card
+  there). `DiffRenderer` builds the real predicate from which controls actually got a card in
+  that diff (REMOVED uses the old side's identifiers, ADDED/LOGIC_CHANGED the new side's).
+
+Rationale in `docs/rego-coverage.md`.

@@ -718,6 +718,31 @@ value it yields in its card -- only its conditions. Showing it would need decidi
 display a value that depends on which Situation matched (possibly a different value per
 Situation), a materially different design question from a single unconditional value.
 
+## Follow-up: links inside a diff report resolve (item 18 continued)
+
+Found by the operator's own explicit follow-up request after item 18's own anchor fix left one
+gap disclosed: `DiffRenderer` reuses `MarkdownRenderer.renderCard` for REMOVED/ADDED/LOGIC_CHANGED
+controls, but a diff document only ever gives a card -- and therefore an anchor -- to a control in
+one of those three categories. A reference to an UNCHANGED or DOCS_CHANGED control pointed at an
+anchor that existed nowhere in the document. Fixtures:
+`src/test/resources/realistic/diff-links/{old,new}`, pinned by `RealisticDiffLinksAcceptanceIT`
+plus new cases in `ExpressionRendererTest`, `MarkdownRendererTest`, and `DiffRendererTest`.
+
+| Finding | Was | Now |
+|---|---|---|
+| A reference from a changed control's card to an UNCHANGED (or DOCS_CHANGED) one -- e.g. `DL-001`'s `deny` referencing the unchanged helper `is_prod` -- rendered `` [`is_prod`](#difflinks-is-prod) `` with no `#difflinks-is-prod` anchor anywhere in the diff document. | A dead link. | The three anchor-resolution callbacks (`anchorFor`/`functionAnchorFor`/`ruleValueAnchorFor`) now return `String?`: null means "no anchor for this target in the document being assembled," and all three render sites (`renderRuleReference`, `renderFunctionCall`, the `RuleValueReference` operand branch) fall back to a plain backticked name -- same surrounding wording, just no link. A reference whose target DOES have a card (e.g. `DL-002` referencing the also-changed `is_eu`) keeps its working link, unaffected. |
+
+`MarkdownRenderer.renderCard` gained an `isLinkable: (packagePath, ruleName) -> Boolean` parameter
+(default: always true, so an ordinary whole-package render -- where every rule always gets its own
+card -- is completely unaffected). `DiffRenderer.linkableTargetsOf` builds the one real predicate:
+the set of (packagePath, ruleName) pairs that actually got a card in THIS diff, keyed by whichever
+side's identifiers that category renders (old for REMOVED, new for ADDED/LOGIC_CHANGED) -- the
+same side a reference FROM that card would itself be resolved against, so identifiers always match.
+
+Zero acceptance-pack impact: `diff-all-categories`'s own golden has no cross-references at all, so
+it's byte-identical; confirmed via `generateSampleDocs` and the acceptance-pack goldens both
+showing no diff.
+
 ## Follow-up: a conditional complete rule shows the value it yields (item 10 continued)
 
 Found by the operator's own explicit follow-up request after item 10 disclosed this as out of

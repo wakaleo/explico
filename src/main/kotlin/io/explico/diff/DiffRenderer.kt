@@ -25,9 +25,30 @@ internal object DiffRenderer {
         sb.appendLine("*$DISCLAIMER*")
         sb.appendLine()
         appendSummary(sb, entries)
-        appendChanges(sb, entries, oldPolicySet, newPolicySet)
+        val isLinkable = linkableTargetsOf(entries)
+        appendChanges(sb, entries, oldPolicySet, newPolicySet, isLinkable)
         appendCoverageWarning(sb, entries)
         return sb.toString()
+    }
+
+    /**
+     * Follow-up to review item 18: a diff report only gives a card (and therefore an anchor) to a
+     * REMOVED/ADDED/LOGIC_CHANGED control -- never to an UNCHANGED or DOCS_CHANGED one, which
+     * render no card at all. A reference whose target isn't in this set has nowhere in THIS
+     * document to link to, so [MarkdownRenderer.renderCard] renders it unlinked instead of a dead
+     * `](#anchor)`. REMOVED renders the OLD side's card; ADDED/LOGIC_CHANGED render the NEW side's
+     * -- the set is keyed by whichever side's (packagePath, ruleName) that rendered card actually
+     * uses, since a reference FROM that card is resolved against the SAME policy version.
+     */
+    private fun linkableTargetsOf(entries: List<DiffEntry>): (String, String) -> Boolean {
+        val targets = entries.mapNotNull { entry ->
+            when (entry.category) {
+                DiffCategory.REMOVED -> entry.oldPackage!!.path to entry.oldRule!!.name
+                DiffCategory.ADDED, DiffCategory.LOGIC_CHANGED -> entry.newPackage!!.path to entry.newRule!!.name
+                DiffCategory.DOCS_CHANGED, DiffCategory.UNCHANGED -> null
+            }
+        }.toSet()
+        return { packagePath, ruleName -> (packagePath to ruleName) in targets }
     }
 
     private fun appendSummary(sb: StringBuilder, entries: List<DiffEntry>) {
@@ -42,7 +63,7 @@ internal object DiffRenderer {
         sb.appendLine()
     }
 
-    private fun appendChanges(sb: StringBuilder, entries: List<DiffEntry>, oldPolicySet: PolicySet, newPolicySet: PolicySet) {
+    private fun appendChanges(sb: StringBuilder, entries: List<DiffEntry>, oldPolicySet: PolicySet, newPolicySet: PolicySet, isLinkable: (String, String) -> Boolean) {
         val changed = entries.filter { it.category != DiffCategory.UNCHANGED }
             .sortedWith(compareBy({ SECTION_ORDER.indexOf(it.category) }, { it.controlId == null }, { it.controlId }))
         if (changed.isEmpty()) return
@@ -50,28 +71,28 @@ internal object DiffRenderer {
         sb.appendLine("## Changes")
         sb.appendLine()
         for (entry in changed) {
-            appendSection(sb, entry, oldPolicySet, newPolicySet)
+            appendSection(sb, entry, oldPolicySet, newPolicySet, isLinkable)
             sb.appendLine("---")
             sb.appendLine()
         }
     }
 
-    private fun appendSection(sb: StringBuilder, entry: DiffEntry, oldPolicySet: PolicySet, newPolicySet: PolicySet) {
+    private fun appendSection(sb: StringBuilder, entry: DiffEntry, oldPolicySet: PolicySet, newPolicySet: PolicySet, isLinkable: (String, String) -> Boolean) {
         sb.appendLine("**${entry.category}**")
         sb.appendLine()
         when (entry.category) {
             DiffCategory.REMOVED -> {
                 sb.appendLine("**⚠ This control has been removed.**")
                 sb.appendLine()
-                sb.append(MarkdownRenderer.renderCard(entry.oldRule!!, entry.oldPackage!!, oldPolicySet, anchorId = MarkdownRenderer.anchorIdOf(entry.oldRule, entry.oldPackage.path)))
+                sb.append(MarkdownRenderer.renderCard(entry.oldRule!!, entry.oldPackage!!, oldPolicySet, anchorId = MarkdownRenderer.anchorIdOf(entry.oldRule, entry.oldPackage.path), isLinkable = isLinkable))
                 sb.appendLine()
             }
             DiffCategory.ADDED -> {
-                sb.append(MarkdownRenderer.renderCard(entry.newRule!!, entry.newPackage!!, newPolicySet, anchorId = MarkdownRenderer.anchorIdOf(entry.newRule, entry.newPackage.path)))
+                sb.append(MarkdownRenderer.renderCard(entry.newRule!!, entry.newPackage!!, newPolicySet, anchorId = MarkdownRenderer.anchorIdOf(entry.newRule, entry.newPackage.path), isLinkable = isLinkable))
                 sb.appendLine()
             }
             DiffCategory.LOGIC_CHANGED -> {
-                sb.append(MarkdownRenderer.renderCard(entry.newRule!!, entry.newPackage!!, newPolicySet, anchorId = MarkdownRenderer.anchorIdOf(entry.newRule, entry.newPackage.path)))
+                sb.append(MarkdownRenderer.renderCard(entry.newRule!!, entry.newPackage!!, newPolicySet, anchorId = MarkdownRenderer.anchorIdOf(entry.newRule, entry.newPackage.path), isLinkable = isLinkable))
                 sb.appendLine()
                 sb.appendLine("**Source diff**")
                 sb.appendLine()

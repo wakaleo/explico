@@ -46,13 +46,20 @@ internal object MarkdownRenderer {
         return sb.toString()
     }
 
-    /** One control card for a [RuleGroup] (spec §6.2), with an optional worked-examples section (spec §6.7). */
+    /**
+     * One control card for a [RuleGroup] (spec §6.2), with an optional worked-examples section
+     * (spec §6.7). [isLinkable] (follow-up to review item 18) says whether a given
+     * (packagePath, ruleName) target actually has an anchor in the document being assembled --
+     * always true for an ordinary whole-package render (every rule gets its own card there), but
+     * NOT always true inside a diff report, where only a changed control gets a card at all.
+     */
     fun renderCard(
         rule: RuleGroup,
         pkg: PolicyPackage,
         policySet: PolicySet,
         workedExamples: List<WorkedExample> = emptyList(),
         anchorId: String? = null,
+        isLinkable: (packagePath: String, ruleName: String) -> Boolean = { _, _ -> true },
     ): String {
         val sb = StringBuilder()
         // Review item 18: an explicit anchor, because links target the control-id / package-rulename
@@ -65,9 +72,9 @@ internal object MarkdownRenderer {
         appendHeading(sb, rule, pkg)
         appendMetadataLines(sb, rule, pkg)
 
-        val anchorFor: (Condition.RuleReference) -> String = { ref -> resolveAnchor(pkg.path, ref, policySet) }
-        val functionAnchorFor: (Condition.FunctionCall) -> String = { call -> resolveFunctionAnchor(pkg.path, call, policySet) }
-        val ruleValueAnchorFor: (Operand.RuleValueReference) -> String = { ref -> resolveRuleValueAnchor(pkg.path, ref, policySet) }
+        val anchorFor: (Condition.RuleReference) -> String? = { ref -> resolveAnchor(pkg.path, ref, policySet, isLinkable) }
+        val functionAnchorFor: (Condition.FunctionCall) -> String? = { call -> resolveFunctionAnchor(pkg.path, call, policySet, isLinkable) }
+        val ruleValueAnchorFor: (Operand.RuleValueReference) -> String? = { ref -> resolveRuleValueAnchor(pkg.path, ref, policySet, isLinkable) }
         when {
             // A complete rule's unconditional constant value (review item 10, finding 4) has no
             // real body at all -- just its own value line.
@@ -128,9 +135,9 @@ internal object MarkdownRenderer {
     private fun appendMultiBodySituations(
         sb: StringBuilder,
         rule: RuleGroup,
-        anchorFor: (Condition.RuleReference) -> String,
-        functionAnchorFor: (Condition.FunctionCall) -> String,
-        ruleValueAnchorFor: (Operand.RuleValueReference) -> String,
+        anchorFor: (Condition.RuleReference) -> String?,
+        functionAnchorFor: (Condition.FunctionCall) -> String?,
+        ruleValueAnchorFor: (Operand.RuleValueReference) -> String?,
     ) {
         sb.appendLine("**The rule matches when ANY of the following situations applies:**")
         sb.appendLine()
@@ -150,9 +157,9 @@ internal object MarkdownRenderer {
     private fun appendSingleBody(
         sb: StringBuilder,
         body: RuleBody,
-        anchorFor: (Condition.RuleReference) -> String,
-        functionAnchorFor: (Condition.FunctionCall) -> String,
-        ruleValueAnchorFor: (Operand.RuleValueReference) -> String,
+        anchorFor: (Condition.RuleReference) -> String?,
+        functionAnchorFor: (Condition.FunctionCall) -> String?,
+        ruleValueAnchorFor: (Operand.RuleValueReference) -> String?,
     ) {
         // Follow-up to review item 10: a body with no real conditions at all -- every expr was a
         // local-variable assignment, e.g. `limit := n if { n := input.limit }` -- has nothing to
@@ -178,7 +185,7 @@ internal object MarkdownRenderer {
     }
 
     /** The value a CONDITIONAL complete rule's body yields (follow-up to review item 10) -- see [RuleBody.yieldsValue]'s own KDoc. */
-    private fun appendYieldsValueLine(sb: StringBuilder, value: Operand, ruleValueAnchorFor: (Operand.RuleValueReference) -> String) {
+    private fun appendYieldsValueLine(sb: StringBuilder, value: Operand, ruleValueAnchorFor: (Operand.RuleValueReference) -> String?) {
         sb.appendLine("**Value:** ${ExpressionRenderer.renderValue(value, ruleValueAnchorFor)}")
         sb.appendLine()
     }
@@ -243,9 +250,9 @@ internal object MarkdownRenderer {
     private fun appendConditions(
         sb: StringBuilder,
         conditions: List<Condition>,
-        anchorFor: (Condition.RuleReference) -> String,
-        functionAnchorFor: (Condition.FunctionCall) -> String,
-        ruleValueAnchorFor: (Operand.RuleValueReference) -> String,
+        anchorFor: (Condition.RuleReference) -> String?,
+        functionAnchorFor: (Condition.FunctionCall) -> String?,
+        ruleValueAnchorFor: (Operand.RuleValueReference) -> String?,
     ) {
         var i = 0
         while (i < conditions.size) {
@@ -367,18 +374,30 @@ internal object MarkdownRenderer {
     }
 
     /** RuleReference anchors (spec §6.5): control-id or package-rulename, same-file bare `#anchor` vs cross-file `<package>.md#anchor`. */
-    private fun resolveAnchor(currentPackagePath: String, ref: Condition.RuleReference, policySet: PolicySet): String =
-        anchorForTarget(currentPackagePath, ref.packagePath, ref.ruleName, policySet)
+    private fun resolveAnchor(currentPackagePath: String, ref: Condition.RuleReference, policySet: PolicySet, isLinkable: (String, String) -> Boolean): String? =
+        anchorForTarget(currentPackagePath, ref.packagePath, ref.ruleName, policySet, isLinkable)
 
     /** Same anchor convention as a [Condition.RuleReference] (review item 8): a called function is just another card, link-targeted the same way. */
-    private fun resolveFunctionAnchor(currentPackagePath: String, call: Condition.FunctionCall, policySet: PolicySet): String =
-        anchorForTarget(currentPackagePath, call.packagePath, call.functionName, policySet)
+    private fun resolveFunctionAnchor(currentPackagePath: String, call: Condition.FunctionCall, policySet: PolicySet, isLinkable: (String, String) -> Boolean): String? =
+        anchorForTarget(currentPackagePath, call.packagePath, call.functionName, policySet, isLinkable)
 
     /** Same anchor convention as [Condition.RuleReference]/[Condition.FunctionCall] (review item 10): a referenced rule's VALUE is just another card, link-targeted the same way. */
-    private fun resolveRuleValueAnchor(currentPackagePath: String, reference: Operand.RuleValueReference, policySet: PolicySet): String =
-        anchorForTarget(currentPackagePath, reference.packagePath, reference.ruleName, policySet)
+    private fun resolveRuleValueAnchor(currentPackagePath: String, reference: Operand.RuleValueReference, policySet: PolicySet, isLinkable: (String, String) -> Boolean): String? =
+        anchorForTarget(currentPackagePath, reference.packagePath, reference.ruleName, policySet, isLinkable)
 
-    private fun anchorForTarget(currentPackagePath: String, targetPackagePath: String, targetName: String, policySet: PolicySet): String {
+    /**
+     * Null when [isLinkable] says the target has no anchor in the document being assembled
+     * (follow-up to review item 18) -- the caller renders a plain, unlinked name instead of a
+     * dead link.
+     */
+    private fun anchorForTarget(
+        currentPackagePath: String,
+        targetPackagePath: String,
+        targetName: String,
+        policySet: PolicySet,
+        isLinkable: (String, String) -> Boolean,
+    ): String? {
+        if (!isLinkable(targetPackagePath, targetName)) return null
         val targetPackage = policySet.packages.first { it.path == targetPackagePath }
         val candidates = targetPackage.rules.filter { it.name == targetName }
         val targetRule = candidates.firstOrNull { !it.isSplitDefaultEntry } ?: candidates.first()
