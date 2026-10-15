@@ -33,8 +33,18 @@ import io.explico.model.PathSegment
 
 internal object ExpressionRenderer {
 
-    /** [anchorFor] resolves a RuleReference's link target -- anchor computation is spec §6.5, not built yet; injected so phrasing can be tested independently of it. */
-    fun render(condition: Condition, anchorFor: (Condition.RuleReference) -> String): String = when (condition) {
+    /**
+     * [anchorFor] resolves a RuleReference's link target -- anchor computation is spec §6.5, not
+     * built yet; injected so phrasing can be tested independently of it. [functionAnchorFor]
+     * (review item 8) does the same for a [Condition.FunctionCall]'s link to the called function's
+     * own card; defaulted to throw rather than silently render a broken link, since every existing
+     * call site that never produces a FunctionCall needn't supply it.
+     */
+    fun render(
+        condition: Condition,
+        anchorFor: (Condition.RuleReference) -> String,
+        functionAnchorFor: (Condition.FunctionCall) -> String = { throw IllegalStateException("functionAnchorFor not supplied for a Condition.FunctionCall") },
+    ): String = when (condition) {
         is Condition.Comparison -> renderOperandPair(condition.left, condition.right) { l, r ->
             val verbs = if (condition.negated) NEGATED_COMPARISON_VERBS else COMPARISON_VERBS
             "$l ${verbs.getValue(condition.op)} $r"
@@ -58,6 +68,7 @@ internal object ExpressionRenderer {
             withAnyOfPrefix("for some $vars in $text", hasAnyIndex)
         }
         is Condition.RuleReference -> renderRuleReference(condition, anchorFor)
+        is Condition.FunctionCall -> renderFunctionCall(condition, functionAnchorFor)
         is Condition.Unrendered -> throw IllegalArgumentException(
             "Condition.Unrendered is not part of the §6.3 phrasing table; render it as a ⚠ source block instead."
         )
@@ -66,6 +77,24 @@ internal object ExpressionRenderer {
     private fun renderRuleReference(condition: Condition.RuleReference, anchorFor: (Condition.RuleReference) -> String): String {
         val link = "[`${condition.ruleName}`](${anchorFor(condition)})"
         return if (condition.negated) "rule $link does not match" else "see rule $link"
+    }
+
+    /**
+     * A call to a user-defined function (review item 8): a link to its own card (same convention
+     * as [renderRuleReference]'s), followed by its already-humanized arguments -- "mechanical and
+     * honest" rather than attempting to describe what the function actually checks (which would
+     * mean inlining its body, out of scope here, same as a RuleReference never inlines either).
+     * CHALLENGE edge case: a zero-argument function call drops the "for ..." clause entirely
+     * rather than trailing off with nothing after "for".
+     */
+    private fun renderFunctionCall(condition: Condition.FunctionCall, anchorFor: (Condition.FunctionCall) -> String): String {
+        val link = "[`${condition.functionName}`](${anchorFor(condition)})"
+        val verb = if (condition.negated) "is not satisfied" else "is satisfied"
+        if (condition.args.isEmpty()) return "function $link $verb"
+        val rendered = condition.args.map { renderOperand(it) }
+        val argsText = rendered.joinToString(", ") { it.first }
+        val hasAnyIndex = rendered.any { it.second }
+        return withAnyOfPrefix("function $link $verb for $argsText", hasAnyIndex)
     }
 
     private fun renderBuiltinCall(condition: Condition.BuiltinCall): String {
@@ -88,6 +117,11 @@ internal object ExpressionRenderer {
         is Operand.Path -> PathHumanizer.humanize(operand.segments).let { it.rendered to it.hasAnyIndex }
         is Operand.Literal -> "`${operand.rendered}`" to false
         is Operand.Variable -> "`${operand.name}`" to false
+        // Review item 8: a declared function parameter, named explicitly as such -- distinguished
+        // from a bare Variable's plain backtick-wrapped name specifically so a reader inside the
+        // function's own card can tell "this is a known input the caller supplies" apart from
+        // "this was assigned to something we couldn't resolve."
+        is Operand.Parameter -> "parameter `${operand.name}`" to false
         is Operand.BuiltinCall -> renderOperandBuiltinCall(operand)
         // Never guessed prose: the operand's own verbatim source, in backticks. Not part of spec's
         // explicit examples (only Condition-level Unrendered's block format is spec'd) -- this

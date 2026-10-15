@@ -54,6 +54,7 @@ internal object Coverage {
         is Condition.BuiltinCall -> condition.args
         is Condition.SomeIn -> listOf(condition.collection)
         is Condition.RuleReference -> emptyList()
+        is Condition.FunctionCall -> condition.args
         is Condition.Unrendered -> emptyList()
     }
 }

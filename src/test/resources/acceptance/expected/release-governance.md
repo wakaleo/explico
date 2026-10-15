@@ -58,6 +58,8 @@ inside a freeze window, and all mandatory checks must have passed.
 - `deployment ▸ timestamp` is at least `data ▸ release ▸ freeze windows ▸ [each window] ▸ start`
 - `deployment ▸ timestamp` is at most `data ▸ release ▸ freeze windows ▸ [each window] ▸ finish`
 
+*Produces:* "deployment falls inside freeze window [window name]"
+
 ### Situation 3 — all of the following are true
 
 - `deployment ▸ environment` is `"production"`

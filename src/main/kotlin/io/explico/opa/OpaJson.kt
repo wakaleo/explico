@@ -83,6 +83,12 @@ internal data class OpaRuleHead(
     val value: OpaTerm? = null,
     val assign: Boolean = false,
     val ref: List<OpaTerm> = emptyList(),
+    /**
+     * Declared parameter names, for a user-defined FUNCTION (review item 8) -- null for an
+     * ordinary rule, a (possibly empty) list of `"var"` terms for a function, confirmed via a real
+     * `opa parse` run against `is_exempt(ns) if {...}`.
+     */
+    val args: List<OpaTerm>? = null,
     val location: OpaLocation? = null,
 )
 

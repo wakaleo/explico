@@ -1110,3 +1110,23 @@ was proposed in, not deferred to a separate increment.
   `module.annotations`; rendered under the package heading.
 - `RealisticPoliciesAcceptanceIT` is authored from the review, **not** the frozen README contract.
 - Disclosed gaps: cross-file `default`; `Canonicalizer` ignores `default`; anchors for split names.
+
+## Review pass: function calls and produced messages (items 8-9)
+
+- **`Condition.FunctionCall`**: a same-package call to a user-defined function (`head.args !=
+  null`) in condition position. `buildFunctionRegistry` maps package -> function name -> declared
+  parameter names (first definition wins across overloads). Cross-package calls (dotted name) are
+  not resolved -- disclosed limitation.
+- **`VarBinding.Parameter`/`Operand.Parameter`**: a function's own parameters are pre-populated
+  into its body's symbol table before mapping starts; renders as `` parameter `name` ``. The
+  function's `RuleGroup.parameters` drives a `*Parameters: ...*` card line.
+- **`renderPlaceholder`** now humanizes a var-rooted sprintf chain too, when the root is a known
+  binding (`Iteration`/`Substitution`/`Parameter`) -- the var's own name leads the bracket phrase.
+  `NonPath` and genuinely unbound roots still stay `null`.
+- **`messageVarOf(head)`** recognises an object `head.key` whose `"msg"`-keyed pair's value is a
+  bare var, not just a bare var directly in `head.key` -- covers `deny contains {"msg": msg, ...}`
+  and the bracket-form `violation[{"msg": m}]` sugar.
+- Repinned `RegoCoverageAuditTest` probes 15/16 (superseded "falls back"/parameter-echo
+  assertions) and two Tier-2 goldens (REL-002/REL-004's var-rooted sprintf args), reviewed first.
+- Disclosed gaps: cross-package calls; `Canonicalizer` ignores parameter count; `NonPath`
+  placeholders stay unhumanized.

@@ -48,7 +48,11 @@ class RegoCoverageAuditTest {
         policySet.packages.single().rules.single { it.name == ruleName }.bodies[bodyIndex].conditions
 
     private fun render(condition: Condition): String =
-        ExpressionRenderer.render(condition) { ref -> "#${ref.packagePath}-${ref.ruleName}" }
+        ExpressionRenderer.render(
+            condition,
+            anchorFor = { ref -> "#${ref.packagePath}-${ref.ruleName}" },
+            functionAnchorFor = { call -> "#${call.packagePath}-${call.functionName}" },
+        )
 
     private fun assertUnrendered(condition: Condition, expectedReason: String) {
         assertThat(condition).isInstanceOf(Condition.Unrendered::class.java)
@@ -220,10 +224,15 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun userDefinedFunctionCallInConditionPositionFallsBack() {
+    fun userDefinedFunctionCallInConditionPositionRendersAsALinkedCallPromotedThisSession() {
+        // Was: fell back to a verbatim Condition.Unrendered -- review item 8 promotes a
+        // same-package user-defined function call to Condition.FunctionCall, linked to the
+        // function's own card, with its argument humanized the same way any other operand is.
         val conditions = conditionsOf(loadProbe("15-user-defined-function-args.rego"), "deny")
         assertThat(conditions).hasSize(2)
-        assertUnrendered(conditions[0], "function-call")
+        val call = conditions[0] as Condition.FunctionCall
+        assertThat(call.functionName).isEqualTo("is_production_like")
+        assertThat(render(conditions[0])).contains("is_production_like").contains("deployment ▸ environment")
         assertThat(render(conditions[1])).isEqualTo("`change ▸ ticket ▸ approved` is absent or false")
     }
 
@@ -231,13 +240,24 @@ class RegoCoverageAuditTest {
     fun functionOverloadingRendersEachBodyIndependently() {
         // Function overloading needs no special AstMapper handling: multiple bodies for the same
         // name is exactly the pre-existing incremental-definitions mechanism.
+        //
+        // `severity_of(input.finding.level) >= 2` is an OPERAND-position call (the function
+        // returns a value compared against 2), not a condition-position one -- review item 8's
+        // promotion is deliberately condition-position only, so this stays Operand.Unrendered,
+        // unchanged.
         val policySet = loadProbe("16-function-overloading.rego")
         val denyConditions = conditionsOf(policySet, "deny")
         assertThat(render(denyConditions.single())).isEqualTo("`severity_of(input.finding.level)` is at least `2`")
-        assertThat(render(conditionsOf(policySet, "severity_of", 0).single())).isEqualTo("`level` is `\"critical\"`")
-        assertThat(render(conditionsOf(policySet, "severity_of", 1).single())).isEqualTo("`level` is `\"high\"`")
+        // `level` is a declared function parameter -- another review item 8 fix. Before, it was
+        // never recognised as bound at all, so it silently rendered as a bare, visually-identical-
+        // to-a-real-path Operand.Unrendered echo of its own source text (the exact "operand
+        // fallback is visually indistinguishable from a real breadcrumb" risk CLAUDE.md's §14
+        // review already flagged, just not yet connected to parameters specifically). Now
+        // correctly identified and labelled.
+        assertThat(render(conditionsOf(policySet, "severity_of", 0).single())).isEqualTo("parameter `level` is `\"critical\"`")
+        assertThat(render(conditionsOf(policySet, "severity_of", 1).single())).isEqualTo("parameter `level` is `\"high\"`")
         assertThat(render(conditionsOf(policySet, "severity_of", 2).single()))
-            .isEqualTo("`level` is not one of `\"critical\", \"high\"`")
+            .isEqualTo("parameter `level` is not one of `\"critical\", \"high\"`")
     }
 
     @Test

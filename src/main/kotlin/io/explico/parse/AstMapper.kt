@@ -102,11 +102,15 @@ private sealed interface ConstructResult {
  * - [NonPath]: `x := <anything else>` -- spec §5 is explicit that later bare uses of `x` still
  *   render, as `Operand.Variable(x)`, never a guessed path and never conflated with a genuinely
  *   unbound/unknown variable (which stays `Operand.Unrendered`).
+ * - [Parameter]: a declared function parameter (review item 8) -- pre-populated into the symbol
+ *   table before a function's own body is walked, so a bare use renders as `Operand.Parameter(x)`,
+ *   a known named input rather than an opaque `Operand.Variable` or an unbound `Operand.Unrendered`.
  */
 private sealed interface VarBinding {
     data class Iteration(val collection: Operand.Path) : VarBinding
     data class Substitution(val path: Operand.Path) : VarBinding
     object NonPath : VarBinding
+    object Parameter : VarBinding
 }
 
 internal object AstMapper {
@@ -124,13 +128,14 @@ internal object AstMapper {
         val registry = buildRuleRegistry(files)
         val partialRegistry = buildPartialRuleRegistry(files)
         val refHeadRegistry = buildRefHeadRuleRegistry(files)
+        val functionRegistry = buildFunctionRegistry(files)
         val metadataIndex = buildMetadataIndex(inspectResult, files)
         val packages = files
             .groupBy { packagePath(it.module) }
             .map { (path, filesInPackage) ->
                 val orderedFiles = filesInPackage.sortedBy { it.sourceFile }
                 val rules = orderedFiles
-                    .flatMap { mapRuleGroups(it, registry, partialRegistry, refHeadRegistry, metadataIndex) }
+                    .flatMap { mapRuleGroups(it, registry, partialRegistry, refHeadRegistry, functionRegistry, metadataIndex) }
                     .sortedBy { it.name }
                 PolicyPackage(
                     path = path,
@@ -300,6 +305,30 @@ internal object AstMapper {
                     .toSet()
             }
 
+    /**
+     * User-defined functions, same-package calls only (review item 8): package -> function name
+     * -> declared parameter names, in order. `head.args` is null for an ordinary rule and a
+     * (possibly empty) list of `"var"` terms for a function -- confirmed via a real `opa parse`
+     * run. Cross-package function calls are a disclosed, not-yet-handled limitation; only a
+     * bare, single-segment call name is ever looked up against this registry (see
+     * [mapCallShapedCondition]). The first definition found wins when a function has several
+     * overloaded bodies -- Rego requires consistent parameter names across them for the same
+     * arity, so there is nothing to disambiguate.
+     */
+    private fun buildFunctionRegistry(files: List<ParsedFile>): Map<String, Map<String, List<String>>> =
+        files.groupBy({ packagePath(it.module) }, { it.module })
+            .mapValues { (_, modules) ->
+                val byName = mutableMapOf<String, List<String>>()
+                for (module in modules) {
+                    for (rule in module.rules) {
+                        val name = rule.head.name ?: continue
+                        val args = rule.head.args ?: continue
+                        byName.putIfAbsent(name, args.map { stringValueOf(it) })
+                    }
+                }
+                byName
+            }
+
     /** One real-opa-rule statement paired with its resolved name and per-rule metadata (review items 1/2/3). */
     private data class NamedRule(val rule: OpaRule, val name: String, val metadata: RuleMetadata?)
 
@@ -308,6 +337,7 @@ internal object AstMapper {
         registry: Map<String, Set<String>>,
         partialRegistry: Map<String, Set<String>>,
         refHeadRegistry: Map<String, Set<String>>,
+        functionRegistry: Map<String, Map<String, List<String>>>,
         metadataIndex: Map<Pair<String, Int>, RuleMetadata>,
     ): List<RuleGroup> {
         val currentPackage = packagePath(file.module)
@@ -317,6 +347,7 @@ internal object AstMapper {
             registry = registry,
             partialRegistry = partialRegistry,
             refHeadRegistry = refHeadRegistry,
+            functionRegistry = functionRegistry,
             sourceFile = file.sourceFile,
         )
         val named = file.module.rules.mapNotNull { rule ->
@@ -344,6 +375,10 @@ internal object AstMapper {
                     metadata = metadata,
                     default = defaultsByName[name],
                     bodies = orderedRules.map { mapBody(it, ctx) },
+                    // review item 8: a function's own declared parameters, for its card's own
+                    // "Parameters" line. `head.args` is consistent across a function's overloaded
+                    // bodies (same arity/names), so the first is as good as any.
+                    parameters = orderedRules.first().head.args?.map { stringValueOf(it) } ?: emptyList(),
                 )
             }
 
@@ -382,7 +417,11 @@ internal object AstMapper {
         }
 
         val symbolTable = mutableMapOf<String, VarBinding>()
-        val messageVar = rule.head.key?.takeIf { it.type == "var" }?.let { stringValueOf(it) }
+        // A function's own declared parameters (review item 8) are in scope for its WHOLE body,
+        // before any expr is walked -- a bare use resolves to Operand.Parameter, not an unbound
+        // Operand.Unrendered.
+        rule.head.args?.forEach { arg -> if (arg.type == "var") symbolTable[stringValueOf(arg)] = VarBinding.Parameter }
+        val messageVar = messageVarOf(rule.head)
         var producesValue: String? = null
         var messageTemplate: String? = null
         val conditions = mutableListOf<Condition>()
@@ -446,6 +485,27 @@ internal object AstMapper {
             sourceLocation = SourceRef(ctx.sourceFile, rule.location?.row ?: 0),
             sourceText = sourceText(rule.location),
         )
+    }
+
+    /**
+     * The rule head's own message variable (spec §5/§6.2, extended review item 9). A bare var in
+     * `head.key` position (`deny contains msg`) names it directly. An OBJECT in `head.key`
+     * position (`deny contains {"msg": msg, "severity": "high"}`, or the bracket-form sugar
+     * `violation[{"msg": m}]` -- both populate `head.key` identically as the object term,
+     * confirmed via a real `opa parse` run) names it via the pair whose KEY is the literal string
+     * `"msg"` -- the de facto standard field name for a structured deny message across the Rego
+     * ecosystem (OPA's own style guide, Gatekeeper's ConstraintTemplate convention), a deliberate,
+     * disclosed convention choice, not a guess about an arbitrary key name. Any other object shape
+     * (no `"msg"` key, or its value isn't a bare var) stays null -- no Produces line, exactly as
+     * before this promotion.
+     */
+    private fun messageVarOf(head: OpaRuleHead): String? {
+        val key = head.key ?: return null
+        if (key.type == "var") return stringValueOf(key)
+        if (key.type != "object") return null
+        val pairs = opaJson.decodeFromJsonElement(ListSerializer(ListSerializer(OpaTerm.serializer())), key.value ?: JsonArray(emptyList()))
+        val msgValue = pairs.firstOrNull { it.size == 2 && it[0].type == "string" && stringValueOf(it[0]) == "msg" }?.get(1) ?: return null
+        return msgValue.takeIf { it.type == "var" }?.let { stringValueOf(it) }
     }
 
     /** If [expr] is `<messageVar> := <value>`, returns the value term; else null. */
@@ -517,6 +577,23 @@ internal object AstMapper {
             if (unsupported != null) return Condition.Unrendered(sourceText(expr.location), unsupported.reason)
             val operands = mapped.filterIsInstance<ConstructResult.Ok>().map { it.operand }
             return Condition.BuiltinCall(name, operands, expr.negated)
+        }
+        // A call to a user-defined function, same-package only (review item 8). `name` is already
+        // the bare, single-segment function name here (decodeCallShape's own dotted join of a
+        // one-element ref chain for a same-package call, confirmed via a real `opa parse` run) --
+        // a cross-package call (`helper.is_prod(...)`/`data.pkg.func(...)`) would need resolving
+        // through importAliases/ctx.currentPackage the same way ruleReferenceIfKnown does, which
+        // this promotion deliberately doesn't attempt yet (disclosed limitation). An argument that
+        // doesn't resolve at all (a comprehension) falls through to the generic fallback below,
+        // never a partially-faithful call.
+        val params = ctx.functionRegistry[ctx.currentPackage]?.get(name)
+        if (params != null) {
+            val mapped = args.map { mapOperand(it, symbolTable, ctx) }
+            val unsupported = mapped.filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
+            if (unsupported == null) {
+                val operands = mapped.map { (it as ConstructResult.Ok).operand }
+                return Condition.FunctionCall(ctx.currentPackage, name, operands, expr.negated)
+            }
         }
         return Condition.Unrendered(sourceText(expr.location), "function-call")
     }
@@ -668,6 +745,7 @@ internal object AstMapper {
             is VarBinding.Iteration -> ConstructResult.Ok(Operand.Path(binding.collection.segments + PathSegment.VarIndex(stringValueOf(term))))
             is VarBinding.Substitution -> ConstructResult.Ok(Operand.Path(binding.path.segments))
             VarBinding.NonPath -> ConstructResult.Ok(Operand.Variable(stringValueOf(term)))
+            VarBinding.Parameter -> ConstructResult.Ok(Operand.Parameter(stringValueOf(term)))
             null -> ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
         }
 
@@ -716,7 +794,11 @@ internal object AstMapper {
                 val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
                 ConstructResult.Ok(Operand.Path(binding.path.segments + segments))
             }
-            VarBinding.NonPath, null -> ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+            // A parameter used as a ref-chain ROOT (`ns.subfield`) has no established extension rule
+            // -- spec §5's promotion only covers Substitution as a chain root, not a function
+            // parameter standing for an arbitrary caller-supplied value -- so it's treated the same
+            // conservative way as NonPath: never guessed, falls back whole.
+            VarBinding.NonPath, VarBinding.Parameter, null -> ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
         }
     }
 
@@ -929,20 +1011,32 @@ internal object AstMapper {
     }
 
     /**
-     * Only a plain `input.`-rooted field chain gets humanised into a bracket phrase. A var-rooted,
-     * key-literal, or any-index chain returns null rather than a guessed bracket format -- spec §5
-     * (amended session 2) only gives an example for the plain-chain case, and this placeholder
-     * convention (space-joined words in brackets) is deliberately different from PathHumanizer's
-     * breadcrumb style (§6.4), so there's no format to translate a VarIndex/KeyLiteral segment into
-     * without inventing one.
+     * A plain `input.`-rooted field chain, or a var-rooted one whose root is a KNOWN binding
+     * (review item 9's promotion), humanises into a bracket phrase; anything else returns null
+     * rather than a guessed format. `input` itself is dropped (boilerplate, spec §5's original
+     * example); a bound variable's own name is NOT dropped -- unlike "input" it's real, meaningful
+     * content (`container` in `container.name`) -- so it leads the word list the same way a field
+     * name would. Only a plain (non-bracket) string field chain after the root qualifies: a
+     * KeyLiteral/VarIndex/AnyIndex segment, or an unbound/`NonPath` root, still has no established
+     * bracket-format translation and stays null, exactly as before this promotion. This
+     * placeholder convention (space-joined words in brackets) remains deliberately different from
+     * PathHumanizer's own `▸`-joined breadcrumb style (§6.4) -- extending ONE established
+     * convention to a wider root set, not inventing a second one.
      */
     private fun renderPlaceholder(term: OpaTerm, symbolTable: Map<String, VarBinding>): String? {
         if (term.type != "ref") return null
         val chain = decodeTermList(term.value)
-        if (chain.isEmpty() || stringValueOf(chain.first()) != "input") return null
+        val root = chain.firstOrNull() ?: return null
+        val rootName = stringValueOf(root)
         val fieldNames = chain.drop(1)
         if (fieldNames.any { it.type != "string" || sourceText(it.location).startsWith("\"") }) return null
-        val words = fieldNames.flatMap { PathHumanizer.wordsOf(stringValueOf(it)) }
+        val rootWords = when {
+            rootName == "input" -> emptyList()
+            symbolTable[rootName].let { it != null && it !is VarBinding.NonPath } -> PathHumanizer.wordsOf(rootName)
+            else -> return null
+        }
+        val words = rootWords + fieldNames.flatMap { PathHumanizer.wordsOf(stringValueOf(it)) }
+        if (words.isEmpty()) return null
         return "[${words.joinToString(" ")}]"
     }
 
@@ -984,5 +1078,6 @@ private data class MappingContext(
     val registry: Map<String, Set<String>>,
     val partialRegistry: Map<String, Set<String>>,
     val refHeadRegistry: Map<String, Set<String>>,
+    val functionRegistry: Map<String, Map<String, List<String>>>,
     val sourceFile: String,
 )

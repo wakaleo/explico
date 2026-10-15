@@ -17,6 +17,8 @@ may be deployed, unless the service is explicitly exempt.
 - for some stage in `pipeline ▸ stages`
 - `pipeline ▸ stages ▸ [each stage] ▸ status` is not `"passed"`
 
+*Produces:* "pipeline stage [stage name] did not pass"
+
 **Worked examples**
 
 - **failed security scan** — ❌ denied *(Situation 1)*

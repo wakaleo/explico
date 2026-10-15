@@ -564,6 +564,38 @@ one being walked (`current`) -- moot today since `referencedPaths` only ever
 passes an `input.`-rooted path, and no fixture in this corpus is evaluated with
 examples anyway.
 
+## Review pass: function calls and produced messages (items 8-9)
+
+Same realistic-policy corpus, plus a new `src/test/resources/realistic/functions/`
+fixture for item 8's fallback cases, pinned by `RealisticCallsAndMessagesAcceptanceIT`,
+`AstMapperTest.FunctionCallsAndMessagePlaceholders`, and `ExpressionRendererTest`'s
+`FunctionCallRendering` cases.
+
+| Finding | Was | Now |
+|---|---|---|
+| A call to a user-defined function in condition position, e.g. `not is_exempt(input.request.namespace)` (item 8) | Fell back to raw `Condition.Unrendered` source, always -- same bucket as any genuinely unsupported builtin, no distinction made. | A new `Condition.FunctionCall(packagePath, functionName, args, negated)`: links to the function's own card (same anchor convention as `Condition.RuleReference`) and names its already-humanized arguments, e.g. `` function [`is_exempt`](#k8s-admission-is-exempt) is not satisfied for `request ▸ namespace` ``. Same-package calls only -- a cross-package call (`helper.is_prod(...)`) is a disclosed, not-yet-handled limitation and still falls back. An argument that doesn't resolve at all (a comprehension) falls the WHOLE call back, never a partial rendering. |
+| A declared function parameter used bare inside its own function's body, e.g. `ns` in `is_exempt(ns) if { ns in {...} }` (item 8) | Never recognised as bound at all -- silently rendered as a bare `Operand.Unrendered` echo of its own source text, visually IDENTICAL to a real humanized path. A real, previously-undiscovered instance of the exact "operand fallback is indistinguishable from a real breadcrumb" risk §14's audit flagged but left unquantified. | A new `VarBinding.Parameter`/`Operand.Parameter(name)`: pre-populated into the symbol table before a function's own body is walked, rendered as `` parameter `ns` `` -- explicitly labelled, never confused with an assigned-but-opaque `Operand.Variable` or a genuinely unbound `Operand.Unrendered`. The function's own card also gains a `*Parameters: ...*` line. |
+| A produced message whose `sprintf` placeholder is a var-rooted field chain, e.g. `sprintf("container %v is privileged", [container.name])` where `container` is bound by `some container in ...` (item 9) | `producesValue` stayed `null` (a disclosed gap since session 2/3) -- the placeholder helper only ever humanized a plain `input.`-rooted chain. | Extended to any chain whose root is a KNOWN binding (`Iteration`/`Substitution`/`Parameter`, never `NonPath` or genuinely unbound) -- the variable's own name leads the bracket phrase, since unlike `input` it's real content: `[container name]`, `[rc address]`, `[rc change before region]`. Mixing one resolvable and one unresolvable placeholder in the same message still yields `null` for the whole thing (spec §6.7's existing all-or-nothing rule, untouched). |
+| An object-valued rule head's own message variable, e.g. `deny contains {"msg": msg, "severity": "high"}` with `msg := "public acl"`, or the bracket-form sugar `violation[{"msg": m}]` with `m := "not prod"` (item 9) | `head.key` is a whole object term, not a bare var, so the existing `messageVar` detection (which only recognised a bare var) never matched either shape -- the message assignment fell through to the generic local-variable path and showed as a fenced `Condition.Unrendered` bullet instead of a `Produces` line. | `messageVarOf(head)` additionally recognises the pair inside an object `head.key` whose KEY is the literal string `"msg"` -- the de facto standard field name for a structured deny message across the Rego ecosystem (OPA's own style guide, Gatekeeper's ConstraintTemplate convention), a deliberate, disclosed convention choice keyed on that one literal name, not a guess about an arbitrary key. Any other object shape (no `"msg"` key, or its value isn't a bare var) stays unrecognised, exactly as before. |
+
+Two Tier-2 goldens (`release-evidence.md`, `release-governance.md`) and the
+matching `docs/sample-output/` files were regenerated deliberately, reviewed
+diff-by-diff first: each gained exactly one new `*Produces:*` line (REL-002's
+`stage.name`, REL-004's `window.name`), nothing else changed. Two pre-existing
+`RegoCoverageAuditTest` assertions (probes 15 and 16) pinned the superseded
+behaviour -- probe 15's bare "falls back" assertion, and probe 16's `` `level`
+is `"critical"` `` (a function parameter silently echoed as if it were a
+genuine value) -- and were updated in place to the promoted shape, per this
+project's own "repin, don't leave a stale assertion" convention.
+
+Disclosed, not fixed: a cross-package function call stays unresolved;
+`Canonicalizer`'s hash is insensitive to a function's own parameter COUNT (an
+unused added/removed parameter with an otherwise-identical body hashes the
+same) -- `RuleGroup.parameters` is not yet part of `canonicalLogic`; a bare
+`NonPath`-bound var used as a sprintf placeholder stays unhumanized (no
+real-world evidence yet that it should be, unlike the Iteration/Substitution/
+Parameter cases).
+
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
 **Operand-level fallback (`Operand.Unrendered`) renders as plain backticked

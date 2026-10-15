@@ -26,6 +26,8 @@ public data class RuleGroup(
     val metadata: RuleMetadata?,
     val default: DefaultValue?,
     val bodies: List<RuleBody>,
+    /** Declared parameter names, in order, for a user-defined function (review item 8); empty for an ordinary rule. */
+    val parameters: List<String> = emptyList(),
 )
 
 /** METADATA annotations attached to a rule, at rule or document scope. */
@@ -92,6 +94,14 @@ public sealed interface Condition {
     /** A reference to another rule defined in the policy set (same or an imported package). */
     public data class RuleReference(val packagePath: String, val ruleName: String, val negated: Boolean) : Condition
 
+    /**
+     * A call to a user-defined function in the same package (review item 8), e.g.
+     * `not is_exempt(input.request.namespace)`. [args] are the call's own arguments, each resolved
+     * through the same operand mapping every other position uses -- a cross-package call is not
+     * yet recognised and stays [Unrendered] (disclosed limitation).
+     */
+    public data class FunctionCall(val packagePath: String, val functionName: String, val args: List<Operand>, val negated: Boolean) : Condition
+
     /** Anything the mapper cannot classify. Rendered as marked, verbatim source — never guessed. */
     public data class Unrendered(val sourceText: String, val reason: String) : Condition
 }
@@ -109,6 +119,9 @@ public sealed interface Operand {
 
     /** A local variable bound to something other than a plain path (spec §5). */
     public data class Variable(val name: String) : Operand
+
+    /** A declared function parameter used bare, e.g. `ns` inside `is_exempt(ns) if { ns in {...} }` (review item 8) -- distinguished from [Variable] so it renders as a known, named input rather than an assigned-but-opaque value. */
+    public data class Parameter(val name: String) : Operand
 
     /** A recognised operand-position builtin call with a faithful template, e.g. `count(x)` (spec §6.3/§14). */
     public data class BuiltinCall(val name: String, val args: List<Operand>) : Operand

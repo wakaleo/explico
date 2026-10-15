@@ -95,6 +95,13 @@ internal object Canonicalizer {
             put("ruleName", JsonPrimitive(condition.ruleName))
             put("type", JsonPrimitive("RuleReference"))
         }
+        is Condition.FunctionCall -> buildJsonObject {
+            put("args", buildJsonArray { condition.args.forEach { add(canonicalOperand(it, aliases)) } })
+            put("functionName", JsonPrimitive(condition.functionName))
+            put("negated", JsonPrimitive(condition.negated))
+            put("packagePath", JsonPrimitive(condition.packagePath))
+            put("type", JsonPrimitive("FunctionCall"))
+        }
         is Condition.Unrendered -> buildJsonObject {
             put("reason", JsonPrimitive(condition.reason))
             put("sourceText", JsonPrimitive(condition.sourceText))
@@ -114,6 +121,10 @@ internal object Canonicalizer {
         is Operand.Variable -> buildJsonObject {
             put("name", JsonPrimitive(aliasFor(operand.name, aliases)))
             put("type", JsonPrimitive("Variable"))
+        }
+        is Operand.Parameter -> buildJsonObject {
+            put("name", JsonPrimitive(aliasFor(operand.name, aliases)))
+            put("type", JsonPrimitive("Parameter"))
         }
         is Operand.BuiltinCall -> buildJsonObject {
             put("args", buildJsonArray { operand.args.forEach { add(canonicalOperand(it, aliases)) } })

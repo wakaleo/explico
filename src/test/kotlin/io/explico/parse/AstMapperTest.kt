@@ -198,10 +198,14 @@ class AstMapperTest {
         }
 
         @Test
-        fun varRootedSprintfPlaceholderIsDeferredToNull() {
-            // stage.name is var-rooted; the minimal placeholder helper only handles plain input.-rooted chains.
+        fun varRootedSprintfPlaceholderHumanizesPromotedByReviewItem9() {
+            // Was: stage.name is var-rooted; the original placeholder helper only handled plain
+            // input.-rooted chains, so producesValue stayed null (a disclosed gap). Review item 9
+            // promotes a var-rooted chain too, once the root is a KNOWN binding (here, `stage`
+            // bound by `some stage in input.pipeline.stages`) -- the var's own name leads the
+            // bracket phrase, since unlike "input" it's real content, not boilerplate.
             val body = wholePack().packages.first { it.path == "release.evidence" }.rules.first { it.name == "deny" }.bodies.single()
-            assertThat(body.producesValue).isNull()
+            assertThat(body.producesValue).isEqualTo("pipeline stage [stage name] did not pass")
             // messageTemplate stays populated regardless -- it doesn't try to render the arguments (spec §6.7).
             assertThat(body.messageTemplate).isEqualTo("pipeline stage %v did not pass")
         }
@@ -306,10 +310,11 @@ class AstMapperTest {
                 PathSegment.VarIndex("window"), PathSegment.Field("finish"),
             )
 
-            // producesValue is null (window.name is var-rooted, can't be humanised for display -- session 2/3)
-            // but messageTemplate stays populated: body attribution (§6.7) needs the template's
-            // literal/wildcard shape, not a display rendering of the argument.
-            assertThat(body.producesValue).isNull()
+            // producesValue now humanizes window.name too (review item 9 promotion: `window` is a
+            // known VarBinding.Iteration binding, same as `stage` above) -- was null (session 2/3's
+            // disclosed gap). messageTemplate stays populated regardless: body attribution (§6.7)
+            // needs the template's literal/wildcard shape, not a display rendering of the argument.
+            assertThat(body.producesValue).isEqualTo("deployment falls inside freeze window [window name]")
             assertThat(body.messageTemplate).isEqualTo("deployment falls inside freeze window %v")
         }
 
@@ -2542,6 +2547,225 @@ class AstMapperTest {
             val comparison = body.conditions.single() as Condition.Comparison
             val unrendered = comparison.left as Operand.Unrendered
             assertThat(unrendered.sourceText).isEqualTo("data.x[z.a]")
+        }
+    }
+
+    @Nested
+    inner class FunctionCallsAndMessagePlaceholders {
+        // Review items 8-9.
+
+        @Test
+        fun userDefinedFunctionCallPromotesToFunctionCallWithItsArgumentResolved() {
+            // `not is_exempt(input.request.namespace)` -- review item 8: a same-package call to a
+            // declared function (head.args != null) promotes to Condition.FunctionCall.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "is_exempt", "args": [{"type":"var","value":"ns"}], "ref": [{"type":"var","value":"is_exempt"}]},
+                      "body": []
+                    },
+                    {
+                      "head": {"name": "deny", "ref": [{"type":"var","value":"deny"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "negated": true,
+                          "location": {"row":1,"text":"${b64("is_exempt(input.request.namespace)")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"is_exempt"}]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"request"},{"type":"string","value":"namespace"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val pkg = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages.single()
+            val denyBody = pkg.rules.single { it.name == "deny" }.bodies.single()
+            val call = denyBody.conditions.single() as Condition.FunctionCall
+            assertThat(call.packagePath).isEqualTo("scratch")
+            assertThat(call.functionName).isEqualTo("is_exempt")
+            assertThat(call.negated).isTrue()
+            assertThat((call.args.single() as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("request"), PathSegment.Field("namespace"),
+            )
+            // the function's own card declares its parameter.
+            assertThat(pkg.rules.single { it.name == "is_exempt" }.parameters).containsExactly("ns")
+        }
+
+        @Test
+        fun crossPackageFunctionCallIsNotResolvedStaysAsFallback() {
+            // CHALLENGE edge case / disclosed limitation: review item 8's promotion is same-package
+            // only. `helper.is_prod(input.x)` -- a 2-segment dotted call name -- never matches any
+            // key in the (bare-name-keyed) same-package function registry, so it falls back exactly
+            // as before this promotion, never a crash, never a partial/guessed resolution.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "deny", "ref": [{"type":"var","value":"deny"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("helper.is_prod(input.x)")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"helper"},{"type":"string","value":"is_prod"}]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val unrendered = body.conditions.single() as Condition.Unrendered
+            assertThat(unrendered.reason).isEqualTo("function-call")
+        }
+
+        @Test
+        fun varRootedSprintfPlaceholderStaysNullWhenTheVariableIsNotAPlainPath() {
+            // CHALLENGE edge case: `x := count(input.y); msg := sprintf("count is %v", [x])` -- `x`
+            // is bound (VarBinding.NonPath), but not to a plain path, so there's no meaningful
+            // field chain to humanize -- stays null rather than guessing "[x]".
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "deny", "key": {"type":"var","value":"msg"}, "ref": [{"type":"var","value":"deny"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("x := count(input.y)")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"assign"}]},
+                            {"type":"var","value":"x"},
+                            {"type":"call","location":{"text":"${b64("count(input.y)")}"},"value":[
+                              {"type":"ref","value":[{"type":"var","value":"count"}]},
+                              {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"y"}]}
+                            ]}
+                          ]
+                        },
+                        {
+                          "index": 1,
+                          "location": {"row":2,"text":"${b64("msg := sprintf(\"count is %v\", [x])")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"assign"}]},
+                            {"type":"var","value":"msg"},
+                            {"type":"call","value":[
+                              {"type":"ref","value":[{"type":"var","value":"sprintf"}]},
+                              {"type":"string","value":"count is %v"},
+                              {"type":"array","value":[{"type":"var","value":"x","location":{"text":"${b64("x")}"}}]}
+                            ]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            assertThat(body.producesValue).isNull()
+            assertThat(body.messageTemplate).isEqualTo("count is %v")
+        }
+
+        @Test
+        fun sprintfWithOneResolvableAndOneUnresolvablePlaceholderStaysNullForTheWholeMessage() {
+            // CHALLENGE edge case: mixing a promotable placeholder (a var-rooted plain field
+            // chain) with a genuinely unresolvable one (an unbound var) must not produce a
+            // partially-rendered message -- spec §6.7's existing all-or-nothing rule for
+            // renderProducesValue, unaffected by this promotion.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "deny", "key": {"type":"var","value":"msg"}, "ref": [{"type":"var","value":"deny"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("some container in input.containers")}"},
+                          "terms": {
+                            "symbols": [
+                              {"type":"call","value":[
+                                {"type":"ref","value":[{"type":"var","value":"internal"},{"type":"string","value":"member_2"}]},
+                                {"type":"var","value":"container"},
+                                {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"containers"}]}
+                              ]}
+                            ]
+                          }
+                        },
+                        {
+                          "index": 1,
+                          "location": {"row":2,"text":"${b64("msg := sprintf(\"%v and %v\", [container.name, other])")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"assign"}]},
+                            {"type":"var","value":"msg"},
+                            {"type":"call","value":[
+                              {"type":"ref","value":[{"type":"var","value":"sprintf"}]},
+                              {"type":"string","value":"%v and %v"},
+                              {"type":"array","value":[
+                                {"type":"ref","value":[{"type":"var","value":"container"},{"type":"string","value":"name"}]},
+                                {"type":"var","value":"other","location":{"text":"${b64("other")}"}}
+                              ]}
+                            ]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            assertThat(body.producesValue).isNull()
+            assertThat(body.messageTemplate).isEqualTo("%v and %v")
+        }
+
+        @Test
+        fun objectHeadMessageVarWithANonVarMsgValueStaysNullRatherThanGuessing() {
+            // CHALLENGE edge case: `deny contains {"msg": "literal", "severity": "high"}` -- the
+            // "msg" key's own value is a string literal, not a bare var, so there's no variable to
+            // attribute an assignment to -- messageVarOf stays null, same as "no msg key at all".
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {
+                        "name": "deny",
+                        "key": {"type":"object","value":[[{"type":"string","value":"msg"},{"type":"string","value":"literal"}],[{"type":"string","value":"severity"},{"type":"string","value":"high"}]]},
+                        "value": {"type":"boolean","value":true},
+                        "ref": [{"type":"var","value":"deny"}]
+                      },
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("input.x")}"},
+                          "terms": {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}],"location":{"text":"${b64("input.x")}"}}
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            assertThat(body.producesValue).isNull()
+            assertThat(body.messageTemplate).isNull()
         }
     }
 }

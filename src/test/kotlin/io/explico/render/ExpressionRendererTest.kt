@@ -11,6 +11,7 @@ import io.explico.model.PathSegment
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -350,5 +351,69 @@ class ExpressionRendererTest {
         val condition = Condition.Comparison(Operand.BuiltinCall("count", listOf(pathWithAnyIndex)), Operator.GT, Operand.Literal("0"))
         assertThat(ExpressionRenderer.render(condition, noAnchor))
             .isEqualTo("any of: the number of `pipeline ▸ checks ▸ name` is greater than `0`")
+    }
+
+    @Nested
+    @DisplayName("Condition.FunctionCall / Operand.Parameter (review item 8)")
+    inner class FunctionCallRendering {
+
+        private val noFunctionAnchor: (Condition.FunctionCall) -> String = { "#stub" }
+        private val namespacePath = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("request"), PathSegment.Field("namespace")))
+
+        @Test
+        @DisplayName("a positive call links and names its argument")
+        fun positiveCallLinksAndNamesItsArgument() {
+            val condition = Condition.FunctionCall("k8s.admission", "is_exempt", listOf(namespacePath), negated = false)
+            assertThat(ExpressionRenderer.render(condition, noAnchor, noFunctionAnchor))
+                .isEqualTo("function [`is_exempt`](#stub) is satisfied for `request ▸ namespace`")
+        }
+
+        @Test
+        @DisplayName("a negated call renders 'is not satisfied for'")
+        fun negatedCallRendersIsNotSatisfied() {
+            val condition = Condition.FunctionCall("k8s.admission", "is_exempt", listOf(namespacePath), negated = true)
+            assertThat(ExpressionRenderer.render(condition, noAnchor, noFunctionAnchor))
+                .isEqualTo("function [`is_exempt`](#stub) is not satisfied for `request ▸ namespace`")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: a zero-argument call drops the dangling 'for' clause entirely")
+        fun zeroArgumentCallDropsTheForClause() {
+            val condition = Condition.FunctionCall("scratch", "is_weekend", emptyList(), negated = false)
+            assertThat(ExpressionRenderer.render(condition, noAnchor, noFunctionAnchor))
+                .isEqualTo("function [`is_weekend`](#stub) is satisfied")
+        }
+
+        @Test
+        @DisplayName("a call whose argument itself can't be resolved renders it inline, verbatim, never dropped or guessed")
+        fun unresolvableArgumentRendersInlineVerbatim() {
+            val condition = Condition.FunctionCall("scratch", "is_exempt", listOf(Operand.Unrendered("helper(input.x)")), negated = false)
+            assertThat(ExpressionRenderer.render(condition, noAnchor, noFunctionAnchor))
+                .isEqualTo("function [`is_exempt`](#stub) is satisfied for `helper(input.x)`")
+        }
+
+        @Test
+        @DisplayName("AnyIndex inside a FunctionCall argument still prefixes the whole phrase with 'any of:'")
+        fun anyOfPrefixPropagatesThroughFunctionCallArgs() {
+            val pathWithAnyIndex = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("items"), PathSegment.AnyIndex, PathSegment.Field("id")))
+            val condition = Condition.FunctionCall("scratch", "is_valid", listOf(pathWithAnyIndex), negated = false)
+            assertThat(ExpressionRenderer.render(condition, noAnchor, noFunctionAnchor))
+                .isEqualTo("any of: function [`is_valid`](#stub) is satisfied for `items ▸ id`")
+        }
+
+        @Test
+        @DisplayName("rendering a FunctionCall without supplying functionAnchorFor fails loudly rather than silently breaking the link")
+        fun missingFunctionAnchorForFailsLoudly() {
+            val condition = Condition.FunctionCall("scratch", "is_exempt", listOf(namespacePath), negated = false)
+            assertThatThrownBy { ExpressionRenderer.render(condition, noAnchor) }.isInstanceOf(IllegalStateException::class.java)
+        }
+
+        @Test
+        @DisplayName("Operand.Parameter renders as a named, known parameter -- distinct from a bare Operand.Variable")
+        fun parameterRendersDistinctlyFromVariable() {
+            val condition = Condition.Membership(negated = false, member = Operand.Parameter("ns"), collection = Operand.Literal("\"kube-system\", \"kube-public\""))
+            assertThat(ExpressionRenderer.render(condition, noAnchor))
+                .isEqualTo("parameter `ns` is one of `\"kube-system\", \"kube-public\"`")
+        }
     }
 }

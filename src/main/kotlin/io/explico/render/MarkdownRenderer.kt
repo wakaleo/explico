@@ -51,12 +51,13 @@ internal object MarkdownRenderer {
         appendMetadataLines(sb, rule, pkg)
 
         val anchorFor: (Condition.RuleReference) -> String = { ref -> resolveAnchor(pkg.path, ref, policySet) }
+        val functionAnchorFor: (Condition.FunctionCall) -> String = { call -> resolveFunctionAnchor(pkg.path, call, policySet) }
         when {
             // A rule that's only ever a `default` declaration (review item 3) has no body at all --
             // nothing to say beyond the heading/metadata/default lines already appended above.
             rule.bodies.isEmpty() -> Unit
-            rule.bodies.size > 1 -> appendMultiBodySituations(sb, rule, anchorFor)
-            else -> appendSingleBody(sb, rule.bodies.single(), anchorFor)
+            rule.bodies.size > 1 -> appendMultiBodySituations(sb, rule, anchorFor, functionAnchorFor)
+            else -> appendSingleBody(sb, rule.bodies.single(), anchorFor, functionAnchorFor)
         }
 
         appendWorkedExamples(sb, rule, workedExamples)
@@ -80,6 +81,11 @@ internal object MarkdownRenderer {
         if (!metadata?.frameworks.isNullOrEmpty()) {
             sb.appendLine("*Frameworks: ${metadata.frameworks.joinToString(", ")}*")
         }
+        // Review item 8: a user-defined function's own card declares its parameters, so a reader
+        // landing here via a FunctionCall's link knows what the caller supplied them as.
+        if (rule.parameters.isNotEmpty()) {
+            sb.appendLine("*Parameters: ${rule.parameters.joinToString(", ") { "`$it`" }}*")
+        }
         sb.appendLine()
 
         // trimEnd(): a YAML "description: |" block literal preserves its own trailing newline,
@@ -93,13 +99,18 @@ internal object MarkdownRenderer {
         }
     }
 
-    private fun appendMultiBodySituations(sb: StringBuilder, rule: RuleGroup, anchorFor: (Condition.RuleReference) -> String) {
+    private fun appendMultiBodySituations(
+        sb: StringBuilder,
+        rule: RuleGroup,
+        anchorFor: (Condition.RuleReference) -> String,
+        functionAnchorFor: (Condition.FunctionCall) -> String,
+    ) {
         sb.appendLine("**The rule matches when ANY of the following situations applies:**")
         sb.appendLine()
         rule.bodies.forEachIndexed { index, body ->
             sb.appendLine("### Situation ${index + 1} — all of the following are true")
             sb.appendLine()
-            appendConditions(sb, body.conditions, anchorFor)
+            appendConditions(sb, body.conditions, anchorFor, functionAnchorFor)
             sb.appendLine()
             if (body.producesValue != null) {
                 sb.appendLine("*Produces:* \"${body.producesValue}\"")
@@ -108,10 +119,15 @@ internal object MarkdownRenderer {
         }
     }
 
-    private fun appendSingleBody(sb: StringBuilder, body: RuleBody, anchorFor: (Condition.RuleReference) -> String) {
+    private fun appendSingleBody(
+        sb: StringBuilder,
+        body: RuleBody,
+        anchorFor: (Condition.RuleReference) -> String,
+        functionAnchorFor: (Condition.FunctionCall) -> String,
+    ) {
         sb.appendLine("**All of the following are true:**")
         sb.appendLine()
-        appendConditions(sb, body.conditions, anchorFor)
+        appendConditions(sb, body.conditions, anchorFor, functionAnchorFor)
         sb.appendLine()
         if (body.producesValue != null) {
             sb.appendLine("*Produces:* \"${body.producesValue}\"")
@@ -169,7 +185,12 @@ internal object MarkdownRenderer {
         sb.appendLine(footer.toString())
     }
 
-    private fun appendConditions(sb: StringBuilder, conditions: List<Condition>, anchorFor: (Condition.RuleReference) -> String) {
+    private fun appendConditions(
+        sb: StringBuilder,
+        conditions: List<Condition>,
+        anchorFor: (Condition.RuleReference) -> String,
+        functionAnchorFor: (Condition.FunctionCall) -> String,
+    ) {
         for (condition in conditions) {
             if (condition is Condition.Unrendered) {
                 sb.appendLine("- ⚠ **not rendered — shown as source:**")
@@ -178,7 +199,7 @@ internal object MarkdownRenderer {
                 condition.sourceText.lines().forEach { line -> sb.appendLine("  $line") }
                 sb.appendLine("  ```")
             } else {
-                sb.appendLine("- ${ExpressionRenderer.render(condition, anchorFor)}")
+                sb.appendLine("- ${ExpressionRenderer.render(condition, anchorFor, functionAnchorFor)}")
             }
         }
     }
@@ -246,11 +267,18 @@ internal object MarkdownRenderer {
     }
 
     /** RuleReference anchors (spec §6.5): control-id or package-rulename, same-file bare `#anchor` vs cross-file `<package>.md#anchor`. */
-    private fun resolveAnchor(currentPackagePath: String, ref: Condition.RuleReference, policySet: PolicySet): String {
-        val targetPackage = policySet.packages.first { it.path == ref.packagePath }
-        val targetRule = targetPackage.rules.first { it.name == ref.ruleName }
-        val anchorId = slug(targetRule.metadata?.controlId ?: "${ref.packagePath}-${ref.ruleName}")
-        return if (ref.packagePath == currentPackagePath) "#$anchorId" else "${ref.packagePath.replace('.', '-')}.md#$anchorId"
+    private fun resolveAnchor(currentPackagePath: String, ref: Condition.RuleReference, policySet: PolicySet): String =
+        anchorForTarget(currentPackagePath, ref.packagePath, ref.ruleName, policySet)
+
+    /** Same anchor convention as a [Condition.RuleReference] (review item 8): a called function is just another card, link-targeted the same way. */
+    private fun resolveFunctionAnchor(currentPackagePath: String, call: Condition.FunctionCall, policySet: PolicySet): String =
+        anchorForTarget(currentPackagePath, call.packagePath, call.functionName, policySet)
+
+    private fun anchorForTarget(currentPackagePath: String, targetPackagePath: String, targetName: String, policySet: PolicySet): String {
+        val targetPackage = policySet.packages.first { it.path == targetPackagePath }
+        val targetRule = targetPackage.rules.first { it.name == targetName }
+        val anchorId = slug(targetRule.metadata?.controlId ?: "$targetPackagePath-$targetName")
+        return if (targetPackagePath == currentPackagePath) "#$anchorId" else "${targetPackagePath.replace('.', '-')}.md#$anchorId"
     }
 
     private fun slug(text: String): String = text.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')

@@ -1363,3 +1363,26 @@ Found by rendering realistic policies (same corpus as §14.14):
 
 Disclosed: `Examples.resolveSegments` treats `KeyPath` as unresolvable for worked-examples display
 (different root needed); rationale in `docs/rego-coverage.md`.
+
+### 14.16 Fix: user-defined function calls, declared parameters, produced-message gaps
+
+Found by rendering realistic policies (same corpus as §§14.14/14.15):
+
+- **§5/§6.3 amendment -- user-defined function calls.** A same-package call to a declared
+  function in condition position promotes to a new `Condition.FunctionCall(packagePath,
+  functionName, args, negated)`: links to the function's own card, names its humanized
+  arguments. Cross-package calls are a disclosed, not-yet-handled limitation.
+- **A new `Operand.Parameter`/`VarBinding.Parameter`**: a function's own declared parameters are
+  pre-populated into its body's symbol table, so a bare use renders as `` parameter `name` ``
+  instead of a silent `Operand.Unrendered` echo indistinguishable from a real value.
+  `RuleGroup.parameters` (new field) drives a `*Parameters: ...*` line on the function's card.
+- **§5 amendment -- sprintf placeholder humanization extended** to a var-rooted field chain whose
+  root is a known binding (not just plain `input.`-rooted chains as before).
+- **§6.2 amendment -- `messageVarOf`** recognises the pair inside an object `head.key` whose key
+  is the literal string `"msg"`, covering `deny contains {"msg": msg, ...}` and the bracket-form
+  sugar `violation[{"msg": m}]`, not just a bare var in `head.key`.
+
+Two Tier-2 goldens (`release-evidence.md`, `release-governance.md`) and `docs/sample-output/`
+were regenerated deliberately for the sprintf-humanization change; reviewed diff-by-diff first.
+Disclosed: cross-package function calls; `Canonicalizer` doesn't hash a function's own parameter
+count; a `NonPath`-bound placeholder var stays unhumanized. Rationale in `docs/rego-coverage.md`.
