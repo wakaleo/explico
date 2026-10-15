@@ -90,8 +90,8 @@ internal object DiffRenderer {
 
     /** A `rego` fenced unified text diff of the two rule sources (spec §7.3), body-by-body verbatim source, LCS-diffed line by line. */
     private fun appendUnifiedDiff(sb: StringBuilder, oldRule: RuleGroup, newRule: RuleGroup) {
-        val oldLines = oldRule.bodies.joinToString("\n\n") { it.sourceText }.lines()
-        val newLines = newRule.bodies.joinToString("\n\n") { it.sourceText }.lines()
+        val oldLines = diffableLines(oldRule)
+        val newLines = diffableLines(newRule)
         for (line in LineDiffer.diff(oldLines, newLines)) {
             when (line) {
                 is DiffLine.Unchanged -> sb.appendLine("  ${line.text}")
@@ -99,6 +99,19 @@ internal object DiffRenderer {
                 is DiffLine.Added -> sb.appendLine("+ ${line.text}")
             }
         }
+    }
+
+    /**
+     * Body source lines, PLUS a synthesized `default <name> := <value>` line when [rule] has one
+     * (review item 14's follow-up) -- a rule's `default` isn't part of any body's own source
+     * text, so without this a changed default produced a LOGIC_CHANGED entry with an EMPTY diff:
+     * for a single-card rule that still has a body (the default stays attached to it), the body
+     * lines alone are unchanged; for a split-out default entry there's no body at all.
+     */
+    private fun diffableLines(rule: RuleGroup): List<String> {
+        val bodyLines = if (rule.bodies.isEmpty()) emptyList() else rule.bodies.joinToString("\n\n") { it.sourceText }.lines()
+        val defaultLine = rule.default?.let { listOf("default ${rule.name} := ${it.rendered}") } ?: emptyList()
+        return defaultLine + bodyLines
     }
 
     private fun appendDocsTable(sb: StringBuilder, entry: DiffEntry) {

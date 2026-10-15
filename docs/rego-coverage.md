@@ -650,6 +650,27 @@ diff review (heading plus table header only). Disclosed, not fixed: an empty `{}
 object at this layer); a severity/other field on an object element is not displayed;
 comprehension-argument context remains deferred (conflicts with REL-004's frozen Tier-1).
 
+## Follow-up: a split rule's default becomes its own entry (item 14 continued)
+
+Found re-rendering the realistic corpus after items 1-17: a `default` declaration whose rule name
+has MULTIPLE sibling cards (review item 1's own promotion -- e.g. AZ-001/AZ-002, two separately
+`scope: rule`-annotated `allow if {...}` bodies, plus `default allow := false`) was repeated on
+EVERY sibling, and -- worse -- diffing a changed default reported N `LOGIC_CHANGED` entries (one
+per sibling) each with an EMPTY source diff, since the default isn't part of any sibling's own
+body source text. Fixtures: `realistic/diff-default/{old,changed,removed}`, pinned by
+`RealisticDefaultsAcceptanceIT` plus unit cases in `AstMapperTest`, `MarkdownRendererTest` and
+`DiffRendererTest`.
+
+Fixed (operator's explicit choice, asked directly rather than decided unilaterally): the default
+becomes ONE entry of its own -- `RuleGroup.isSplitDefaultEntry`, heading "Default for
+`<pkg>.<name>`", excluded from `default` on every sibling. A name with exactly one card keeps the
+default attached to that card, unchanged. `DefaultValue` gained its own `sourceLocation` so this
+new entry's "defined in" line shows a real file instead of the pre-existing `?` placeholder.
+`DiffRenderer`'s source diff now always prepends a synthesized `default <name> := <value>` line
+(for ANY rule carrying one, split or not) ahead of its body lines, so a changed default shows a
+real `-`/`+` line even when the default is still attached to a body-having card -- and the
+default line sits as unchanged context when only the body changes.
+
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
 **Operand-level fallback (`Operand.Unrendered`) renders as plain backticked

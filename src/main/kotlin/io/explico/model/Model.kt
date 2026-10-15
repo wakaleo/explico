@@ -28,6 +28,21 @@ public data class RuleGroup(
     val bodies: List<RuleBody>,
     /** Declared parameter names, in order, for a user-defined function (review item 8); empty for an ordinary rule. */
     val parameters: List<String> = emptyList(),
+    /**
+     * True when this [RuleGroup] exists ONLY to carry a `default` declaration that would
+     * otherwise be repeated across several sibling cards sharing the same Rego-level [name]
+     * (review item 14's follow-up) -- e.g. three separately-annotated `allow if {...}` bodies
+     * plus one `default allow := false`. Rendered with its own "Default for `<pkg>.<name>`"
+     * heading rather than the ordinary id-less `<pkg>.<name>` one, and excluded from `default` on
+     * every sibling card -- repeating it on each, and diffing a changed default as a
+     * `LOGIC_CHANGED` entry per sibling with an EMPTY source diff (the default isn't part of any
+     * sibling's own body source), was both noisy and misleading.
+     *
+     * A rule name with only ONE card keeps its default attached to that card (`isSplitDefaultEntry`
+     * stays false there) -- nothing split, so no separate entry. Same for a name that's only ever
+     * a `default` with no sibling body at all: that case predates this field and is unaffected.
+     */
+    val isSplitDefaultEntry: Boolean = false,
 )
 
 /** METADATA annotations attached to a rule, at rule or document scope. */
@@ -38,8 +53,13 @@ public data class RuleMetadata(
     val frameworks: List<String>,
 )
 
-/** A rule's `default` declaration, e.g. `default allow := false`. */
-public data class DefaultValue(val rendered: String)
+/**
+ * A rule's `default` declaration, e.g. `default allow := false`. [sourceLocation] is the
+ * `default` statement's own row -- needed once a split-rule's default became a real card of its
+ * own (review item 14's follow-up) rather than only ever riding along on a sibling card that
+ * already had a body to source its own "defined in" line from.
+ */
+public data class DefaultValue(val rendered: String, val sourceLocation: SourceRef)
 
 /** One rule body: conditions are AND-ed. */
 public data class RuleBody(

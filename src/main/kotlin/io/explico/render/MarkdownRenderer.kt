@@ -67,7 +67,14 @@ internal object MarkdownRenderer {
 
     private fun appendHeading(sb: StringBuilder, rule: RuleGroup, pkg: PolicyPackage) {
         val controlId = rule.metadata?.controlId
-        sb.appendLine(if (controlId != null) "## $controlId — ${rule.metadata.title ?: rule.name}" else "## ${pkg.path}.${rule.name}")
+        val heading = when {
+            controlId != null -> "## $controlId — ${rule.metadata.title ?: rule.name}"
+            // Review item 14's follow-up: a split-out default entry gets its own recognisable
+            // heading rather than looking like an ordinary id-less card.
+            rule.isSplitDefaultEntry -> "## Default for ${pkg.path}.${rule.name}"
+            else -> "## ${pkg.path}.${rule.name}"
+        }
+        sb.appendLine(heading)
         sb.appendLine()
     }
 
@@ -76,7 +83,7 @@ internal object MarkdownRenderer {
         // "?" only for a default-only rule with zero bodies in this file (review item 3) -- should
         // never actually surface, since a RuleGroup is only ever constructed with at least one of
         // bodies/default non-empty, but this stays a graceful fallback rather than a crash either way.
-        val sourceFile = rule.bodies.firstOrNull()?.sourceLocation?.file?.substringAfterLast('/') ?: "?"
+        val sourceFile = (rule.bodies.firstOrNull()?.sourceLocation ?: rule.default?.sourceLocation)?.file?.substringAfterLast('/') ?: "?"
         sb.appendLine("*Rule `${rule.name}` in package `${pkg.path}` — defined in `$sourceFile`*")
         if (!metadata?.frameworks.isNullOrEmpty()) {
             sb.appendLine("*Frameworks: ${metadata.frameworks.joinToString(", ")}*")
@@ -264,7 +271,7 @@ internal object MarkdownRenderer {
                     packagePath = pkg.path,
                     ruleName = rule.name,
                     coverage = Coverage.of(rule),
-                    sourceFile = rule.bodies.firstOrNull()?.sourceLocation?.file ?: "?",
+                    sourceFile = (rule.bodies.firstOrNull()?.sourceLocation ?: rule.default?.sourceLocation)?.file ?: "?",
                     hasMatching = outcomes.any { it.matched },
                     hasNotMatching = outcomes.any { !it.matched },
                 )

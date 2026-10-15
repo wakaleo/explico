@@ -1157,3 +1157,16 @@ was proposed in, not deferred to a separate increment.
 - `renderIndex` splits controls from id-less rules into two tables (same columns).
 - Tier-2 `index.md` golden + `docs/sample-output/index.md` regenerated after diff review.
 - Deferred: comprehension-argument context (conflicts with REL-004's frozen Tier-1 assertions).
+
+## Follow-up: a split rule's default becomes its own entry (item 14 continued)
+
+- `RuleGroup.isSplitDefaultEntry`: true only when a `default`'s rule name has 2+ sibling cards.
+  Heading "Default for `<pkg>.<name>`"; excluded from every sibling's own `default`. One sibling
+  keeps the default attached to that card, unchanged.
+- `DefaultValue.sourceLocation` (new field, breaks the old 1-arg constructor) sources the "defined
+  in" line for a split entry instead of the pre-existing `?` placeholder.
+- `DiffRenderer.diffableLines` always prepends a synthesized `default <name> := <value>` line
+  (any rule with a default, split or not) ahead of body lines -- a changed default now shows a
+  real `-`/`+` line instead of an empty diff; unchanged when only the body changes.
+- Disclosed, not fixed: worked-example attribution for several same-named RuleGroups (a
+  pre-existing item-1 characteristic) is unaffected in kind by adding a third same-named entry.

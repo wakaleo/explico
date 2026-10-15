@@ -2050,6 +2050,9 @@ class AstMapperTest {
             val rule = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages.single().rules.single()
             assertThat(rule.bodies).hasSize(1)
             assertThat(rule.default?.rendered).isEqualTo("false")
+            // A single sibling keeps the default attached to that one card (review item 14's
+            // follow-up) -- nothing split, so this is NOT a split-default entry.
+            assertThat(rule.isSplitDefaultEntry).isFalse()
         }
 
         @Test
@@ -2075,6 +2078,124 @@ class AstMapperTest {
             assertThat(rule.name).isEqualTo("risk_score")
             assertThat(rule.bodies).isEmpty()
             assertThat(rule.default?.rendered).isEqualTo("0")
+            // No sibling body at all predates the split-default promotion and is unaffected by it.
+            assertThat(rule.isSplitDefaultEntry).isFalse()
+        }
+
+        @Test
+        fun aDefaultWhoseNameHasSeveralSiblingCardsBecomesItsOwnSeparateEntry() {
+            // review item 14's follow-up: K8S-001/K8S-002-style separately-annotated bodies sharing
+            // one Rego name, PLUS a default -- the default becomes one entry of its own, excluded
+            // from both sibling cards, so neither repeats "Default outcome" and a changed default
+            // doesn't show up as a LOGIC_CHANGED entry per sibling with an empty source diff.
+            fun annotatedAllowBody(row: Int, controlId: String, bodyRow: Int) = """
+                {
+                  "location": {"row": $row},
+                  "head": {"name":"allow","ref":[{"type":"var","value":"allow"}]},
+                  "annotations": [{"scope":"rule","title":"$controlId title","custom":{"control-id":"$controlId"}}],
+                  "body": [
+                    {
+                      "index": 0,
+                      "location": {"row":$bodyRow,"text":"${b64("input.x")}"},
+                      "terms": {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}],"location":{"text":"${b64("input.x")}"}}
+                    }
+                  ]
+                }
+            """.trimIndent()
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "default": true,
+                      "location": {"row": 1},
+                      "head": {"name":"allow","value":{"type":"boolean","value":false,"location":{"text":"${b64("false")}"}},"ref":[{"type":"var","value":"allow"}]},
+                      "body": []
+                    },
+                    ${annotatedAllowBody(5, "AZ-001", 6)},
+                    ${annotatedAllowBody(10, "AZ-002", 11)},
+                    ${annotatedAllowBody(15, "AZ-003", 16)}
+                  ]
+                }
+                """.trimIndent()
+            )
+            val inspectResult = opaJson.decodeFromString(
+                OpaInspectResult.serializer(),
+                """
+                {
+                  "annotations": [
+                    {"annotations": {"scope":"rule","title":"AZ-001 title","custom":{"control-id":"AZ-001"}}, "location": {"file":"scratch.rego","row":5}, "path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"},{"type":"string","value":"allow"}]},
+                    {"annotations": {"scope":"rule","title":"AZ-002 title","custom":{"control-id":"AZ-002"}}, "location": {"file":"scratch.rego","row":10}, "path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"},{"type":"string","value":"allow"}]},
+                    {"annotations": {"scope":"rule","title":"AZ-003 title","custom":{"control-id":"AZ-003"}}, "location": {"file":"scratch.rego","row":15}, "path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"},{"type":"string","value":"allow"}]}
+                  ]
+                }
+                """.trimIndent()
+            )
+            val rules = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module)), inspectResult).packages.single().rules
+
+            val annotated = rules.filter { it.metadata != null }
+            assertThat(annotated).hasSize(3)
+            assertThat(annotated).allSatisfy { assertThat(it.default).isNull(); assertThat(it.isSplitDefaultEntry).isFalse() }
+
+            val defaultEntries = rules.filter { it.default != null }
+            assertThat(defaultEntries).hasSize(1)
+            val defaultEntry = defaultEntries.single()
+            assertThat(defaultEntry.isSplitDefaultEntry).isTrue()
+            assertThat(defaultEntry.metadata).isNull()
+            assertThat(defaultEntry.bodies).isEmpty()
+            assertThat(defaultEntry.default?.rendered).isEqualTo("false")
+            assertThat(defaultEntry.name).isEqualTo("allow")
+        }
+
+        @Test
+        fun aSplitDefaultEntryCarriesTheSourceLocationOfItsOwnDefaultDeclaration() {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "default": true,
+                      "location": {"row": 7},
+                      "head": {"name":"allow","value":{"type":"boolean","value":false,"location":{"text":"${b64("false")}"}},"ref":[{"type":"var","value":"allow"}]},
+                      "body": []
+                    },
+                    {
+                      "location": {"row": 10},
+                      "head": {"name":"allow","ref":[{"type":"var","value":"allow"}]},
+                      "annotations": [{"scope":"rule","title":"First","custom":{"control-id":"X-001"}}],
+                      "body": [
+                        {"index":0,"location":{"row":11,"text":"${b64("input.a")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"a"}],"location":{"text":"${b64("input.a")}"}}}
+                      ]
+                    },
+                    {
+                      "location": {"row": 15},
+                      "head": {"name":"allow","ref":[{"type":"var","value":"allow"}]},
+                      "annotations": [{"scope":"rule","title":"Second","custom":{"control-id":"X-002"}}],
+                      "body": [
+                        {"index":0,"location":{"row":16,"text":"${b64("input.b")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"b"}],"location":{"text":"${b64("input.b")}"}}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val inspectResult = opaJson.decodeFromString(
+                OpaInspectResult.serializer(),
+                """
+                {
+                  "annotations": [
+                    {"annotations": {"scope":"rule","title":"First","custom":{"control-id":"X-001"}}, "location": {"file":"scratch.rego","row":10}, "path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"},{"type":"string","value":"allow"}]},
+                    {"annotations": {"scope":"rule","title":"Second","custom":{"control-id":"X-002"}}, "location": {"file":"scratch.rego","row":15}, "path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"},{"type":"string","value":"allow"}]}
+                  ]
+                }
+                """.trimIndent()
+            )
+            val rules = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module)), inspectResult).packages.single().rules
+            val defaultEntry = rules.single { it.isSplitDefaultEntry }
+            assertThat(defaultEntry.default?.sourceLocation?.file).isEqualTo("scratch.rego")
+            assertThat(defaultEntry.default?.sourceLocation?.row).isEqualTo(7)
         }
     }
 

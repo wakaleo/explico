@@ -1419,3 +1419,15 @@ Rationale in `docs/rego-coverage.md`.
 - **§6.1** `index.md`: controls table, then a "Rules without a control id" table.
 
 Goldens: `index.md` only. Rationale in `docs/rego-coverage.md`.
+
+### 14.19 Follow-up: a split rule's default becomes its own entry
+
+- **§5/§6.2 amendment.** When a `default` declaration's rule name has multiple sibling cards
+  (§14.14's own promotion), the default is ONE entry of its own (`RuleGroup.isSplitDefaultEntry`),
+  not repeated on every sibling. A single-card name is unaffected. `DefaultValue` gained
+  `sourceLocation` for this entry's own "defined in" line.
+- **§7.3 amendment.** `DiffRenderer`'s unified source diff always includes a synthesized
+  `default <name> := <value>` line ahead of the body, for any rule carrying a default -- fixes a
+  changed default showing as `LOGIC_CHANGED` with an empty diff.
+
+Rationale in `docs/rego-coverage.md`.

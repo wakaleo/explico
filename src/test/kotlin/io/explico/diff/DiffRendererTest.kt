@@ -12,6 +12,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.nio.file.Path
 
@@ -161,6 +162,35 @@ class DiffRendererTest {
         val markdown = render(old, new)
 
         assertThat(markdown).doesNotContain("could not be rendered")
+    }
+
+    @Test
+    @DisplayName("CHALLENGE edge case (review item 14's follow-up): only the default changes -- the source diff shows a real -/+ line, body lines as unchanged context")
+    fun logicChangedSourceDiffShowsTheDefaultLineWhenOnlyTheDefaultChanges() {
+        val old = Explico.load(diffRendererFixtures.resolve("default-body-base"))
+        val new = Explico.load(diffRendererFixtures.resolve("default-body-default-changed"))
+        val markdown = render(old, new)
+
+        assertThat(markdown).contains("| LOGIC_CHANGED | 1 |")
+        assertThat(markdown).contains("- default allow := false")
+        assertThat(markdown).contains("+ default allow := true")
+        // the body itself is unchanged context, not shown as removed/added.
+        assertThat(markdown).doesNotContain("- 	input.x == 1").doesNotContain("+ 	input.x == 1")
+        assertThat(markdown).contains("  	input.x == 1")
+    }
+
+    @Test
+    @DisplayName("CHALLENGE edge case: only the body changes -- the default line is unchanged context, not shown as removed/added")
+    fun logicChangedSourceDiffLeavesTheDefaultLineAsContextWhenOnlyTheBodyChanges() {
+        val old = Explico.load(diffRendererFixtures.resolve("default-body-base"))
+        val new = Explico.load(diffRendererFixtures.resolve("default-body-body-changed"))
+        val markdown = render(old, new)
+
+        assertThat(markdown).contains("| LOGIC_CHANGED | 1 |")
+        assertThat(markdown).contains("  default allow := false")
+        assertThat(markdown).doesNotContain("- default allow := false").doesNotContain("+ default allow := true")
+        assertThat(markdown).contains("- 	input.x == 1")
+        assertThat(markdown).contains("+ 	input.x == 2")
     }
 
     @Test

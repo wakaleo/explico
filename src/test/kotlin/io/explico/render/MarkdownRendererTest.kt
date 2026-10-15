@@ -124,7 +124,7 @@ class MarkdownRendererTest {
 
         @Test
         fun defaultOutcomeLineOnlyWhenDefaultPresent() {
-            val withDefault = RuleGroup("allow", metadata = null, default = DefaultValue("false"), bodies = listOf(body(listOf(envIsProd))))
+            val withDefault = RuleGroup("allow", metadata = null, default = DefaultValue("false", SourceRef("f.rego", 1)), bodies = listOf(body(listOf(envIsProd))))
             val withoutDefault = RuleGroup("deny", metadata = null, default = null, bodies = listOf(body(listOf(envIsProd))))
             val pkg = PolicyPackage("release.approvals", listOf(withDefault, withoutDefault), listOf("approvals/change_approval.rego"))
 
@@ -137,7 +137,7 @@ class MarkdownRendererTest {
             // CHALLENGE edge case (review item 3): a rule name with NO other body in the file at
             // all -- RuleGroup.bodies is empty. Must not crash (rule.bodies.single()/.first() on an
             // empty list) and must not claim a Situation/condition section that doesn't exist.
-            val rule = RuleGroup("risk_score", metadata = null, default = DefaultValue("0"), bodies = emptyList())
+            val rule = RuleGroup("risk_score", metadata = null, default = DefaultValue("0", SourceRef("f.rego", 1)), bodies = emptyList())
             val pkg = PolicyPackage("scratch", listOf(rule), listOf("scratch.rego"))
 
             val markdown = MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
@@ -146,6 +146,25 @@ class MarkdownRendererTest {
             assertThat(markdown).doesNotContain("Situation")
             assertThat(markdown).doesNotContain("All of the following are true")
             assertThat(markdown).contains("*Rendering coverage: 0 of 0 conditions")
+            // No sibling at all -- plain id-less heading, unaffected by the split-default entry promotion.
+            assertThat(markdown).contains("## scratch.risk_score")
+        }
+
+        @Test
+        fun aSplitDefaultEntryGetsItsOwnHeadingAndARealSourceFileNotAQuestionMark() {
+            // Review item 14's follow-up: isSplitDefaultEntry picks a distinct heading, and
+            // DefaultValue's own sourceLocation (not "?") sources the "defined in" line.
+            val rule = RuleGroup(
+                "allow", metadata = null, default = DefaultValue("false", SourceRef("authz.rego", 5)),
+                bodies = emptyList(), isSplitDefaultEntry = true,
+            )
+            val pkg = PolicyPackage("authz", listOf(rule), listOf("authz.rego"))
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
+
+            assertThat(markdown).contains("## Default for authz.allow")
+            assertThat(markdown).contains("defined in `authz.rego`")
+            assertThat(markdown).doesNotContain("defined in `?`")
+            assertThat(markdown).contains("**Default outcome:** false")
         }
 
         @Test
@@ -559,13 +578,27 @@ class MarkdownRendererTest {
         fun aDefaultOnlyRuleWithNoBodiesStillGetsARowWithoutCrashing() {
             // CHALLENGE edge case (review item 3): renderIndex's row-building also used to call
             // rule.bodies.first() unguarded.
-            val rule = RuleGroup("risk_score", metadata = null, default = DefaultValue("0"), bodies = emptyList())
+            val rule = RuleGroup("risk_score", metadata = null, default = DefaultValue("0", SourceRef("f.rego", 1)), bodies = emptyList())
             val policySet = PolicySet(listOf(PolicyPackage("scratch", listOf(rule), listOf("scratch.rego"))))
 
             val markdown = MarkdownRenderer.renderIndex(policySet)
 
             assertThat(markdown).contains("risk_score")
             assertThat(markdown).contains("100%")
+        }
+
+        @Test
+        fun aSplitDefaultEntryGetsItsOwnIndexRowWithARealSourceFile() {
+            val rule = RuleGroup(
+                "allow", metadata = null, default = DefaultValue("false", SourceRef("authz.rego", 5)),
+                bodies = emptyList(), isSplitDefaultEntry = true,
+            )
+            val policySet = PolicySet(listOf(PolicyPackage("authz", listOf(rule), listOf("authz.rego"))))
+
+            val markdown = MarkdownRenderer.renderIndex(policySet)
+
+            val row = markdown.lines().single { it.startsWith("| —") }
+            assertThat(row).contains("`allow`").contains("`authz.rego`").contains("100%")
         }
 
         @Test

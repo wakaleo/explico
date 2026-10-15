@@ -287,14 +287,14 @@ class RealisticPresentationAcceptanceIT {
         }
 
         @Test
-        @DisplayName("after the heading: the seven id-less rules")
+        @DisplayName("after the heading: the eight id-less entries (the split `allow` default is its own entry)")
         fun helperTable() {
             val rows = dataRows(lines.drop(headingAt + 1).filterNot { it.startsWith("*") })
-            assertThat(rows).hasSize(7)
+            assertThat(rows).hasSize(8)
             for (rule in listOf("risk_level", "is_exempt", "tagged", "violation")) {
                 assertThat(rows.filter { it.contains("`$rule`") }).describedAs("row for %s", rule).hasSize(1)
             }
-            assertThat(rows.count { it.contains("`allow`") }).isEqualTo(1)
+            assertThat(rows.count { it.contains("`allow`") }).isEqualTo(2)
             assertThat(rows.count { it.contains("`deny`") }).isEqualTo(2)
         }
 

@@ -376,13 +376,13 @@ internal object AstMapper {
         // rule name within a package, so this is a straight name -> value map, never a collision.
         val defaultsByName: Map<String, DefaultValue> = named
             .filter { it.rule.default }
-            .associate { it.name to defaultValueOf(it.rule) }
+            .associate { it.name to defaultValueOf(it.rule, ctx) }
 
         // Several independently-annotated rules can share a Rego-level name (review item 1) -- e.g.
         // three separately-`scope: rule`-annotated `deny contains msg if {...}` bodies. Grouping by
         // (name, metadata) rather than name alone keeps those as separate cards while still merging
         // bodies that genuinely share one annotation (document scope, or no annotation at all).
-        val groups = named.filterNot { it.rule.default }
+        val groupsWithoutDefault = named.filterNot { it.rule.default }
             .groupBy { it.name to it.metadata }
             .map { (key, items) ->
                 val (name, metadata) = key
@@ -390,7 +390,7 @@ internal object AstMapper {
                 RuleGroup(
                     name = name,
                     metadata = metadata,
-                    default = defaultsByName[name],
+                    default = null,
                     bodies = orderedRules.map { mapBody(it, ctx) },
                     // review item 8: a function's own declared parameters, for its card's own
                     // "Parameters" line. `head.args` is consistent across a function's overloaded
@@ -398,15 +398,38 @@ internal object AstMapper {
                     parameters = orderedRules.first().head.args?.map { stringValueOf(it) } ?: emptyList(),
                 )
             }
+        val siblingCountByName: Map<String, Int> = groupsWithoutDefault.groupingBy { it.name }.eachCount()
+
+        // Review item 14's follow-up: a `default` whose rule name has MULTIPLE sibling cards
+        // becomes one separate entry instead of being repeated on every sibling (operator's
+        // explicit choice) -- repeating it was noisy, and diffing a changed default per sibling
+        // produced a LOGIC_CHANGED entry with an EMPTY source diff (the default isn't part of any
+        // sibling's own body source). A name with exactly one sibling keeps the default attached
+        // to that one card, unchanged from before this split existed.
+        val groups = groupsWithoutDefault.map { group ->
+            val default = defaultsByName[group.name]
+            if (default != null && siblingCountByName.getValue(group.name) == 1) group.copy(default = default) else group
+        }
+        val splitDefaultEntries = defaultsByName.filterKeys { (siblingCountByName[it] ?: 0) > 1 }
+            .map { (name, defaultValue) ->
+                RuleGroup(
+                    name = name,
+                    metadata = null,
+                    default = defaultValue,
+                    bodies = emptyList(),
+                    parameters = groupsWithoutDefault.first { it.name == name }.parameters,
+                    isSplitDefaultEntry = true,
+                )
+            }
 
         // A rule name that's only ever a `default` declaration in this file, with no other body,
         // still deserves a card (the same "never silently drop a rule" principle as review item 2)
         // rather than vanishing because the loop above only ever emits a group for a non-default body.
-        val namesAlreadyCovered = groups.map { it.name }.toSet()
+        val namesAlreadyCovered = groupsWithoutDefault.map { it.name }.toSet()
         val defaultOnlyGroups = defaultsByName.filterKeys { it !in namesAlreadyCovered }
             .map { (name, defaultValue) -> RuleGroup(name = name, metadata = null, default = defaultValue, bodies = emptyList()) }
 
-        return groups + defaultOnlyGroups
+        return groups + splitDefaultEntries + defaultOnlyGroups
     }
 
     /**
@@ -415,7 +438,8 @@ internal object AstMapper {
      * other fallback/literal rendering in this mapper. A default's value is always a scalar or
      * composite literal (Rego disallows referencing `input`/`data`/a var in one), so this is exact.
      */
-    private fun defaultValueOf(rule: OpaRule): DefaultValue = DefaultValue(sourceText(rule.head.value?.location))
+    private fun defaultValueOf(rule: OpaRule, ctx: MappingContext): DefaultValue =
+        DefaultValue(sourceText(rule.head.value?.location), SourceRef(ctx.sourceFile, rule.location?.row ?: 0))
 
     private fun mapBody(rule: OpaRule, ctx: MappingContext): RuleBody {
         // An else-chain (spec §14 finding): opa's own top-level `rule.location` already spans the
