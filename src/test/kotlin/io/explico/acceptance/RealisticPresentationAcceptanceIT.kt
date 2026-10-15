@@ -134,10 +134,10 @@ class RealisticPresentationAcceptanceIT {
     inner class CoverageBreakdown {
 
         @Test
-        @DisplayName("K8S-003 keeps 1 of 4 conditions and its footer counts 3 helper assignments")
+        @DisplayName("K8S-003 keeps 1 of 2 conditions and its footer counts the 1 remaining helper assignment")
         fun k8s003() {
             val footer = coverageFooter(section(files["k8s-admission.md"] ?: "", "K8S-003"))
-            assertThat(footer).contains("1 of 4 conditions").containsIgnoringCase("3 helper assignment")
+            assertThat(footer).contains("1 of 2 conditions").containsIgnoringCase("1 helper assignment")
         }
 
         @Test
@@ -213,10 +213,10 @@ class RealisticPresentationAcceptanceIT {
         }
 
         @Test
-        @DisplayName("K8S-003: the later `missing` bullet reads `missing` is not empty")
+        @DisplayName("K8S-003: the later bullet reads `... minus `provided`` is not empty, not a `the number of` phrasing")
         fun k8s003() {
             val card = section(files["k8s-admission.md"] ?: "", "K8S-003")
-            assertThat(bulletWith(card, "`missing`", "not empty")).doesNotContain("the number of")
+            assertThat(bulletWith(card, "minus", "not empty")).doesNotContain("the number of")
         }
     }
 

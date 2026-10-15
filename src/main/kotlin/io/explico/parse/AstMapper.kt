@@ -120,6 +120,10 @@ private sealed interface ConstructResult {
  * - [NonPath]: `x := <anything else>` -- spec §5 is explicit that later bare uses of `x` still
  *   render, as `Operand.Variable(x)`, never a guessed path and never conflated with a genuinely
  *   unbound/unknown variable (which stays `Operand.Unrendered`).
+ * - [Expression]: `x := <anything that maps to a fully-rendered operand tree>` that is not a plain
+ *   path (`diff := input.a - input.b`, `n := count(input.xs)`): Rego variables are
+ *   single-assignment, so substituting the operand at each bare use is semantically faithful.
+ *   Never created when any part of the operand is [Operand.Unrendered] -- that stays [NonPath].
  * - [Parameter]: a declared function parameter (review item 8) -- pre-populated into the symbol
  *   table before a function's own body is walked, so a bare use renders as `Operand.Parameter(x)`,
  *   a known named input rather than an opaque `Operand.Variable` or an unbound `Operand.Unrendered`.
@@ -129,6 +133,9 @@ private sealed interface VarBinding {
     data class Substitution(val path: Operand.Path) : VarBinding
     object NonPath : VarBinding
     object Parameter : VarBinding
+
+    /** `x := <operand expression>` that maps cleanly (arithmetic, set difference, `count(...)`, a literal, a rule-value reference...) -- later bare uses substitute the whole operand inline. */
+    data class Expression(val operand: Operand) : VarBinding
 }
 
 internal object AstMapper {
@@ -527,6 +534,7 @@ internal object AstMapper {
             if (assignment != null) {
                 val (targetVar, valueTerm) = assignment
                 val plainPath = plainPathOperandOrNull(valueTerm, symbolTable, ctx)
+                val expression = if (plainPath == null) expressionOperandOrNull(valueTerm, symbolTable, ctx) else null
                 when {
                     // `x := <collection>[_]` (review item 5): Rego's wildcard index means "for some
                     // element of <collection>" -- the exact same existential claim `some x in
@@ -544,6 +552,9 @@ internal object AstMapper {
                         conditions += Condition.SomeIn(targetVar, collection)
                     }
                     plainPath != null -> symbolTable[targetVar] = VarBinding.Substitution(plainPath)
+                    // Mapped BEFORE targetVar is bound, so a self-reference (`x := x + 1`) sees x as
+                    // unbound and stays a fallback rather than looping or substituting itself.
+                    expression != null -> symbolTable[targetVar] = VarBinding.Expression(expression)
                     else -> {
                         symbolTable[targetVar] = VarBinding.NonPath
                         // Review item 12: a distinct reason from a genuinely unresolved CONDITION
@@ -644,6 +655,23 @@ internal object AstMapper {
      * NOT qualify -- the assignment stays a visible fallback bullet instead of silently vanishing
      * while pointing nowhere.
      */
+    /**
+     * Generalises [plainPathOperandOrNull]: a right-hand side that maps through the ordinary operand
+     * pipeline to a tree with NO [Operand.Unrendered] anywhere inside it qualifies for inline
+     * substitution. A comprehension, an unknown builtin, or an unbound variable anywhere in the
+     * expression disqualifies the WHOLE assignment -- it stays a visible helper-assignment fallback.
+     */
+    private fun expressionOperandOrNull(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): Operand? {
+        val operand = (mapOperand(term, symbolTable, ctx) as? ConstructResult.Ok)?.operand ?: return null
+        return operand.takeIf { isFullyRendered(it) }
+    }
+
+    private fun isFullyRendered(operand: Operand): Boolean = when (operand) {
+        is Operand.Unrendered -> false
+        is Operand.BuiltinCall -> operand.args.all { isFullyRendered(it) }
+        else -> true
+    }
+
     private fun plainPathOperandOrNull(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): Operand.Path? {
         if (term.type != "ref") return null
         val result = mapRefChain(decodeTermList(term.value), symbolTable, ctx, term.location)
@@ -891,6 +919,7 @@ internal object AstMapper {
             is VarBinding.Substitution -> ConstructResult.Ok(Operand.Path(binding.path.segments))
             VarBinding.NonPath -> ConstructResult.Ok(Operand.Variable(stringValueOf(term)))
             VarBinding.Parameter -> ConstructResult.Ok(Operand.Parameter(stringValueOf(term)))
+            is VarBinding.Expression -> ConstructResult.Ok(binding.operand)
             null -> {
                 val name = stringValueOf(term)
                 val reference = ruleValueReferenceIfKnown(ctx.currentPackage, name, ctx)
@@ -971,7 +1000,7 @@ internal object AstMapper {
             // -- spec §5's promotion only covers Substitution as a chain root, not a function
             // parameter standing for an arbitrary caller-supplied value -- so it's treated the same
             // conservative way as NonPath: never guessed, falls back whole.
-            VarBinding.NonPath, VarBinding.Parameter, null -> ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+            VarBinding.NonPath, VarBinding.Parameter, is VarBinding.Expression, null -> ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
         }
     }
 

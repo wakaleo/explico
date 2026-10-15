@@ -263,10 +263,10 @@ class RealisticBuiltinsAndHelpersAcceptanceIT {
     @DisplayName("Item 12 — consecutive helper assignments render as one labelled block")
     inner class GroupedHelperAssignments {
 
-        private val card get() = section(files["k8s-admission.md"] ?: "", "K8S-003")
+        private val card get() = section(builtinFiles["helpers.md"] ?: "", "helpers.grouped")
 
         @Test
-        @DisplayName("K8S-003 has exactly one ⚠ bullet, labelled as helper definitions")
+        @DisplayName("helpers.grouped has exactly one ⚠ bullet, labelled as helper definitions")
         fun oneLabelledBullet() {
             val warn = warnBullets(card)
             assertThat(warn).hasSize(1)
@@ -274,23 +274,23 @@ class RealisticBuiltinsAndHelpersAcceptanceIT {
         }
 
         @Test
-        @DisplayName("one fenced block holds `required :=`, `provided :=` and `missing :=` verbatim, in source order")
+        @DisplayName("one fenced block holds `x :=`, `y :=` and `z :=` verbatim, in source order")
         fun oneBlockInSourceOrder() {
             val blocks = fencedBlocks(card)
             assertThat(blocks).hasSize(1)
             val block = blocks.single()
-            assertThat(block).contains("required := {\"owner\", \"team\"}")
-            assertThat(block).contains("provided := {l | input.request.object.metadata.labels[l]}")
-            assertThat(block).contains("missing := required - provided")
-            assertThat(block.indexOf("required :=")).isLessThan(block.indexOf("provided :="))
-            assertThat(block.indexOf("provided :=")).isLessThan(block.indexOf("missing :="))
+            assertThat(block).contains("x := json.marshal(input.p)")
+            assertThat(block).contains("y := json.marshal(input.q)")
+            assertThat(block).contains("z := json.marshal(input.r)")
+            assertThat(block.indexOf("x :=")).isLessThan(block.indexOf("y :="))
+            assertThat(block.indexOf("y :=")).isLessThan(block.indexOf("z :="))
         }
 
         @Test
-        @DisplayName("the later `missing` is not empty bullet still follows the block")
+        @DisplayName("the later `x` is not `y` bullet still follows the block")
         fun laterConditionStillFollows() {
-            val bullet = bulletWith(card, "`missing`", "not empty")
-            assertThat(card.indexOf(bullet)).isGreaterThan(card.indexOf("missing := required - provided"))
+            val bullet = bulletWith(card, "`x`", "`y`")
+            assertThat(card.indexOf(bullet)).isGreaterThan(card.indexOf("z := json.marshal(input.r)"))
         }
 
         @Test
@@ -312,8 +312,8 @@ class RealisticBuiltinsAndHelpersAcceptanceIT {
             assertThat(warnBullets(card)).hasSize(3)
             val blocks = fencedBlocks(card)
             assertThat(blocks).hasSize(3)
-            assertThat(blocks[0]).contains("a := count(input.xs)").doesNotContain("b :=")
-            assertThat(blocks[1]).contains("b := count(input.ys)").doesNotContain("json.is_valid")
+            assertThat(blocks[0]).contains("a := json.marshal(input.xs)").doesNotContain("b :=")
+            assertThat(blocks[1]).contains("b := json.marshal(input.ys)").doesNotContain("json.is_valid")
             assertThat(blocks[2]).contains("json.is_valid(input.z)")
         }
 
@@ -322,9 +322,9 @@ class RealisticBuiltinsAndHelpersAcceptanceIT {
         fun orderPreserved() {
             val env = bulletWith(card, "env", "\"prod\"")
             val comparison = bulletWith(card, "`a`", "`b`")
-            val aAt = card.indexOf("a := count(input.xs)")
+            val aAt = card.indexOf("a := json.marshal(input.xs)")
             val envAt = card.indexOf(env)
-            val bAt = card.indexOf("b := count(input.ys)")
+            val bAt = card.indexOf("b := json.marshal(input.ys)")
             val jsonAt = card.indexOf("json.is_valid(input.z)")
             val cmpAt = card.indexOf(comparison)
             assertThat(listOf(aAt, envAt, bAt, jsonAt, cmpAt)).isSorted().doesNotContain(-1)

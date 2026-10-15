@@ -1170,7 +1170,7 @@ class AstMapperTest {
 
         @Test
         fun assignmentToANonPlainPathStillFallsBackAndLaterBareUseRendersAsVariable() {
-            // `x := count(input.y); x > 0` -- spec §5's own explicit wording: a non-plain-path RHS
+            // `x := json.marshal(input.y); x > 0` -- spec §5's own explicit wording: a non-plain-path RHS
             // keeps the assignment as a visible fallback bullet, and later bare uses of x render as
             // Operand.Variable (known to be assigned, not a genuinely unbound/unknown name).
             val module = moduleOf(
@@ -1183,12 +1183,12 @@ class AstMapperTest {
                       "body": [
                         {
                           "index": 0,
-                          "location": {"file":"scratch.rego","row":1,"text":"${b64("x := count(input.y)")}"},
+                          "location": {"file":"scratch.rego","row":1,"text":"${b64("x := json.marshal(input.y)")}"},
                           "terms": [
                             {"type":"ref","value":[{"type":"var","value":"assign"}]},
                             {"type":"var","value":"x"},
-                            {"type":"call","location":{"text":"${b64("count(input.y)")}"},"value":[
-                              {"type":"ref","value":[{"type":"var","value":"count"}]},
+                            {"type":"call","location":{"text":"${b64("json.marshal(input.y)")}"},"value":[
+                              {"type":"ref","value":[{"type":"var","value":"json"},{"type":"string","value":"marshal"}]},
                               {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"y"}]}
                             ]}
                           ]
@@ -1214,7 +1214,7 @@ class AstMapperTest {
             // "helper-assignment" (review item 12), distinct from a bare unresolved CALL's
             // "function-call" -- this is specifically an assignment the mapper can't substitute.
             assertThat(fallback.reason).isEqualTo("helper-assignment")
-            assertThat(fallback.sourceText).isEqualTo("x := count(input.y)")
+            assertThat(fallback.sourceText).isEqualTo("x := json.marshal(input.y)")
             val comparison = body.conditions[1] as Condition.Comparison
             assertThat((comparison.left as Operand.Variable).name).isEqualTo("x")
         }
@@ -3800,6 +3800,113 @@ class AstMapperTest {
             val reference = body.yieldsValue as Operand.RuleValueReference
             assertThat(reference.packagePath).isEqualTo("scratch")
             assertThat(reference.ruleName).isEqualTo("threshold")
+        }
+    }
+
+    @Nested
+    inner class ExpressionAssignmentSubstitution {
+
+        private fun ref(vararg parts: String) =
+            """{"type":"ref","value":[${parts.joinToString(",") { """{"type":"${if (it == parts.first() && (it == "input" || it == "data")) "var" else "string"}","value":"$it"}""" }}]}"""
+        private fun op(name: String) = """{"type":"ref","value":[{"type":"var","value":"$name"}]}"""
+        private fun call(name: String, vararg args: String) = """{"type":"call","value":[${op(name)},${args.joinToString(",")}]}"""
+        private fun v(name: String) = """{"type":"var","value":"$name","location":{"text":"${b64(name)}"}}"""
+        private fun assign(target: String, rhs: String) = """{"index":0,"location":{"row":1,"text":"${b64("$target := ...")}"},"terms":[${op("assign")},{"type":"var","value":"$target"},$rhs]}"""
+        private fun compare(opName: String, left: String, right: String) = """{"index":1,"location":{"row":2,"text":"${b64("cmp")}"},"terms":[${op(opName)},$left,$right]}"""
+        private val input = { field: String -> ref("input", field) }
+
+        private fun rules(vararg bodies: Pair<String, List<String>>): List<io.explico.model.RuleGroup> {
+            val json = """{"package":{"path":[{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},"rules":[${
+                bodies.joinToString(",") { (name, exprs) -> """{"head":{"name":"$name","ref":[${op(name)}]},"body":[${exprs.joinToString(",")}]}""" }
+            }]}"""
+            return AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", moduleOf(json)))).packages[0].rules
+        }
+
+        private fun conditionsOf(vararg exprs: String) = rules("r" to exprs.toList()).single().bodies.single().conditions
+
+        @Test
+        fun aFullyRenderedExpressionIsSubstitutedAndTheAssignmentDisappears() {
+            val conditions = conditionsOf(
+                assign("x", call("plus", call("count", input("y")), """{"type":"number","value":1}""")),
+                compare("gt", v("x"), """{"type":"number","value":5}"""),
+            )
+            val comparison = conditions.single() as Condition.Comparison
+            val plus = comparison.left as Operand.BuiltinCall
+            assertThat(plus.name).isEqualTo("plus")
+            assertThat((plus.args[0] as Operand.BuiltinCall).name).isEqualTo("count")
+        }
+
+        @Test
+        @DisplayName("guard: an unbound variable anywhere in the right-hand side keeps the helper-assignment fallback")
+        fun anUnboundVariableInTheExpressionStaysAFallback() {
+            val conditions = conditionsOf(
+                assign("x", call("plus", v("nowhere"), """{"type":"number","value":1}""")),
+                compare("gt", v("x"), """{"type":"number","value":5}"""),
+            )
+            assertThat((conditions[0] as Condition.Unrendered).reason).isEqualTo("helper-assignment")
+            assertThat((conditions[1] as Condition.Comparison).left).isEqualTo(Operand.Variable("x"))
+        }
+
+        @Test
+        @DisplayName("guard: an unmappable argument NESTED inside count(...) disqualifies the whole expression")
+        fun aNestedUnmappableArgumentStaysAFallback() {
+            val conditions = conditionsOf(
+                assign("x", call("count", call("json.marshal", input("y")))),
+                compare("gt", v("x"), """{"type":"number","value":0}"""),
+            )
+            assertThat((conditions[0] as Condition.Unrendered).reason).isEqualTo("helper-assignment")
+        }
+
+        @Test
+        @DisplayName("guard: a self-referencing right-hand side (`x := x + 1`) sees x unbound and stays a fallback")
+        fun selfReferenceStaysAFallback() {
+            val conditions = conditionsOf(assign("x", call("plus", v("x"), """{"type":"number","value":1}""")))
+            assertThat((conditions.single() as Condition.Unrendered).reason).isEqualTo("helper-assignment")
+        }
+
+        @Test
+        @DisplayName("bindings are per body: the same variable name in two bodies substitutes each body's own expression")
+        fun bindingsArePerBody() {
+            val result = rules(
+                "a" to listOf(assign("x", call("count", input("p"))), compare("gt", v("x"), """{"type":"number","value":0}""")),
+                "b" to listOf(assign("x", call("count", input("q"))), compare("gt", v("x"), """{"type":"number","value":0}""")),
+            )
+            fun countedField(name: String): List<PathSegment> {
+                val left = (result.first { it.name == name }.bodies.single().conditions.single() as Condition.Comparison).left as Operand.BuiltinCall
+                return (left.args.single() as Operand.Path).segments
+            }
+            assertThat(countedField("a").last()).isEqualTo(PathSegment.Field("p"))
+            assertThat(countedField("b").last()).isEqualTo(PathSegment.Field("q"))
+        }
+
+        @Test
+        @DisplayName("transitive: `y := x` where x is itself an expression binding substitutes the same operand")
+        fun transitiveThroughAnExpressionBinding() {
+            val conditions = conditionsOf(
+                assign("x", call("count", input("p"))),
+                assign("y", v("x")),
+                compare("gt", v("y"), """{"type":"number","value":0}"""),
+            )
+            assertThat(((conditions.single() as Condition.Comparison).left as Operand.BuiltinCall).name).isEqualTo("count")
+        }
+
+        @Test
+        @DisplayName("an expression-bound variable used as a `some ... in` collection is NOT treated as a path -- the iteration falls back")
+        fun expressionBindingAsSomeInCollectionFallsBack() {
+            val someIn = """{"index":1,"location":{"row":2,"text":"${b64("some i in xs")}"},"terms":{"symbols":[{"type":"call","value":[{"type":"ref","value":[{"type":"var","value":"internal"},{"type":"string","value":"member_2"}]},{"type":"var","value":"i"},${v("xs")}]}]}}"""
+            val conditions = conditionsOf(assign("xs", call("plus", input("a"), input("b"))), someIn)
+            assertThat(conditions.single()).isInstanceOf(Condition.Unrendered::class.java)
+        }
+
+        @Test
+        @DisplayName("guard: an expression-bound variable used as a ref-chain ROOT (`x.field`) keeps the conservative whole-operand fallback")
+        fun expressionBindingAsRefRootFallsBack() {
+            val rooted = """{"type":"ref","value":[{"type":"var","value":"x"},{"type":"string","value":"field"}],"location":{"text":"${b64("x.field")}"}}"""
+            val conditions = conditionsOf(
+                assign("x", call("plus", input("a"), input("b"))),
+                compare("gt", rooted, """{"type":"number","value":0}"""),
+            )
+            assertThat((conditions.single() as Condition.Comparison).left).isInstanceOf(Operand.Unrendered::class.java)
         }
     }
 }

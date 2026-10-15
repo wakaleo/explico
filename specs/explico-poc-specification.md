@@ -1407,7 +1407,7 @@ Found by rendering realistic policies (same corpus as §§14.14-14.16):
 Repinned three existing assertions pinning the pre-rename reason for what are actually
 assignment-fallbacks (probes 31/39, one hand-built AstMapperTest case); repointed three
 acceptance-IT guards whose fallback premise this promotion supersedes. Disclosed, explicitly
-out of scope: the set-difference operand (`a - b`) and comprehension-argument partial credit.
+out of scope: the set-difference operand (`a - b`; resolved in §14.24) and comprehension-argument partial credit.
 Rationale in `docs/rego-coverage.md`.
 
 ### 14.18 Polish: else-chain header, coverage breakdown, emptiness idioms, object-valued verdicts, index split
@@ -1507,5 +1507,16 @@ Rationale in `docs/rego-coverage.md`.
   (default always true -- a whole-package render is unaffected, since every rule gets a card
   there). `DiffRenderer` builds the real predicate from which controls actually got a card in
   that diff (REMOVED uses the old side's identifiers, ADDED/LOGIC_CHANGED the new side's).
+
+Rationale in `docs/rego-coverage.md`.
+
+### 14.24 Follow-up: expression assignments are substituted inline
+
+- **§5 amendment.** `VarBinding.Expression(operand)`: `x := <expr>` whose right-hand side maps
+  through the operand pipeline to a tree with no `Operand.Unrendered` is substituted at every bare
+  later use and emits no condition. Anything else keeps the §14.17 helper-assignment fallback.
+  Resolves the deferred set-difference operand (`required - provided` is the ordinary `minus`).
+- Self-reference, ref-chain-root use and `some ... in` collection use of an expression-bound
+  variable keep the conservative fallback. No model or hash change (renaming is hash-invariant).
 
 Rationale in `docs/rego-coverage.md`.

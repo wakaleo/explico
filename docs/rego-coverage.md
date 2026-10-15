@@ -623,7 +623,7 @@ still genuinely unsupported (`every`) -- noted at the time, not silently left
 stale.
 
 Disclosed, not fixed (explicitly out of scope by the operator's own
-instruction, not an oversight): the set-difference operand (`a - b` where
+instruction, not an oversight; **set-difference since resolved, see "Follow-up: expression assignments are substituted inline" below**): the set-difference operand (`a - b` where
 both are sets, e.g. `missing := required - provided`) still has no dedicated
 rendering -- `missing` stays an untraced `Operand.Variable` wherever used
 bare; and a comprehension argument still forces the WHOLE enclosing
@@ -717,6 +717,34 @@ CONDITIONAL complete rule, e.g. `x := "high" if { input.risk > 80 }`, still neve
 value it yields in its card -- only its conditions. Showing it would need deciding how to
 display a value that depends on which Situation matched (possibly a different value per
 Situation), a materially different design question from a single unconditional value.
+
+## Follow-up: expression assignments are substituted inline (resolves the deferred set-difference operand)
+
+Fixture `src/test/resources/realistic/expressions/exprs.rego`, pinned by
+`RealisticExpressionAssignmentsAcceptanceIT` plus `AstMapperTest.ExpressionAssignmentSubstitution`
+and two `CanonicalizerTest` cases.
+
+| Finding | Was | Now |
+|---|---|---|
+| `diff := input.a - input.b`, `total := count(input.items) + 1`, `missing := required - provided` -- any local assignment whose right-hand side is not a plain path -- became a "helper-assignment" fallback block, and every later use of the variable rendered as an untraced `` `diff` ``. The deferred "set-difference operand" was just the most visible case of this. | A fenced fallback per assignment; later uses opaque. | A new `VarBinding.Expression(operand)`: when the right-hand side maps through the ordinary operand pipeline to a tree with NO `Operand.Unrendered` anywhere inside (`isFullyRendered`, recursing into builtin-call arguments), the variable is substituted at every bare later use and the assignment disappears from the card, exactly as a plain-path assignment already did. Rego variables are single-assignment, so inline substitution is semantically faithful. Set difference needs no special rendering: it is the same `minus` builtin as numeric subtraction and reads "`a` minus `b`". |
+
+Unchanged on purpose: a right-hand side containing a comprehension, an unknown builtin or an
+unbound variable stays the helper-assignment fallback (the whole assignment, not partially); the
+mapped operand is built BEFORE the target is bound, so `x := x + 1` cannot substitute itself; an
+expression-bound variable used as a ref-chain root (`x.field`) or as a `some ... in` collection
+keeps the conservative whole-operand fallback (it is not a path). An untraced-name operand
+(`Operand.Variable`, a variable whose own assignment is a visible fallback) inside the expression
+is allowed -- the name is real and its definition is shown above. Canonical hash: the variable never
+reaches the model, so renaming it is hash-invariant (tested), while changing an operand inside the
+expression changes the hash.
+
+Repinned (superseded examples, not weakened invariants): the fixtures that used a now-mappable
+right-hand side to produce a fallback were repointed at `json.marshal(...)` (`helpers.rego`'s `a`/`b`;
+`AstMapperTest`'s non-plain-path case), the grouped-helper block tests moved from K8S-003 (whose
+`required`/`missing` assignments are now substituted; only `provided :=` remains fenced) to a new
+`helpers.grouped` rule with three consecutive unmappable assignments, and K8S-003's footer/bullet
+assertions were updated to the new truth (`1 of 2 conditions`, 1 helper assignment, "... minus
+`provided` is not empty"). Tier-2 goldens and `docs/sample-output` are byte-identical.
 
 ## Follow-up: links inside a diff report resolve (item 18 continued)
 

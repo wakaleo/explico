@@ -81,7 +81,7 @@ class RealisticPoliciesAcceptanceIT {
         @DisplayName("K8S-003's card holds the labels logic and not another control's logic")
         fun k8s003CardHoldsOnlyItsOwnLogic() {
             val card = section(files["k8s-admission.md"] ?: "", "K8S-003")
-            assertThat(card).contains("required :=")
+            assertThat(card).contains("provided :=")
             assertThat(card).doesNotContain("security context ▸ privileged")
             assertThat(card).doesNotContain("registry.corp.example")
         }

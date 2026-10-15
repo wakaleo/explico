@@ -187,11 +187,11 @@ class RealisticPathsAcceptanceIT {
     inner class FallbackGuards {
 
         @Test
-        @DisplayName("K8S-003's set literal and set comprehension assignments stay fenced source (guard: passes today)")
+        @DisplayName("K8S-003's set COMPREHENSION assignment stays fenced source; its set-literal and set-difference assignments are substituted away")
         fun nonPathAssignmentsStayFenced() {
             val src = fencedSource(section(files["k8s-admission.md"] ?: "", "K8S-003"))
-            assertThat(src).contains("required := {\"owner\", \"team\"}")
             assertThat(src).contains("provided := {l | input.request.object.metadata.labels[l]}")
+            assertThat(src).doesNotContain("required :=").doesNotContain("missing :=")
         }
 
         @Test

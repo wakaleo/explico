@@ -116,6 +116,22 @@ class CanonicalizerTest {
     }
 
     @Test
+    @DisplayName("CHALLENGE edge case: renaming a variable whose assignment is substituted inline leaves the logic hash unchanged -- the variable never reaches the model")
+    fun renamingAnExpressionAssignedVariableYieldsTheSameLogicHash() {
+        val base = denyRule("expression-assign-base")
+        val renamed = denyRule("expression-assign-renamed")
+        assertThat(Canonicalizer.logicHash(renamed)).isEqualTo(Canonicalizer.logicHash(base))
+    }
+
+    @Test
+    @DisplayName("CHALLENGE edge case: changing an operand inside a substituted expression changes the logic hash")
+    fun changingAnOperandInsideASubstitutedExpressionYieldsADifferentLogicHash() {
+        val base = denyRule("expression-assign-base")
+        val changed = denyRule("expression-assign-operand-changed")
+        assertThat(Canonicalizer.logicHash(changed)).isNotEqualTo(Canonicalizer.logicHash(base))
+    }
+
+    @Test
     fun reformattingInsideAnUnrenderedFallbackSpanYieldsADifferentLogicHash() {
         // Deliberate, disclosed behaviour, not a bug: an Unrendered condition/operand's sourceText
         // is verbatim source the tool couldn't classify, so it can't verify two differently

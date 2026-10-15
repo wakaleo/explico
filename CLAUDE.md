@@ -1145,7 +1145,7 @@ was proposed in, not deferred to a separate increment.
 - Repinned: `RegoCoverageAuditTest` probes 31/39, one `AstMapperTest` case (all were actually
   assignment-fallbacks pinned under the old shared reason). Repointed: `funcs.rego`'s `is_array`
   guard, authz.md's `is_string`/`net.cidr_contains` guards -- premise superseded by item 11.
-- Disclosed, explicitly deferred by the operator: the set-difference operand (`a - b`) and
+- Disclosed, explicitly deferred by the operator: the set-difference operand (`a - b`; resolved by the expression-assignment follow-up below) and
   comprehension-argument partial credit.
 
 ## Review pass: presentation polish and worked-example verdicts (items 13-17)
@@ -1242,3 +1242,14 @@ was proposed in, not deferred to a separate increment.
   .linkableTargetsOf` inside a diff.
 - Zero acceptance-pack impact: `diff-all-categories`'s golden has no cross-references, confirmed
   unchanged by both `acceptanceTest` and `generateSampleDocs`.
+
+## Follow-up: expression assignments are substituted inline (set-difference resolved)
+
+- `VarBinding.Expression(operand)`: a local `x := <expr>` whose right-hand side maps to a fully
+  rendered operand tree (`isFullyRendered`: no `Operand.Unrendered` anywhere, recursing into
+  builtin args) is substituted at each bare use and the assignment disappears. Mapped BEFORE the
+  target is bound (no self-substitution). Ref-root and `some ... in` collection uses fall back.
+- Repinned, not weakened: fixtures that produced a fallback via a now-mappable RHS were repointed
+  to `json.marshal(...)`; grouped-helper tests moved from K8S-003 to a new `helpers.grouped` rule;
+  K8S-003 numbers/bullets updated (1 of 2, 1 helper, "minus ... is not empty"). Goldens and
+  `docs/sample-output` unchanged.
