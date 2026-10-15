@@ -1210,7 +1210,9 @@ class AstMapperTest {
             val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
             assertThat(body.conditions).hasSize(2)
             val fallback = body.conditions[0] as Condition.Unrendered
-            assertThat(fallback.reason).isEqualTo("function-call")
+            // "helper-assignment" (review item 12), distinct from a bare unresolved CALL's
+            // "function-call" -- this is specifically an assignment the mapper can't substitute.
+            assertThat(fallback.reason).isEqualTo("helper-assignment")
             assertThat(fallback.sourceText).isEqualTo("x := count(input.y)")
             val comparison = body.conditions[1] as Condition.Comparison
             assertThat((comparison.left as Operand.Variable).name).isEqualTo("x")
@@ -2766,6 +2768,180 @@ class AstMapperTest {
             val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
             assertThat(body.producesValue).isNull()
             assertThat(body.messageTemplate).isNull()
+        }
+    }
+
+    @Nested
+    inner class MoreBuiltinsReviewItem11 {
+
+        @Test
+        fun netCidrContainsAndATypeCheckPromoteToConditionPositionBuiltinCall() {
+            // `net.cidr_contains("10.0.0.0/8", input.client.ip)` and `is_string(input.user.id)`.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("net.cidr_contains(\"10.0.0.0/8\", input.client.ip)")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"net"},{"type":"string","value":"cidr_contains"}]},
+                            {"type":"string","value":"10.0.0.0/8"},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"client"},{"type":"string","value":"ip"}]}
+                          ]
+                        },
+                        {
+                          "index": 1,
+                          "location": {"row":2,"text":"${b64("is_string(input.user.id)")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"is_string"}]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"user"},{"type":"string","value":"id"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val cidr = body.conditions[0] as Condition.BuiltinCall
+            assertThat(cidr.name).isEqualTo("net.cidr_contains")
+            assertThat(cidr.args).hasSize(2)
+            val isString = body.conditions[1] as Condition.BuiltinCall
+            assertThat(isString.name).isEqualTo("is_string")
+            assertThat((isString.args.single() as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("user"), PathSegment.Field("id"),
+            )
+        }
+
+        @Test
+        fun typeCheckWithAnUnmappableComprehensionArgumentFallsBackWhole() {
+            // `is_string({x | some x in input.xs})` -- CHALLENGE edge case: the SAME "whole call
+            // falls back on an unsupported arg" guard every other CONDITION_BUILTINS member
+            // already has, now exercised for a newly-promoted name.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("is_string({x | some x in input.xs})")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"is_string"}]},
+                            {"type":"setcomprehension","value":{"term":{"type":"var","value":"x"},"body":[]}}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val fallback = body.conditions.single() as Condition.Unrendered
+            assertThat(fallback.reason).isEqualTo("comprehension")
+        }
+
+        @Test
+        fun sumAndObjectKeysPromoteToOperandPositionBuiltinCallEvenNested() {
+            // `sum(input.amounts) > 1000` and `count(object.keys(input.labels)) > 3`.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("sum(input.amounts) > 1000")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"gt"}]},
+                            {"type":"call","location":{"text":"${b64("sum(input.amounts)")}"},"value":[
+                              {"type":"ref","value":[{"type":"var","value":"sum"}]},
+                              {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"amounts"}]}
+                            ]},
+                            {"type":"number","value":1000}
+                          ]
+                        },
+                        {
+                          "index": 1,
+                          "location": {"row":2,"text":"${b64("count(object.keys(input.labels)) > 3")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"gt"}]},
+                            {"type":"call","location":{"text":"${b64("count(object.keys(input.labels))")}"},"value":[
+                              {"type":"ref","value":[{"type":"var","value":"count"}]},
+                              {"type":"call","location":{"text":"${b64("object.keys(input.labels)")}"},"value":[
+                                {"type":"ref","value":[{"type":"var","value":"object"},{"type":"string","value":"keys"}]},
+                                {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"labels"}]}
+                              ]}
+                            ]},
+                            {"type":"number","value":3}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val sumComparison = body.conditions[0] as Condition.Comparison
+            val sumCall = sumComparison.left as Operand.BuiltinCall
+            assertThat(sumCall.name).isEqualTo("sum")
+            assertThat((sumCall.args.single() as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("amounts"))
+
+            val countComparison = body.conditions[1] as Condition.Comparison
+            val countCall = countComparison.left as Operand.BuiltinCall
+            assertThat(countCall.name).isEqualTo("count")
+            val keysCall = countCall.args.single() as Operand.BuiltinCall
+            assertThat(keysCall.name).isEqualTo("object.keys")
+            assertThat((keysCall.args.single() as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("labels"))
+        }
+
+        @Test
+        fun operandPositionBuiltinWithAnUnmappableComprehensionArgumentFallsBackWhole() {
+            // `sum({x | some x in input.xs}) > 0` -- CHALLENGE edge case: same guard as the
+            // condition-position one above, exercised for a newly-promoted OPERAND builtin.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("sum({x | some x in input.xs}) > 0")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"gt"}]},
+                            {"type":"call","location":{"text":"${b64("sum({x | some x in input.xs})")}"},"value":[
+                              {"type":"ref","value":[{"type":"var","value":"sum"}]},
+                              {"type":"setcomprehension","value":{"term":{"type":"var","value":"x"},"body":[]}}
+                            ]},
+                            {"type":"number","value":0}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val fallback = body.conditions.single() as Condition.Unrendered
+            assertThat(fallback.reason).isEqualTo("comprehension")
         }
     }
 }

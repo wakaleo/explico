@@ -248,6 +248,78 @@ class MarkdownRendererTest {
     }
 
     @Nested
+    inner class GroupedHelperAssignments {
+        // Review item 12: consecutive "helper-assignment"-reasoned Unrendered conditions render
+        // as ONE labelled block; everything else (a differently-reasoned Unrendered, or a real
+        // rendered condition) breaks the run. Coverage must stay exactly as honest as before --
+        // merging is presentation only.
+
+        @Test
+        fun twoConsecutiveHelperAssignmentsMergeIntoOneBlockWithThePluralLabel() {
+            val required = Condition.Unrendered("required := {\"owner\", \"team\"}", "helper-assignment")
+            val provided = Condition.Unrendered("provided := {l | input.request.object.metadata.labels[l]}", "helper-assignment")
+            val missing = Condition.Unrendered("missing := required - provided", "helper-assignment")
+            val countCheck = Condition.Comparison(Operand.BuiltinCall("count", listOf(Operand.Variable("missing"))), Operator.GT, Operand.Literal("0"))
+            val rule = RuleGroup("deny", metadata = null, default = null, bodies = listOf(body(listOf(required, provided, missing, countCheck))))
+            val pkg = PolicyPackage("k8s.admission", listOf(rule), listOf("k8s.rego"))
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
+
+            assertThat(markdown.lines().count { it.trim().startsWith("- ⚠") }).isEqualTo(1)
+            assertThat(markdown).containsIgnoringCase("helper definitions")
+            val fenceStart = markdown.indexOf("```rego")
+            val fenceEnd = markdown.indexOf("```", fenceStart + 1)
+            val fence = markdown.substring(fenceStart, fenceEnd)
+            assertThat(fence.indexOf("required :=")).isGreaterThanOrEqualTo(0)
+            assertThat(fence.indexOf("required :=")).isLessThan(fence.indexOf("provided :="))
+            assertThat(fence.indexOf("provided :=")).isLessThan(fence.indexOf("missing :="))
+            assertThat(markdown.indexOf("the number of")).isGreaterThan(fenceEnd)
+            // Presentation only: still 3 Unrendered + 1 rendered, same as before merging existed.
+            assertThat(markdown).contains("*Rendering coverage: 1 of 4 conditions*")
+        }
+
+        @Test
+        fun aSingleHelperAssignmentStillUsesTheSingularLabel() {
+            val rule = RuleGroup("deny", metadata = null, default = null, bodies = listOf(body(listOf(Condition.Unrendered("a := count(input.xs)", "helper-assignment"), envIsProd))))
+            val pkg = PolicyPackage("helpers", listOf(rule), listOf("helpers.rego"))
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
+
+            assertThat(markdown).containsIgnoringCase("helper definition").doesNotContainIgnoringCase("helper definitions")
+        }
+
+        @Test
+        fun aDifferentlyReasonedUnrenderedConditionIsNeverAbsorbedEvenWhenDirectlyAdjacent() {
+            // CHALLENGE edge case: two Unrendered conditions sit back-to-back with NO rendered
+            // condition between them, but only the first is a helper-assignment -- they must stay
+            // two separate blocks, not one.
+            val assignment = Condition.Unrendered("a := count(input.xs)", "helper-assignment")
+            val unrelatedCall = Condition.Unrendered("json.is_valid(input.z)", "function-call")
+            val rule = RuleGroup("deny", metadata = null, default = null, bodies = listOf(body(listOf(assignment, unrelatedCall, envIsProd))))
+            val pkg = PolicyPackage("helpers", listOf(rule), listOf("helpers.rego"))
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
+
+            assertThat(markdown.lines().count { it.trim().startsWith("- ⚠") }).isEqualTo(2)
+            assertThat(markdown.split("```rego").size - 1).isEqualTo(2)
+            assertThat(markdown).containsIgnoringCase("helper definition")
+            assertThat(markdown).contains("⚠ **not rendered — shown as source:**")
+        }
+
+        @Test
+        fun aBodyThatIsEntirelyOneHelperAssignmentRunRendersCleanlyWithNoCrash() {
+            // CHALLENGE edge case (structural emptiness variant): nothing before or after the run.
+            val rule = RuleGroup(
+                "deny", metadata = null, default = null,
+                bodies = listOf(body(listOf(Condition.Unrendered("a := count(input.x)", "helper-assignment"), Condition.Unrendered("b := count(input.y)", "helper-assignment")))),
+            )
+            val pkg = PolicyPackage("helpers", listOf(rule), listOf("helpers.rego"))
+            val markdown = MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
+
+            assertThat(markdown.lines().count { it.trim().startsWith("- ⚠") }).isEqualTo(1)
+            assertThat(markdown.split("```rego").size - 1).isEqualTo(1)
+            assertThat(markdown).contains("*Rendering coverage: 0 of 2 conditions*")
+        }
+    }
+
+    @Nested
     inner class Anchors {
 
         private fun ruleReferenceCondition(pkg: String, name: String, negated: Boolean = false) =

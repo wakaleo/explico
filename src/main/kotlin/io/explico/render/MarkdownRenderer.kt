@@ -185,23 +185,53 @@ internal object MarkdownRenderer {
         sb.appendLine(footer.toString())
     }
 
+    /** The reason [AstMapper][io.explico.parse] gives a local-variable assignment it can't substitute to a plain path -- distinct from a bare unresolved CALL's "function-call" (review item 12). */
+    private const val HELPER_ASSIGNMENT_REASON = "helper-assignment"
+
     private fun appendConditions(
         sb: StringBuilder,
         conditions: List<Condition>,
         anchorFor: (Condition.RuleReference) -> String,
         functionAnchorFor: (Condition.FunctionCall) -> String,
     ) {
-        for (condition in conditions) {
-            if (condition is Condition.Unrendered) {
-                sb.appendLine("- ⚠ **not rendered — shown as source:**")
-                sb.appendLine()
-                sb.appendLine("  ```rego")
-                condition.sourceText.lines().forEach { line -> sb.appendLine("  $line") }
-                sb.appendLine("  ```")
+        var i = 0
+        while (i < conditions.size) {
+            val condition = conditions[i]
+            if (condition is Condition.Unrendered && condition.reason == HELPER_ASSIGNMENT_REASON) {
+                // Review item 12: consecutive helper-assignment fallbacks (and ONLY that reason --
+                // a differently-reasoned Unrendered right next to one, e.g. a genuinely unresolved
+                // call, is never absorbed) collapse into one labelled block. Presentation only:
+                // each still counts as its own condition for coverage purposes (Coverage.of walks
+                // the unchanged, un-merged `conditions` list), so merging never inflates the metric.
+                val run = mutableListOf<Condition.Unrendered>()
+                while (i < conditions.size) {
+                    val next = conditions[i] as? Condition.Unrendered ?: break
+                    if (next.reason != HELPER_ASSIGNMENT_REASON) break
+                    run += next
+                    i++
+                }
+                appendGroupedHelperAssignments(sb, run)
+            } else if (condition is Condition.Unrendered) {
+                appendUnrenderedBlock(sb, "not rendered — shown as source", listOf(condition.sourceText))
+                i++
             } else {
                 sb.appendLine("- ${ExpressionRenderer.render(condition, anchorFor, functionAnchorFor)}")
+                i++
             }
         }
+    }
+
+    private fun appendGroupedHelperAssignments(sb: StringBuilder, run: List<Condition.Unrendered>) {
+        val label = if (run.size > 1) "helper definitions" else "helper definition"
+        appendUnrenderedBlock(sb, "not rendered — grouped $label shown as source", run.map { it.sourceText })
+    }
+
+    private fun appendUnrenderedBlock(sb: StringBuilder, header: String, sourceTexts: List<String>) {
+        sb.appendLine("- ⚠ **$header:**")
+        sb.appendLine()
+        sb.appendLine("  ```rego")
+        sourceTexts.forEach { text -> text.lines().forEach { line -> sb.appendLine("  $line") } }
+        sb.appendLine("  ```")
     }
 
     /**

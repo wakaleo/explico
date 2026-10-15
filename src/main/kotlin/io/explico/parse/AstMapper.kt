@@ -73,11 +73,28 @@ import java.util.Base64
 /** One parsed `.rego` file: its module AST plus the repo-relative path it came from. */
 internal data class ParsedFile(val sourceFile: String, val module: OpaModule)
 
-/** A condition-position builtin call recognised per spec §6.3's table. */
-private val CONDITION_BUILTINS = setOf("startswith", "endswith", "contains", "regex.match", "glob.match")
+/**
+ * A condition-position builtin call recognised per spec §6.3's table, extended by review item 11:
+ * `net.cidr_contains` (2 args, confirmed via a real `opa parse` run) and the seven `is_*` type
+ * checks (1 arg each) -- the existing generic "map every arg, fall back whole on an unsupported
+ * one" handling in [mapCallShapedCondition] already covers both arities with no further change.
+ */
+private val CONDITION_BUILTINS = setOf(
+    "startswith", "endswith", "contains", "regex.match", "glob.match",
+    "net.cidr_contains",
+    "is_string", "is_number", "is_boolean", "is_array", "is_object", "is_null", "is_set",
+)
 
-/** An operand-position builtin call recognised per spec §6.3/§14 -- each takes exactly one argument. */
-private val OPERAND_BUILTINS = setOf("count", "lower", "upper")
+/**
+ * An operand-position builtin call recognised per spec §6.3/§14 -- each takes exactly one
+ * argument. Extended by review item 11: `sum`/`max`/`min`/`to_number`/`trim_space`/`object.keys`/
+ * `time.parse_rfc3339_ns`, all confirmed single-argument via a real `opa parse` run, fit the exact
+ * same promotion mechanism `count`/`lower`/`upper` already use.
+ */
+private val OPERAND_BUILTINS = setOf(
+    "count", "lower", "upper",
+    "sum", "max", "min", "to_number", "trim_space", "object.keys", "time.parse_rfc3339_ns",
+)
 
 /** Arithmetic infix operators (spec §14 promotion, backlog rank #1 after §14.8) -- opa's own operator names for `+`/`-`/`*`/`/`/`%`, confirmed via a real `opa parse` run; always binary. */
 private val ARITHMETIC_BUILTINS = setOf("plus", "minus", "mul", "div", "rem")
@@ -470,7 +487,12 @@ internal object AstMapper {
                     plainPath != null -> symbolTable[targetVar] = VarBinding.Substitution(plainPath)
                     else -> {
                         symbolTable[targetVar] = VarBinding.NonPath
-                        conditions += Condition.Unrendered(sourceText(expr.location), "function-call")
+                        // Review item 12: a distinct reason from a genuinely unresolved CONDITION
+                        // call's "function-call" -- this is specifically a local-variable
+                        // assignment the mapper can't substitute, which MarkdownRenderer groups
+                        // with its own kind only (never with an adjacent, differently-reasoned
+                        // fallback) into one labelled "helper definition(s)" block.
+                        conditions += Condition.Unrendered(sourceText(expr.location), "helper-assignment")
                     }
                 }
                 continue

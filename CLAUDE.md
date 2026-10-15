@@ -1130,3 +1130,20 @@ was proposed in, not deferred to a separate increment.
   assertions) and two Tier-2 goldens (REL-002/REL-004's var-rooted sprintf args), reviewed first.
 - Disclosed gaps: cross-package calls; `Canonicalizer` ignores parameter count; `NonPath`
   placeholders stay unhumanized.
+
+## Review pass: more builtins, grouped helper-assignment presentation (items 11-12)
+
+- `net.cidr_contains` + the seven `is_*` type checks joined `CONDITION_BUILTINS`;
+  `sum`/`max`/`min`/`to_number`/`trim_space`/`object.keys`/`time.parse_rfc3339_ns` joined
+  `OPERAND_BUILTINS`. Both sets' existing generic promotion mechanism covered them with no
+  `AstMapper` change beyond the name lists. `ExpressionRenderer` gained `UNARY_BUILTIN_TEMPLATES`
+  for the 1-arg type checks (a genuinely different phrase shape from the 2-operand builtins).
+- An unsubstitutable local-variable assignment now gets reason `"helper-assignment"`, distinct
+  from a bare unresolved call's `"function-call"`. `MarkdownRenderer.appendConditions` groups
+  CONSECUTIVE `helper-assignment` fallbacks into one block; a differently-reasoned `Unrendered`
+  right next to one is never absorbed. Purely presentation -- `Coverage` is untouched.
+- Repinned: `RegoCoverageAuditTest` probes 31/39, one `AstMapperTest` case (all were actually
+  assignment-fallbacks pinned under the old shared reason). Repointed: `funcs.rego`'s `is_array`
+  guard, authz.md's `is_string`/`net.cidr_contains` guards -- premise superseded by item 11.
+- Disclosed, explicitly deferred by the operator: the set-difference operand (`a - b`) and
+  comprehension-argument partial credit.

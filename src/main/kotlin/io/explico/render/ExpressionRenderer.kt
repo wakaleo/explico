@@ -98,6 +98,15 @@ internal object ExpressionRenderer {
     }
 
     private fun renderBuiltinCall(condition: Condition.BuiltinCall): String {
+        // The seven `is_*` type checks (review item 11) take exactly ONE argument -- a genuinely
+        // different phrase shape from every other condition-position builtin here (all two-arg,
+        // "<subject> <verb> <other>"), so they get their own unary dispatch rather than being
+        // forced into BuiltinTemplate's two-operand shape.
+        UNARY_BUILTIN_TEMPLATES[condition.name]?.let { template ->
+            val (text, hasAnyIndex) = renderOperand(condition.args.single())
+            val verb = if (condition.negated) template.negatedVerb else template.verb
+            return withAnyOfPrefix("$text $verb", hasAnyIndex)
+        }
         val template = BUILTIN_TEMPLATES[condition.name]
             ?: throw IllegalArgumentException("Unrecognised condition-position builtin '${condition.name}'; AstMapper should never produce this.")
         val (subject, other) = template.argOrder(condition.args)
@@ -213,6 +222,22 @@ private val BUILTIN_TEMPLATES = mapOf(
     // the acceptance pack; this is untested against real captured JSON (see CLAUDE.md).
     "regex.match" to BuiltinTemplate("matches pattern", "does not match pattern") { it.last() to it.first() },
     "glob.match" to BuiltinTemplate("matches glob", "does not match glob") { it.last() to it.first() },
+    // net.cidr_contains(cidr, ip) (review item 11, confirmed arg order via a real `opa parse` run)
+    // renders subject-first, same convention as regex.match/glob.match above: "<ip> is within <cidr>".
+    "net.cidr_contains" to BuiltinTemplate("is within", "is not within") { it[1] to it[0] },
+)
+
+/** [verb]/[negatedVerb] alone -- a unary type check (review item 11) has no second operand to interpolate. */
+private class UnaryBuiltinTemplate(val verb: String, val negatedVerb: String)
+
+private val UNARY_BUILTIN_TEMPLATES = mapOf(
+    "is_string" to UnaryBuiltinTemplate("is a string", "is not a string"),
+    "is_number" to UnaryBuiltinTemplate("is a number", "is not a number"),
+    "is_boolean" to UnaryBuiltinTemplate("is a boolean", "is not a boolean"),
+    "is_array" to UnaryBuiltinTemplate("is an array", "is not an array"),
+    "is_object" to UnaryBuiltinTemplate("is an object", "is not an object"),
+    "is_null" to UnaryBuiltinTemplate("is null", "is not null"),
+    "is_set" to UnaryBuiltinTemplate("is a set", "is not a set"),
 )
 
 /** Operand-position builtin templates (spec §6.3/§14 promotion) -- each takes the already-rendered single argument text and produces the final phrase. */
@@ -220,6 +245,14 @@ private val OPERAND_BUILTIN_TEMPLATES: Map<String, (String) -> String> = mapOf(
     "count" to { a -> "the number of $a" },
     "lower" to { a -> "$a lowercased" },
     "upper" to { a -> "$a uppercased" },
+    // review item 11, all confirmed single-argument via a real `opa parse` run.
+    "sum" to { a -> "the sum of $a" },
+    "max" to { a -> "the largest of $a" },
+    "min" to { a -> "the smallest of $a" },
+    "to_number" to { a -> "$a as a number" },
+    "trim_space" to { a -> "$a trimmed" },
+    "object.keys" to { a -> "the keys of $a" },
+    "time.parse_rfc3339_ns" to { a -> "the time $a" },
 )
 
 /**

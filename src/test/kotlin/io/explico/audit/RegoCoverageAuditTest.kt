@@ -424,7 +424,9 @@ class RegoCoverageAuditTest {
     fun compositeValueMembershipFallsBackForTheBindingButRendersTheMembershipCheck() {
         val conditions = conditionsOf(loadProbe("31-composite-value-membership.rego"), "deny")
         assertThat(conditions).hasSize(2)
-        assertUnrendered(conditions[0], "function-call")
+        // "helper-assignment" (review item 12): `pairs := {...}` is an assignment the mapper
+        // can't substitute, distinct from a bare unresolved call's "function-call".
+        assertUnrendered(conditions[0], "helper-assignment")
         assertThat(render(conditions[1])).isEqualTo("`1, 2` is one of `pairs`")
     }
 
@@ -494,7 +496,9 @@ class RegoCoverageAuditTest {
         val policySet = loadProbe("39-string-interpolation.rego")
         val body = policySet.packages.single().rules.single { it.name == "deny" }.bodies.single()
         assertThat(body.conditions).hasSize(1)
-        assertUnrendered(body.conditions.single(), "function-call")
+        // "helper-assignment" (review item 12): `msg := $"..."` is an assignment the mapper can't
+        // substitute (a templatestring term, not a plain path), distinct from "function-call".
+        assertUnrendered(body.conditions.single(), "helper-assignment")
         assertThat(body.producesValue).isNull()
         assertThat(body.messageTemplate).isNull()
     }

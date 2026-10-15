@@ -18,6 +18,6 @@ deny contains msg if {
 
 deny contains msg if {
 	in_region(input.region, {r | some r in input.regions})
-	is_array(input.items)
+	json.is_valid(input.items)
 	msg := "unmappable calls"
 }

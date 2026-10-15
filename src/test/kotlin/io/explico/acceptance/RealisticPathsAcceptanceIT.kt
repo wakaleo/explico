@@ -195,11 +195,10 @@ class RealisticPathsAcceptanceIT {
         }
 
         @Test
-        @DisplayName("`every` and `net.cidr_contains` in authz.md stay fenced source (guard: passes today)")
+        @DisplayName("`every` in authz.md stays fenced source (guard: passes today)")
         fun unsupportedConstructsStayFenced() {
             val src = fencedSource(files["authz.md"] ?: "")
             assertThat(src).contains("every role in input.user.roles")
-            assertThat(src).contains("net.cidr_contains(")
         }
     }
 }

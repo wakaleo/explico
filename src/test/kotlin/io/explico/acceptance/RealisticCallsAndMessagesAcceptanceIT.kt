@@ -156,17 +156,17 @@ class RealisticCallsAndMessagesAcceptanceIT {
         }
 
         @Test
-        @DisplayName("an unsupported builtin (`is_array`) stays fenced source")
+        @DisplayName("an unsupported builtin (`json.is_valid`) stays fenced source")
         fun unsupportedBuiltinStaysFenced() {
             val card = section(funcFiles["funcs.md"] ?: "", "funcs.deny")
-            assertThat(fencedSource(card)).contains("is_array(input.items)")
+            assertThat(fencedSource(card)).contains("json.is_valid(input.items)")
         }
 
         @Test
-        @DisplayName("authz.md's `is_string` and `net.cidr_contains` stay fenced source (guard: passes today)")
-        fun authzUnsupportedBuiltinsStayFenced() {
+        @DisplayName("authz.md's `every` block stays fenced source (guard: passes today)")
+        fun authzEveryStaysFenced() {
             val src = fencedSource(files["authz.md"] ?: "")
-            assertThat(src).contains("is_string(input.user.id)").contains("net.cidr_contains(")
+            assertThat(src).contains("every role in input.user.roles")
         }
     }
 

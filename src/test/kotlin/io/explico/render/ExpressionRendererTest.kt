@@ -107,6 +107,25 @@ class ExpressionRendererTest {
                 Case("regex.match negated", Condition.BuiltinCall("regex.match", listOf(b, a), true), "`artifact ▸ source branch` does not match pattern `\"release/\"`"),
                 Case("glob.match positive", Condition.BuiltinCall("glob.match", listOf(b, a), false), "`artifact ▸ source branch` matches glob `\"release/\"`"),
                 Case("glob.match negated", Condition.BuiltinCall("glob.match", listOf(b, a), true), "`artifact ▸ source branch` does not match glob `\"release/\"`"),
+                // review item 11: net.cidr_contains(cidr, ip) -- args[0] is the cidr, args[1] the ip
+                // (confirmed via a real `opa parse` run), rendered subject-first (ip, then cidr).
+                Case("net.cidr_contains positive", Condition.BuiltinCall("net.cidr_contains", listOf(b, a), false), "`artifact ▸ source branch` is within `\"release/\"`"),
+                Case("net.cidr_contains negated", Condition.BuiltinCall("net.cidr_contains", listOf(b, a), true), "`artifact ▸ source branch` is not within `\"release/\"`"),
+                // review item 11: the seven is_* type checks, each a single-argument condition builtin.
+                Case("is_string positive", Condition.BuiltinCall("is_string", listOf(a), false), "`artifact ▸ source branch` is a string"),
+                Case("is_string negated", Condition.BuiltinCall("is_string", listOf(a), true), "`artifact ▸ source branch` is not a string"),
+                Case("is_number positive", Condition.BuiltinCall("is_number", listOf(a), false), "`artifact ▸ source branch` is a number"),
+                Case("is_number negated", Condition.BuiltinCall("is_number", listOf(a), true), "`artifact ▸ source branch` is not a number"),
+                Case("is_boolean positive", Condition.BuiltinCall("is_boolean", listOf(a), false), "`artifact ▸ source branch` is a boolean"),
+                Case("is_boolean negated", Condition.BuiltinCall("is_boolean", listOf(a), true), "`artifact ▸ source branch` is not a boolean"),
+                Case("is_array positive", Condition.BuiltinCall("is_array", listOf(a), false), "`artifact ▸ source branch` is an array"),
+                Case("is_array negated", Condition.BuiltinCall("is_array", listOf(a), true), "`artifact ▸ source branch` is not an array"),
+                Case("is_object positive", Condition.BuiltinCall("is_object", listOf(a), false), "`artifact ▸ source branch` is an object"),
+                Case("is_object negated", Condition.BuiltinCall("is_object", listOf(a), true), "`artifact ▸ source branch` is not an object"),
+                Case("is_null positive", Condition.BuiltinCall("is_null", listOf(a), false), "`artifact ▸ source branch` is null"),
+                Case("is_null negated", Condition.BuiltinCall("is_null", listOf(a), true), "`artifact ▸ source branch` is not null"),
+                Case("is_set positive", Condition.BuiltinCall("is_set", listOf(a), false), "`artifact ▸ source branch` is a set"),
+                Case("is_set negated", Condition.BuiltinCall("is_set", listOf(a), true), "`artifact ▸ source branch` is not a set"),
             ).map { Arguments.of(it) }.stream()
         }
     }
@@ -209,6 +228,56 @@ class ExpressionRendererTest {
         val upper = Condition.Comparison(Operand.BuiltinCall("upper", listOf(author)), Operator.EQ, Operand.Literal("\"ASMITH\""))
         assertThat(ExpressionRenderer.render(lower, noAnchor)).isEqualTo("`change ▸ author` lowercased is `\"asmith\"`")
         assertThat(ExpressionRenderer.render(upper, noAnchor)).isEqualTo("`change ▸ author` uppercased is `\"ASMITH\"`")
+    }
+
+    @Test
+    @DisplayName("Operand.BuiltinCall(sum/max/min) render as spec §6.3/§14's \"the sum/largest/smallest of X\" templates")
+    fun operandBuiltinCallSumMaxMinRenderFaithfully() {
+        val scores = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("scores")))
+        val sum = Condition.Comparison(Operand.BuiltinCall("sum", listOf(scores)), Operator.GT, Operand.Literal("0"))
+        val max = Condition.Comparison(Operand.BuiltinCall("max", listOf(scores)), Operator.GTE, Operand.Literal("90"))
+        val min = Condition.Comparison(Operand.BuiltinCall("min", listOf(scores)), Operator.LT, Operand.Literal("10"))
+        assertThat(ExpressionRenderer.render(sum, noAnchor)).isEqualTo("the sum of `scores` is greater than `0`")
+        assertThat(ExpressionRenderer.render(max, noAnchor)).isEqualTo("the largest of `scores` is at least `90`")
+        assertThat(ExpressionRenderer.render(min, noAnchor)).isEqualTo("the smallest of `scores` is less than `10`")
+    }
+
+    @Test
+    @DisplayName("Operand.BuiltinCall(to_number/trim_space) render as spec §6.3/§14's \"X as a number\"/\"X trimmed\" templates")
+    fun operandBuiltinCallToNumberAndTrimSpaceRenderFaithfully() {
+        val countText = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("count_text")))
+        val name = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("name")))
+        val toNumber = Condition.Comparison(Operand.BuiltinCall("to_number", listOf(countText)), Operator.EQ, Operand.Literal("5"))
+        val trimSpace = Condition.Comparison(Operand.BuiltinCall("trim_space", listOf(name)), Operator.EQ, Operand.Literal("\"root\""))
+        assertThat(ExpressionRenderer.render(toNumber, noAnchor)).isEqualTo("`count text` as a number is `5`")
+        assertThat(ExpressionRenderer.render(trimSpace, noAnchor)).isEqualTo("`name` trimmed is `\"root\"`")
+    }
+
+    @Test
+    @DisplayName("Operand.BuiltinCall(object.keys) renders as spec §6.3/§14's \"the keys of X\" template, including nested inside count")
+    fun operandBuiltinCallObjectKeysRendersFaithfullyEvenNestedInsideCount() {
+        val labels = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("labels")))
+        val keys = Operand.BuiltinCall("object.keys", listOf(labels))
+        val bare = Condition.Comparison(keys, Operator.GT, Operand.Literal("0"))
+        assertThat(ExpressionRenderer.render(bare, noAnchor)).isEqualTo("the keys of `labels` is greater than `0`")
+        val nested = Condition.Comparison(Operand.BuiltinCall("count", listOf(keys)), Operator.GT, Operand.Literal("3"))
+        assertThat(ExpressionRenderer.render(nested, noAnchor)).isEqualTo("the number of the keys of `labels` is greater than `3`")
+    }
+
+    @Test
+    @DisplayName("Operand.BuiltinCall(time.parse_rfc3339_ns) renders as spec §6.3/§14's \"the time X\" template")
+    fun operandBuiltinCallTimeParseRfc3339RendersFaithfully() {
+        val createdAt = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("created_at")))
+        val condition = Condition.Comparison(Operand.BuiltinCall("time.parse_rfc3339_ns", listOf(createdAt)), Operator.LT, Operand.BuiltinCall("time.now_ns", emptyList()))
+        assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("the time `created at` is less than the current time")
+    }
+
+    @Test
+    @DisplayName("CHALLENGE edge case: AnyIndex inside a unary type check's argument still prefixes the whole phrase with 'any of:'")
+    fun anyOfPrefixPropagatesThroughUnaryTypeCheck() {
+        val pathWithAnyIndex = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("items"), PathSegment.AnyIndex, PathSegment.Field("id")))
+        val condition = Condition.BuiltinCall("is_string", listOf(pathWithAnyIndex), negated = false)
+        assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("any of: `items ▸ id` is a string")
     }
 
     @Test

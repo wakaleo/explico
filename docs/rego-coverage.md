@@ -596,6 +596,40 @@ same) -- `RuleGroup.parameters` is not yet part of `canonicalLogic`; a bare
 real-world evidence yet that it should be, unlike the Iteration/Substitution/
 Parameter cases).
 
+## Review pass: more builtins and grouped helper assignments (items 11-12)
+
+New fixtures under `src/test/resources/realistic/builtins/` (`builtins.rego`,
+`helpers.rego`), pinned by `RealisticBuiltinsAndHelpersAcceptanceIT`, plus new
+`AstMapperTest.MoreBuiltinsReviewItem11`, `ExpressionRendererTest` phrasing-table
+rows and operand-template cases, and `MarkdownRendererTest.GroupedHelperAssignments`.
+
+| Finding | Was | Now |
+|---|---|---|
+| `net.cidr_contains(cidr, ip)` and the seven `is_*` type checks (`is_string`/`is_number`/`is_boolean`/`is_array`/`is_object`/`is_null`/`is_set`), positive and negated, in condition position (item 11) | Fell back to raw fenced source -- not in `CONDITION_BUILTINS` at all. | Added to `CONDITION_BUILTINS`; the existing generic "map every arg, fall back whole on an unsupported one" handling already covers both the 2-arg cidr check and the 1-arg type checks with no further `AstMapper` change. The 1-arg type checks needed their own `UNARY_BUILTIN_TEMPLATES` phrasing in `ExpressionRenderer` (`` `x` is a string `` / `` `x` is not a string ``, etc.) -- a genuinely different shape from every existing two-operand `BuiltinTemplate`. |
+| `sum`/`max`/`min`/`to_number`/`trim_space`/`object.keys`/`time.parse_rfc3339_ns` in operand position, including nested inside `count(...)` (item 11) | Fell back to raw fenced source -- not in `OPERAND_BUILTINS`. | Added to `OPERAND_BUILTINS`; all seven are single-argument, confirmed via a real `opa parse` run, and fit the exact same promotion mechanism `count`/`lower`/`upper` already use -- no new code needed beyond the name list and a template per name. |
+| Consecutive local-variable-assignment fallbacks in one body, e.g. `required := {...}; provided := {...}; missing := required - provided` (item 12) | Three separate `⚠` bullets and fenced blocks, one per assignment -- correct, but visually noisy for the extremely common "a few helper assignments feeding a later check" idiom. | `AstMapper` now gives an unsubstitutable assignment its own reason, `"helper-assignment"`, distinct from a genuinely-unresolved bare call's `"function-call"`. `MarkdownRenderer.appendConditions` groups CONSECUTIVE `helper-assignment`-reasoned conditions into one block headed "not rendered — grouped helper definition(s) shown as source" -- presentation only: the underlying `conditions` list is untouched, so `Coverage.of` keeps counting each one individually and the footer never changes. A differently-reasoned `Unrendered` immediately adjacent (e.g. `json.is_valid(...)`, still `"function-call"`) is never absorbed into the run. |
+
+Three pre-existing `RegoCoverageAuditTest`/`AstMapperTest` assertions pinned
+the pre-rename `"function-call"` reason for what are actually
+assignment-fallbacks (probes 31 and 39, and a hand-built `x := count(input.y)`
+case) -- repinned to `"helper-assignment"` in place; every OTHER
+`"function-call"`-reasoned assertion (a bare unresolved call used directly as
+a condition, never an assignment) was individually checked and left
+untouched. Three existing acceptance-IT guards whose premise item 11
+supersedes (`funcs.rego`'s `is_array` fallback example, and authz.md's
+`is_string`/`net.cidr_contains` fallback guards) were repointed to a builtin
+that stays unsupported (`json.is_valid`) or to the one construct in that card
+still genuinely unsupported (`every`) -- noted at the time, not silently left
+stale.
+
+Disclosed, not fixed (explicitly out of scope by the operator's own
+instruction, not an oversight): the set-difference operand (`a - b` where
+both are sets, e.g. `missing := required - provided`) still has no dedicated
+rendering -- `missing` stays an untraced `Operand.Variable` wherever used
+bare; and a comprehension argument still forces the WHOLE enclosing
+condition/operand to fall back, with no partial credit for "the rest of the
+expression around the comprehension is otherwise understood."
+
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
 **Operand-level fallback (`Operand.Unrendered`) renders as plain backticked

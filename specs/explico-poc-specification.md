@@ -1386,3 +1386,26 @@ Two Tier-2 goldens (`release-evidence.md`, `release-governance.md`) and `docs/sa
 were regenerated deliberately for the sprintf-humanization change; reviewed diff-by-diff first.
 Disclosed: cross-package function calls; `Canonicalizer` doesn't hash a function's own parameter
 count; a `NonPath`-bound placeholder var stays unhumanized. Rationale in `docs/rego-coverage.md`.
+
+### 14.17 Fix: more builtins, grouped helper-assignment fallback presentation
+
+Found by rendering realistic policies (same corpus as §§14.14-14.16):
+
+- **§6.3 amendment -- more builtins.** `net.cidr_contains` and the seven `is_*` type checks
+  join `CONDITION_BUILTINS`; `sum`/`max`/`min`/`to_number`/`trim_space`/`object.keys`/
+  `time.parse_rfc3339_ns` join `OPERAND_BUILTINS`. All fit the existing generic promotion
+  mechanisms with no new `AstMapper` logic; the 1-arg type checks needed a new unary phrasing
+  shape (`UNARY_BUILTIN_TEMPLATES`) in `ExpressionRenderer`, distinct from the existing
+  two-operand `BuiltinTemplate`.
+- **§6.2 amendment -- grouped helper-assignment presentation.** An unsubstitutable
+  local-variable assignment now gets its own fallback reason, `"helper-assignment"`, distinct
+  from a bare unresolved call's `"function-call"`. `MarkdownRenderer` groups CONSECUTIVE
+  `helper-assignment` fallbacks into one labelled block ("grouped helper definition(s)").
+  Presentation only -- `RuleGroup`'s own `conditions` list, and therefore `Coverage`, is
+  unchanged; a differently-reasoned fallback adjacent to a run is never absorbed into it.
+
+Repinned three existing assertions pinning the pre-rename reason for what are actually
+assignment-fallbacks (probes 31/39, one hand-built AstMapperTest case); repointed three
+acceptance-IT guards whose fallback premise this promotion supersedes. Disclosed, explicitly
+out of scope: the set-difference operand (`a - b`) and comprehension-argument partial credit.
+Rationale in `docs/rego-coverage.md`.
