@@ -18,6 +18,8 @@
 
 **⚠ This control has been removed.**
 
+<a id="rel-001"></a>
+
 ## REL-001 — Production change approval
 
 *Rule `deny` in package `release.approvals` — defined in `change_approval.rego`*
@@ -48,6 +50,8 @@ and the change author must not approve their own change.
 
 **ADDED**
 
+<a id="rel-005"></a>
+
 ## REL-005 — New deployment window check
 
 *Rule `deny` in package `release.newcheck` — defined in `new_check.rego`*
@@ -66,6 +70,8 @@ Deployments must not be scheduled outside the approved maintenance window.
 ---
 
 **LOGIC_CHANGED**
+
+<a id="rel-003"></a>
 
 ## REL-003 — Artifact provenance
 

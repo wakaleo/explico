@@ -58,6 +58,8 @@ Open `release-evidence.md`. REL-002's card doesn't inline the logic of the
 rules it depends on — it links to them:
 
 ```markdown
+<a id="rel-002"></a>
+
 ## REL-002 — Pipeline evidence
 
 ...

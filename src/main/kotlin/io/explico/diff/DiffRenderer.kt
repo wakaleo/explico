@@ -63,15 +63,15 @@ internal object DiffRenderer {
             DiffCategory.REMOVED -> {
                 sb.appendLine("**⚠ This control has been removed.**")
                 sb.appendLine()
-                sb.append(MarkdownRenderer.renderCard(entry.oldRule!!, entry.oldPackage!!, oldPolicySet))
+                sb.append(MarkdownRenderer.renderCard(entry.oldRule!!, entry.oldPackage!!, oldPolicySet, anchorId = MarkdownRenderer.anchorIdOf(entry.oldRule, entry.oldPackage.path)))
                 sb.appendLine()
             }
             DiffCategory.ADDED -> {
-                sb.append(MarkdownRenderer.renderCard(entry.newRule!!, entry.newPackage!!, newPolicySet))
+                sb.append(MarkdownRenderer.renderCard(entry.newRule!!, entry.newPackage!!, newPolicySet, anchorId = MarkdownRenderer.anchorIdOf(entry.newRule, entry.newPackage.path)))
                 sb.appendLine()
             }
             DiffCategory.LOGIC_CHANGED -> {
-                sb.append(MarkdownRenderer.renderCard(entry.newRule!!, entry.newPackage!!, newPolicySet))
+                sb.append(MarkdownRenderer.renderCard(entry.newRule!!, entry.newPackage!!, newPolicySet, anchorId = MarkdownRenderer.anchorIdOf(entry.newRule, entry.newPackage.path)))
                 sb.appendLine()
                 sb.appendLine("**Source diff**")
                 sb.appendLine()

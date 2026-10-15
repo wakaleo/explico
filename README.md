@@ -226,6 +226,8 @@ deny contains msg if {
 full card also includes a package header and a coverage footer):
 
 ```markdown
+<a id="rel-001"></a>
+
 ## REL-001 — Production change approval
 
 *Rule `deny` in package `release.approvals` — defined in `change_approval.rego`*

@@ -34,8 +34,9 @@ internal object MarkdownRenderer {
             sb.appendLine()
         }
 
-        for (rule in pkg.rules) {
-            sb.append(renderCard(rule, pkg, policySet, examplesByRule[rule.name] ?: emptyList()))
+        val anchorIds = cardAnchorIds(pkg)
+        for ((index, rule) in pkg.rules.withIndex()) {
+            sb.append(renderCard(rule, pkg, policySet, examplesByRule[rule.name] ?: emptyList(), anchorIds[index]))
             sb.appendLine()
             sb.appendLine("---")
             sb.appendLine()
@@ -46,8 +47,21 @@ internal object MarkdownRenderer {
     }
 
     /** One control card for a [RuleGroup] (spec §6.2), with an optional worked-examples section (spec §6.7). */
-    fun renderCard(rule: RuleGroup, pkg: PolicyPackage, policySet: PolicySet, workedExamples: List<WorkedExample> = emptyList()): String {
+    fun renderCard(
+        rule: RuleGroup,
+        pkg: PolicyPackage,
+        policySet: PolicySet,
+        workedExamples: List<WorkedExample> = emptyList(),
+        anchorId: String? = null,
+    ): String {
         val sb = StringBuilder()
+        // Review item 18: an explicit anchor, because links target the control-id / package-rulename
+        // slug (spec §6.5) while a heading's own GitHub slug is something else entirely. A blank line
+        // follows it: an HTML block would otherwise swallow the `##` line and stop it being a heading.
+        if (anchorId != null) {
+            sb.appendLine("<a id=\"$anchorId\"></a>")
+            sb.appendLine()
+        }
         appendHeading(sb, rule, pkg)
         appendMetadataLines(sb, rule, pkg)
 
@@ -352,9 +366,31 @@ internal object MarkdownRenderer {
 
     private fun anchorForTarget(currentPackagePath: String, targetPackagePath: String, targetName: String, policySet: PolicySet): String {
         val targetPackage = policySet.packages.first { it.path == targetPackagePath }
-        val targetRule = targetPackage.rules.first { it.name == targetName }
-        val anchorId = slug(targetRule.metadata?.controlId ?: "$targetPackagePath-$targetName")
+        val candidates = targetPackage.rules.filter { it.name == targetName }
+        val targetRule = candidates.firstOrNull { !it.isSplitDefaultEntry } ?: candidates.first()
+        val anchorId = anchorIdOf(targetRule, targetPackagePath)
         return if (targetPackagePath == currentPackagePath) "#$anchorId" else "${targetPackagePath.replace('.', '-')}.md#$anchorId"
+    }
+
+    /** The id [anchorForTarget] links to for [rule]: its control id if it has one, else `package-rulename`, slugged. */
+    internal fun anchorIdOf(rule: RuleGroup, packagePath: String): String =
+        slug(rule.metadata?.controlId ?: "$packagePath-${rule.name}")
+
+    /**
+     * One anchor id per card of [pkg] (aligned with `pkg.rules`), or null where the id was already
+     * claimed -- ids must be unique per document. Non-default cards claim first, in source order,
+     * so a split-default entry (which shares `package-rulename` with id-less siblings) can never
+     * steal the id [anchorForTarget] resolves a link to.
+     */
+    internal fun cardAnchorIds(pkg: PolicyPackage): List<String?> {
+        val claimed = mutableSetOf<String>()
+        val result = arrayOfNulls<String>(pkg.rules.size)
+        val order = pkg.rules.indices.sortedBy { pkg.rules[it].isSplitDefaultEntry }
+        for (i in order) {
+            val id = anchorIdOf(pkg.rules[i], pkg.path)
+            if (claimed.add(id)) result[i] = id
+        }
+        return result.toList()
     }
 
     private fun slug(text: String): String = text.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')

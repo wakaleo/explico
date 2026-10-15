@@ -2,6 +2,8 @@
 
 *Source files: `governance/release_governance.rego`*
 
+<a id="release-governance-all-checks-passed"></a>
+
 ## release.governance.all_checks_passed
 
 *Rule `all_checks_passed` in package `release.governance` — defined in `release_governance.rego`*
@@ -29,6 +31,8 @@
 *Rendering coverage: 0 of 1 conditions*
 
 ---
+
+<a id="rel-004"></a>
 
 ## REL-004 — Release governance evidence
 

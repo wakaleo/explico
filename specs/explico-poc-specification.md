@@ -1471,3 +1471,15 @@ item's own corpus happened to exercise.
 
 Disclosed, explicitly out of scope: a CONDITIONAL complete rule (`x := "high" if {...}`) still
 never shows the value it yields, only its conditions. Rationale in `docs/rego-coverage.md`.
+
+### 14.21 Fix: card anchors that links actually resolve to
+
+- **§6.5 amendment.** Each rendered card is preceded by an explicit `<a id="ANCHOR"></a>` line
+  (blank line before the heading), ANCHOR being the id §6.5's links compute: slug of the control id
+  if present, else `package-rulename`. Previously the id existed nowhere in the document.
+  Ids are unique per document (first same-id card wins; a split-default entry never takes a
+  sibling's id; link resolution prefers a non-default card). Diff report cards carry the same anchor.
+- **§9 addition.** A realistic-corpus invariant tier (`RealisticCorpusInvariantsAcceptanceIT`):
+  no crash, determinism, link integrity, coverage arithmetic, heading uniqueness, no leaks.
+
+Disclosed: links inside diff cards to rules outside the diff remain unresolved. Rationale in `docs/rego-coverage.md`.

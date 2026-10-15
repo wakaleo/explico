@@ -694,4 +694,73 @@ class MarkdownRendererTest {
             assertThat(markdown).doesNotContain("evaluated against this policy version")
         }
     }
+    @Nested
+    inner class CardAnchors {
+
+        private fun rule(name: String, controlId: String? = null, split: Boolean = false) = RuleGroup(
+            name = name,
+            metadata = controlId?.let { RuleMetadata("T", null, it, emptyList()) },
+            default = null,
+            bodies = if (split) emptyList() else listOf(body(listOf(envIsProd))),
+            isSplitDefaultEntry = split,
+        )
+
+        private fun page(vararg rules: RuleGroup): String {
+            val pkg = PolicyPackage("p.q", rules.toList(), listOf("a.rego"))
+            return MarkdownRenderer.renderPackage(pkg, PolicySet(listOf(pkg)))
+        }
+
+        private fun ids(markdown: String) = Regex("<a id=\"([^\"]+)\"></a>").findAll(markdown).map { it.groupValues[1] }.toList()
+
+        @Test
+        fun anAnchorSitsOnItsOwnLineSeparatedFromTheHeadingSoTheHeadingStillRenders() {
+            val markdown = page(rule("deny", "REL-001"))
+            assertThat(markdown).contains("<a id=\"rel-001\"></a>\n\n## REL-001 — T")
+        }
+
+        @Test
+        fun idLessCardUsesPackageDashRuleName() {
+            assertThat(ids(page(rule("is_prod")))).containsExactly("p-q-is-prod")
+        }
+
+        @Test
+        fun everyIdIsUniqueEvenWhenSeveralIdLessCardsShareAName() {
+            val markdown = page(rule("allow"), rule("allow"), rule("other"))
+            assertThat(ids(markdown)).containsExactly("p-q-allow", "p-q-other")
+        }
+
+        @Test
+        fun aSplitDefaultEntryNeverStealsAnIdLessSiblingsId() {
+            // default entry listed FIRST: the sibling must still own `p-q-allow`, since that is where links resolve.
+            val markdown = page(rule("allow", split = true), rule("allow"))
+            val ids = ids(markdown)
+            assertThat(ids).containsExactly("p-q-allow")
+            assertThat(markdown.indexOf("<a id=\"p-q-allow\">")).isGreaterThan(markdown.indexOf("Default for"))
+        }
+
+        @Test
+        fun aSplitDefaultEntryAmongControlIdSiblingsGetsItsOwnUnclaimedId() {
+            assertThat(ids(page(rule("allow", "AZ-001"), rule("allow", "AZ-002"), rule("allow", split = true))))
+                .containsExactly("az-001", "az-002", "p-q-allow")
+        }
+
+        @Test
+        fun controlIdWithOddCharactersIsSluggedTheSameWayLinksAre() {
+            val pkg = PolicyPackage("p.q", listOf(rule("x", "Ctl_9.1/a b")), listOf("a.rego"))
+            val target = Condition.RuleReference("p.q", "x", false)
+            val link = ExpressionRenderer.render(target, anchorFor = { "#" + MarkdownRenderer.anchorIdOf(pkg.rules[0], "p.q") })
+            val id = ids(MarkdownRenderer.renderPackage(pkg, PolicySet(listOf(pkg)))).single()
+            assertThat(id).isEqualTo("ctl-9-1-a-b")
+            assertThat(link).contains("(#$id)")
+        }
+
+        @Test
+        fun everyRuleReferenceLinkResolvesToAnEmittedAnchor() {
+            val a = rule("a", "X-1")
+            val b = RuleGroup("b", null, null, listOf(body(listOf(Condition.RuleReference("p.q", "a", false)))))
+            val pkg = PolicyPackage("p.q", listOf(a, b), listOf("a.rego"))
+            val markdown = MarkdownRenderer.renderPackage(pkg, PolicySet(listOf(pkg)))
+            assertThat(markdown).contains("(#x-1)").contains("<a id=\"x-1\"></a>")
+        }
+    }
 }

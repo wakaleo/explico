@@ -1202,3 +1202,16 @@ was proposed in, not deferred to a separate increment.
   nest arbitrarily deep inside builtin calls.
 - Disclosed, explicitly out of scope: a CONDITIONAL complete rule (`x := "high" if {...}`) still
   never shows the value it yields, only its conditions.
+
+## Review pass: link anchors and the corpus invariant tier (item 18)
+
+- `RealisticCorpusInvariantsAcceptanceIT` sweeps every `realistic/` directory for cross-cutting
+  invariants (no crash, determinism, link integrity, coverage arithmetic, heading uniqueness, no
+  internal-name leaks). It found that every generated link anchor was dead.
+- Fix: `renderCard(..., anchorId)` emits `<a id="..."></a>` + blank line before each `## ` heading;
+  ids from `MarkdownRenderer.anchorIdOf`, uniqueness via `cardAnchorIds` (split-default entries
+  claim last). Goldens (5 pack docs + diff-all-categories) and `docs/sample-output/` changed by
+  only those added lines. Diff cards get anchors too; links from a diff card to an unchanged rule
+  stay unresolved (disclosed).
+- Test-authoring lessons: the invariant sweep must skip `index.md` for package-footer checks, and
+  allow the legitimate `is null` / `is not null` phrasing.

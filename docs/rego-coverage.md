@@ -718,6 +718,24 @@ value it yields in its card -- only its conditions. Showing it would need decidi
 display a value that depends on which Situation matched (possibly a different value per
 Situation), a materially different design question from a single unconditional value.
 
+## Review pass: link anchors that resolve (item 18)
+
+Found by the new corpus-wide invariant tier (`RealisticCorpusInvariantsAcceptanceIT`: no crash,
+determinism, link integrity, coverage-footer arithmetic, heading uniqueness, no internal-name leaks
+-- all green except link integrity).
+
+| Finding | Was | Now |
+|---|---|---|
+| Every cross-reference link (`Condition.RuleReference`, `FunctionCall`, `Operand.RuleValueReference`) targeted `#<slug of control-id or package-rulename>`, but nothing in the document had that id: headings are `## pkg.rule` / `## ID — Title`, whose GitHub slugs differ (`authzallow`). Links to id-less rules were dead on GitHub. | Dead anchors, e.g. `authz.md#authz-risk-level`, `funcs.md#funcs-is-prod`, the item-10 `rulevalues-*` links. | Each card is preceded by `<a id="ANCHOR"></a>` (own line, blank line before the heading so it still renders as a heading), with exactly the id the links compute (`MarkdownRenderer.anchorIdOf`). Headings and visible text are unchanged. |
+
+Ids are unique per document: `cardAnchorIds` lets non-default cards claim first, in source order,
+so only the first of several same-named id-less cards carries the id (where `anchorForTarget`
+already resolved links), and a split-default entry can never steal a sibling's id;
+`anchorForTarget` now also prefers a non-default card. Diff reports emit the same anchor on their
+REMOVED/ADDED/LOGIC_CHANGED cards. Disclosed, not fixed: a link inside a diff card to a rule that
+is not itself in the diff (unchanged) has no target in that document. Goldens changed by exactly
+the added anchor+blank lines (10 anchors; reviewed line-by-line before regenerating).
+
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
 **Operand-level fallback (`Operand.Unrendered`) renders as plain backticked

@@ -223,4 +223,14 @@ class DiffRendererTest {
 
         assertThatThrownBy { Explico.diff(old, new) }.isInstanceOf(DuplicateControlIdException::class.java)
     }
+    @Test
+    @DisplayName("CHALLENGE edge case (review item 18): every card in a diff report carries an anchor, and no anchor id repeats within the document")
+    fun diffCardAnchorsAreUniqueAndPresentOnEveryCard() {
+        val root = Path.of("src/test/resources/diff/diff-all-categories")
+        val markdown = render(Explico.load(root.resolve("old")), Explico.load(root.resolve("new")))
+        val ids = Regex("<a id=\"([^\"]+)\"></a>").findAll(markdown).map { it.groupValues[1] }.toList()
+        assertThat(ids).isNotEmpty().doesNotHaveDuplicates()
+        // one per card section: REMOVED, ADDED and LOGIC_CHANGED render a card; DOCS_CHANGED a table.
+        assertThat(ids).hasSize(Regex("(?m)^\\*\\*(REMOVED|ADDED|LOGIC_CHANGED)\\*\\*$").findAll(markdown).count())
+    }
 }

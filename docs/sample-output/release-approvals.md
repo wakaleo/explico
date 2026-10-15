@@ -2,6 +2,8 @@
 
 *Source files: `approvals/change_approval.rego`*
 
+<a id="rel-001"></a>
+
 ## REL-001 — Production change approval
 
 *Rule `deny` in package `release.approvals` — defined in `change_approval.rego`*

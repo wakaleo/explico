@@ -2,6 +2,8 @@
 
 *Source files: `exemptions/exemptions.rego`*
 
+<a id="release-exemptions-exempt-service"></a>
+
 ## release.exemptions.exempt_service
 
 *Rule `exempt_service` in package `release.exemptions` — defined in `exemptions.rego`*

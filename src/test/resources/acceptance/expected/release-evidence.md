@@ -2,6 +2,8 @@
 
 *Source files: `evidence/pipeline_evidence.rego`*
 
+<a id="rel-002"></a>
+
 ## REL-002 — Pipeline evidence
 
 *Rule `deny` in package `release.evidence` — defined in `pipeline_evidence.rego`*
@@ -34,6 +36,8 @@ may be deployed, unless the service is explicitly exempt.
 *Rendering coverage: 4 of 4 conditions*
 
 ---
+
+<a id="release-evidence-is-release-candidate"></a>
 
 ## release.evidence.is_release_candidate
 

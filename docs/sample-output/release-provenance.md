@@ -2,6 +2,8 @@
 
 *Source files: `provenance/artifact_provenance.rego`*
 
+<a id="rel-003"></a>
+
 ## REL-003 — Artifact provenance
 
 *Rule `deny` in package `release.provenance` — defined in `artifact_provenance.rego`*
