@@ -41,6 +41,7 @@ internal object Canonicalizer {
     // otherwise unchanged, so PolicyDiff classifies it UNCHANGED rather than LOGIC_CHANGED.
     private fun canonicalLogic(rule: RuleGroup): JsonObject = buildJsonObject {
         put("bodies", buildJsonArray { rule.bodies.forEach { add(canonicalBody(it)) } })
+        put("constantValue", rule.constantValue?.rendered?.let { JsonPrimitive(it) } ?: JsonNull)
         put("default", rule.default?.rendered?.let { JsonPrimitive(it) } ?: JsonNull)
     }
 
@@ -130,6 +131,11 @@ internal object Canonicalizer {
             put("args", buildJsonArray { operand.args.forEach { add(canonicalOperand(it, aliases)) } })
             put("name", JsonPrimitive(operand.name))
             put("type", JsonPrimitive("BuiltinCall"))
+        }
+        is Operand.RuleValueReference -> buildJsonObject {
+            put("packagePath", JsonPrimitive(operand.packagePath))
+            put("ruleName", JsonPrimitive(operand.ruleName))
+            put("type", JsonPrimitive("RuleValueReference"))
         }
         is Operand.Unrendered -> buildJsonObject {
             put("sourceText", JsonPrimitive(operand.sourceText))

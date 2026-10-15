@@ -5,6 +5,7 @@
 package io.explico.render
 
 import io.explico.model.Condition
+import io.explico.model.Operand
 import io.explico.model.PolicyPackage
 import io.explico.model.PolicySet
 import io.explico.model.RuleBody
@@ -52,12 +53,16 @@ internal object MarkdownRenderer {
 
         val anchorFor: (Condition.RuleReference) -> String = { ref -> resolveAnchor(pkg.path, ref, policySet) }
         val functionAnchorFor: (Condition.FunctionCall) -> String = { call -> resolveFunctionAnchor(pkg.path, call, policySet) }
+        val ruleValueAnchorFor: (Operand.RuleValueReference) -> String = { ref -> resolveRuleValueAnchor(pkg.path, ref, policySet) }
         when {
+            // A complete rule's unconditional constant value (review item 10, finding 4) has no
+            // real body at all -- just its own value line.
+            rule.constantValue != null -> appendConstantValueLine(sb, rule.constantValue)
             // A rule that's only ever a `default` declaration (review item 3) has no body at all --
             // nothing to say beyond the heading/metadata/default lines already appended above.
             rule.bodies.isEmpty() -> Unit
-            rule.bodies.size > 1 -> appendMultiBodySituations(sb, rule, anchorFor, functionAnchorFor)
-            else -> appendSingleBody(sb, rule.bodies.single(), anchorFor, functionAnchorFor)
+            rule.bodies.size > 1 -> appendMultiBodySituations(sb, rule, anchorFor, functionAnchorFor, ruleValueAnchorFor)
+            else -> appendSingleBody(sb, rule.bodies.single(), anchorFor, functionAnchorFor, ruleValueAnchorFor)
         }
 
         appendWorkedExamples(sb, rule, workedExamples)
@@ -83,7 +88,7 @@ internal object MarkdownRenderer {
         // "?" only for a default-only rule with zero bodies in this file (review item 3) -- should
         // never actually surface, since a RuleGroup is only ever constructed with at least one of
         // bodies/default non-empty, but this stays a graceful fallback rather than a crash either way.
-        val sourceFile = (rule.bodies.firstOrNull()?.sourceLocation ?: rule.default?.sourceLocation)?.file?.substringAfterLast('/') ?: "?"
+        val sourceFile = (rule.bodies.firstOrNull()?.sourceLocation ?: rule.default?.sourceLocation ?: rule.constantValue?.sourceLocation)?.file?.substringAfterLast('/') ?: "?"
         sb.appendLine("*Rule `${rule.name}` in package `${pkg.path}` — defined in `$sourceFile`*")
         if (!metadata?.frameworks.isNullOrEmpty()) {
             sb.appendLine("*Frameworks: ${metadata.frameworks.joinToString(", ")}*")
@@ -111,13 +116,14 @@ internal object MarkdownRenderer {
         rule: RuleGroup,
         anchorFor: (Condition.RuleReference) -> String,
         functionAnchorFor: (Condition.FunctionCall) -> String,
+        ruleValueAnchorFor: (Operand.RuleValueReference) -> String,
     ) {
         sb.appendLine("**The rule matches when ANY of the following situations applies:**")
         sb.appendLine()
         rule.bodies.forEachIndexed { index, body ->
             sb.appendLine("### Situation ${index + 1} — all of the following are true")
             sb.appendLine()
-            appendConditions(sb, body.conditions, anchorFor, functionAnchorFor)
+            appendConditions(sb, body.conditions, anchorFor, functionAnchorFor, ruleValueAnchorFor)
             sb.appendLine()
             if (body.producesValue != null) {
                 sb.appendLine("*Produces:* \"${body.producesValue}\"")
@@ -131,15 +137,22 @@ internal object MarkdownRenderer {
         body: RuleBody,
         anchorFor: (Condition.RuleReference) -> String,
         functionAnchorFor: (Condition.FunctionCall) -> String,
+        ruleValueAnchorFor: (Operand.RuleValueReference) -> String,
     ) {
         sb.appendLine("**All of the following are true:**")
         sb.appendLine()
-        appendConditions(sb, body.conditions, anchorFor, functionAnchorFor)
+        appendConditions(sb, body.conditions, anchorFor, functionAnchorFor, ruleValueAnchorFor)
         sb.appendLine()
         if (body.producesValue != null) {
             sb.appendLine("*Produces:* \"${body.producesValue}\"")
             sb.appendLine()
         }
+    }
+
+    /** A complete rule's unconditional constant value (review item 10, finding 4) -- no conditions, no Situations, just the value it is. */
+    private fun appendConstantValueLine(sb: StringBuilder, value: io.explico.model.ConstantValue) {
+        sb.appendLine("**Value:** ${value.rendered}")
+        sb.appendLine()
     }
 
     /** Spec §6.7: up to 3 matching + 2 non-matching fixtures, each with its produced message(s) and referenced-path values. */
@@ -204,6 +217,7 @@ internal object MarkdownRenderer {
         conditions: List<Condition>,
         anchorFor: (Condition.RuleReference) -> String,
         functionAnchorFor: (Condition.FunctionCall) -> String,
+        ruleValueAnchorFor: (Operand.RuleValueReference) -> String,
     ) {
         var i = 0
         while (i < conditions.size) {
@@ -231,7 +245,7 @@ internal object MarkdownRenderer {
                 appendUnrenderedBlock(sb, "not rendered — shown as source", listOf(condition.sourceText))
                 i++
             } else {
-                sb.appendLine("- ${ExpressionRenderer.render(condition, anchorFor, functionAnchorFor)}")
+                sb.appendLine("- ${ExpressionRenderer.render(condition, anchorFor, functionAnchorFor, ruleValueAnchorFor)}")
                 i++
             }
         }
@@ -271,7 +285,7 @@ internal object MarkdownRenderer {
                     packagePath = pkg.path,
                     ruleName = rule.name,
                     coverage = Coverage.of(rule),
-                    sourceFile = (rule.bodies.firstOrNull()?.sourceLocation ?: rule.default?.sourceLocation)?.file ?: "?",
+                    sourceFile = (rule.bodies.firstOrNull()?.sourceLocation ?: rule.default?.sourceLocation ?: rule.constantValue?.sourceLocation)?.file ?: "?",
                     hasMatching = outcomes.any { it.matched },
                     hasNotMatching = outcomes.any { !it.matched },
                 )
@@ -331,6 +345,10 @@ internal object MarkdownRenderer {
     /** Same anchor convention as a [Condition.RuleReference] (review item 8): a called function is just another card, link-targeted the same way. */
     private fun resolveFunctionAnchor(currentPackagePath: String, call: Condition.FunctionCall, policySet: PolicySet): String =
         anchorForTarget(currentPackagePath, call.packagePath, call.functionName, policySet)
+
+    /** Same anchor convention as [Condition.RuleReference]/[Condition.FunctionCall] (review item 10): a referenced rule's VALUE is just another card, link-targeted the same way. */
+    private fun resolveRuleValueAnchor(currentPackagePath: String, reference: Operand.RuleValueReference, policySet: PolicySet): String =
+        anchorForTarget(currentPackagePath, reference.packagePath, reference.ruleName, policySet)
 
     private fun anchorForTarget(currentPackagePath: String, targetPackagePath: String, targetName: String, policySet: PolicySet): String {
         val targetPackage = policySet.packages.first { it.path == targetPackagePath }

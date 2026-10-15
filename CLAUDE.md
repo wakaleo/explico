@@ -1170,3 +1170,35 @@ was proposed in, not deferred to a separate increment.
   real `-`/`+` line instead of an empty diff; unchanged when only the body changes.
 - Disclosed, not fixed: worked-example attribution for several same-named RuleGroups (a
   pre-existing item-1 characteristic) is unaffected in kind by adding a third same-named entry.
+
+## Review pass: rule-value references and constant rules (item 10)
+
+- A bare same-package name, an import-alias reference, or a full `data.<pkg>.<rule>` path to
+  another COMPLETE rule's value, used in operand position (e.g. `threshold` in `count(input
+  .items) > threshold`), now renders as `` rule [`name`](anchor) `` -- a new `Operand
+  .RuleValueReference`, same anchor convention as `Condition.RuleReference`. A reference to a
+  PARTIAL rule is never promoted: bare/alias stays `Operand.Unrendered`; a full data-path falls
+  through to an ordinary data breadcrumb instead (deliberately asymmetric -- see
+  `docs/rego-coverage.md` for why a comparison operand carries no tautological-truthiness risk
+  the way a condition-position bare reference does).
+- A constant rule with no `if` at all (`max_items := 10`) gets a new `RuleGroup.constantValue`:
+  shows `**Value:** 10` instead of a bogus "⚠ not rendered" card, `bodies` empty, "0 of 0
+  conditions". Detected via opa's own synthetic-body location-text signal (see
+  `AstMapper.constantValueOrNull`'s KDoc) -- never for a rule with several sibling bodies, or a
+  partial rule.
+- `Canonicalizer`/`DiffRenderer` both gained `constantValue` handling, the same fix §14.19
+  already made for `default` (hash inclusion + a synthesized diff line) -- otherwise a changed
+  constant's value would hash identically and diff with an empty `-`/`+` line.
+- **A real crash, found and fixed in the same pass**: the new data-path check's naive
+  `stringValueOf` on every chain segment crashed on a COMPOSITE segment (`data.grants[input.user
+  .id]`, the existing `KeyPath` construct) -- the identical latent risk already existed in the
+  pre-existing `mapSingleTermCondition` data/alias checks, just never triggered until this item's
+  own acceptance corpus combined a data-prefixed rule check with a composite segment. Fixed with
+  one shared guard (`allPlainStringSegments`) applied to all four call sites, not just the one
+  that crashed.
+- `ExpressionRenderer.renderOperand` and its entire recursive call graph now take a
+  `ruleValueAnchorFor` callback -- a bigger, mechanical threading change than item 8's
+  `functionAnchorFor` (which only touched condition-level entry points), since an operand can
+  nest arbitrarily deep inside builtin calls.
+- Disclosed, explicitly out of scope: a CONDITIONAL complete rule (`x := "high" if {...}`) still
+  never shows the value it yields, only its conditions.

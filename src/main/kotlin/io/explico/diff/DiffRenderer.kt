@@ -103,15 +103,16 @@ internal object DiffRenderer {
 
     /**
      * Body source lines, PLUS a synthesized `default <name> := <value>` line when [rule] has one
-     * (review item 14's follow-up) -- a rule's `default` isn't part of any body's own source
-     * text, so without this a changed default produced a LOGIC_CHANGED entry with an EMPTY diff:
-     * for a single-card rule that still has a body (the default stays attached to it), the body
-     * lines alone are unchanged; for a split-out default entry there's no body at all.
+     * (review item 14's follow-up) or a synthesized `<name> := <value>` line when it's a constant
+     * rule (review item 10, finding 4) -- neither a `default` nor a constant rule's value is part
+     * of any body's own source text (a constant rule has no body at all), so without this a
+     * changed default/constant produced a LOGIC_CHANGED entry with an EMPTY diff.
      */
     private fun diffableLines(rule: RuleGroup): List<String> {
         val bodyLines = if (rule.bodies.isEmpty()) emptyList() else rule.bodies.joinToString("\n\n") { it.sourceText }.lines()
         val defaultLine = rule.default?.let { listOf("default ${rule.name} := ${it.rendered}") } ?: emptyList()
-        return defaultLine + bodyLines
+        val constantLine = rule.constantValue?.let { listOf("${rule.name} := ${it.rendered}") } ?: emptyList()
+        return defaultLine + constantLine + bodyLines
     }
 
     private fun appendDocsTable(sb: StringBuilder, entry: DiffEntry) {

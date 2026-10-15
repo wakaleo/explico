@@ -23,6 +23,12 @@
  * (spec §6.2), which is a card-assembly concern for a later renderer. Passing
  * one here is a caller bug, not a fallback case, so it throws rather than
  * silently mis-rendering.
+ *
+ * `Operand.RuleValueReference` (review item 10) can appear anywhere an operand can -- a bare
+ * comparison side, nested inside a builtin call's arguments, a function-call argument -- so its
+ * own anchor callback, [renderOperand]'s `ruleValueAnchorFor` parameter, is threaded through
+ * every function in the operand-rendering chain, the same convention [anchorFor]/[functionAnchorFor]
+ * already established for condition-level links.
  */
 package io.explico.render
 
@@ -37,19 +43,22 @@ internal object ExpressionRenderer {
      * [anchorFor] resolves a RuleReference's link target -- anchor computation is spec §6.5, not
      * built yet; injected so phrasing can be tested independently of it. [functionAnchorFor]
      * (review item 8) does the same for a [Condition.FunctionCall]'s link to the called function's
-     * own card; defaulted to throw rather than silently render a broken link, since every existing
-     * call site that never produces a FunctionCall needn't supply it.
+     * own card. [ruleValueAnchorFor] (review item 10) does the same for an
+     * [Operand.RuleValueReference]. All three default to throw rather than silently render a
+     * broken link, since any call site that never produces the corresponding shape needn't supply
+     * one.
      */
     fun render(
         condition: Condition,
         anchorFor: (Condition.RuleReference) -> String,
         functionAnchorFor: (Condition.FunctionCall) -> String = { throw IllegalStateException("functionAnchorFor not supplied for a Condition.FunctionCall") },
+        ruleValueAnchorFor: (Operand.RuleValueReference) -> String = { throw IllegalStateException("ruleValueAnchorFor not supplied for an Operand.RuleValueReference") },
     ): String = when (condition) {
-        is Condition.Comparison -> emptinessPhraseOrNull(condition) ?: renderOperandPair(condition.left, condition.right) { l, r ->
+        is Condition.Comparison -> emptinessPhraseOrNull(condition, ruleValueAnchorFor) ?: renderOperandPair(condition.left, condition.right, ruleValueAnchorFor) { l, r ->
             val verbs = if (condition.negated) NEGATED_COMPARISON_VERBS else COMPARISON_VERBS
             "$l ${verbs.getValue(condition.op)} $r"
         }
-        is Condition.Membership -> renderOperandPair(condition.member, condition.collection) { m, c ->
+        is Condition.Membership -> renderOperandPair(condition.member, condition.collection, ruleValueAnchorFor) { m, c ->
             "$m ${if (condition.negated) "is not one of" else "is one of"} $c"
         }
         is Condition.Truthy -> {
@@ -58,17 +67,17 @@ internal object ExpressionRenderer {
             // original §6.3 wording) is only accurate when the field happens to be boolean, and
             // reads as flatly wrong for e.g. a non-empty string field. "is present and not false"
             // is the exact type-agnostic mirror of the already-correct negated phrasing below.
-            val (text, hasAnyIndex) = renderOperand(condition.operand)
+            val (text, hasAnyIndex) = renderOperand(condition.operand, ruleValueAnchorFor)
             withAnyOfPrefix(if (condition.negated) "$text is absent or false" else "$text is present and not false", hasAnyIndex)
         }
-        is Condition.BuiltinCall -> renderBuiltinCall(condition)
+        is Condition.BuiltinCall -> renderBuiltinCall(condition, ruleValueAnchorFor)
         is Condition.SomeIn -> {
-            val (text, hasAnyIndex) = renderOperand(condition.collection)
+            val (text, hasAnyIndex) = renderOperand(condition.collection, ruleValueAnchorFor)
             val vars = if (condition.key != null) "${condition.key}, ${condition.variable}" else condition.variable
             withAnyOfPrefix("for some $vars in $text", hasAnyIndex)
         }
         is Condition.RuleReference -> renderRuleReference(condition, anchorFor)
-        is Condition.FunctionCall -> renderFunctionCall(condition, functionAnchorFor)
+        is Condition.FunctionCall -> renderFunctionCall(condition, functionAnchorFor, ruleValueAnchorFor)
         is Condition.Unrendered -> throw IllegalArgumentException(
             "Condition.Unrendered is not part of the §6.3 phrasing table; render it as a ⚠ source block instead."
         )
@@ -83,7 +92,7 @@ internal object ExpressionRenderer {
      * negated form, or a `count` on the right all keep the ordinary "the number of" wording rather
      * than risk a phrase that doesn't mean exactly the same thing.
      */
-    private fun emptinessPhraseOrNull(condition: Condition.Comparison): String? {
+    private fun emptinessPhraseOrNull(condition: Condition.Comparison, ruleValueAnchorFor: (Operand.RuleValueReference) -> String): String? {
         if (condition.negated) return null
         val count = condition.left as? Operand.BuiltinCall ?: return null
         if (count.name != "count" || count.args.size != 1) return null
@@ -93,7 +102,7 @@ internal object ExpressionRenderer {
             Operator.NEQ, Operator.GT -> "is not empty"
             else -> return null
         }
-        val (text, hasAnyIndex) = renderOperand(count.args.single())
+        val (text, hasAnyIndex) = renderOperand(count.args.single(), ruleValueAnchorFor)
         return withAnyOfPrefix("$text $phrase", hasAnyIndex)
     }
 
@@ -110,42 +119,51 @@ internal object ExpressionRenderer {
      * CHALLENGE edge case: a zero-argument function call drops the "for ..." clause entirely
      * rather than trailing off with nothing after "for".
      */
-    private fun renderFunctionCall(condition: Condition.FunctionCall, anchorFor: (Condition.FunctionCall) -> String): String {
+    private fun renderFunctionCall(
+        condition: Condition.FunctionCall,
+        anchorFor: (Condition.FunctionCall) -> String,
+        ruleValueAnchorFor: (Operand.RuleValueReference) -> String,
+    ): String {
         val link = "[`${condition.functionName}`](${anchorFor(condition)})"
         val verb = if (condition.negated) "is not satisfied" else "is satisfied"
         if (condition.args.isEmpty()) return "function $link $verb"
-        val rendered = condition.args.map { renderOperand(it) }
+        val rendered = condition.args.map { renderOperand(it, ruleValueAnchorFor) }
         val argsText = rendered.joinToString(", ") { it.first }
         val hasAnyIndex = rendered.any { it.second }
         return withAnyOfPrefix("function $link $verb for $argsText", hasAnyIndex)
     }
 
-    private fun renderBuiltinCall(condition: Condition.BuiltinCall): String {
+    private fun renderBuiltinCall(condition: Condition.BuiltinCall, ruleValueAnchorFor: (Operand.RuleValueReference) -> String): String {
         // The seven `is_*` type checks (review item 11) take exactly ONE argument -- a genuinely
         // different phrase shape from every other condition-position builtin here (all two-arg,
         // "<subject> <verb> <other>"), so they get their own unary dispatch rather than being
         // forced into BuiltinTemplate's two-operand shape.
         UNARY_BUILTIN_TEMPLATES[condition.name]?.let { template ->
-            val (text, hasAnyIndex) = renderOperand(condition.args.single())
+            val (text, hasAnyIndex) = renderOperand(condition.args.single(), ruleValueAnchorFor)
             val verb = if (condition.negated) template.negatedVerb else template.verb
             return withAnyOfPrefix("$text $verb", hasAnyIndex)
         }
         val template = BUILTIN_TEMPLATES[condition.name]
             ?: throw IllegalArgumentException("Unrecognised condition-position builtin '${condition.name}'; AstMapper should never produce this.")
         val (subject, other) = template.argOrder(condition.args)
-        val (subjectText, subjectAny) = renderOperand(subject)
-        val (otherText, otherAny) = renderOperand(other)
+        val (subjectText, subjectAny) = renderOperand(subject, ruleValueAnchorFor)
+        val (otherText, otherAny) = renderOperand(other, ruleValueAnchorFor)
         val verb = if (condition.negated) template.negatedVerb else template.verb
         return withAnyOfPrefix("$subjectText $verb $otherText", subjectAny || otherAny)
     }
 
-    private inline fun renderOperandPair(left: Operand, right: Operand, phrase: (String, String) -> String): String {
-        val (leftText, leftAny) = renderOperand(left)
-        val (rightText, rightAny) = renderOperand(right)
+    private inline fun renderOperandPair(
+        left: Operand,
+        right: Operand,
+        noinline ruleValueAnchorFor: (Operand.RuleValueReference) -> String,
+        phrase: (String, String) -> String,
+    ): String {
+        val (leftText, leftAny) = renderOperand(left, ruleValueAnchorFor)
+        val (rightText, rightAny) = renderOperand(right, ruleValueAnchorFor)
         return withAnyOfPrefix(phrase(leftText, rightText), leftAny || rightAny)
     }
 
-    private fun renderOperand(operand: Operand): Pair<String, Boolean> = when (operand) {
+    private fun renderOperand(operand: Operand, ruleValueAnchorFor: (Operand.RuleValueReference) -> String): Pair<String, Boolean> = when (operand) {
         is Operand.Path -> PathHumanizer.humanize(operand.segments).let { it.rendered to it.hasAnyIndex }
         is Operand.Literal -> "`${operand.rendered}`" to false
         is Operand.Variable -> "`${operand.name}`" to false
@@ -154,27 +172,32 @@ internal object ExpressionRenderer {
         // function's own card can tell "this is a known input the caller supplies" apart from
         // "this was assigned to something we couldn't resolve."
         is Operand.Parameter -> "parameter `${operand.name}`" to false
-        is Operand.BuiltinCall -> renderOperandBuiltinCall(operand)
+        is Operand.BuiltinCall -> renderOperandBuiltinCall(operand, ruleValueAnchorFor)
+        // Review item 10: a link to the referenced rule's own card, the same "rule [`name`](anchor)"
+        // convention regardless of whether the source spelled it bare, via an import alias, or as
+        // a full data path -- all three resolve to the identical shape by the time AstMapper hands
+        // it to this renderer.
+        is Operand.RuleValueReference -> "rule [`${operand.ruleName}`](${ruleValueAnchorFor(operand)})" to false
         // Never guessed prose: the operand's own verbatim source, in backticks. Not part of spec's
         // explicit examples (only Condition-level Unrendered's block format is spec'd) -- this
         // session's interpretation for the inline case, kept as visible source rather than hidden.
         is Operand.Unrendered -> "`${operand.sourceText}`" to false
     }
 
-    private fun renderOperandBuiltinCall(operand: Operand.BuiltinCall): Pair<String, Boolean> {
-        if (operand.name == "object.get") return renderObjectGet(operand)
+    private fun renderOperandBuiltinCall(operand: Operand.BuiltinCall, ruleValueAnchorFor: (Operand.RuleValueReference) -> String): Pair<String, Boolean> {
+        if (operand.name == "object.get") return renderObjectGet(operand, ruleValueAnchorFor)
         // time.now_ns() takes no arguments -- its template is a fixed phrase, not one built around
         // a rendered argument, so it's handled separately from the single-argument templates below.
         if (operand.name == "time.now_ns") return "the current time" to false
-        if (operand.name == "concat") return renderConcat(operand)
+        if (operand.name == "concat") return renderConcat(operand, ruleValueAnchorFor)
         ARITHMETIC_TEMPLATES[operand.name]?.let { template ->
-            val (leftText, leftAny) = renderOperand(operand.args[0])
-            val (rightText, rightAny) = renderOperand(operand.args[1])
+            val (leftText, leftAny) = renderOperand(operand.args[0], ruleValueAnchorFor)
+            val (rightText, rightAny) = renderOperand(operand.args[1], ruleValueAnchorFor)
             return template(leftText, rightText) to (leftAny || rightAny)
         }
         val template = OPERAND_BUILTIN_TEMPLATES[operand.name]
             ?: throw IllegalArgumentException("Unrecognised operand-position builtin '${operand.name}'; AstMapper should never produce this.")
-        val (argText, hasAnyIndex) = renderOperand(operand.args.single())
+        val (argText, hasAnyIndex) = renderOperand(operand.args.single(), ruleValueAnchorFor)
         return template(argText) to hasAnyIndex
     }
 
@@ -185,12 +208,12 @@ internal object ExpressionRenderer {
      * -- the exact same segment a real bracket-string path (`labels["signed-off-by"]`) already
      * renders with -- rather than being shown as a second, separately backtick-wrapped operand.
      */
-    private fun renderObjectGet(operand: Operand.BuiltinCall): Pair<String, Boolean> {
+    private fun renderObjectGet(operand: Operand.BuiltinCall, ruleValueAnchorFor: (Operand.RuleValueReference) -> String): Pair<String, Boolean> {
         val (objectOperand, keyOperand, defaultOperand) = operand.args
         val key = (keyOperand as Operand.Literal).rendered.removeSurrounding("\"")
         val extendedPath = (objectOperand as Operand.Path).segments + PathSegment.KeyLiteral(key)
         val humanized = PathHumanizer.humanize(extendedPath)
-        val (defaultText, defaultAnyIndex) = renderOperand(defaultOperand)
+        val (defaultText, defaultAnyIndex) = renderOperand(defaultOperand, ruleValueAnchorFor)
         return "${humanized.rendered} (default $defaultText)" to (humanized.hasAnyIndex || defaultAnyIndex)
     }
 
@@ -202,9 +225,9 @@ internal object ExpressionRenderer {
      * comma-joins whatever already-rendered operand text it's given; a single element naturally
      * needs no comma.
      */
-    private fun renderConcat(operand: Operand.BuiltinCall): Pair<String, Boolean> {
-        val (separatorText, separatorAny) = renderOperand(operand.args[0])
-        val rendered = operand.args.drop(1).map { renderOperand(it) }
+    private fun renderConcat(operand: Operand.BuiltinCall, ruleValueAnchorFor: (Operand.RuleValueReference) -> String): Pair<String, Boolean> {
+        val (separatorText, separatorAny) = renderOperand(operand.args[0], ruleValueAnchorFor)
+        val rendered = operand.args.drop(1).map { renderOperand(it, ruleValueAnchorFor) }
         val listText = rendered.joinToString(", ") { it.first }
         val hasAnyIndex = separatorAny || rendered.any { it.second }
         return "$listText joined with $separatorText" to hasAnyIndex

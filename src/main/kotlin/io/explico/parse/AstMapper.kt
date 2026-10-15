@@ -44,6 +44,7 @@
 package io.explico.parse
 
 import io.explico.model.Condition
+import io.explico.model.ConstantValue
 import io.explico.model.DefaultValue
 import io.explico.model.Operand
 import io.explico.model.Operator
@@ -387,15 +388,21 @@ internal object AstMapper {
             .map { (key, items) ->
                 val (name, metadata) = key
                 val orderedRules = items.map { it.rule }.sortedBy { it.location?.row ?: 0 }
+                // Review item 10, finding 4: a bodyless `name := value` constant only ever has ONE
+                // rule statement for its name -- several sibling bodies means real Situations are
+                // (or might be) in play, so the constant-value shape is deliberately not even
+                // checked for that case; see constantValueOrNull's own KDoc.
+                val constant = orderedRules.singleOrNull()?.let { constantValueOrNull(it, ctx) }
                 RuleGroup(
                     name = name,
                     metadata = metadata,
                     default = null,
-                    bodies = orderedRules.map { mapBody(it, ctx) },
+                    bodies = if (constant != null) emptyList() else orderedRules.map { mapBody(it, ctx) },
                     // review item 8: a function's own declared parameters, for its card's own
                     // "Parameters" line. `head.args` is consistent across a function's overloaded
                     // bodies (same arity/names), so the first is as good as any.
                     parameters = orderedRules.first().head.args?.map { stringValueOf(it) } ?: emptyList(),
+                    constantValue = constant,
                 )
             }
         val siblingCountByName: Map<String, Int> = groupsWithoutDefault.groupingBy { it.name }.eachCount()
@@ -440,6 +447,34 @@ internal object AstMapper {
      */
     private fun defaultValueOf(rule: OpaRule, ctx: MappingContext): DefaultValue =
         DefaultValue(sourceText(rule.head.value?.location), SourceRef(ctx.sourceFile, rule.location?.row ?: 0))
+
+    /**
+     * `name := value` with NO `if` at all (review item 10, finding 4). opa represents this as a
+     * single synthetic body expr -- `{type: "boolean", value: true}` -- whose own `location.text`
+     * is REUSED from the value's own location, confirmed via a real `opa parse` run: writing
+     * `if true` explicitly out gives the exact same term shape (`boolean`/`true`) but a DIFFERENT
+     * `location.text` ("true", not the value's own text). Comparing the two source texts is the
+     * exact, mechanical, non-guessing signal that tells a genuinely bodyless rule apart from one
+     * that happens to say `if true` -- the latter keeps the ordinary body/Situation rendering,
+     * unaffected, same as before this promotion.
+     *
+     * `head.key != null` (a partial rule) is excluded even though no acceptance fixture exercises
+     * a bodyless partial rule -- a partial rule's bracket value is one SET/OBJECT entry, not a
+     * value standing alone, and guessing that the same mechanical signal applies there too would
+     * be exactly the "widen a template to swallow a construct approximately" failure mode this
+     * project's own promotions are never allowed to risk.
+     */
+    private fun constantValueOrNull(rule: OpaRule, ctx: MappingContext): ConstantValue? {
+        if (rule.head.key != null) return null
+        val value = rule.head.value ?: return null
+        val onlyExpr = rule.body.singleOrNull() ?: return null
+        val terms = onlyExpr.terms as? JsonObject ?: return null
+        if ("type" !in terms) return null
+        val term = opaJson.decodeFromJsonElement(OpaTerm.serializer(), terms)
+        if (term.type != "boolean") return null
+        if (sourceText(onlyExpr.location) != sourceText(value.location)) return null
+        return ConstantValue(sourceText(value.location), SourceRef(ctx.sourceFile, rule.location?.row ?: 0))
+    }
 
     private fun mapBody(rule: OpaRule, ctx: MappingContext): RuleBody {
         // An else-chain (spec §14 finding): opa's own top-level `rule.location` already spans the
@@ -728,12 +763,12 @@ internal object AstMapper {
         val root = stringValueOf(chain.first())
 
         val aliasedPackage = ctx.importAliases[root]
-        if (aliasedPackage != null) {
+        if (aliasedPackage != null && allPlainStringSegments(chain.drop(1))) {
             val ruleName = chain.drop(1).joinToString(".") { stringValueOf(it) }
             return ruleReferenceIfKnown(aliasedPackage, ruleName, ctx, expr.negated)
                 ?: Condition.Unrendered(sourceText(expr.location), fallbackReasonFor(aliasedPackage, ruleName, ctx))
         }
-        if (root == "data" && chain.size > 1) {
+        if (root == "data" && chain.size > 1 && allPlainStringSegments(chain.drop(1))) {
             val candidatePackage = chain.drop(1).dropLast(1).joinToString(".") { stringValueOf(it) }
             val candidateRule = stringValueOf(chain.last())
             // A known rule name (any kind) at a data.-prefixed path must never fall through to
@@ -769,6 +804,33 @@ internal object AstMapper {
     private fun fallbackReasonFor(packagePath: String, ruleName: String, ctx: MappingContext): String =
         if (ctx.partialRegistry[packagePath]?.contains(ruleName) == true) "partial-rule-reference" else "unclassified"
 
+    /**
+     * CHALLENGE edge case / real crash fix: a dotted chain's segment can be a COMPOSITE term, not
+     * a plain field name -- e.g. `data.grants[input.user.id]` (review item 7's own KeyPath
+     * construct) has `chain.last().type == "ref"`, not `"string"`. Every dotted-path-to-a-rule
+     * check in this file joins/stringifies `chain.drop(1)` assuming plain string segments; calling
+     * `stringValueOf` on a composite term throws (it reads `.value.jsonPrimitive`, which a
+     * `JsonArray` value isn't). This guard must run BEFORE any of those checks, not just before
+     * the ones added by this promotion -- the same latent crash already existed in
+     * [mapSingleTermCondition]'s own data/alias checks, just never exercised by a real fixture
+     * until this promotion's own acceptance corpus did (`some grant in data.grants[input.user.id]`).
+     */
+    private fun allPlainStringSegments(terms: List<OpaTerm>): Boolean = terms.all { it.type == "string" }
+
+    /**
+     * A known COMPLETE rule's VALUE, referenced directly as an operand (review item 10) -- e.g.
+     * `threshold` (bare, same package), `config.max_items` (import alias), or
+     * `data.rulevalues.config.region_prefix` (full data path): all three call sites resolve
+     * through this one function. A PARTIAL (`contains`/object) rule is deliberately excluded --
+     * same reasoning as [ruleReferenceIfKnown]'s own KDoc: it has no single scalar value to point
+     * a reader at -- so it stays whatever fallback the caller already uses.
+     */
+    private fun ruleValueReferenceIfKnown(packagePath: String, ruleName: String, ctx: MappingContext): Operand.RuleValueReference? {
+        if (ctx.registry[packagePath]?.contains(ruleName) != true) return null
+        if (ctx.partialRegistry[packagePath]?.contains(ruleName) == true) return null
+        return Operand.RuleValueReference(packagePath, ruleName)
+    }
+
     // --- Operands ---
 
     private fun mapOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): ConstructResult = when (term.type) {
@@ -777,7 +839,7 @@ internal object AstMapper {
         "boolean" -> ConstructResult.Ok(Operand.Literal(term.value?.jsonPrimitive?.content ?: "false"))
         "null" -> ConstructResult.Ok(Operand.Literal("null")) // spec §14 promotion, backlog rank #1 after §14.10 -- trivial, just never added.
         "ref" -> mapRefChain(decodeTermList(term.value), symbolTable, ctx, term.location)
-        "var" -> mapVarOperand(term, symbolTable)
+        "var" -> mapVarOperand(term, symbolTable, ctx)
         "array", "set" -> mapCollectionLiteral(term, symbolTable, ctx)
         "object" -> mapObjectLiteral(term, symbolTable, ctx)
         "call" -> mapCallOperand(term, symbolTable, ctx)
@@ -785,14 +847,25 @@ internal object AstMapper {
         else -> ConstructResult.Unsupported("unclassified")
     }
 
-    /** A bare local-variable reference (spec §6.4 rule 7 / spec §5 promotion): resolved through [VarBinding] -- see its own KDoc for what each kind means. A name absent from [symbolTable] entirely is genuinely unknown/unbound, never seen by any recognised construct, so it stays the generic `Operand.Unrendered` fallback. */
-    private fun mapVarOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>): ConstructResult =
+    /**
+     * A bare local-variable reference (spec §6.4 rule 7 / spec §5 promotion): resolved through
+     * [VarBinding] -- see its own KDoc for what each kind means. A name absent from [symbolTable]
+     * entirely is checked against the CURRENT package's own rules (review item 10) before falling
+     * back -- a local binding always takes priority, same precedent as the ref-head rule registry
+     * check in [mapRefChain]. Genuinely unknown to both stays the generic `Operand.Unrendered`
+     * fallback.
+     */
+    private fun mapVarOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): ConstructResult =
         when (val binding = symbolTable[stringValueOf(term)]) {
             is VarBinding.Iteration -> ConstructResult.Ok(Operand.Path(binding.collection.segments + PathSegment.VarIndex(stringValueOf(term))))
             is VarBinding.Substitution -> ConstructResult.Ok(Operand.Path(binding.path.segments))
             VarBinding.NonPath -> ConstructResult.Ok(Operand.Variable(stringValueOf(term)))
             VarBinding.Parameter -> ConstructResult.Ok(Operand.Parameter(stringValueOf(term)))
-            null -> ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
+            null -> {
+                val name = stringValueOf(term)
+                val reference = ruleValueReferenceIfKnown(ctx.currentPackage, name, ctx)
+                ConstructResult.Ok(reference ?: Operand.Unrendered(sourceText(term.location)))
+            }
         }
 
     /**
@@ -820,9 +893,33 @@ internal object AstMapper {
         val root = chain.first()
         val rootName = stringValueOf(root)
         val remaining = chain.drop(1)
+        // Review item 10: a full `data.<package>.<rule>` path to a COMPLETE rule's value is a
+        // reference, not a data path -- checked before the generic `data`-root path-building
+        // below, same precedent as `mapSingleTermCondition`'s own data-prefixed rule check at
+        // condition level (a partial rule there is excluded the same way, via ruleValueReferenceIfKnown).
+        // When it IS a partial rule, this deliberately does NOT fall back to Unrendered the way the
+        // bare/alias cases in mapVarOperand do -- it falls through to the ordinary data-path
+        // building below instead, rendering a plain breadcrumb. Unlike a CONDITION-position bare
+        // reference (which would tautologically claim "is present and not false" about an
+        // always-defined partial rule), a comparison OPERAND makes no such claim: the breadcrumb is
+        // a faithful, if unlinked, description of a real data path opa will actually resolve.
+        if (rootName == "data" && chain.size > 1 && allPlainStringSegments(remaining)) {
+            val candidatePackage = remaining.dropLast(1).joinToString(".") { stringValueOf(it) }
+            val candidateRule = stringValueOf(chain.last())
+            ruleValueReferenceIfKnown(candidatePackage, candidateRule, ctx)?.let { return ConstructResult.Ok(it) }
+        }
         if (rootName == "input" || rootName == "data") {
             val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
             return ConstructResult.Ok(Operand.Path(listOf(PathSegment.Field(rootName)) + segments))
+        }
+        // Review item 10: an import-alias-rooted chain (`config.max_items`) is a reference to that
+        // package's rule's value, resolved the same way a same-package bare name is in
+        // mapVarOperand -- just against the aliased package. A local binding for the alias name
+        // always takes priority (same precedent as the ref-head registry check just below).
+        val aliasedPackage = ctx.importAliases[rootName]
+        if (aliasedPackage != null && symbolTable[rootName] == null && allPlainStringSegments(remaining)) {
+            val ruleName = remaining.joinToString(".") { stringValueOf(it) }
+            ruleValueReferenceIfKnown(aliasedPackage, ruleName, ctx)?.let { return ConstructResult.Ok(it) }
         }
         if (symbolTable[rootName] == null) {
             val dottedPath = chain.joinToString(".") { stringValueOf(it) }

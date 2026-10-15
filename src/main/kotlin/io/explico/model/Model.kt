@@ -43,7 +43,27 @@ public data class RuleGroup(
      * a `default` with no sibling body at all: that case predates this field and is unaffected.
      */
     val isSplitDefaultEntry: Boolean = false,
+    /**
+     * A complete rule's unconditional constant value, e.g. `max_items := 10` (review item 10,
+     * finding 4) -- opa represents a bodyless `name := value` as a single synthetic `true` body
+     * expr, which otherwise rendered as a bogus "⚠ not rendered" card. Distinct from
+     * [DefaultValue]: a default is the fallback when nothing else matches a DIFFERENT rule; this
+     * is the rule's own, only, unconditional value. Null for every other rule shape -- in
+     * particular, a rule with a real body (even one that always evaluates true, like `if true`
+     * written explicitly) keeps the ordinary `bodies`/Situations rendering, since opa's own
+     * location-text for the synthetic case is the one mechanical, non-guessing signal available
+     * (see `AstMapper.constantValueOrNull`'s own KDoc) and this is the only shape it fires for.
+     * `bodies` is empty whenever this is non-null.
+     */
+    val constantValue: ConstantValue? = null,
 )
+
+/**
+ * A complete rule's unconditional constant value (review item 10) -- see [RuleGroup.constantValue].
+ * [sourceLocation] is the rule's own row, used for the card's "defined in" line since `bodies` is
+ * empty for this shape (the same need [DefaultValue.sourceLocation] was added for).
+ */
+public data class ConstantValue(val rendered: String, val sourceLocation: SourceRef)
 
 /** METADATA annotations attached to a rule, at rule or document scope. */
 public data class RuleMetadata(
@@ -145,6 +165,17 @@ public sealed interface Operand {
 
     /** A recognised operand-position builtin call with a faithful template, e.g. `count(x)` (spec §6.3/§14). */
     public data class BuiltinCall(val name: String, val args: List<Operand>) : Operand
+
+    /**
+     * A reference to another COMPLETE rule's VALUE, used as an operand (review item 10) -- e.g.
+     * `threshold` (same package), `config.max_items` (import alias), or
+     * `data.rulevalues.config.region_prefix` (full data path): all three resolve to this same
+     * shape, rendered as a link to that rule's own card, the same convention
+     * [Condition.RuleReference] already uses. A PARTIAL (`contains`/object) rule is deliberately
+     * excluded -- it has no single scalar value to point a reader at -- and stays
+     * [Unrendered] instead, same as before this promotion.
+     */
+    public data class RuleValueReference(val packagePath: String, val ruleName: String) : Operand
 
     /** An operand the mapper cannot classify, e.g. an unrecognised operand-position builtin call. */
     public data class Unrendered(val sourceText: String) : Operand

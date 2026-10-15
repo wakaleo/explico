@@ -14,6 +14,7 @@ import io.explico.opa.OpaModule
 import io.explico.opa.opaJson
 import io.explico.render.PathHumanizer
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.nio.file.Files
@@ -3063,6 +3064,548 @@ class AstMapperTest {
             val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
             val fallback = body.conditions.single() as Condition.Unrendered
             assertThat(fallback.reason).isEqualTo("comprehension")
+        }
+    }
+
+    @Nested
+    inner class RuleValueReferencesReviewItem10 {
+
+        @Test
+        fun bareSamePackageReferenceToACompleteRulePromotesToRuleValueReference() {
+            // `count(input.items) > threshold`, "threshold" an ordinary complete rule in the same package.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "threshold", "value": {"type":"number","value":5}},
+                      "body": [
+                        {"index":0,"location":{"row":1,"text":"${b64("input.enabled")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"enabled"}]}}
+                      ]
+                    },
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":2,"text":"${b64("count(input.items) > threshold")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"gt"}]},
+                            {"type":"call","location":{"text":"${b64("count(input.items)")}"},"value":[
+                              {"type":"ref","value":[{"type":"var","value":"count"}]},
+                              {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"items"}]}
+                            ]},
+                            {"type":"var","value":"threshold"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val policySet = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module)))
+            val comparison = policySet.packages[0].rules.first { it.name == "allow" }.bodies[0].conditions.single() as Condition.Comparison
+            val reference = comparison.right as Operand.RuleValueReference
+            assertThat(reference.packagePath).isEqualTo("scratch")
+            assertThat(reference.ruleName).isEqualTo("threshold")
+        }
+
+        @Test
+        @DisplayName("guard: a bare reference to a PARTIAL rule's value is never promoted, same reasoning as ruleReferenceIfKnown")
+        fun bareSamePackageReferenceToAPartialRuleStaysUnrendered() {
+            // `count(flagged) > 1`, "flagged" a partial (contains) rule in the same package.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "flagged", "key": {"type":"var","value":"x"}, "ref": [{"type":"var","value":"flagged"}]},
+                      "body": [
+                        {"index":0,"location":{"row":1,"text":"${b64("input.x")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}]}}
+                      ]
+                    },
+                    {
+                      "head": {"name": "warn", "ref": [{"type":"var","value":"warn"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":2,"text":"${b64("count(flagged) > 1")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"gt"}]},
+                            {"type":"call","location":{"text":"${b64("count(flagged)")}"},"value":[
+                              {"type":"ref","value":[{"type":"var","value":"count"}]},
+                              {"type":"var","value":"flagged"}
+                            ]},
+                            {"type":"number","value":1}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val policySet = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module)))
+            val comparison = policySet.packages[0].rules.first { it.name == "warn" }.bodies[0].conditions.single() as Condition.Comparison
+            val countCall = comparison.left as Operand.BuiltinCall
+            assertThat(countCall.args.single()).isInstanceOf(Operand.Unrendered::class.java)
+        }
+
+        @Test
+        @DisplayName("guard (regression): a genuinely unknown bare var -- no rule, no binding -- still falls back to Operand.Unrendered")
+        fun bareReferenceToNoKnownRuleOrBindingStaysUnrendered() {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("count(input.items) > mystery")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"gt"}]},
+                            {"type":"call","location":{"text":"${b64("count(input.items)")}"},"value":[
+                              {"type":"ref","value":[{"type":"var","value":"count"}]},
+                              {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"items"}]}
+                            ]},
+                            {"type":"var","value":"mystery","location":{"text":"${b64("mystery")}"}}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val policySet = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module)))
+            val comparison = policySet.packages[0].rules.first { it.name == "allow" }.bodies[0].conditions.single() as Condition.Comparison
+            val fallback = comparison.right as Operand.Unrendered
+            assertThat(fallback.sourceText).isEqualTo("mystery")
+        }
+
+        @Test
+        fun importAliasReferenceToACompleteRuleInAnotherPackagePromotes() {
+            // `config.max_items` with `import data.config` in a different package.
+            val configModule = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"config"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "max_items", "value": {"type":"number","value":10}},
+                      "body": [
+                        {"index":0,"location":{"row":1,"text":"${b64("input.x")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}]}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val checksModule = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"checks"}]},
+                  "imports": [{"path": {"type":"ref","value":[{"type":"var","value":"data"},{"type":"string","value":"config"}]}}],
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("5 < config.max_items")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"lt"}]},
+                            {"type":"number","value":5},
+                            {"type":"ref","value":[{"type":"var","value":"config"},{"type":"string","value":"max_items"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val policySet = AstMapper.mapPolicySet(listOf(ParsedFile("config.rego", configModule), ParsedFile("checks.rego", checksModule)))
+            val comparison = policySet.packages.first { it.path == "checks" }.rules.first { it.name == "allow" }.bodies[0].conditions.single() as Condition.Comparison
+            val reference = comparison.right as Operand.RuleValueReference
+            assertThat(reference.packagePath).isEqualTo("config")
+            assertThat(reference.ruleName).isEqualTo("max_items")
+        }
+
+        @Test
+        @DisplayName("guard: an import-alias reference to a PARTIAL rule in another package is never promoted")
+        fun importAliasReferenceToAPartialRuleStaysUnrendered() {
+            val configModule = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"config"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "flagged", "key": {"type":"var","value":"x"}, "ref": [{"type":"var","value":"flagged"}]},
+                      "body": [
+                        {"index":0,"location":{"row":1,"text":"${b64("input.x")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}]}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val checksModule = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"checks"}]},
+                  "imports": [{"path": {"type":"ref","value":[{"type":"var","value":"data"},{"type":"string","value":"config"}]}}],
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("5 < config.flagged")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"lt"}]},
+                            {"type":"number","value":5},
+                            {"type":"ref","value":[{"type":"var","value":"config"},{"type":"string","value":"flagged"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val policySet = AstMapper.mapPolicySet(listOf(ParsedFile("config.rego", configModule), ParsedFile("checks.rego", checksModule)))
+            val comparison = policySet.packages.first { it.path == "checks" }.rules.first { it.name == "allow" }.bodies[0].conditions.single() as Condition.Comparison
+            assertThat(comparison.right).isInstanceOf(Operand.Unrendered::class.java)
+        }
+
+        @Test
+        fun fullDataPathReferenceToACompleteRuleInAnotherPackagePromotes() {
+            // `data.config.max_items`, no import at all.
+            val configModule = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"config"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "max_items", "value": {"type":"number","value":10}},
+                      "body": [
+                        {"index":0,"location":{"row":1,"text":"${b64("input.x")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}]}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val checksModule = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"checks"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("5 < data.config.max_items")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"lt"}]},
+                            {"type":"number","value":5},
+                            {"type":"ref","value":[{"type":"var","value":"data"},{"type":"string","value":"config"},{"type":"string","value":"max_items"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val policySet = AstMapper.mapPolicySet(listOf(ParsedFile("config.rego", configModule), ParsedFile("checks.rego", checksModule)))
+            val comparison = policySet.packages.first { it.path == "checks" }.rules.first { it.name == "allow" }.bodies[0].conditions.single() as Condition.Comparison
+            val reference = comparison.right as Operand.RuleValueReference
+            assertThat(reference.packagePath).isEqualTo("config")
+            assertThat(reference.ruleName).isEqualTo("max_items")
+        }
+
+        @Test
+        @DisplayName("guard: a full data path to a PARTIAL rule is never promoted to a link -- unlike the bare/alias cases, it falls through to an ordinary data Path, not Unrendered, since a comparison over it makes no tautological-truthiness claim the way a bare condition-position reference would")
+        fun fullDataPathToAPartialRuleFallsThroughToAnOrdinaryPathNotALink() {
+            val configModule = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"config"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "flagged", "key": {"type":"var","value":"x"}, "ref": [{"type":"var","value":"flagged"}]},
+                      "body": [
+                        {"index":0,"location":{"row":1,"text":"${b64("input.x")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}]}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val checksModule = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"checks"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("5 < data.config.flagged")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"lt"}]},
+                            {"type":"number","value":5},
+                            {"type":"ref","value":[{"type":"var","value":"data"},{"type":"string","value":"config"},{"type":"string","value":"flagged"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val policySet = AstMapper.mapPolicySet(listOf(ParsedFile("config.rego", configModule), ParsedFile("checks.rego", checksModule)))
+            val comparison = policySet.packages.first { it.path == "checks" }.rules.first { it.name == "allow" }.bodies[0].conditions.single() as Condition.Comparison
+            val path = comparison.right as Operand.Path
+            assertThat(path.segments).containsExactly(
+                PathSegment.Field("data"), PathSegment.Field("config"), PathSegment.Field("flagged"),
+            )
+        }
+
+        @Test
+        @DisplayName("guard: a full data path with no rule behind it stays an ordinary data Path, not promoted")
+        fun fullDataPathWithNoRuleBehindItStaysAnOrdinaryPath() {
+            val configModule = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"config"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "max_items", "value": {"type":"number","value":10}},
+                      "body": [
+                        {"index":0,"location":{"row":1,"text":"${b64("input.x")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}]}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val checksModule = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"checks"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("5 < data.config.other_field")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"lt"}]},
+                            {"type":"number","value":5},
+                            {"type":"ref","value":[{"type":"var","value":"data"},{"type":"string","value":"config"},{"type":"string","value":"other_field"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val policySet = AstMapper.mapPolicySet(listOf(ParsedFile("config.rego", configModule), ParsedFile("checks.rego", checksModule)))
+            val comparison = policySet.packages.first { it.path == "checks" }.rules.first { it.name == "allow" }.bodies[0].conditions.single() as Condition.Comparison
+            val path = comparison.right as Operand.Path
+            assertThat(path.segments).containsExactly(
+                PathSegment.Field("data"), PathSegment.Field("config"), PathSegment.Field("other_field"),
+            )
+        }
+
+        @Test
+        @DisplayName("regression (real crash found this session): a data-rooted chain with a composite, non-string segment -- e.g. `data.grants[input.user.id]` -- must not crash, and keeps its ordinary KeyPath rendering")
+        fun dataRootedChainWithACompositeSegmentDoesNotCrashAndStaysAnOrdinaryKeyPath() {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "key": {"type":"var","value":"grant"}, "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("some grant in data.grants[input.user.id]")}"},
+                          "terms": {
+                            "symbols": [
+                              {"type":"call","value":[
+                                {"type":"ref","value":[{"type":"var","value":"internal"},{"type":"string","value":"member_2"}]},
+                                {"type":"var","value":"grant"},
+                                {"type":"ref","value":[
+                                  {"type":"var","value":"data"},
+                                  {"type":"string","value":"grants"},
+                                  {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"user"},{"type":"string","value":"id"}]}
+                                ]}
+                              ]}
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val policySet = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module)))
+            val someIn = policySet.packages[0].rules.first { it.name == "allow" }.bodies[0].conditions.single() as Condition.SomeIn
+            val collection = someIn.collection as Operand.Path
+            assertThat(collection.segments).containsExactly(
+                PathSegment.Field("data"),
+                PathSegment.Field("grants"),
+                PathSegment.KeyPath(listOf(PathSegment.Field("input"), PathSegment.Field("user"), PathSegment.Field("id"))),
+            )
+        }
+    }
+
+    @Nested
+    inner class ConstantValueRulesReviewItem10 {
+
+        @Test
+        fun bodylessConstantRulePromotesToConstantValueWithEmptyBodies() {
+            // `max_items := 10` -- no `if` at all. opa's own synthetic body expr's location.text
+            // equals the value's own location.text ("10" == "10"), the mechanical signal.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "max_items", "value": {"type":"number","value":10,"location":{"text":"${b64("10")}"}}},
+                      "location": {"row":5},
+                      "body": [
+                        {"index":0,"location":{"row":5,"text":"${b64("10")}"},"terms":{"type":"boolean","value":true,"location":{"text":"${b64("10")}"}}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val rule = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "max_items" }
+            assertThat(rule.constantValue?.rendered).isEqualTo("10")
+            assertThat(rule.bodies).isEmpty()
+        }
+
+        @Test
+        @DisplayName("guard: `x := 10 if true` written explicitly keeps the ordinary (unclassified) body rendering -- the body expr's own source text is \"true\", not \"10\"")
+        fun explicitIfTrueIsNotTreatedAsAConstant() {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "max_items", "value": {"type":"number","value":10,"location":{"text":"${b64("10")}"}}},
+                      "location": {"row":5},
+                      "body": [
+                        {"index":0,"location":{"row":5,"text":"${b64("true")}"},"terms":{"type":"boolean","value":true,"location":{"text":"${b64("true")}"}}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val rule = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "max_items" }
+            assertThat(rule.constantValue).isNull()
+            assertThat(rule.bodies).hasSize(1)
+            val fallback = rule.bodies.single().conditions.single() as Condition.Unrendered
+            assertThat(fallback.reason).isEqualTo("unclassified")
+        }
+
+        @Test
+        @DisplayName("guard: a rule with a real condition in its body keeps the ordinary rendering, never promoted")
+        fun aRealConditionIsNeverTreatedAsAConstant() {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "max_items", "value": {"type":"number","value":10,"location":{"text":"${b64("10")}"}}},
+                      "location": {"row":5},
+                      "body": [
+                        {"index":0,"location":{"row":5,"text":"${b64("input.y")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"y"}]}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val rule = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "max_items" }
+            assertThat(rule.constantValue).isNull()
+            assertThat(rule.bodies).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("guard: a PARTIAL rule (head.key != null) is never treated as a constant, even with the exact same synthetic body shape")
+        fun aPartialRuleIsNeverTreatedAsAConstant() {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "x", "key": {"type":"var","value":"k"}, "value": {"type":"number","value":10,"location":{"text":"${b64("10")}"}}, "ref": [{"type":"var","value":"x"}]},
+                      "location": {"row":5},
+                      "body": [
+                        {"index":0,"location":{"row":5,"text":"${b64("10")}"},"terms":{"type":"boolean","value":true,"location":{"text":"${b64("10")}"}}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val rule = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "x" }
+            assertThat(rule.constantValue).isNull()
+        }
+
+        @Test
+        @DisplayName("guard: a name with MULTIPLE sibling bodies is never treated as a constant, even when one body looks like the synthetic shape")
+        fun aNameWithSeveralBodiesIsNeverTreatedAsAConstant() {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "x", "value": {"type":"number","value":10,"location":{"text":"${b64("10")}"}}},
+                      "location": {"row":5},
+                      "body": [
+                        {"index":0,"location":{"row":5,"text":"${b64("10")}"},"terms":{"type":"boolean","value":true,"location":{"text":"${b64("10")}"}}}
+                      ]
+                    },
+                    {
+                      "head": {"name": "x", "value": {"type":"number","value":20,"location":{"text":"${b64("20")}"}}},
+                      "location": {"row":6},
+                      "body": [
+                        {"index":0,"location":{"row":6,"text":"${b64("input.y")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"y"}]}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val rule = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "x" }
+            assertThat(rule.constantValue).isNull()
+            assertThat(rule.bodies).hasSize(2)
         }
     }
 }

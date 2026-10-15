@@ -194,6 +194,18 @@ class DiffRendererTest {
     }
 
     @Test
+    @DisplayName("CHALLENGE edge case (review item 10): only a constant rule's value changes -- the source diff shows a real -/+ line, not an empty diff")
+    fun logicChangedSourceDiffShowsTheConstantValueLineWhenOnlyItChanges() {
+        val old = Explico.load(diffRendererFixtures.resolve("constant-rule-base"))
+        val new = Explico.load(diffRendererFixtures.resolve("constant-rule-value-changed"))
+        val markdown = render(old, new)
+
+        assertThat(markdown).contains("| LOGIC_CHANGED | 1 |")
+        assertThat(markdown).contains("- max_items := 10")
+        assertThat(markdown).contains("+ max_items := 20")
+    }
+
+    @Test
     fun explicoDiffFacadeWiresPolicyDiffAndDiffRendererTogether() {
         val old = load(canonicalizerFixtures, "base")
         val new = load(canonicalizerFixtures, "operand-changed")

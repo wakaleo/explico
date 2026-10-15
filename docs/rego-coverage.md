@@ -671,6 +671,53 @@ new entry's "defined in" line shows a real file instead of the pre-existing `?` 
 real `-`/`+` line even when the default is still attached to a body-having card -- and the
 default line sits as unchanged context when only the body changes.
 
+## Review pass: rule-value references and constant rules (item 10)
+
+New fixture `src/test/resources/realistic/rulevalues/` (`config.rego`, `checks.rego`), pinned by
+`RealisticRuleValuesAcceptanceIT`, plus `AstMapperTest.RuleValueReferencesReviewItem10`/
+`ConstantValueRulesReviewItem10` and a new `DiffRendererTest` case.
+
+| Finding | Was | Now |
+|---|---|---|
+| A bare same-package reference to another COMPLETE rule's VALUE in operand position, e.g. `threshold` inside `count(input.items) > threshold` (item 10) | Rendered as a raw, untraced `` `threshold` `` -- visually identical to a genuinely unbound variable, and counted against the "unrendered value" footer. | A new `Operand.RuleValueReference(packagePath, ruleName)`, rendered as a link to the referenced rule's own card -- `` rule [`threshold`](#...) `` -- the same convention `Condition.RuleReference` already uses. Resolved in `mapVarOperand`'s previously-terminal `null` branch via a new `ruleValueReferenceIfKnown`, which EXCLUDES a partial (`contains`/object) rule for the same reason `ruleReferenceIfKnown` already does: no single scalar value to point a reader at. |
+| An import-alias reference to another package's rule value, e.g. `config.max_items` with `import data.config` (item 10) | Rendered as raw dotted text (`` `config.max_items` ``), also an unrendered operand -- `mapRefChain` had no alias-resolution branch at all for operand position (only `mapSingleTermCondition`, for condition position, did). | Same link, resolved against the aliased package. A local binding for the alias name still wins (same precedent as the pre-existing ref-head check). |
+| A full `data.<pkg>.<rule>` path to a rule's value, e.g. `data.rulevalues.config.region_prefix` (item 10) | Rendered as an ordinary DATA breadcrumb (`` `data ▸ rulevalues ▸ config ▸ region prefix` ``) -- not false, but misleading: it looks like unchecked input/data, not a reference to another rule's computed value. | Same link. Checked before the generic `data`-root path-building in `mapRefChain`, mirroring `mapSingleTermCondition`'s own pre-existing data-prefixed rule check at condition level. |
+| A constant rule with no `if` at all, e.g. `max_items := 10` (item 10, finding 4 -- this is what the three links above point AT) | Rendered as a bogus "⚠ not rendered — shown as source: `` `10` ``" card with 0 of 1 coverage. opa gives a bodyless `name := value` a single synthetic `true`-valued body expr, which `AstMapper` had no special case for -- it fell through to the generic unclassified-single-term bucket. | A new `RuleGroup.constantValue`/`ConstantValue(rendered, sourceLocation)`: the card shows a plain `**Value:** 10` line instead of any conditions, `bodies` is empty, coverage reads "0 of 0 conditions". Detected via `constantValueOrNull`, whose discriminator is the one mechanical, non-guessing signal available: opa reuses the VALUE's own `location.text` as the synthetic body expr's `location.text` -- confirmed empirically that writing `if true` explicitly gives the identical term shape (`boolean`/`true`) but a DIFFERENT `location.text` ("true", not the value's own text), so comparing the two source texts tells a genuinely bodyless rule apart from one that just happens to say `if true`. Only checked when the rule name has exactly ONE sibling body (several bodies keep the ordinary Situations rendering) and never for a partial (`head.key != null`) rule. |
+
+A real crash was found and fixed in the same pass, not left for later: the new data-path check
+in `mapRefChain` initially called `stringValueOf` unconditionally on every non-root chain
+segment to build the candidate package/rule name, which crashes on a COMPOSITE segment --
+e.g. `data.grants[input.user.id]` (item 7's own `KeyPath` construct), whose last segment is a
+nested `ref` term, not a plain string. This is the exact same latent crash risk the
+PRE-EXISTING `mapSingleTermCondition` data/alias checks already carried (just never triggered,
+since no real fixture happened to combine a data-prefixed rule check with a composite segment
+until this item's own acceptance corpus did, via `some grant in data.grants[input.user.id]` in
+`realistic/policies/authz.rego`). Fixed with one shared guard, `allPlainStringSegments`, applied
+to all four call sites (the two new ones in `mapRefChain`, plus the two pre-existing ones in
+`mapSingleTermCondition`) -- not just the one this item's own corpus happened to exercise.
+
+A full data-path reference to a PARTIAL rule (e.g. `data.config.flagged` where `flagged` is a
+`contains` rule) is deliberately NOT promoted to a link, but also deliberately does NOT fall
+back to `Operand.Unrendered` the way the bare/alias cases do -- it falls through to the ordinary
+data-path building, rendering a plain breadcrumb. This is intentional, not an inconsistency: a
+CONDITION-position bare reference to an always-defined partial rule would tautologically claim
+"is present and not false," which is why `ruleReferenceIfKnown`/`mapSingleTermCondition` refuse
+to render it at all; a comparison OPERAND makes no such claim, so the breadcrumb -- while
+unlinked -- is a faithful description of a real path opa will actually resolve.
+
+`DiffRenderer.diffableLines` gained a synthesized `<name> := <value>` line for a constant rule,
+the same fix item 14's follow-up already made for `default` -- without it, a changed constant's
+value produced a `LOGIC_CHANGED` entry with an EMPTY source diff, since a constant rule has no
+body source at all. `Canonicalizer.canonicalLogic` also gained a `constantValue` field in the
+hash, for the same reason `default` already has one: otherwise two versions differing only in a
+constant's value would hash identically (both have empty `bodies`) and classify `UNCHANGED`.
+
+Disclosed, not fixed (explicitly out of scope for this item, flagged as a follow-up): a
+CONDITIONAL complete rule, e.g. `x := "high" if { input.risk > 80 }`, still never shows the
+value it yields in its card -- only its conditions. Showing it would need deciding how to
+display a value that depends on which Situation matched (possibly a different value per
+Situation), a materially different design question from a single unconditional value.
+
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
 **Operand-level fallback (`Operand.Unrendered`) renders as plain backticked

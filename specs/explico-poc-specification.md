@@ -1431,3 +1431,43 @@ Goldens: `index.md` only. Rationale in `docs/rego-coverage.md`.
   changed default showing as `LOGIC_CHANGED` with an empty diff.
 
 Rationale in `docs/rego-coverage.md`.
+
+### 14.20 Fix: rule-value references render as links; constant rules show their value
+
+Found rendering the realistic corpus (review item 10):
+
+- **§5/§6.3 amendment -- rule-value references.** A new `Operand.RuleValueReference(packagePath,
+  ruleName)`: a bare same-package name, an import-alias reference, or a full `data.<pkg>.<rule>`
+  path to another COMPLETE rule's value, used in operand position, renders as a link to that
+  rule's own card (`` rule [`name`](anchor) ``) -- the same anchor convention `Condition
+  .RuleReference` already uses. A reference to a PARTIAL rule is never promoted: a bare/alias
+  reference stays `Operand.Unrendered` (no single scalar value to point at, same reasoning as
+  `ruleReferenceIfKnown`); a full data-path reference instead falls through to an ordinary data
+  breadcrumb, since -- unlike a condition-position bare reference -- a comparison operand makes
+  no tautological-truthiness claim about an always-defined partial rule. `ExpressionRenderer
+  .renderOperand` and every function in its recursive call graph now take a `ruleValueAnchorFor`
+  callback, the same threading convention as `anchorFor`/`functionAnchorFor`.
+- **§5/§6.2 amendment -- constant rules.** A complete rule with no `if` at all, e.g.
+  `max_items := 10`, gets a new `RuleGroup.constantValue`/`ConstantValue(rendered,
+  sourceLocation)`: the card shows `**Value:** <rendered>` instead of any conditions, with empty
+  `bodies` and "0 of 0 conditions" coverage. Previously rendered as a bogus "⚠ not rendered" card,
+  since opa represents a bodyless rule as a single synthetic `true`-valued body expr that
+  `AstMapper` had no special case for. Detected via `constantValueOrNull`'s one mechanical
+  signal: the synthetic body expr's own `location.text` equals the rule's VALUE's own
+  `location.text` -- which a rule that explicitly writes `if true` does NOT share (confirmed via
+  a real `opa parse` run), so the two are told apart without guessing. Only checked for a rule
+  name with exactly one sibling body, and never for a partial rule.
+- **§7.1/§7.3 amendment.** `Canonicalizer.canonicalLogic` hashes `constantValue`, and
+  `DiffRenderer.diffableLines` synthesizes a `<name> := <value>` line for it -- the same fix
+  §14.19 made for `default`, for the same reason: without it, a changed constant's value would
+  hash identically (empty `bodies` on both sides) and its diff would show no `-`/`+` line.
+
+A real crash, found and fixed in the same pass: the new data-path check's naive
+`stringValueOf` on every chain segment crashes on a COMPOSITE segment (e.g.
+`data.grants[input.user.id]`, §14.15's own `KeyPath` construct). The identical latent risk
+already existed in the pre-existing `mapSingleTermCondition` data/alias checks; fixed with one
+shared guard (`allPlainStringSegments`) applied to all four call sites, not just the one this
+item's own corpus happened to exercise.
+
+Disclosed, explicitly out of scope: a CONDITIONAL complete rule (`x := "high" if {...}`) still
+never shows the value it yields, only its conditions. Rationale in `docs/rego-coverage.md`.
