@@ -33,6 +33,13 @@
  * common in Gatekeeper-style policies predating `rego.v1`'s `contains` keyword) as a real, named
  * rule instead of silently dropping it, while deliberately leaving the genuinely different
  * ref-headed DOCUMENT-rule case (`fruit.apple.seeds := 12`, spec §14) excluded, exactly as before.
+ *
+ * Three further review findings (items 5-7), all in [mapPathSegments]/[mapBody]'s own KDoc:
+ * `x := <collection>[_]` promotes to an iteration binding (a real `Condition.SomeIn`), not a
+ * silent substitution; a wildcard `[_]` ANYWHERE in a path is now actually detected (it was
+ * silently never matching before -- opa renames bare `_` to a gensym at parse time); and a
+ * dynamic bracket key that is itself an `input`/`data` path humanizes as its own bracketed
+ * sub-breadcrumb ([io.explico.model.PathSegment.KeyPath]) instead of raw dotted source text.
  */
 package io.explico.parse
 
@@ -405,8 +412,28 @@ internal object AstMapper {
             if (assignment != null) {
                 val (targetVar, valueTerm) = assignment
                 val plainPath = plainPathOperandOrNull(valueTerm, symbolTable, ctx)
-                symbolTable[targetVar] = if (plainPath != null) VarBinding.Substitution(plainPath) else VarBinding.NonPath
-                if (plainPath == null) conditions += Condition.Unrendered(sourceText(expr.location), "function-call")
+                when {
+                    // `x := <collection>[_]` (review item 5): Rego's wildcard index means "for some
+                    // element of <collection>" -- the exact same existential claim `some x in
+                    // <collection>` makes, confirmed by both desugaring through internal.member_2
+                    // identically once bound. Rendered through that SAME real Condition.SomeIn +
+                    // VarBinding.Iteration mechanism, not silently substituted -- substitution would
+                    // hide the fact that x ranges over elements of a collection, not one fixed value.
+                    // Only the TRAILING position qualifies: a middle wildcard (`x := input.a[_].b`)
+                    // falls through to plain substitution below -- real but rare, and the resulting
+                    // path (with the AnyIndex preserved mid-chain) still renders honestly via
+                    // PathHumanizer's existing AnyIndex handling, just without an explicit SomeIn bullet.
+                    plainPath != null && plainPath.segments.lastOrNull() == PathSegment.AnyIndex -> {
+                        val collection = Operand.Path(plainPath.segments.dropLast(1))
+                        symbolTable[targetVar] = VarBinding.Iteration(collection)
+                        conditions += Condition.SomeIn(targetVar, collection)
+                    }
+                    plainPath != null -> symbolTable[targetVar] = VarBinding.Substitution(plainPath)
+                    else -> {
+                        symbolTable[targetVar] = VarBinding.NonPath
+                        conditions += Condition.Unrendered(sourceText(expr.location), "function-call")
+                    }
+                }
                 continue
             }
             conditions += mapCondition(expr, symbolTable, ctx)
@@ -670,23 +697,23 @@ internal object AstMapper {
         val rootName = stringValueOf(root)
         val remaining = chain.drop(1)
         if (rootName == "input" || rootName == "data") {
-            val segments = mapPathSegments(remaining, symbolTable) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+            val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
             return ConstructResult.Ok(Operand.Path(listOf(PathSegment.Field(rootName)) + segments))
         }
         if (symbolTable[rootName] == null) {
             val dottedPath = chain.joinToString(".") { stringValueOf(it) }
             if (ctx.refHeadRegistry[ctx.currentPackage]?.contains(dottedPath) == true) {
-                val segments = mapPathSegments(remaining, symbolTable) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+                val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
                 return ConstructResult.Ok(Operand.Path(listOf(PathSegment.Field(rootName)) + segments))
             }
         }
         return when (val binding = symbolTable[rootName]) {
             is VarBinding.Iteration -> {
-                val segments = mapPathSegments(remaining, symbolTable) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+                val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
                 ConstructResult.Ok(Operand.Path(binding.collection.segments + PathSegment.VarIndex(rootName) + segments))
             }
             is VarBinding.Substitution -> {
-                val segments = mapPathSegments(remaining, symbolTable) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+                val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
                 ConstructResult.Ok(Operand.Path(binding.path.segments + segments))
             }
             VarBinding.NonPath, null -> ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
@@ -704,8 +731,24 @@ internal object AstMapper {
      * middle-position var renders identically to the var-rooted case: PathHumanizer treats every
      * `VarIndex` it sees as "[each x]" unconditionally, because by the time it gets one, this
      * function has already guaranteed it's an iteration variable.
+     *
+     * A wildcard (`arr[_]`, spec §6.4 rule 5 / review item 6) is detected by its own SOURCE TEXT
+     * (`sourceText(term.location) == "_"`), never by `stringValueOf(term)` -- confirmed via a real
+     * `opa parse` run that opa renames every bare `_` to a fresh internal variable (`$0`, `$1`, ...)
+     * at parse time, so `term.value` is never literally `"_"`. The old `name == "_"` check was
+     * never exercised by any real policy (CLAUDE.md's own disclosed "no pack policy uses `[_]`"
+     * note) and silently never matched, sending every real wildcard to the `else -> return null`
+     * branch -- the whole operand fell back to raw verbatim source instead of humanizing.
+     *
+     * A nested `ref` term (review item 7) -- a dynamic bracket key that is itself an `input`/`data`
+     * path, e.g. `input.user.id` in `data.grants[input.user.id]` -- is resolved through the exact
+     * same [mapRefChain] every other reference goes through, never guessed, and promoted to
+     * [PathSegment.KeyPath] only when it comes back a clean [Operand.Path]; anything else (unbound,
+     * a comprehension) falls back for the WHOLE containing path, same conservative posture as every
+     * other segment kind here. Needs [ctx] (not required by any other branch) to make that
+     * recursive call.
      */
-    private fun mapPathSegments(terms: List<OpaTerm>, symbolTable: Map<String, VarBinding>): List<PathSegment>? {
+    private fun mapPathSegments(terms: List<OpaTerm>, symbolTable: Map<String, VarBinding>, ctx: MappingContext): List<PathSegment>? {
         val segments = mutableListOf<PathSegment>()
         for (term in terms) {
             when (term.type) {
@@ -716,10 +759,15 @@ internal object AstMapper {
                 "var" -> {
                     val name = stringValueOf(term)
                     segments += when {
-                        name == "_" -> PathSegment.AnyIndex
+                        sourceText(term.location) == "_" -> PathSegment.AnyIndex
                         symbolTable[name] is VarBinding.Iteration -> PathSegment.VarIndex(name)
                         else -> return null
                     }
+                }
+                "ref" -> {
+                    val nested = mapRefChain(decodeTermList(term.value), symbolTable, ctx, term.location)
+                    val nestedPath = (nested as? ConstructResult.Ok)?.operand as? Operand.Path ?: return null
+                    segments += PathSegment.KeyPath(nestedPath.segments)
                 }
                 else -> segments += PathSegment.Field(sourceText(term.location))
             }

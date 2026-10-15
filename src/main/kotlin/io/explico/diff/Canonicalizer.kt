@@ -134,6 +134,10 @@ internal object Canonicalizer {
             put("type", JsonPrimitive("VarIndex"))
         }
         is PathSegment.KeyLiteral -> buildJsonObject { put("key", JsonPrimitive(segment.key)); put("type", JsonPrimitive("KeyLiteral")) }
+        is PathSegment.KeyPath -> buildJsonObject {
+            put("segments", buildJsonArray { segment.segments.forEach { add(canonicalSegment(it, aliases)) } })
+            put("type", JsonPrimitive("KeyPath"))
+        }
     }
 
     /** Positional rename (spec §7.1): the same original name always maps to the same alias within one body. */

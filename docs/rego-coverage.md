@@ -546,6 +546,24 @@ across several cards (true, but repeated); `diff` does not hash `default` values
 the new per-rule split; `resolveAnchor` picks the first card when several share a
 name; cross-file `default` is not linked.
 
+## Review pass: path/iteration fixes (items 5-7)
+
+Same realistic-policy corpus, pinned by `RealisticPathsAcceptanceIT` plus new
+`AstMapperTest.PathHumanizationReviewFixes` and `CanonicalizerTest` cases.
+
+| Finding | Was | Now |
+|---|---|---|
+| A wildcard `[_]` anywhere in a path (item 6) | Fell back to raw `Operand.Unrendered` source, **always** -- the old `name == "_"` check compared against opa's own GENSYM var name (`$0`, `$1`, ...), which is never literally `"_"`, confirmed via a real `opa parse` run. The pre-existing `PathHumanizer`/`ExpressionRenderer` handling for `AnyIndex` was correct all along; it simply never received one. | Detected by the term's own `sourceText(location) == "_"` instead -- opa's gensym renaming doesn't touch the source text. Humanizes with the pre-existing "any of:" convention, e.g. `input.request.object.spec.containers[_].resources.limits` -> `` any of: `request ▸ object ▸ spec ▸ containers ▸ resources ▸ limits` ``. |
+| `x := <collection>[_]` (item 5) | The whole assignment fell back as raw source (compounding the bug above); later uses of `x` showed raw `x.field` text. | Promotes to a real `Condition.SomeIn(x, collection)` + `VarBinding.Iteration` -- the exact same mechanism `some x in collection` uses, since the two are semantically identical. Only a TRAILING wildcard promotes; a middle one (`x := input.a[_].b`) stays a plain `VarBinding.Substitution`, which still renders honestly (the AnyIndex survives mid-path) just without an explicit "for some" bullet. |
+| A dynamic bracket key that is itself an `input`/`data` path, e.g. `data.grants[input.user.id]` (item 7) | The nested `ref` term hit `mapPathSegments`'s catch-all `else` branch, dumping its raw source text (`"input.user.id"`) as an ordinary `PathSegment.Field` -- rendered inline, unhumanized, inside an otherwise-clean breadcrumb (`` `data ▸ grants ▸ input.user.id` ``). | A new `PathSegment.KeyPath(segments)` wraps the key's own resolved path, humanized recursively and wrapped in brackets: `` `data ▸ grants ▸ [user ▸ id]` ``. Resolved through the SAME `mapRefChain` every other reference goes through -- a key that doesn't resolve cleanly (unbound var, comprehension) falls back for the WHOLE containing path, never guessed. |
+
+Disclosed, not fixed: `Examples.resolveSegments` treats a `KeyPath` segment as
+unresolvable (`emptyList()`) for worked-examples display-value lookup, since
+resolving the key's own nested path needs a different root (`input`) than the
+one being walked (`current`) -- moot today since `referencedPaths` only ever
+passes an `input.`-rooted path, and no fixture in this corpus is evaluated with
+examples anyway.
+
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
 **Operand-level fallback (`Operand.Unrendered`) renders as plain backticked

@@ -134,6 +134,13 @@ internal object WorkedExamples {
             is PathSegment.KeyLiteral -> (current as? JsonObject)?.get(segment.key)?.let { resolveSegments(rest, it) } ?: emptyList()
             is PathSegment.AnyIndex, is PathSegment.VarIndex ->
                 (current as? JsonArray)?.flatMap { resolveSegments(rest, it) } ?: emptyList()
+            // A dynamic-key segment (review item 7) would need its own key resolved against the
+            // fixture's `input` first, a different root than [current] -- out of scope for this
+            // display-value lookup (and unreachable today besides: `referencedPaths` only ever
+            // passes an `input.`-rooted Operand.Path here, and a KeyPath's own root is `data` or
+            // `input` independently of the containing path's root). Resolving as "absent" rather
+            // than guessing a value.
+            is PathSegment.KeyPath -> emptyList()
         }
     }
 

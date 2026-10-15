@@ -130,6 +130,13 @@ public sealed interface PathSegment {
 
     /** A literal bracket key, e.g. `"signed-off-by"` in `labels["signed-off-by"]`. */
     public data class KeyLiteral(val key: String) : PathSegment
+
+    /**
+     * A dynamic bracket key that is itself a resolved `input`/`data` path (review item 7), e.g.
+     * `input.user.id` in `data.grants[input.user.id]`. Rendered as its own bracketed
+     * sub-breadcrumb (`[user ▸ id]`) rather than the raw dotted source text.
+     */
+    public data class KeyPath(val segments: List<PathSegment>) : PathSegment
 }
 
 /** A location in a source file, for slicing verbatim fallback text and diff extraction. */

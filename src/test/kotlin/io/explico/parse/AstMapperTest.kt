@@ -12,6 +12,7 @@ import io.explico.model.PolicySet
 import io.explico.opa.OpaInspectResult
 import io.explico.opa.OpaModule
 import io.explico.opa.opaJson
+import io.explico.render.PathHumanizer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -2213,6 +2214,334 @@ class AstMapperTest {
             )
             val pkg = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages.single()
             assertThat(pkg.metadata).isNull()
+        }
+    }
+
+    @Nested
+    inner class PathHumanizationReviewFixes {
+        // Review items 5-7, all grounded in real `opa parse` output confirmed during
+        // implementation: a bare `_` is renamed by opa to a gensym var (`$0`, `$1`, ...) at parse
+        // time, so wildcard detection must read the term's own SOURCE TEXT, never `stringValueOf`.
+
+        @Test
+        fun wildcardAnywhereInAPathIsDetectedBySourceTextNotByTheGensymName() {
+            // `input.a[_].b == "v"` -- review item 6. Before the fix, the wildcard's gensym name
+            // ("$0") never matched the old `name == "_"` check, so the WHOLE operand fell back to
+            // raw verbatim source -- confirmed broken for every real policy, since no acceptance-pack
+            // fixture or probe ever used `[_]` (CLAUDE.md's own disclosed "untested by fixture" note).
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("input.a[_].b == \"v\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"ref","value":[
+                              {"type":"var","value":"input"},
+                              {"type":"string","value":"a"},
+                              {"type":"var","value":"$0","location":{"text":"${b64("_")}"}},
+                              {"type":"string","value":"b"}
+                            ]},
+                            {"type":"string","value":"v"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val comparison = body.conditions.single() as Condition.Comparison
+            assertThat((comparison.left as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("a"), PathSegment.AnyIndex, PathSegment.Field("b"),
+            )
+        }
+
+        @Test
+        fun twoWildcardsInOnePathAreBothDroppedWithOneSharedFlag() {
+            // CHALLENGE edge case: multiple `[_]` in one path.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("input.a[_].b[_] == \"v\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"ref","value":[
+                              {"type":"var","value":"input"},
+                              {"type":"string","value":"a"},
+                              {"type":"var","value":"$0","location":{"text":"${b64("_")}"}},
+                              {"type":"string","value":"b"},
+                              {"type":"var","value":"$1","location":{"text":"${b64("_")}"}}
+                            ]},
+                            {"type":"string","value":"v"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val comparison = body.conditions.single() as Condition.Comparison
+            val path = comparison.left as Operand.Path
+            assertThat(path.segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("a"), PathSegment.AnyIndex, PathSegment.Field("b"), PathSegment.AnyIndex,
+            )
+            val humanized = PathHumanizer.humanize(path.segments)
+            assertThat(humanized.rendered).isEqualTo("`a ▸ b`")
+            assertThat(humanized.hasAnyIndex).isTrue()
+        }
+
+        @Test
+        fun assignedTrailingWildcardPromotesToASomeInBindingLikeTheRealSomeInForm() {
+            // `x := input.a.b[_]; x.c == "v"` -- review item 5: a trailing wildcard assignment is
+            // semantically identical to `some x in input.a.b`, so it renders through that SAME
+            // Condition.SomeIn + VarBinding.Iteration mechanism, not a silent substitution.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("x := input.a.b[_]")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"assign"}]},
+                            {"type":"var","value":"x"},
+                            {"type":"ref","value":[
+                              {"type":"var","value":"input"},
+                              {"type":"string","value":"a"},
+                              {"type":"string","value":"b"},
+                              {"type":"var","value":"$0","location":{"text":"${b64("_")}"}}
+                            ]}
+                          ]
+                        },
+                        {
+                          "index": 1,
+                          "location": {"row":2,"text":"${b64("x.c == \"v\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"ref","value":[{"type":"var","value":"x"},{"type":"string","value":"c"}]},
+                            {"type":"string","value":"v"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            assertThat(body.conditions).hasSize(2)
+            val someIn = body.conditions[0] as Condition.SomeIn
+            assertThat(someIn.variable).isEqualTo("x")
+            assertThat((someIn.collection as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("a"), PathSegment.Field("b"))
+            val comparison = body.conditions[1] as Condition.Comparison
+            assertThat((comparison.left as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("a"), PathSegment.Field("b"), PathSegment.VarIndex("x"), PathSegment.Field("c"),
+            )
+        }
+
+        @Test
+        fun assignedMiddleWildcardIsNotPromotedAndFallsThroughToPlainSubstitution() {
+            // CHALLENGE edge case: only a TRAILING wildcard qualifies for SomeIn promotion -- a
+            // middle one (`x := input.a[_].b`) stays a plain Substitution. Not maximally
+            // informative (no explicit "for some" bullet), but still honest: the AnyIndex survives
+            // in the substituted path and PathHumanizer's existing handling drops it with the
+            // "any of:" flag on every later use, same as before this review's changes existed.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("x := input.a[_].b")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"assign"}]},
+                            {"type":"var","value":"x"},
+                            {"type":"ref","value":[
+                              {"type":"var","value":"input"},
+                              {"type":"string","value":"a"},
+                              {"type":"var","value":"$0","location":{"text":"${b64("_")}"}},
+                              {"type":"string","value":"b"}
+                            ]}
+                          ]
+                        },
+                        {
+                          "index": 1,
+                          "location": {"row":2,"text":"${b64("x == \"v\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"var","value":"x"},
+                            {"type":"string","value":"v"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            // The assignment disappears (plain Substitution, not SomeIn, not Unrendered) -- only
+            // the bare comparison remains.
+            assertThat(body.conditions).hasSize(1)
+            val comparison = body.conditions.single() as Condition.Comparison
+            assertThat((comparison.left as Operand.Path).segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("a"), PathSegment.AnyIndex, PathSegment.Field("b"),
+            )
+        }
+
+        @Test
+        fun dynamicKeyRootedAtInputHumanizesAsItsOwnBracketedSubBreadcrumb() {
+            // `data.x[input.a.b] == "v"` -- review item 7.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("data.x[input.a.b] == \"v\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"ref","value":[
+                              {"type":"var","value":"data"},
+                              {"type":"string","value":"x"},
+                              {"type":"ref","value":[
+                                {"type":"var","value":"input"},
+                                {"type":"string","value":"a"},
+                                {"type":"string","value":"b"}
+                              ]}
+                            ]},
+                            {"type":"string","value":"v"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val comparison = body.conditions.single() as Condition.Comparison
+            val path = comparison.left as Operand.Path
+            assertThat(path.segments).containsExactly(
+                PathSegment.Field("data"), PathSegment.Field("x"),
+                PathSegment.KeyPath(listOf(PathSegment.Field("input"), PathSegment.Field("a"), PathSegment.Field("b"))),
+            )
+            assertThat(PathHumanizer.humanize(path.segments).rendered).isEqualTo("`data ▸ x ▸ [a ▸ b]`")
+        }
+
+        @Test
+        fun dynamicKeyContainingAQuotedBracketKeyHumanizesBoth() {
+            // CHALLENGE edge case: a KeyLiteral segment nested INSIDE a KeyPath's own segments
+            // (`data.x[input.labels["key with spaces"]]`) -- both rendering conventions compose.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("data.x[input.labels[\"key with spaces\"]] == \"v\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"ref","value":[
+                              {"type":"var","value":"data"},
+                              {"type":"string","value":"x"},
+                              {"type":"ref","value":[
+                                {"type":"var","value":"input"},
+                                {"type":"string","value":"labels"},
+                                {"type":"string","value":"key with spaces","location":{"text":"${b64("\"key with spaces\"")}"}}
+                              ]}
+                            ]},
+                            {"type":"string","value":"v"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val comparison = body.conditions.single() as Condition.Comparison
+            val path = comparison.left as Operand.Path
+            assertThat(path.segments).containsExactly(
+                PathSegment.Field("data"), PathSegment.Field("x"),
+                PathSegment.KeyPath(listOf(PathSegment.Field("input"), PathSegment.Field("labels"), PathSegment.KeyLiteral("key with spaces"))),
+            )
+            assertThat(PathHumanizer.humanize(path.segments).rendered).isEqualTo("`data ▸ x ▸ [labels ▸ \"key with spaces\"]`")
+        }
+
+        @Test
+        fun dynamicKeyThatDoesNotResolveFallsBackForTheWholeContainingPath() {
+            // CHALLENGE edge case: `data.x[z.a]` where `z` has no binding at all anywhere --
+            // never guessed as a KeyPath; the WHOLE operand falls back to Operand.Unrendered,
+            // same conservative posture as every other unresolvable segment in this mapper.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("data.x[z.a] == \"v\"")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"ref","value":[
+                              {"type":"var","value":"data"},
+                              {"type":"string","value":"x"},
+                              {"type":"ref","value":[
+                                {"type":"var","value":"z"},
+                                {"type":"string","value":"a"}
+                              ]}
+                            ],"location":{"text":"${b64("data.x[z.a]")}"}},
+                            {"type":"string","value":"v"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val comparison = body.conditions.single() as Condition.Comparison
+            val unrendered = comparison.left as Operand.Unrendered
+            assertThat(unrendered.sourceText).isEqualTo("data.x[z.a]")
         }
     }
 }

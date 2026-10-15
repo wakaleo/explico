@@ -198,9 +198,26 @@ NOT yet do the following. Each is a scoping decision, not an oversight:
   `RegoCoverageAuditTest`'s probes 03/07/39 and four new synthetic-JSON
   `AstMapperTest.LocalVariableSubstitution` cases (bare use, ref-chain-root
   use, transitive chaining, and the non-plain-path fallback case).
-- **`PathSegment.AnyIndex` (`[_]`) has minimal, untested-by-fixture handling.**
-  No pack policy uses `[_]`; the code path exists per spec but has no real
-  captured JSON exercising it.
+- ~~`PathSegment.AnyIndex` (`[_]`) has minimal, untested-by-fixture handling~~
+  **Fixed (review items 5-7).** The old `name == "_"` check never actually
+  matched anything real: a real `opa parse` run confirmed opa renames every
+  bare `_` to a gensym var (`$0`, `$1`, ...) at parse time, so the check always
+  fell through to `else -> return null` and the whole operand fell back to raw
+  verbatim source -- for every real policy, not just the pack's. Fixed to read
+  the term's own `sourceText(location) == "_"` instead. Two further, related
+  fixes landed in the same pass: `x := <collection>[_]` (a plain assignment
+  ending in a wildcard) now promotes to a real `Condition.SomeIn` +
+  `VarBinding.Iteration` -- semantically identical to `some x in <collection>`
+  -- rather than silently vanishing via `VarBinding.Substitution`; and a
+  dynamic bracket key that is itself an `input`/`data` path (`data.grants[input.user.id]`)
+  now maps to a new `PathSegment.KeyPath`, humanized as its own bracketed
+  sub-breadcrumb (`data ▸ grants ▸ [user ▸ id]`) instead of raw dotted source
+  text embedded in an otherwise-humanized breadcrumb. `Canonicalizer`'s
+  `KeyPath` branch recurses with the same alias map, confirmed via a real
+  `.rego` fixture pair (`dynamic-key-*`) that a variable used INSIDE a dynamic
+  key still renames invariantly. None of the three is exercised by the
+  acceptance pack -- driven by `src/test/resources/realistic/policies/` and
+  `RealisticPathsAcceptanceIT` instead.
 
 ## PathHumanizer / ExpressionRenderer: known gaps (session 3)
 

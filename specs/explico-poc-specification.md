@@ -1346,3 +1346,20 @@ Found by rendering realistic policies (`src/test/resources/realistic/policies/`)
 
 Disclosed: cross-file `default` unlinked; `Canonicalizer` does not hash `default`; anchors for a
 name shared by several cards resolve to the first. Rationale in `docs/rego-coverage.md`.
+
+### 14.15 Fix: `[_]` wildcard detection, assigned iteration, dynamic-key paths
+
+Found by rendering realistic policies (same corpus as §14.14):
+
+- **Wildcard detection was never actually working.** `opa parse` renames every bare `_` to a
+  gensym var (`$0`, `$1`, ...); `mapPathSegments` now detects it via the term's own
+  `sourceText(location) == "_"`, not `stringValueOf(term)`.
+- **`x := <collection>[_]`** (a trailing wildcard assignment) promotes to a real
+  `Condition.SomeIn` + `VarBinding.Iteration`, the same mechanism `some x in <collection>` uses --
+  not a silent substitution. A middle-position wildcard stays a plain substitution.
+- **`PathSegment.KeyPath`** (new model variant): a dynamic bracket key that is itself a resolved
+  `input`/`data` path humanizes as its own bracketed sub-breadcrumb instead of raw dotted source
+  text. `Canonicalizer`/`PathHumanizer`/`Examples` all extended for the new variant.
+
+Disclosed: `Examples.resolveSegments` treats `KeyPath` as unresolvable for worked-examples display
+(different root needed); rationale in `docs/rego-coverage.md`.

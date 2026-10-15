@@ -16,6 +16,17 @@ internal data class HumanizedPath(val rendered: String, val hasAnyIndex: Boolean
 internal object PathHumanizer {
 
     fun humanize(segments: List<PathSegment>): HumanizedPath {
+        val (joined, hasAnyIndex) = crumbsOf(segments)
+        return HumanizedPath("`$joined`", hasAnyIndex)
+    }
+
+    /**
+     * The actual breadcrumb-building logic, factored out of [humanize] so a [PathSegment.KeyPath]
+     * (review item 7) can recurse into its own nested segment list -- it needs the SAME rule-1
+     * root handling (its own `index == 0` is independent of the outer path's), just without the
+     * outer backtick-wrapping [humanize] applies once at the very end.
+     */
+    private fun crumbsOf(segments: List<PathSegment>): Pair<String, Boolean> {
         var hasAnyIndex = false
         val crumbs = mutableListOf<String>()
 
@@ -32,10 +43,15 @@ internal object PathHumanizer {
                 is PathSegment.KeyLiteral -> crumbs += "\"${segment.key}\"" // rule 3: verbatim, not split
                 is PathSegment.AnyIndex -> hasAnyIndex = true // rule 5: dropped from breadcrumb, one flag regardless of count
                 is PathSegment.VarIndex -> crumbs += "[each ${segment.name}]" // rules 6/7
+                is PathSegment.KeyPath -> {
+                    val (nestedJoined, nestedAnyIndex) = crumbsOf(segment.segments)
+                    if (nestedAnyIndex) hasAnyIndex = true
+                    crumbs += "[$nestedJoined]"
+                }
             }
         }
 
-        return HumanizedPath("`${crumbs.joinToString(" ▸ ")}`", hasAnyIndex)
+        return crumbs.joinToString(" ▸ ") to hasAnyIndex
     }
 
     /**

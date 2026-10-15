@@ -178,4 +178,29 @@ class CanonicalizerTest {
         val negated = denyRule("negated-comparison-negated")
         assertThat(Canonicalizer.logicHash(negated)).isNotEqualTo(Canonicalizer.logicHash(positive))
     }
+
+    @Test
+    fun renamingAVariableUsedInsideADynamicBracketKeyYieldsTheSameLogicHash() {
+        // Review item 7: `data.grants[u.id]` -- `u` bound by an earlier `some u in input.users` --
+        // maps the dynamic key to PathSegment.KeyPath, whose own nested VarIndex("u") must go
+        // through the SAME positional alias as every other local variable, recursively. Renamed
+        // here to `user`/`g` (both the SomeIn var feeding the key, and the one bound by the
+        // dynamic-keyed SomeIn itself) to prove the recursion actually applies aliasFor, not just
+        // compiles.
+        val base = denyRule("dynamic-key-base")
+        val renamed = denyRule("dynamic-key-renamed-vars")
+        assertThat(Canonicalizer.logicHash(renamed)).isEqualTo(Canonicalizer.logicHash(base))
+    }
+
+    @Test
+    fun changingTheFieldUsedAsADynamicKeyYieldsADifferentLogicHash() {
+        // Real gap this closes: before KeyPath existed, a dynamic key's nested path fell back to
+        // Operand.Unrendered, and Operand.Unrendered's canonical shape is its OWN verbatim source
+        // text -- so this would already have hashed differently by accident (comparing "u.id" vs
+        // "u.name" as strings). Pinned anyway: the fix must not accidentally make a KeyPath's own
+        // content invisible to the hash the way producesValue almost was (spec §7.1's own caveat).
+        val byId = denyRule("dynamic-key-base")
+        val byName = denyRule("dynamic-key-different-field")
+        assertThat(Canonicalizer.logicHash(byName)).isNotEqualTo(Canonicalizer.logicHash(byId))
+    }
 }
