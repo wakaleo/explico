@@ -1000,11 +1000,19 @@ internal object AstMapper {
                 val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
                 ConstructResult.Ok(Operand.Path(binding.path.segments + segments))
             }
-            // A parameter used as a ref-chain ROOT (`ns.subfield`) has no established extension rule
-            // -- spec §5's promotion only covers Substitution as a chain root, not a function
-            // parameter standing for an arbitrary caller-supplied value -- so it's treated the same
-            // conservative way as NonPath: never guessed, falls back whole.
-            VarBinding.NonPath, VarBinding.Parameter, is VarBinding.Expression, null -> ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+            // A parameter used as a ref-chain ROOT (`ns.subfield`), spec §14.26 (coverage audit
+            // probe 28's remaining half): the tail after the parameter maps through the same
+            // mapPathSegments every other reference uses, promoted to Operand.ParameterPath when it
+            // resolves cleanly. `remaining` is always non-empty here in practice -- a "ref" term with
+            // no fields beyond its root is represented as a bare "var" term instead (mapVarOperand's
+            // job) -- but the empty case is handled defensively by falling back to the identical
+            // Operand.Parameter a bare use would produce, rather than an empty-tail ParameterPath.
+            VarBinding.Parameter -> {
+                if (remaining.isEmpty()) return ConstructResult.Ok(Operand.Parameter(rootName))
+                val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+                ConstructResult.Ok(Operand.ParameterPath(rootName, segments))
+            }
+            VarBinding.NonPath, is VarBinding.Expression, null -> ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
         }
     }
 

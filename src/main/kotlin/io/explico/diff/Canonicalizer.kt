@@ -142,6 +142,11 @@ internal object Canonicalizer {
             put("packagePath", JsonPrimitive(operand.packagePath))
             put("type", JsonPrimitive("FunctionCall"))
         }
+        is Operand.ParameterPath -> buildJsonObject {
+            put("name", JsonPrimitive(aliasFor(operand.name, aliases)))
+            put("segments", buildJsonArray { operand.segments.forEach { add(canonicalSegment(it, aliases)) } })
+            put("type", JsonPrimitive("ParameterPath"))
+        }
         is Operand.RuleValueReference -> buildJsonObject {
             put("packagePath", JsonPrimitive(operand.packagePath))
             put("ruleName", JsonPrimitive(operand.ruleName))

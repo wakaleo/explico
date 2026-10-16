@@ -189,6 +189,14 @@ internal object ExpressionRenderer {
         // function's own card can tell "this is a known input the caller supplies" apart from
         // "this was assigned to something we couldn't resolve."
         is Operand.Parameter -> "parameter `${operand.name}`" to false
+        // Spec §14.26 (coverage audit probe 28's remaining half): the parameter phrase stays
+        // identical to the bare-parameter case above, followed by the tail's own humanized
+        // breadcrumb (its own backtick span, via PathHumanizer) -- never merged into one span, so
+        // "which parameter" and "which field of it" stay visually distinct.
+        is Operand.ParameterPath -> {
+            val tail = PathHumanizer.humanizeTail(operand.segments)
+            "parameter `${operand.name}` ▸ ${tail.rendered}" to tail.hasAnyIndex
+        }
         is Operand.BuiltinCall -> renderOperandBuiltinCall(operand, ruleValueAnchorFor)
         // Review item 10: a link to the referenced rule's own card, the same "rule [`name`](anchor)"
         // convention regardless of whether the source spelled it bare, via an import alias, or as

@@ -736,9 +736,30 @@ argument operands are hashed; an argument arriving via a substituted local varia
 direct path.
 
 Disclosed, not fixed: a cross-package call and a zero-parameter function (`f() := 1` -- opa emits no
-`head.args` for it, so the registry cannot see it, in condition position as well) stay raw; and the
-other half of probe 28 -- a Parameter-rooted path such as `finding.severity` inside a function body
--- is still a raw operand.
+`head.args` for it, so the registry cannot see it, in condition position as well) stay raw.
+
+## Follow-up: parameter-rooted paths inside function bodies (coverage audit rank 4 continued)
+
+Resolves the other half of probe 28, disclosed above. Fixture
+`src/test/resources/realistic/parameter-paths/funcs.rego`, pinned by
+`RealisticParameterPathsAcceptanceIT` plus `AstMapperTest.ParameterRootedOperandPaths`,
+`ExpressionRendererTest.ParameterPathRendering`, and two `CanonicalizerTest` cases.
+
+| Finding | Was | Now |
+|---|---|---|
+| A ref chain rooted at a function's own PARAMETER, e.g. `finding.severity` inside `risk_score(finding) := 10 if { finding.severity == "critical" }` (probe 28's own un-promoted half). | `mapRefChain`'s `VarBinding.Parameter` branch never had an extension rule -- unlike `Substitution` (which continues the chain with no extra segment, spec §5's promotion), a parameter was treated the same conservative way as `NonPath`: the whole chain fell back to raw verbatim source, visually indistinguishable from a real breadcrumb. | New `Operand.ParameterPath(name, segments)`: when the tail after the parameter root maps cleanly through the EXISTING `mapPathSegments` (plain fields, key-literal brackets, nested fields all work; an unmappable segment, e.g. an unbound dynamic index, keeps the old whole-chain fallback), it renders as two distinct backtick spans -- `` parameter `finding` ▸ `severity` `` -- never merged into one breadcrumb, so "which parameter" and "which field of it" stay visually separate. |
+
+A bare parameter use with no chain (`Operand.Parameter`) is completely unaffected -- `mapRefChain`
+is only reached for a multi-segment "ref" term; a bare variable is a "var" term handled by the
+pre-existing `mapVarOperand` path. `Coverage`/`isFullyRendered` need no change: `ParameterPath`
+holds `PathSegment`s, not nested `Operand`s, so there is nothing inside it that could itself be
+unrendered. `Canonicalizer.canonicalOperand` aliases the parameter name (same positional-rename
+rule as `Operand.Variable`/`Operand.Parameter`) and hashes the tail's segments -- renaming the
+parameter hashes identically; changing a tail field does not (both confirmed via a real `opa fmt`
+-parseable fixture pair, not a synthetic AST).
+
+Zero acceptance-pack impact: no pack policy declares a function with parameters, confirmed by
+`generateSampleDocs` producing no diff against the committed `docs/sample-output/`.
 
 ## Follow-up: expression assignments are substituted inline (resolves the deferred set-difference operand)
 

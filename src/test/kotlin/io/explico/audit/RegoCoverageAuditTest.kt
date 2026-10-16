@@ -406,7 +406,11 @@ class RegoCoverageAuditTest {
         assertThat(rule.bodies).hasSize(1)
         assertThat(rule.default?.rendered).isEqualTo("0")
         val realBody = conditionsOf(policySet, "risk_score", 0)
-        assertThat(render(realBody.single())).isEqualTo("`finding.severity` is `\"critical\"`")
+        // Was: `finding.severity` (the parameter-rooted ref chain) stayed a raw, un-traced operand
+        // here -- this was probe 28's own remaining raw-operand half, now promoted (spec §14.26):
+        // `Operand.ParameterPath` renders the parameter and its tail as two distinct breadcrumb
+        // spans rather than the bare, un-annotated field chain.
+        assertThat(render(realBody.single())).isEqualTo("parameter `finding` ▸ `severity` is `\"critical\"`")
     }
 
     @Test

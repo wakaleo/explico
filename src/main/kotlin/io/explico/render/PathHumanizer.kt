@@ -21,19 +21,30 @@ internal object PathHumanizer {
     }
 
     /**
+     * Humanizes the tail of a parameter-rooted path (spec §14.26). Unlike [humanize], the first
+     * segment is an ordinary field of the parameter, never a path root -- so a field literally named
+     * `input` or `data` must not get rule 1's root drop/keep treatment (found in review: `cfg.input`
+     * rendered an empty breadcrumb).
+     */
+    fun humanizeTail(segments: List<PathSegment>): HumanizedPath {
+        val (joined, hasAnyIndex) = crumbsOf(segments, rootAware = false)
+        return HumanizedPath("`$joined`", hasAnyIndex)
+    }
+
+    /**
      * The actual breadcrumb-building logic, factored out of [humanize] so a [PathSegment.KeyPath]
      * (review item 7) can recurse into its own nested segment list -- it needs the SAME rule-1
      * root handling (its own `index == 0` is independent of the outer path's), just without the
      * outer backtick-wrapping [humanize] applies once at the very end.
      */
-    private fun crumbsOf(segments: List<PathSegment>): Pair<String, Boolean> {
+    private fun crumbsOf(segments: List<PathSegment>, rootAware: Boolean = true): Pair<String, Boolean> {
         var hasAnyIndex = false
         val crumbs = mutableListOf<String>()
 
         segments.forEachIndexed { index, segment ->
             when (segment) {
                 is PathSegment.Field -> {
-                    val isRoot = index == 0
+                    val isRoot = rootAware && index == 0
                     when {
                         isRoot && segment.name == "input" -> Unit // rule 1: drop
                         isRoot && segment.name == "data" -> crumbs += "data" // rule 1: keep

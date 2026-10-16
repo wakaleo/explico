@@ -199,6 +199,16 @@ public sealed interface Operand {
      */
     public data class FunctionCall(val packagePath: String, val functionName: String, val args: List<Operand>) : Operand
 
+    /**
+     * A field chain rooted at a function PARAMETER, e.g. `finding.severity` inside
+     * `risk_score(finding) := 10 if { finding.severity == "critical" }` (coverage audit probe 28's
+     * remaining half, spec §14.26). Distinct from [Parameter] (a bare parameter use): the
+     * [segments] after the parameter root map cleanly through the same [PathSegment] machinery any
+     * other reference uses. A tail the mapper cannot resolve (e.g. an unbound dynamic index) is not
+     * promoted and stays [Unrendered] whole, same conservative posture as every other promotion.
+     */
+    public data class ParameterPath(val name: String, val segments: List<PathSegment>) : Operand
+
     /** An operand the mapper cannot classify, e.g. an unrecognised operand-position builtin call. */
     public data class Unrendered(val sourceText: String) : Operand
 }

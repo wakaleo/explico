@@ -645,4 +645,53 @@ class ExpressionRendererTest {
             assertThat(render(Operand.FunctionCall("p", "f", listOf(anyPath)))).startsWith("any of: result of function")
         }
     }
+
+    @Nested
+    @DisplayName("Operand.ParameterPath (spec §14.26, coverage audit probe 28's remaining half)")
+    inner class ParameterPathRendering {
+
+        private fun render(operand: Operand) =
+            ExpressionRenderer.render(Condition.Comparison(operand, Operator.EQ, Operand.Literal("\"critical\"")), noAnchor)
+
+        @Test
+        fun rendersTheParameterAndItsTailAsTwoDistinctBreadcrumbSpans() {
+            assertThat(render(Operand.ParameterPath("finding", listOf(PathSegment.Field("severity")))))
+                .isEqualTo("parameter `finding` ▸ `severity` is `\"critical\"`")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: a multi-segment tail joins with the breadcrumb separator, same as an ordinary Operand.Path")
+        fun multiSegmentTailJoinsWithTheBreadcrumbSeparator() {
+            val tail = Operand.ParameterPath("finding", listOf(PathSegment.Field("owner"), PathSegment.Field("team")))
+            assertThat(render(tail)).isEqualTo("parameter `finding` ▸ `owner ▸ team` is `\"critical\"`")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: a key-literal tail segment renders quoted-verbatim, exactly like an ordinary Operand.Path")
+        fun keyLiteralTailRendersQuoted() {
+            val tail = Operand.ParameterPath("res", listOf(PathSegment.Field("labels"), PathSegment.KeyLiteral("env")))
+            assertThat(render(tail)).isEqualTo("parameter `res` ▸ `labels ▸ \"env\"` is `\"critical\"`")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: a tail field NAMED `input` is an ordinary field of the parameter, not a dropped path root (found in review)")
+        fun tailFieldNamedInputIsKept() {
+            assertThat(render(Operand.ParameterPath("cfg", listOf(PathSegment.Field("input")))))
+                .isEqualTo("parameter `cfg` ▸ `input` is `\"critical\"`")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: a tail field NAMED `data` is humanized like any other field (words split, no special root handling)")
+        fun tailFieldNamedDataIsAnOrdinaryField() {
+            assertThat(render(Operand.ParameterPath("cfg", listOf(PathSegment.Field("data"), PathSegment.Field("region")))))
+                .isEqualTo("parameter `cfg` ▸ `data ▸ region` is `\"critical\"`")
+        }
+
+        @Test
+        @DisplayName("AnyIndex inside the tail still prefixes the whole phrase with 'any of:', same as an ordinary Operand.Path")
+        fun anyIndexInTailPropagates() {
+            val tail = Operand.ParameterPath("finding", listOf(PathSegment.AnyIndex, PathSegment.Field("id")))
+            assertThat(render(tail)).startsWith("any of: parameter `finding` ▸")
+        }
+    }
 }

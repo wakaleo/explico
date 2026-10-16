@@ -1531,3 +1531,16 @@ Rationale in `docs/rego-coverage.md`.
 - **§7.1 amendment.** `Canonicalizer` hashes package, function name and arguments.
 
 Rationale in `docs/rego-coverage.md`.
+
+### 14.26 Follow-up: parameter-rooted paths inside function bodies
+
+- **§5/§6.4 amendment.** `Operand.ParameterPath(name, segments)`: a ref chain rooted at a
+  function's own parameter (e.g. `finding.severity` inside `risk_score(finding) := ...`) whose
+  tail maps cleanly through the existing `mapPathSegments` renders as two distinct breadcrumb
+  spans, `` parameter `finding` ▸ `severity` `` -- resolves §14.25's disclosed other half of
+  probe 28. An unmappable tail (e.g. an unbound dynamic index) keeps the raw whole-chain fallback.
+  A bare parameter use (`Operand.Parameter`) is unaffected.
+- **§7.1 amendment.** `Canonicalizer` aliases the parameter name (same positional-rename rule as
+  `Operand.Variable`/`Operand.Parameter`) and hashes the tail's segments.
+
+Rationale in `docs/rego-coverage.md`.

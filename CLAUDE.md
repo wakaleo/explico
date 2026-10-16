@@ -1262,5 +1262,15 @@ was proposed in, not deferred to a separate increment.
   `isFullyRendered` and `Canonicalizer` recurse into its args.
 - Repinned in place: `RegoCoverageAuditTest` probe 16 (raw operand -> linked call; the test's render
   helper gained a `ruleValueAnchorFor`). Goldens and `docs/sample-output` unchanged.
-- Disclosed: cross-package calls and zero-parameter functions (opa emits no `head.args`) stay raw;
-  Parameter-rooted paths (`finding.severity`) in function bodies are still raw operands.
+- Disclosed: cross-package calls and zero-parameter functions (opa emits no `head.args`) stay raw.
+
+## Follow-up: parameter-rooted paths inside function bodies (coverage audit rank 4 continued)
+
+- `Operand.ParameterPath(name, segments)`: a ref chain rooted at a function parameter whose tail
+  maps cleanly through the existing `mapPathSegments` renders as two breadcrumb spans, `` parameter
+  `finding` ▸ `severity` `` -- resolves the other half of probe 28. An unmappable tail (unbound
+  dynamic index) keeps the whole-chain raw fallback; a bare parameter use is unaffected (`mapRefChain`
+  is only reached for a multi-segment chain -- a bare var is a different code path).
+- `Canonicalizer` aliases the parameter name and hashes the tail's segments. No `Coverage`/
+  `isFullyRendered` change needed: `ParameterPath` holds `PathSegment`s, not nested `Operand`s.
+- Goldens and `docs/sample-output` unchanged (no pack policy declares a function with parameters).

@@ -9,6 +9,7 @@ import io.explico.model.Operand
 import io.explico.model.Operator
 import io.explico.model.PathSegment
 import io.explico.model.PolicySet
+import io.explico.model.RuleGroup
 import io.explico.opa.OpaInspectResult
 import io.explico.opa.OpaModule
 import io.explico.opa.opaJson
@@ -4009,6 +4010,118 @@ class AstMapperTest {
             val used = compare("""{"type":"var","value":"s","location":{"text":"${b64("s")}"}}""", one).replace(""""index":0""", """"index":1""")
             val all = conditions(function("f", "x"), rule(assign, used))
             assertThat((all.single() as Condition.Comparison).left).isInstanceOf(Operand.FunctionCall::class.java)
+        }
+    }
+
+    @Nested
+    inner class ParameterRootedOperandPaths {
+        // Spec §14.26: coverage audit probe 28's remaining half -- a ref chain rooted at a
+        // function parameter, e.g. `finding.severity` inside `risk_score(finding) := ...`.
+
+        private fun functionBody(name: String, param: String, vararg exprs: String): String =
+            """{"head":{"name":"$name","args":[{"type":"var","value":"$param"}],"ref":[{"type":"var","value":"$name"}]},"body":[${exprs.joinToString(",")}]}"""
+
+        private fun comparison(sourceText: String, left: String, right: String, index: Int = 0): String =
+            """{"index":$index,"location":{"text":"${b64(sourceText)}"},"terms":[{"type":"ref","value":[{"type":"var","value":"equal"}]},$left,$right]}"""
+
+        private fun refChain(vararg parts: Pair<String, String>): String {
+            // Each part is ("var"|"string", value) -- the root, then each dotted/bracket segment.
+            val terms = parts.joinToString(",") { (type, value) -> """{"type":"$type","value":"$value"}""" }
+            return """{"type":"ref","value":[$terms]}"""
+        }
+
+        private fun ruleOf(funcJson: String): RuleGroup {
+            val module = moduleOf(
+                """{"package":{"path":[{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},"rules":[$funcJson]}""",
+            )
+            return AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.single()
+        }
+
+        @Test
+        @DisplayName("a plain field tail on a parameter promotes to Operand.ParameterPath")
+        fun plainFieldTailPromotes() {
+            val rule = ruleOf(
+                functionBody(
+                    "risk_score", "finding",
+                    comparison("finding.severity == \"critical\"", refChain("var" to "finding", "string" to "severity"), """{"type":"string","value":"critical"}"""),
+                ),
+            )
+            val left = (rule.bodies.single().conditions.single() as Condition.Comparison).left as Operand.ParameterPath
+            assertThat(left.name).isEqualTo("finding")
+            assertThat(left.segments).containsExactly(PathSegment.Field("severity"))
+        }
+
+        @Test
+        @DisplayName("a nested field tail (two segments) maps both")
+        fun nestedFieldTailMapsBothSegments() {
+            val rule = ruleOf(
+                functionBody(
+                    "risk_score", "finding",
+                    comparison(
+                        "finding.owner.team == \"platform\"",
+                        refChain("var" to "finding", "string" to "owner", "string" to "team"),
+                        """{"type":"string","value":"platform"}""",
+                    ),
+                ),
+            )
+            val left = (rule.bodies.single().conditions.single() as Condition.Comparison).left as Operand.ParameterPath
+            assertThat(left.name).isEqualTo("finding")
+            assertThat(left.segments).containsExactly(PathSegment.Field("owner"), PathSegment.Field("team"))
+        }
+
+        @Test
+        @DisplayName("a key-literal tail (bracket string index) maps too")
+        fun keyLiteralTailMaps() {
+            val bracketChain = """{"type":"ref","value":[{"type":"var","value":"res"},{"type":"string","value":"labels"},{"type":"string","value":"env","location":{"text":"${b64("\"env\"")}"}}]}"""
+            val rule = ruleOf(
+                functionBody(
+                    "has_label", "res",
+                    comparison("""res.labels["env"] == "prod"""", bracketChain, """{"type":"string","value":"prod"}"""),
+                ),
+            )
+            val left = (rule.bodies.single().conditions.single() as Condition.Comparison).left as Operand.ParameterPath
+            assertThat(left.name).isEqualTo("res")
+            assertThat(left.segments).containsExactly(PathSegment.Field("labels"), PathSegment.KeyLiteral("env"))
+        }
+
+        @Test
+        @DisplayName("guard: an unmappable tail (unbound dynamic index) keeps the whole-operand raw fallback, not a partial ParameterPath")
+        fun unmappableTailFallsBackWhole() {
+            // `res.items[idx].ok` with `idx` unbound -- a bare path used as a boolean condition.
+            val chain = """{"type":"ref","location":{"text":"${b64("res.items[idx].ok")}"},"value":[
+                {"type":"var","value":"res"},
+                {"type":"string","value":"items"},
+                {"type":"var","value":"idx","location":{"text":"${b64("idx")}"}},
+                {"type":"string","value":"ok"}
+            ]}"""
+            val module = moduleOf(
+                """{"package":{"path":[{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},"rules":[
+                    {"head":{"name":"bad","args":[{"type":"var","value":"res"}],"ref":[{"type":"var","value":"bad"}]},
+                     "body":[{"index":0,"location":{"text":"${b64("res.items[idx].ok")}"},"terms":$chain}]}
+                ]}""",
+            )
+            val rule = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.single()
+            val condition = rule.bodies.single().conditions.single() as Condition.Truthy
+            val unrendered = condition.operand as Operand.Unrendered
+            assertThat(unrendered.sourceText).isEqualTo("res.items[idx].ok")
+        }
+
+        @Test
+        @DisplayName("guard: a bare parameter use with no chain (`x in {\"a\",\"b\"}`) stays Operand.Parameter, not a zero-segment ParameterPath")
+        fun bareParameterUseIsUnaffected() {
+            val module = moduleOf(
+                """{"package":{"path":[{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},"rules":[
+                    {"head":{"name":"in_set","args":[{"type":"var","value":"x"}],"ref":[{"type":"var","value":"in_set"}]},
+                     "body":[{"index":0,"location":{"text":"${b64("x in {\"a\", \"b\"}")}"},"terms":[
+                        {"type":"ref","value":[{"type":"var","value":"internal"},{"type":"string","value":"member_2"}]},
+                        {"type":"var","value":"x"},
+                        {"type":"set","value":[{"type":"string","value":"a"},{"type":"string","value":"b"}]}
+                     ]}]}
+                ]}""",
+            )
+            val rule = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.single()
+            val condition = rule.bodies.single().conditions.single() as Condition.Membership
+            assertThat(condition.member).isEqualTo(Operand.Parameter("x"))
         }
     }
 }

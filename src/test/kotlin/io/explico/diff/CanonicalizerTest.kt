@@ -34,6 +34,11 @@ class CanonicalizerTest {
         return policySet.packages.single().rules.single { it.name == "deny" }
     }
 
+    private fun functionRule(variant: String): RuleGroup {
+        val policySet = Explico.load(fixturesRoot.resolve(variant))
+        return policySet.packages.single().rules.single { it.name == "f" }
+    }
+
     @Test
     fun positionalVariableRenameYieldsTheSameLogicHash() {
         val base = denyRule("base")
@@ -143,6 +148,20 @@ class CanonicalizerTest {
         val base = Canonicalizer.logicHash(denyRule("function-call-base"))
         assertThat(Canonicalizer.logicHash(denyRule("function-call-name-changed"))).isNotEqualTo(base)
         assertThat(Canonicalizer.logicHash(denyRule("function-call-argument-changed"))).isNotEqualTo(base)
+    }
+
+    @Test
+    @DisplayName("spec §14.26: renaming a function parameter used as a ref-chain root yields the same logic hash")
+    fun renamingAParameterRootedPathsParameterYieldsTheSameLogicHash() {
+        assertThat(Canonicalizer.logicHash(functionRule("parameter-path-renamed-parameter")))
+            .isEqualTo(Canonicalizer.logicHash(functionRule("parameter-path-base")))
+    }
+
+    @Test
+    @DisplayName("spec §14.26: CHALLENGE edge case -- changing the field after a parameter-rooted path changes the logic hash")
+    fun changingAParameterRootedPathsTailFieldYieldsADifferentLogicHash() {
+        assertThat(Canonicalizer.logicHash(functionRule("parameter-path-tail-changed")))
+            .isNotEqualTo(Canonicalizer.logicHash(functionRule("parameter-path-base")))
     }
 
     @Test
