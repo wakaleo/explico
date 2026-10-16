@@ -141,17 +141,17 @@ class RealisticPresentationAcceptanceIT {
         }
 
         @Test
-        @DisplayName("helpers.deny keeps 2 of 5 conditions and counts only the 2 assignments, not json.is_valid")
+        @DisplayName("helpers.deny keeps 3 of 5 conditions and counts only the 2 assignments (json.is_valid is now rendered, spec §14 promotion)")
         fun helpersDeny() {
             val footer = coverageFooter(section(builtinFiles["helpers.md"] ?: "", "helpers.deny"))
-            assertThat(footer).contains("2 of 5 conditions").containsIgnoringCase("2 helper assignment")
+            assertThat(footer).contains("3 of 5 conditions").containsIgnoringCase("2 helper assignment")
         }
 
         @Test
         @DisplayName("guards: cards without helper assignments and the package footer never mention helper")
         fun noHelperMentionElsewhere() {
             assertThat(coverageFooter(section(builtinFiles["builtins.md"] ?: "", "builtins.deny")))
-                .contains("15 of 17 conditions").doesNotContainIgnoringCase("helper")
+                .contains("16 of 17 conditions").doesNotContainIgnoringCase("helper")
             assertThat(coverageFooter(section(files["terraform-s3.md"] ?: "", "TF-001"))).doesNotContainIgnoringCase("helper")
             val packageFooters = (files["k8s-admission.md"] ?: "").lines().filter { it.startsWith("*Package rendering coverage:") }
             assertThat(packageFooters).hasSize(1)

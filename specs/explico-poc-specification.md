@@ -1544,3 +1544,14 @@ Rationale in `docs/rego-coverage.md`.
   `Operand.Variable`/`Operand.Parameter`) and hashes the tail's segments.
 
 Rationale in `docs/rego-coverage.md`.
+
+### 14.27 Follow-up: `json.is_valid` promoted from the unknown-builtins backlog
+
+- **§6.3 amendment.** `json.is_valid(x)` joins `CONDITION_BUILTINS`/`UNARY_BUILTIN_TEMPLATES` --
+  renders "`x` is valid JSON" / negated "is not valid JSON". `opa eval` confirms it returns
+  `false` (never undefined) for invalid JSON and for a non-string argument, so both polarities are
+  faithful. No new model variant; the existing unmappable-argument/wildcard/bare-parameter
+  handling every `CONDITION_BUILTINS` member shares applies unchanged. `json.marshal` stays
+  deliberately unpromoted (produces a value, not a boolean).
+
+Rationale in `docs/rego-coverage.md`.

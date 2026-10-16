@@ -206,26 +206,30 @@ class RealisticBuiltinsAndHelpersAcceptanceIT {
         }
 
         @Test
-        @DisplayName("bodies 1 and 2 are fifteen rendered bullets; no bullet shows raw `input.` or `[_]`")
-        fun fifteenRenderedBulletsAllHumanized() {
+        @DisplayName("bodies 1, 2 and json.is_valid in body 3 are sixteen rendered bullets; no bullet shows raw `input.` or `[_]`")
+        fun sixteenRenderedBulletsAllHumanized() {
+            // Was 15 (bodies 1-2 only) before json.is_valid joined the unary builtin family
+            // (spec §14 promotion) -- body 3's `json.is_valid(input.payload)` now renders too,
+            // leaving only its comprehension-argument sibling fenced.
             val rendered = renderedBullets(card)
-            assertThat(rendered).hasSize(15)
+            assertThat(rendered).hasSize(16)
             for (bullet in rendered) assertThat(bullet).doesNotContain("input.").doesNotContain("[_]")
         }
 
         @Test
-        @DisplayName("an unsupported builtin and a type check with an unmappable comprehension argument stay verbatim fenced source")
-        fun unsupportedAndUnmappableStayFenced() {
+        @DisplayName("a type check with an unmappable comprehension argument stays verbatim fenced source; json.is_valid no longer does")
+        fun unmappableStaysFencedJsonIsValidNowRenders() {
             val fence = fencedSource(card)
-            assertThat(fence).contains("json.is_valid(input.payload)").contains("is_string({x | some x in input.xs})")
-            assertThat(renderedBullets(card).none { it.contains("is_valid") || it.contains("some x in") }).isTrue()
-            assertThat(warnBullets(card)).hasSize(2)
+            assertThat(fence).contains("is_string({x | some x in input.xs})").doesNotContain("json.is_valid")
+            assertThat(renderedBullets(card).any { it.contains("is valid JSON") }).isTrue()
+            assertThat(renderedBullets(card).none { it.contains("some x in") }).isTrue()
+            assertThat(warnBullets(card)).hasSize(1)
         }
 
         @Test
-        @DisplayName("coverage footer: 15 of 17 conditions (promoted builtins count as rendered), no unrendered value")
+        @DisplayName("coverage footer: 16 of 17 conditions (promoted builtins count as rendered), no unrendered value")
         fun coverageFooter() {
-            assertThat(card).contains("15 of 17 conditions").doesNotContain("unrendered value")
+            assertThat(card).contains("16 of 17 conditions").doesNotContain("unrendered value")
         }
     }
 
@@ -307,33 +311,41 @@ class RealisticBuiltinsAndHelpersAcceptanceIT {
         private val card get() = section(builtinFiles["helpers.md"] ?: "", "helpers.deny")
 
         @Test
-        @DisplayName("`a :=`, `b :=` and `json.is_valid(...)` are three separate ⚠ bullets and three separate blocks")
-        fun threeSeparateBlocks() {
-            assertThat(warnBullets(card)).hasSize(3)
+        @DisplayName("`a :=` and `b :=` are two separate ⚠ bullets and two separate blocks; json.is_valid(...) now renders (spec §14 promotion)")
+        fun twoSeparateBlocksJsonIsValidNowRenders() {
+            // Was three separate fenced blocks (this fixture's whole point: a differently-reasoned
+            // Unrendered right next to a helper-assignment is never absorbed into its block). Now
+            // that json.is_valid itself is promoted, it is not Unrendered at all -- only the two
+            // genuinely adjacent-but-separated-by-a-rendered-bullet helper assignments stay fenced,
+            // which still demonstrates the same underlying grouping rule (consecutive-same-reason
+            // merges; a rendered bullet in between keeps them in separate blocks).
+            assertThat(warnBullets(card)).hasSize(2)
             val blocks = fencedBlocks(card)
-            assertThat(blocks).hasSize(3)
+            assertThat(blocks).hasSize(2)
             assertThat(blocks[0]).contains("a := json.marshal(input.xs)").doesNotContain("b :=")
-            assertThat(blocks[1]).contains("b := json.marshal(input.ys)").doesNotContain("json.is_valid")
-            assertThat(blocks[2]).contains("json.is_valid(input.z)")
+            assertThat(blocks[1]).contains("b := json.marshal(input.ys)")
+            assertThat(card).doesNotContain("json.is_valid")
+            assertThat(renderedBullets(card).any { it.contains("is valid JSON") }).isTrue()
         }
 
         @Test
         @DisplayName("the rendered conditions between them remain bullets, order preserved")
         fun orderPreserved() {
             val env = bulletWith(card, "env", "\"prod\"")
+            val valid = bulletWith(card, "`z`", "is valid JSON")
             val comparison = bulletWith(card, "`a`", "`b`")
             val aAt = card.indexOf("a := json.marshal(input.xs)")
             val envAt = card.indexOf(env)
             val bAt = card.indexOf("b := json.marshal(input.ys)")
-            val jsonAt = card.indexOf("json.is_valid(input.z)")
+            val validAt = card.indexOf(valid)
             val cmpAt = card.indexOf(comparison)
-            assertThat(listOf(aAt, envAt, bAt, jsonAt, cmpAt)).isSorted().doesNotContain(-1)
+            assertThat(listOf(aAt, envAt, bAt, validAt, cmpAt)).isSorted().doesNotContain(-1)
         }
 
         @Test
-        @DisplayName("coverage footer: 2 of 5 conditions")
+        @DisplayName("coverage footer: 3 of 5 conditions")
         fun coverageFooter() {
-            assertThat(card).contains("2 of 5 conditions")
+            assertThat(card).contains("3 of 5 conditions")
         }
     }
 }

@@ -3069,6 +3069,110 @@ class AstMapperTest {
     }
 
     @Nested
+    inner class JsonIsValidBuiltin {
+        // Spec §14 promotion (coverage-audit backlog): json.is_valid returns `false` (not
+        // undefined) for both invalid JSON and a non-string argument, confirmed via a real
+        // `opa eval` run -- so it joins the unary type-check family rather than needing a new
+        // model shape. It is a DOTTED builtin name, same shape as net.cidr_contains/regex.match.
+
+        @Test
+        fun dottedNamePromotesToConditionPositionBuiltinCall() {
+            // `json.is_valid(input.payload)`.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("json.is_valid(input.payload)")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"json"},{"type":"string","value":"is_valid"}]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"payload"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val call = body.conditions.single() as Condition.BuiltinCall
+            assertThat(call.name).isEqualTo("json.is_valid")
+            assertThat(call.negated).isFalse()
+            assertThat((call.args.single() as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("payload"))
+        }
+
+        @Test
+        fun negatedFormCarriesNegatedTrue() {
+            // `not json.is_valid(input.payload)` -- both polarities are faithful (opa returns
+            // `false`, never undefined, for an invalid or non-string argument), so there is no
+            // reason this builtin should be excluded from the negated form every other member of
+            // CONDITION_BUILTINS already supports.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "negated": true,
+                          "location": {"row":1,"text":"${b64("not json.is_valid(input.payload)")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"json"},{"type":"string","value":"is_valid"}]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"payload"}]}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val call = body.conditions.single() as Condition.BuiltinCall
+            assertThat(call.negated).isTrue()
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: an unmappable (comprehension) argument falls back whole, same guard as every other CONDITION_BUILTINS member")
+        fun unmappableArgumentFallsBackWhole() {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"row":1,"text":"${b64("json.is_valid({x | some x in input.xs})")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"json"},{"type":"string","value":"is_valid"}]},
+                            {"type":"setcomprehension","value":{"term":{"type":"var","value":"x"},"body":[]}}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            val fallback = body.conditions.single() as Condition.Unrendered
+            assertThat(fallback.reason).isEqualTo("comprehension")
+        }
+    }
+
+    @Nested
     inner class RuleValueReferencesReviewItem10 {
 
         @Test

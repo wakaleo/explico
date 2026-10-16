@@ -845,6 +845,37 @@ the whole rule's verbatim source, which already includes the value.
 Zero acceptance-pack impact: no pack policy has a conditional complete rule, confirmed by
 `generateSampleDocs` producing no diff against the committed `docs/sample-output/`.
 
+## Follow-up: `json.is_valid` promoted from the unknown-builtins backlog
+
+Found by surveying every realistic fixture for remaining fallback text and picking the
+highest-frequency unknown builtin still there. Verified with real `opa eval`:
+`json.is_valid(x)` returns `false` -- never undefined -- both for syntactically invalid JSON and
+for a non-string argument, so a unary-predicate wording is faithful in either polarity, the exact
+precondition every existing `is_*` type check already relies on. Fixture
+`src/test/resources/realistic/json-builtins/json.rego`, pinned by
+`RealisticJsonBuiltinsAcceptanceIT` plus a new `AstMapperTest.JsonIsValidBuiltin` nested class and
+two new `ExpressionRendererTest` phrasing-table rows.
+
+| Finding | Was | Now |
+|---|---|---|
+| `json.is_valid(x)` in condition position, e.g. `json.is_valid(input.payload)`. | Unrecognised builtin -- fell back to raw, fenced verbatim source and counted 0 toward coverage. | Joined `CONDITION_BUILTINS` and `UNARY_BUILTIN_TEMPLATES` (no new model variant -- same mechanism as `is_string`/`is_number`/etc.): renders `` `payload` is valid JSON `` / negated `` is not valid JSON ``. A wildcard argument still carries the `any of:` prefix; a bare function parameter still renders `` parameter `p` is valid JSON ``; an unmappable (comprehension) argument still falls the whole condition back -- all via the existing generic machinery every other `CONDITION_BUILTINS` member already shares, no new code path. |
+
+`json.marshal` is deliberately NOT promoted in the same pass: it produces a value, not a boolean,
+and has no faithful single-phrase template -- it remains the project's "still unpromoted" example
+everywhere one was needed. Operand-position `json.is_valid` (e.g. compared to `true`) is out of
+scope and stays raw, same as before.
+
+Repinned (superseded examples, not weakened invariants): three fixtures and their ITs used
+`json.is_valid` specifically as their "unsupported builtin" demonstration, now obsolete --
+`realistic/builtins/{builtins,helpers}.rego` and `realistic/functions/funcs.rego`, via
+`RealisticBuiltinsAndHelpersAcceptanceIT` (`builtins.deny` 15→16 of 17 rendered, one fewer fenced
+block; `helpers.deny` 2→3 of 5, two fenced blocks instead of three -- the guard's underlying point,
+that a differently-reasoned fallback never merges into an adjacent helper-assignment block, still
+holds via the two `json.marshal` assignments themselves), `RealisticCallsAndMessagesAcceptanceIT`
+(`funcs.deny`'s "unsupported builtin stays fenced" test now asserts the opposite), and
+`RealisticPresentationAcceptanceIT`'s coverage-footer figures for both cards. Tier-2 goldens and
+`docs/sample-output` are byte-identical -- no pack policy uses `json.is_valid`.
+
 ## Review pass: link anchors that resolve (item 18)
 
 Found by the new corpus-wide invariant tier (`RealisticCorpusInvariantsAcceptanceIT`: no crash,

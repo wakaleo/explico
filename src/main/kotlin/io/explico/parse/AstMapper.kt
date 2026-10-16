@@ -79,11 +79,17 @@ internal data class ParsedFile(val sourceFile: String, val module: OpaModule)
  * `net.cidr_contains` (2 args, confirmed via a real `opa parse` run) and the seven `is_*` type
  * checks (1 arg each) -- the existing generic "map every arg, fall back whole on an unsupported
  * one" handling in [mapCallShapedCondition] already covers both arities with no further change.
+ * `json.is_valid` (spec §14 promotion, coverage-audit backlog) joins the 1-arg unary family: it
+ * returns `false` (not undefined) both for syntactically invalid JSON and for a non-string
+ * argument (confirmed via a real `opa eval` run), so a unary-predicate wording is faithful in
+ * either polarity -- unlike `json.marshal`, which is deliberately NOT promoted (it produces a
+ * value, not a boolean, and has no faithful single-phrase template).
  */
 private val CONDITION_BUILTINS = setOf(
     "startswith", "endswith", "contains", "regex.match", "glob.match",
     "net.cidr_contains",
     "is_string", "is_number", "is_boolean", "is_array", "is_object", "is_null", "is_set",
+    "json.is_valid",
 )
 
 /**

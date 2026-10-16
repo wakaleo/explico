@@ -325,6 +325,10 @@ private val UNARY_BUILTIN_TEMPLATES = mapOf(
     "is_object" to UnaryBuiltinTemplate("is an object", "is not an object"),
     "is_null" to UnaryBuiltinTemplate("is null", "is not null"),
     "is_set" to UnaryBuiltinTemplate("is a set", "is not a set"),
+    // Spec §14 promotion: `json.is_valid` returns `false` (not undefined) for both invalid JSON
+    // and a non-string argument, confirmed via a real `opa eval` run -- so this wording is
+    // faithful in both polarities, same as every other unary type-check builtin above.
+    "json.is_valid" to UnaryBuiltinTemplate("is valid JSON", "is not valid JSON"),
 )
 
 /** Operand-position builtin templates (spec §6.3/§14 promotion) -- each takes the already-rendered single argument text and produces the final phrase. */

@@ -156,10 +156,11 @@ class RealisticCallsAndMessagesAcceptanceIT {
         }
 
         @Test
-        @DisplayName("an unsupported builtin (`json.is_valid`) stays fenced source")
-        fun unsupportedBuiltinStaysFenced() {
+        @DisplayName("json.is_valid now renders as a humanized bullet (spec §14 promotion; was the 'unsupported builtin stays fenced' example)")
+        fun jsonIsValidNowRendersAsAHumanizedBullet() {
             val card = section(funcFiles["funcs.md"] ?: "", "funcs.deny")
-            assertThat(fencedSource(card)).contains("json.is_valid(input.items)")
+            assertThat(fencedSource(card)).doesNotContain("json.is_valid")
+            assertThat(bullets(card)).anySatisfy { assertThat(it).contains("items").contains("is valid JSON") }
         }
 
         @Test

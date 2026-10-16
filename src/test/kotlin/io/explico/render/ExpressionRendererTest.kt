@@ -127,6 +127,11 @@ class ExpressionRendererTest {
                 Case("is_null negated", Condition.BuiltinCall("is_null", listOf(a), true), "`artifact ▸ source branch` is not null"),
                 Case("is_set positive", Condition.BuiltinCall("is_set", listOf(a), false), "`artifact ▸ source branch` is a set"),
                 Case("is_set negated", Condition.BuiltinCall("is_set", listOf(a), true), "`artifact ▸ source branch` is not a set"),
+                // spec §14 promotion: json.is_valid returns `false` (not undefined) for both
+                // invalid JSON and a non-string argument (confirmed via a real `opa eval` run),
+                // so the unary wording is faithful in either polarity, same as the seven above.
+                Case("json.is_valid positive", Condition.BuiltinCall("json.is_valid", listOf(a), false), "`artifact ▸ source branch` is valid JSON"),
+                Case("json.is_valid negated", Condition.BuiltinCall("json.is_valid", listOf(a), true), "`artifact ▸ source branch` is not valid JSON"),
             ).map { Arguments.of(it) }.stream()
         }
     }

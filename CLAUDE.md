@@ -1274,3 +1274,13 @@ was proposed in, not deferred to a separate increment.
 - `Canonicalizer` aliases the parameter name and hashes the tail's segments. No `Coverage`/
   `isFullyRendered` change needed: `ParameterPath` holds `PathSegment`s, not nested `Operand`s.
 - Goldens and `docs/sample-output` unchanged (no pack policy declares a function with parameters).
+
+## Follow-up: `json.is_valid` promoted from the unknown-builtins backlog
+
+- `json.is_valid(x)` joins `CONDITION_BUILTINS`/`UNARY_BUILTIN_TEMPLATES` -- no new model variant,
+  same mechanism as `is_string`/etc. Renders "is valid JSON" / negated "is not valid JSON"; both
+  polarities are faithful since `opa eval` confirms it returns `false` (never undefined) for
+  invalid JSON and for a non-string argument. `json.marshal` stays deliberately unpromoted.
+- Repinned, not weakened: three fixtures/ITs used `json.is_valid` as their "unsupported builtin"
+  example (`realistic/builtins/{builtins,helpers}.rego`, `realistic/functions/funcs.rego`); updated
+  to the new coverage figures and fence counts. Goldens and `docs/sample-output` unchanged.
