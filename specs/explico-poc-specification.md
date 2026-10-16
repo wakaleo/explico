@@ -1520,3 +1520,14 @@ Rationale in `docs/rego-coverage.md`.
   variable keep the conservative fallback. No model or hash change (renaming is hash-invariant).
 
 Rationale in `docs/rego-coverage.md`.
+
+### 14.25 Follow-up: user-defined function calls in operand position
+
+- **§5/§6.3 amendment.** `Operand.FunctionCall(packagePath, functionName, args)`: a same-package,
+  registered, arity-matching call used as an operand renders "result of function [`f`](anchor) for
+  <args>" (no "for" clause for zero arguments). Resolution is shared with the condition-position
+  `Condition.FunctionCall`. Unbound-variable arguments stay wrapped and counted; comprehension
+  arguments fall the condition back; cross-package and zero-parameter functions stay raw.
+- **§7.1 amendment.** `Canonicalizer` hashes package, function name and arguments.
+
+Rationale in `docs/rego-coverage.md`.

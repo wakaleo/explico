@@ -52,6 +52,7 @@ class RegoCoverageAuditTest {
             condition,
             anchorFor = { ref -> "#${ref.packagePath}-${ref.ruleName}" },
             functionAnchorFor = { call -> "#${call.packagePath}-${call.functionName}" },
+            ruleValueAnchorFor = { ref -> "#${ref.packagePath}-${ref.ruleName}" },
         )
 
     private fun assertUnrendered(condition: Condition, expectedReason: String) {
@@ -242,12 +243,14 @@ class RegoCoverageAuditTest {
         // name is exactly the pre-existing incremental-definitions mechanism.
         //
         // `severity_of(input.finding.level) >= 2` is an OPERAND-position call (the function
-        // returns a value compared against 2), not a condition-position one -- review item 8's
-        // promotion is deliberately condition-position only, so this stays Operand.Unrendered,
-        // unchanged.
+        // returns a value compared against 2). Coverage-audit rank 4 promoted it to
+        // Operand.FunctionCall: a link to the function's own card plus its humanized argument,
+        // where it used to stay a raw, visually-path-like Operand.Unrendered echo.
         val policySet = loadProbe("16-function-overloading.rego")
         val denyConditions = conditionsOf(policySet, "deny")
-        assertThat(render(denyConditions.single())).isEqualTo("`severity_of(input.finding.level)` is at least `2`")
+        assertThat(render(denyConditions.single())).isEqualTo(
+            "result of function [`severity_of`](#probes.p16_function_overloading-severity_of) for `finding ▸ level` is at least `2`",
+        )
         // `level` is a declared function parameter -- another review item 8 fix. Before, it was
         // never recognised as bound at all, so it silently rendered as a bare, visually-identical-
         // to-a-real-path Operand.Unrendered echo of its own source text (the exact "operand

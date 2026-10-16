@@ -264,4 +264,12 @@ class DiffRendererTest {
             assertThat(links.filter { it !in anchors }).describedAs("dead links in %s -> %s", oldDir, newDir).isEmpty()
         }
     }
+
+    @Test
+    @DisplayName("coverage audit rank 4: a function called in operand position from a changed control, whose own card is not in the diff, renders unlinked rather than as a dead link")
+    fun operandPositionFunctionCallToAnUnchangedFunctionRendersUnlinked() {
+        val root = Path.of("src/test/resources/realistic/diff-function-links")
+        val markdown = render(Explico.load(root.resolve("old")), Explico.load(root.resolve("new")))
+        assertThat(markdown).contains("result of function `lim`").doesNotContain("](#difffunctions-lim)")
+    }
 }

@@ -669,6 +669,7 @@ internal object AstMapper {
     private fun isFullyRendered(operand: Operand): Boolean = when (operand) {
         is Operand.Unrendered -> false
         is Operand.BuiltinCall -> operand.args.all { isFullyRendered(it) }
+        is Operand.FunctionCall -> operand.args.all { isFullyRendered(it) }
         else -> true
     }
 
@@ -725,8 +726,7 @@ internal object AstMapper {
         // this promotion deliberately doesn't attempt yet (disclosed limitation). An argument that
         // doesn't resolve at all (a comprehension) falls through to the generic fallback below,
         // never a partially-faithful call.
-        val params = ctx.functionRegistry[ctx.currentPackage]?.get(name)
-        if (params != null) {
+        if (isKnownFunctionCall(name, args.size, ctx)) {
             val mapped = args.map { mapOperand(it, symbolTable, ctx) }
             val unsupported = mapped.filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
             if (unsupported == null) {
@@ -736,6 +736,10 @@ internal object AstMapper {
         }
         return Condition.Unrendered(sourceText(expr.location), "function-call")
     }
+
+    /** A same-package user-defined function with matching arity -- the one resolution rule shared by condition- and operand-position calls. */
+    private fun isKnownFunctionCall(name: String, argCount: Int, ctx: MappingContext): Boolean =
+        ctx.functionRegistry[ctx.currentPackage]?.get(name)?.size == argCount
 
     private inline fun buildComparisonLike(
         expr: OpaExpr,
@@ -1140,6 +1144,12 @@ internal object AstMapper {
         }
         if (name == "concat" && args.size == 2) {
             return mapConcatOperand(args[0], args[1], symbolTable, ctx)
+        }
+        // Same-package user-defined function (coverage audit rank 4). An argument that is itself
+        // Operand.Unrendered stays wrapped inside the call (like BuiltinCall), so the footer still
+        // counts it; an Unsupported one already returned above.
+        if (isKnownFunctionCall(name, args.size, ctx)) {
+            return ConstructResult.Ok(Operand.FunctionCall(ctx.currentPackage, name, operands))
         }
         return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
     }

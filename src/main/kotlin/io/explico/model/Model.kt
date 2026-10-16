@@ -190,6 +190,15 @@ public sealed interface Operand {
      */
     public data class RuleValueReference(val packagePath: String, val ruleName: String) : Operand
 
+    /**
+     * The result of a same-package call to a user-defined function, used as an operand (coverage
+     * audit rank 4), e.g. `severity_of(input.finding.level) >= 2`. The operand-position counterpart
+     * of [Condition.FunctionCall]: rendered as a link to the function's own card plus its humanized
+     * arguments, never inlining the function's logic. Cross-package calls and calls with an
+     * unmappable argument are not promoted and stay [Unrendered].
+     */
+    public data class FunctionCall(val packagePath: String, val functionName: String, val args: List<Operand>) : Operand
+
     /** An operand the mapper cannot classify, e.g. an unrecognised operand-position builtin call. */
     public data class Unrendered(val sourceText: String) : Operand
 }

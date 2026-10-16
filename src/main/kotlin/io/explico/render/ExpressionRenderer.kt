@@ -198,6 +198,19 @@ internal object ExpressionRenderer {
             val link = ruleValueAnchorFor(operand)?.let { "rule [`${operand.ruleName}`]($it)" } ?: "rule `${operand.ruleName}`"
             link to false
         }
+        // Coverage audit rank 4: the result of a same-package user-defined function, linked to the
+        // function's own card (the anchor convention is identical to a rule-value reference's, so the
+        // same callback resolves it -- and a null anchor, e.g. in a diff report, renders unlinked).
+        is Operand.FunctionCall -> {
+            val link = ruleValueAnchorFor(Operand.RuleValueReference(operand.packagePath, operand.functionName))
+                ?.let { "[`${operand.functionName}`]($it)" } ?: "`${operand.functionName}`"
+            if (operand.args.isEmpty()) {
+                "result of function $link" to false
+            } else {
+                val rendered = operand.args.map { renderOperand(it, ruleValueAnchorFor) }
+                "result of function $link for ${rendered.joinToString(", ") { it.first }}" to rendered.any { it.second }
+            }
+        }
         // Never guessed prose: the operand's own verbatim source, in backticks. Not part of spec's
         // explicit examples (only Condition-level Unrendered's block format is spec'd) -- this
         // session's interpretation for the inline case, kept as visible source rather than hidden.

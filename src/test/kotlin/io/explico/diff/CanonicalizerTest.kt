@@ -132,6 +132,20 @@ class CanonicalizerTest {
     }
 
     @Test
+    @DisplayName("CHALLENGE edge case (coverage audit rank 4): an operand-position function call hashes identically when its argument arrives via a substituted local variable")
+    fun aFunctionCallArgumentViaASubstitutedLocalVariableYieldsTheSameLogicHash() {
+        assertThat(Canonicalizer.logicHash(denyRule("function-call-var-argument"))).isEqualTo(Canonicalizer.logicHash(denyRule("function-call-base")))
+    }
+
+    @Test
+    @DisplayName("CHALLENGE edge case (coverage audit rank 4): changing the called function, or its argument, changes the logic hash")
+    fun changingTheCalledFunctionOrItsArgumentYieldsADifferentLogicHash() {
+        val base = Canonicalizer.logicHash(denyRule("function-call-base"))
+        assertThat(Canonicalizer.logicHash(denyRule("function-call-name-changed"))).isNotEqualTo(base)
+        assertThat(Canonicalizer.logicHash(denyRule("function-call-argument-changed"))).isNotEqualTo(base)
+    }
+
+    @Test
     fun reformattingInsideAnUnrenderedFallbackSpanYieldsADifferentLogicHash() {
         // Deliberate, disclosed behaviour, not a bug: an Unrendered condition/operand's sourceText
         // is verbatim source the tool couldn't classify, so it can't verify two differently

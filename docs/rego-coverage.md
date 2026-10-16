@@ -718,6 +718,28 @@ value it yields in its card -- only its conditions. Showing it would need decidi
 display a value that depends on which Situation matched (possibly a different value per
 Situation), a materially different design question from a single unconditional value.
 
+## Follow-up: user-defined function calls in operand position (coverage audit rank 4)
+
+Found by re-auditing the realistic and probe corpora. Fixtures `realistic/function-values/`
+(`funcs.rego`, `other.rego`) and `realistic/diff-function-links/`, pinned by
+`RealisticOperandFunctionCallsAcceptanceIT` plus `AstMapperTest.OperandPositionFunctionCalls`,
+`ExpressionRendererTest.OperandFunctionCallRendering`, two `CanonicalizerTest` cases and a
+`DiffRendererTest` case.
+
+| Finding | Was | Now |
+|---|---|---|
+| A same-package user-function call inside a comparison, e.g. `severity_of(input.finding.level) >= 2` (probes 16, 28) | Review item 8 only handled a call as a whole condition; in operand position it rendered as the raw call in backticks, visually path-like, and counted as an unrendered operand. | New `Operand.FunctionCall(packagePath, functionName, args)`, rendered "result of function [`severity_of`](#...) for `finding ▸ level`". Same resolution rule as the condition-position call (shared `isKnownFunctionCall`: same package, registered name, matching arity); arguments render through the ordinary operand pipeline, nested calls work, and an expression assignment from a call (`s := f(x)`) now substitutes inline. An unmappable (unbound) argument stays wrapped inside the call and still counts toward the footer's unrendered-value total (same as `BuiltinCall`); a comprehension argument still falls the whole condition back. |
+
+The anchor reuses `ruleValueAnchorFor` (identical convention), so a function with no card in the
+document -- a diff report where it is unchanged -- renders unlinked. Hash: function name, package and
+argument operands are hashed; an argument arriving via a substituted local variable hashes like the
+direct path.
+
+Disclosed, not fixed: a cross-package call and a zero-parameter function (`f() := 1` -- opa emits no
+`head.args` for it, so the registry cannot see it, in condition position as well) stay raw; and the
+other half of probe 28 -- a Parameter-rooted path such as `finding.severity` inside a function body
+-- is still a raw operand.
+
 ## Follow-up: expression assignments are substituted inline (resolves the deferred set-difference operand)
 
 Fixture `src/test/resources/realistic/expressions/exprs.rego`, pinned by

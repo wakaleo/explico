@@ -600,4 +600,49 @@ class ExpressionRendererTest {
             assertThatThrownBy { ExpressionRenderer.render(condition, noAnchor) }.isInstanceOf(IllegalStateException::class.java)
         }
     }
+
+    @Nested
+    @DisplayName("Operand.FunctionCall (coverage audit rank 4)")
+    inner class OperandFunctionCallRendering {
+
+        private val levelPath = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("finding"), PathSegment.Field("level")))
+        private val anchorFor: (Operand.RuleValueReference) -> String = { "#${it.ruleName}" }
+
+        private fun render(operand: Operand, anchor: (Operand.RuleValueReference) -> String? = anchorFor) =
+            ExpressionRenderer.render(Condition.Comparison(operand, Operator.GTE, Operand.Literal("2")), noAnchor, ruleValueAnchorFor = anchor)
+
+        @Test
+        fun rendersALinkedResultWithItsArguments() {
+            assertThat(render(Operand.FunctionCall("p", "severity_of", listOf(levelPath))))
+                .isEqualTo("result of function [`severity_of`](#severity_of) for `finding ▸ level` is at least `2`")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: a zero-argument call drops the dangling 'for' clause")
+        fun zeroArgumentCallDropsTheForClause() {
+            assertThat(render(Operand.FunctionCall("p", "now_ish", emptyList()))).isEqualTo("result of function [`now_ish`](#now_ish) is at least `2`")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: several arguments are comma-joined; a nested call renders inside the outer call's arguments")
+        fun severalAndNestedArguments() {
+            val nested = Operand.FunctionCall("p", "f", listOf(Operand.FunctionCall("p", "g", listOf(levelPath)), Operand.Literal("1")))
+            assertThat(render(nested))
+                .isEqualTo("result of function [`f`](#f) for result of function [`g`](#g) for `finding ▸ level`, `1` is at least `2`")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: a null anchor (the function has no card in THIS document, e.g. a diff report) renders unlinked")
+        fun nullAnchorRendersUnlinked() {
+            assertThat(render(Operand.FunctionCall("p", "severity_of", listOf(levelPath)), anchor = { null }))
+                .isEqualTo("result of function `severity_of` for `finding ▸ level` is at least `2`")
+        }
+
+        @Test
+        @DisplayName("AnyIndex inside an argument still prefixes the whole phrase with 'any of:'")
+        fun anyIndexPropagates() {
+            val anyPath = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("items"), PathSegment.AnyIndex, PathSegment.Field("id")))
+            assertThat(render(Operand.FunctionCall("p", "f", listOf(anyPath)))).startsWith("any of: result of function")
+        }
+    }
 }

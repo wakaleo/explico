@@ -53,6 +53,7 @@ internal object Coverage {
     private fun countUnrendered(operand: Operand): Int = when (operand) {
         is Operand.Unrendered -> 1
         is Operand.BuiltinCall -> operand.args.sumOf { countUnrendered(it) }
+        is Operand.FunctionCall -> operand.args.sumOf { countUnrendered(it) }
         else -> 0
     }
 

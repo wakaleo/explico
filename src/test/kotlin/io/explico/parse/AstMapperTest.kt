@@ -3909,4 +3909,106 @@ class AstMapperTest {
             assertThat((conditions.single() as Condition.Comparison).left).isInstanceOf(Operand.Unrendered::class.java)
         }
     }
+
+    @Nested
+    inner class OperandPositionFunctionCalls {
+
+        private fun op(name: String) = """{"type":"ref","value":[{"type":"var","value":"$name"}]}"""
+        private fun path(vararg parts: String) =
+            """{"type":"ref","value":[{"type":"var","value":"input"},${parts.joinToString(",") { """{"type":"string","value":"$it"}""" }}]}"""
+        private fun call(name: String, vararg args: String) = """{"type":"call","value":[${(listOf(op(name)) + args).joinToString(",")}]}"""
+        private fun function(name: String, vararg params: String, body: String = """{"index":0,"location":{"row":1,"text":"${b64("input.ok")}"},"terms":${path("ok")}}""") =
+            """{"head":{"name":"$name","args":[${params.joinToString(",") { """{"type":"var","value":"$it"}""" }}],"ref":[${op(name)}]},"body":[$body]}"""
+        private fun compare(left: String, right: String) =
+            """{"index":0,"location":{"row":2,"text":"${b64("cmp")}"},"terms":[${op("gt")},$left,$right]}"""
+        private fun rule(vararg exprs: String) = """{"head":{"name":"r","ref":[${op("r")}]},"body":[${exprs.joinToString(",")}]}"""
+        private val one = """{"type":"number","value":1}"""
+
+        private fun conditions(vararg ruleJsons: String): List<Condition> {
+            val json = """{"package":{"path":[{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},"rules":[${ruleJsons.joinToString(",")}]}"""
+            return AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", moduleOf(json)))).packages[0].rules.first { it.name == "r" }.bodies.single().conditions
+        }
+
+        private fun left(vararg ruleJsons: String) = (conditions(*ruleJsons).single() as Condition.Comparison).left
+
+        @Test
+        fun aKnownSamePackageFunctionCallBecomesAnOperandFunctionCall() {
+            val operand = left(function("f", "x"), rule(compare(call("f", path("a")), one))) as Operand.FunctionCall
+            assertThat(operand.packagePath).isEqualTo("scratch")
+            assertThat(operand.functionName).isEqualTo("f")
+            assertThat((operand.args.single() as Operand.Path).segments.last()).isEqualTo(PathSegment.Field("a"))
+        }
+
+        @Test
+        @DisplayName("disclosed limitation: opa emits NO head.args for a zero-parameter `f() := 1` (confirmed via a real `opa parse` run), so the registry cannot see it and the call stays Unrendered, same as in condition position")
+        fun zeroParameterFunctionIsInvisibleToTheRegistryAndStaysUnrendered() {
+            val noArgsHead = """{"head":{"name":"f","value":{"type":"number","value":1},"ref":[${op("f")}]},"body":[{"index":0,"location":{"row":1,"text":"${b64("input.ok")}"},"terms":${path("ok")}}]}"""
+            assertThat(left(noArgsHead, rule(compare(call("f"), one)))).isInstanceOf(Operand.Unrendered::class.java)
+        }
+
+        @Test
+        @DisplayName("guard: a call whose argument count does not match the declared parameters stays Unrendered")
+        fun wrongArityStaysUnrendered() {
+            assertThat(left(function("f", "x"), rule(compare(call("f", path("a"), path("b")), one)))).isInstanceOf(Operand.Unrendered::class.java)
+        }
+
+        @Test
+        @DisplayName("guard: a cross-package (dotted) call stays Unrendered")
+        fun crossPackageCallStaysUnrendered() {
+            val dotted = """{"type":"call","value":[{"type":"ref","value":[{"type":"var","value":"other"},{"type":"string","value":"f"}]},${path("a")}]}"""
+            assertThat(left(function("f", "x"), rule(compare(dotted, one)))).isInstanceOf(Operand.Unrendered::class.java)
+        }
+
+        @Test
+        @DisplayName("guard: an undefined function stays Unrendered")
+        fun undefinedFunctionStaysUnrendered() {
+            assertThat(left(rule(compare(call("nope", path("a")), one)))).isInstanceOf(Operand.Unrendered::class.java)
+        }
+
+        @Test
+        @DisplayName("an unbound-variable argument stays wrapped inside the call, so the coverage footer still counts it (mirrors BuiltinCall)")
+        fun unboundArgumentIsWrappedAndCounted() {
+            val all = conditions(function("f", "x"), rule(compare(call("f", """{"type":"var","value":"nowhere","location":{"text":"${b64("nowhere")}"}}"""), one)))
+            val operand = (all.single() as Condition.Comparison).left as Operand.FunctionCall
+            assertThat(operand.args.single()).isInstanceOf(Operand.Unrendered::class.java)
+            assertThat(io.explico.render.Coverage.unrenderedOperandCount(all)).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("a comprehension argument makes the whole condition fall back, never a partial call")
+        fun comprehensionArgumentFallsBackTheWholeCondition() {
+            val comprehension = """{"type":"setcomprehension","value":{"term":{"type":"var","value":"e"},"body":[]}}"""
+            val only = conditions(function("f", "x"), rule(compare(call("f", comprehension), one))).single()
+            assertThat(only).isInstanceOf(Condition.Unrendered::class.java)
+        }
+
+        @Test
+        @DisplayName("a call nested in another call's arguments, and a call inside arithmetic, both map")
+        fun nestedAndArithmeticCalls() {
+            val nested = left(function("f", "x"), function("g", "y"), rule(compare(call("f", call("g", path("a"))), one))) as Operand.FunctionCall
+            assertThat((nested.args.single() as Operand.FunctionCall).functionName).isEqualTo("g")
+            val arithmetic = left(function("f", "x"), rule(compare(call("plus", call("f", path("a")), one), one))) as Operand.BuiltinCall
+            assertThat(arithmetic.args[0]).isInstanceOf(Operand.FunctionCall::class.java)
+        }
+
+        @Test
+        @DisplayName("a function calling itself recursively maps without looping (mapping is purely syntactic)")
+        fun recursiveFunctionDoesNotLoop() {
+            val selfCall = function("f", "x", body = compare(call("f", """{"type":"var","value":"x"}"""), one))
+            val rules = AstMapper.mapPolicySet(
+                listOf(ParsedFile("scratch.rego", moduleOf("""{"package":{"path":[{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},"rules":[$selfCall]}"""))),
+            ).packages[0].rules
+            val operand = (rules.single().bodies.single().conditions.single() as Condition.Comparison).left as Operand.FunctionCall
+            assertThat(operand.args.single()).isEqualTo(Operand.Parameter("x"))
+        }
+
+        @Test
+        @DisplayName("an assignment from a function call is substituted at its use (it is a fully rendered expression)")
+        fun assignmentFromAFunctionCallSubstitutes() {
+            val assign = """{"index":0,"location":{"row":1,"text":"${b64("s := f(input.a)")}"},"terms":[${op("assign")},{"type":"var","value":"s"},${call("f", path("a"))}]}"""
+            val used = compare("""{"type":"var","value":"s","location":{"text":"${b64("s")}"}}""", one).replace(""""index":0""", """"index":1""")
+            val all = conditions(function("f", "x"), rule(assign, used))
+            assertThat((all.single() as Condition.Comparison).left).isInstanceOf(Operand.FunctionCall::class.java)
+        }
+    }
 }

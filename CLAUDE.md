@@ -1253,3 +1253,14 @@ was proposed in, not deferred to a separate increment.
   to `json.marshal(...)`; grouped-helper tests moved from K8S-003 to a new `helpers.grouped` rule;
   K8S-003 numbers/bullets updated (1 of 2, 1 helper, "minus ... is not empty"). Goldens and
   `docs/sample-output` unchanged.
+
+## Follow-up: user-defined function calls in operand position (coverage audit rank 4)
+
+- `Operand.FunctionCall`; `AstMapper.isKnownFunctionCall` is the single resolution rule (same package,
+  registered, arity match) shared with the condition-position call. Rendering reuses
+  `ruleValueAnchorFor` (null anchor -> unlinked, e.g. diff reports). `Coverage.countUnrendered`,
+  `isFullyRendered` and `Canonicalizer` recurse into its args.
+- Repinned in place: `RegoCoverageAuditTest` probe 16 (raw operand -> linked call; the test's render
+  helper gained a `ruleValueAnchorFor`). Goldens and `docs/sample-output` unchanged.
+- Disclosed: cross-package calls and zero-parameter functions (opa emits no `head.args`) stay raw;
+  Parameter-rooted paths (`finding.severity`) in function bodies are still raw operands.

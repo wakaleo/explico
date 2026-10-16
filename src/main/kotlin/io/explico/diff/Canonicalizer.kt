@@ -136,6 +136,12 @@ internal object Canonicalizer {
             put("name", JsonPrimitive(operand.name))
             put("type", JsonPrimitive("BuiltinCall"))
         }
+        is Operand.FunctionCall -> buildJsonObject {
+            put("args", buildJsonArray { operand.args.forEach { add(canonicalOperand(it, aliases)) } })
+            put("functionName", JsonPrimitive(operand.functionName))
+            put("packagePath", JsonPrimitive(operand.packagePath))
+            put("type", JsonPrimitive("FunctionCall"))
+        }
         is Operand.RuleValueReference -> buildJsonObject {
             put("packagePath", JsonPrimitive(operand.packagePath))
             put("ruleName", JsonPrimitive(operand.ruleName))
