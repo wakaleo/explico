@@ -120,6 +120,10 @@ internal object Canonicalizer {
             put("type", JsonPrimitive("Path"))
         }
         is Operand.Literal -> buildJsonObject {
+            // Spec §14 promotion: an array and a set literal of the SAME elements are different
+            // Rego values, so a changed delimiter kind must change the hash, not just a changed
+            // `rendered` string.
+            put("collection", operand.collection?.let { JsonPrimitive(it.name) } ?: JsonNull)
             put("rendered", JsonPrimitive(operand.rendered))
             put("type", JsonPrimitive("Literal"))
         }

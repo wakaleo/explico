@@ -1555,3 +1555,16 @@ Rationale in `docs/rego-coverage.md`.
   deliberately unpromoted (produces a value, not a boolean).
 
 Rationale in `docs/rego-coverage.md`.
+
+### 14.28 Follow-up: collection-literal delimiters outside membership
+
+- **§6.3/§6.4 amendment.** `Operand.Literal` gains a defaulted `collection: LiteralCollection?`
+  (`ARRAY`/`SET`, null for a scalar or object literal), set only by `mapCollectionLiteral`. A
+  tagged literal renders with its Rego delimiters inside the same backtick span (`` `{"a", "b"}` ``
+  / `` `["a", "b"]` ``) in every operand position EXCEPT a membership test's own collection side,
+  which keeps the frozen bare comma list (`renderMembershipCollection`). The membership's MEMBER
+  side is unaffected by that exception -- a collection-literal member still gets delimiters.
+- **§7.1 amendment.** `Canonicalizer` hashes `collection` alongside `rendered`: an array and a set
+  of the same elements are different Rego values and must hash differently.
+
+Rationale in `docs/rego-coverage.md`.

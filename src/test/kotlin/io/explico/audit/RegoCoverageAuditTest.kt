@@ -434,7 +434,13 @@ class RegoCoverageAuditTest {
         // "helper-assignment" (review item 12): `pairs := {...}` is an assignment the mapper
         // can't substitute, distinct from a bare unresolved call's "function-call".
         assertUnrendered(conditions[0], "helper-assignment")
-        assertThat(render(conditions[1])).isEqualTo("`1, 2` is one of `pairs`")
+        // Was: `` `1, 2` is one of `pairs` `` -- the MEMBER side (`[1, 2]`) is itself an array
+        // literal, not the membership's collection side, so spec §14's promotion (collection
+        // literals keep their Rego delimiters outside the one frozen bare-list position, the
+        // collection side of a membership test) applies to it like any other operand position.
+        // `` `[1, 2]` `` is strictly more faithful than the bare comma list, which read as two
+        // separate values rather than one array.
+        assertThat(render(conditions[1])).isEqualTo("`[1, 2]` is one of `pairs`")
     }
 
     @Test

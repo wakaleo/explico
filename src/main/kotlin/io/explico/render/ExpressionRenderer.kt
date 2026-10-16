@@ -33,6 +33,7 @@
 package io.explico.render
 
 import io.explico.model.Condition
+import io.explico.model.LiteralCollection
 import io.explico.model.Operand
 import io.explico.model.Operator
 import io.explico.model.PathSegment
@@ -58,8 +59,14 @@ internal object ExpressionRenderer {
             val verbs = if (condition.negated) NEGATED_COMPARISON_VERBS else COMPARISON_VERBS
             "$l ${verbs.getValue(condition.op)} $r"
         }
-        is Condition.Membership -> renderOperandPair(condition.member, condition.collection, ruleValueAnchorFor) { m, c ->
-            "$m ${if (condition.negated) "is not one of" else "is one of"} $c"
+        is Condition.Membership -> {
+            // spec §14 promotion: the collection side keeps its bare, undelimited comma list here
+            // specifically -- `` `x` is one of `"a", "b"` `` is the frozen §6.3 wording -- even
+            // though the SAME literal would get `[...]`/`{...}` delimiters in every other operand
+            // position (renderMembershipCollection, not the generic renderOperand, for this one side).
+            val (m, mAny) = renderOperand(condition.member, ruleValueAnchorFor)
+            val (c, cAny) = renderMembershipCollection(condition.collection, ruleValueAnchorFor)
+            withAnyOfPrefix("$m ${if (condition.negated) "is not one of" else "is one of"} $c", mAny || cAny)
         }
         is Condition.Truthy -> {
             // spec §14 amendment: a bare reference in condition position tests "defined and not
@@ -180,9 +187,29 @@ internal object ExpressionRenderer {
         return withAnyOfPrefix(phrase(leftText, rightText), leftAny || rightAny)
     }
 
+    /**
+     * Membership's own collection side (spec §14 promotion), bypassing [renderOperand]'s delimiter
+     * handling for a collection literal specifically -- see the `Condition.Membership` branch
+     * above for why. Any other operand shape (a path, a rule-value reference, ...) renders
+     * identically to every other position; only a bare [Operand.Literal] is special-cased here.
+     */
+    private fun renderMembershipCollection(operand: Operand, ruleValueAnchorFor: (Operand.RuleValueReference) -> String?): Pair<String, Boolean> =
+        if (operand is Operand.Literal) "`${operand.rendered}`" to false else renderOperand(operand, ruleValueAnchorFor)
+
     private fun renderOperand(operand: Operand, ruleValueAnchorFor: (Operand.RuleValueReference) -> String?): Pair<String, Boolean> = when (operand) {
         is Operand.Path -> PathHumanizer.humanize(operand.segments).let { it.rendered to it.hasAnyIndex }
-        is Operand.Literal -> "`${operand.rendered}`" to false
+        // spec §14 promotion: a collection-kind literal keeps its Rego delimiters inside the same
+        // backtick span everywhere EXCEPT the membership collection side (renderMembershipCollection
+        // handles that one specially) -- an array and a set of the same elements render
+        // differently (`[...]` vs `{...}`), matching the fact that they are different Rego values.
+        is Operand.Literal -> {
+            val text = when (operand.collection) {
+                LiteralCollection.ARRAY -> "[${operand.rendered}]"
+                LiteralCollection.SET -> "{${operand.rendered}}"
+                null -> operand.rendered
+            }
+            "`$text`" to false
+        }
         is Operand.Variable -> "`${operand.name}`" to false
         // Review item 8: a declared function parameter, named explicitly as such -- distinguished
         // from a bare Variable's plain backtick-wrapped name specifically so a reader inside the

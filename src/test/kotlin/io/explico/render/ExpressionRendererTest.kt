@@ -5,6 +5,7 @@
 package io.explico.render
 
 import io.explico.model.Condition
+import io.explico.model.LiteralCollection
 import io.explico.model.Operand
 import io.explico.model.Operator
 import io.explico.model.PathSegment
@@ -697,6 +698,66 @@ class ExpressionRendererTest {
         fun anyIndexInTailPropagates() {
             val tail = Operand.ParameterPath("finding", listOf(PathSegment.AnyIndex, PathSegment.Field("id")))
             assertThat(render(tail)).startsWith("any of: parameter `finding` ▸")
+        }
+    }
+
+    @Nested
+    @DisplayName("Operand.Literal collection delimiters (spec §14 promotion)")
+    inner class LiteralCollectionDelimiters {
+
+        private val path = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("tags")))
+
+        @Test
+        fun anArrayLiteralKeepsItsBracketsAsAComparisonOperand() {
+            val condition = Condition.Comparison(path, Operator.EQ, Operand.Literal("\"a\", \"b\"", LiteralCollection.ARRAY))
+            assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("`tags` is `[\"a\", \"b\"]`")
+        }
+
+        @Test
+        fun aSetLiteralKeepsItsBracesAsAComparisonOperandAndDiffersFromAnArray() {
+            val condition = Condition.Comparison(path, Operator.EQ, Operand.Literal("\"a\", \"b\"", LiteralCollection.SET))
+            assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("`tags` is `{\"a\", \"b\"}`")
+        }
+
+        @Test
+        @DisplayName("guard: a kind-less literal (object/scalar) stays exactly as bare as before this promotion")
+        fun aKindLessLiteralStaysBare() {
+            val condition = Condition.Comparison(path, Operator.EQ, Operand.Literal("\"a\", \"b\""))
+            assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("`tags` is `\"a\", \"b\"`")
+        }
+
+        @Test
+        @DisplayName("the membership COLLECTION side keeps its frozen bare comma list even though it is a tagged SET literal")
+        fun membershipCollectionSideStaysBareRegardlessOfTag() {
+            val condition = Condition.Membership(negated = false, member = path, collection = Operand.Literal("\"a\", \"b\"", LiteralCollection.SET))
+            assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("`tags` is one of `\"a\", \"b\"`")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: the membership MEMBER side is NOT the frozen position -- a collection-literal member keeps its delimiters")
+        fun membershipMemberSideStillGetsDelimiters() {
+            // `[1, 2] in pairs` -- the member happens to itself be an array literal, which is a
+            // completely ordinary operand position, not the special-cased collection side.
+            val condition = Condition.Membership(
+                negated = false,
+                member = Operand.Literal("1, 2", LiteralCollection.ARRAY),
+                collection = Operand.Variable("pairs"),
+            )
+            assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("`[1, 2]` is one of `pairs`")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: a SomeIn's own collection, when it's a literal, also keeps its delimiters")
+        fun someInCollectionLiteralKeepsItsDelimiters() {
+            val condition = Condition.SomeIn("x", Operand.Literal("\"a\", \"b\"", LiteralCollection.ARRAY))
+            assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("for some x in `[\"a\", \"b\"]`")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: a collection literal nested inside count() still gets delimiters")
+        fun collectionLiteralInsideBuiltinArgumentKeepsItsDelimiters() {
+            val condition = Condition.Comparison(Operand.BuiltinCall("count", listOf(Operand.Literal("\"a\", \"b\"", LiteralCollection.ARRAY))), Operator.GT, Operand.Literal("1"))
+            assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("the number of `[\"a\", \"b\"]` is greater than `1`")
         }
     }
 }

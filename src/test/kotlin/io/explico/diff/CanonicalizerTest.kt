@@ -151,6 +151,20 @@ class CanonicalizerTest {
     }
 
     @Test
+    @DisplayName("spec §14 promotion: an array and a set literal of the SAME elements hash differently -- they are different Rego values")
+    fun anArrayAndASetLiteralOfTheSameElementsYieldDifferentLogicHashes() {
+        assertThat(Canonicalizer.logicHash(denyRule("literal-collection-array-same-elements")))
+            .isNotEqualTo(Canonicalizer.logicHash(denyRule("literal-collection-set-base")))
+    }
+
+    @Test
+    @DisplayName("spec §14 promotion: CHALLENGE edge case -- reformatting around a set literal (whitespace, a comment) yields the same logic hash")
+    fun reformattingAroundASetLiteralYieldsTheSameLogicHash() {
+        assertThat(Canonicalizer.logicHash(denyRule("literal-collection-set-reformatted")))
+            .isEqualTo(Canonicalizer.logicHash(denyRule("literal-collection-set-base")))
+    }
+
+    @Test
     @DisplayName("spec §14.26: renaming a function parameter used as a ref-chain root yields the same logic hash")
     fun renamingAParameterRootedPathsParameterYieldsTheSameLogicHash() {
         assertThat(Canonicalizer.logicHash(functionRule("parameter-path-renamed-parameter")))

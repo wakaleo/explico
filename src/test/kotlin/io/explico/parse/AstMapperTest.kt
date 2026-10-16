@@ -5,6 +5,7 @@
 package io.explico.parse
 
 import io.explico.model.Condition
+import io.explico.model.LiteralCollection
 import io.explico.model.Operand
 import io.explico.model.Operator
 import io.explico.model.PathSegment
@@ -4226,6 +4227,61 @@ class AstMapperTest {
             val rule = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.single()
             val condition = rule.bodies.single().conditions.single() as Condition.Membership
             assertThat(condition.member).isEqualTo(Operand.Parameter("x"))
+        }
+    }
+
+    @Nested
+    inner class LiteralCollectionKind {
+        // Spec §14 promotion: a small scalar array/set literal now records WHICH Rego syntax
+        // produced it, so the renderer can add faithful delimiters outside the one frozen
+        // bare-list position (a membership test's own collection side).
+
+        private fun comparisonWithCollection(collectionTerm: String): Condition.Comparison {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]},
+                      "body": [
+                        {
+                          "index": 0,
+                          "location": {"text":"${b64("cmp")}"},
+                          "terms": [
+                            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                            {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}]},
+                            $collectionTerm
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            return body.conditions.single() as Condition.Comparison
+        }
+
+        @Test
+        fun anArrayLiteralIsTaggedArray() {
+            val right = comparisonWithCollection("""{"type":"array","value":[{"type":"string","value":"a"},{"type":"string","value":"b"}]}""").right as Operand.Literal
+            assertThat(right.rendered).isEqualTo("\"a\", \"b\"")
+            assertThat(right.collection).isEqualTo(LiteralCollection.ARRAY)
+        }
+
+        @Test
+        fun aSetLiteralIsTaggedSet() {
+            val right = comparisonWithCollection("""{"type":"set","value":[{"type":"string","value":"a"},{"type":"string","value":"b"}]}""").right as Operand.Literal
+            assertThat(right.collection).isEqualTo(LiteralCollection.SET)
+        }
+
+        @Test
+        @DisplayName("guard: a scalar literal (not array/set) stays untagged -- collection is null")
+        fun aScalarLiteralStaysUntagged() {
+            val right = comparisonWithCollection("""{"type":"string","value":"a"}""").right as Operand.Literal
+            assertThat(right.collection).isNull()
         }
     }
 }

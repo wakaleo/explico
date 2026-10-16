@@ -876,6 +876,45 @@ holds via the two `json.marshal` assignments themselves), `RealisticCallsAndMess
 `RealisticPresentationAcceptanceIT`'s coverage-footer figures for both cards. Tier-2 goldens and
 `docs/sample-output` are byte-identical -- no pack policy uses `json.is_valid`.
 
+## Follow-up: collection-literal delimiters outside membership
+
+The cosmetic item the operator had earlier declined to promote on its own, picked up once the
+ranked backlog was exhausted. A small scalar array/set literal rendered as a bare comma list
+(`"a", "b"`) -- right inside a membership phrase ("is one of `"a", "b"`", spec §6.3's own frozen
+wording) but ambiguous everywhere else: an array and a set literal of the SAME elements rendered
+identically, and the real `K8S-003` fixture (`realistic/policies/k8s.rego`) read `` `"owner",
+"team"` minus `provided` is not empty `` -- two operands indistinguishable from one collection.
+Fixture `src/test/resources/realistic/literal-delimiters/lits.rego`, pinned by
+`RealisticLiteralDelimitersAcceptanceIT`, a new `AstMapperTest.LiteralCollectionKind` nested
+class, a new `ExpressionRendererTest.LiteralCollectionDelimiters` nested class, and two new
+`CanonicalizerTest` cases.
+
+| Finding | Was | Now |
+|---|---|---|
+| A collection literal (array/set) in any operand position OTHER than a membership test's own collection side, e.g. `{"owner","team"} - provided`, `input.tags == ["a","b"]`, `count(["a","b"]) > 1`. | Bare comma list inside one backtick span -- `` `"owner", "team"` `` -- indistinguishable from an array, a set, or (worse) two separate operands. | `Operand.Literal` gained a defaulted `collection: LiteralCollection?` field (`ARRAY`/`SET`, null for a scalar or object literal), set only by `mapCollectionLiteral`. `ExpressionRenderer.renderOperand`'s `Literal` branch wraps a tagged literal in its own Rego delimiters inside the same backtick span -- `` `{"owner", "team"}` `` / `` `["a", "b"]` `` -- everywhere, with ONE deliberate exception. |
+| The collection side of a membership test, e.g. `input.env in {"prod","staging"}`. | `` `env` is one of `"prod", "staging"` ``. | **Unchanged.** `renderMembershipCollection` bypasses the generic delimiter handling for exactly this one position -- the bare-list wording is spec §6.3's own frozen phrasing, confirmed against the already-frozen goldens before touching anything. |
+
+`renderOperandPair` (the shared helper behind `Comparison`) still applies delimiters uniformly to
+both sides -- correct, since neither side of a comparison is the special membership position.
+`Condition.Membership`'s own render branch was rewritten by hand (no longer using
+`renderOperandPair`) specifically so its MEMBER side keeps the ordinary delimiter-adding path
+while only its COLLECTION side bypasses it.
+
+**CHALLENGE edge case found while driving this, not anticipated by the design**: the membership's
+own MEMBER side can itself be a collection literal (`[1, 2] in pairs`, probe 31's real shape) --
+this is a completely ordinary operand position, not the frozen one, so it correctly keeps its
+`[...]` brackets. The probe's existing pinned assertion (`` `1, 2` is one of `pairs` ``) was
+repointed to `` `[1, 2]` is one of `pairs` `` -- strictly more faithful, not a behavior regression,
+since the bare form read as two separate values rather than one array.
+
+`Canonicalizer.canonicalOperand`'s `Literal` branch now hashes `collection` alongside `rendered`:
+an array and a set of the identical elements are different Rego values and must hash differently
+(confirmed with a real fixture pair), while reformatting whitespace or adding a comment around an
+unchanged set literal still hashes identically (confirmed with a third fixture).
+
+Zero acceptance-pack impact: the pack's one collection literal is the membership case, which is
+unchanged by construction. `generateSampleDocs` and all Tier-2 goldens are byte-identical.
+
 ## Review pass: link anchors that resolve (item 18)
 
 Found by the new corpus-wide invariant tier (`RealisticCorpusInvariantsAcceptanceIT`: no crash,

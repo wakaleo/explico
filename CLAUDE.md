@@ -1284,3 +1284,18 @@ was proposed in, not deferred to a separate increment.
 - Repinned, not weakened: three fixtures/ITs used `json.is_valid` as their "unsupported builtin"
   example (`realistic/builtins/{builtins,helpers}.rego`, `realistic/functions/funcs.rego`); updated
   to the new coverage figures and fence counts. Goldens and `docs/sample-output` unchanged.
+
+## Follow-up: collection-literal delimiters outside membership
+
+- `Operand.Literal.collection: LiteralCollection?` (`ARRAY`/`SET`, null for scalar/object) set only
+  by `mapCollectionLiteral`. `ExpressionRenderer` adds `[...]`/`{...}` inside the same backtick span
+  everywhere EXCEPT a membership's own collection side (`renderMembershipCollection`, bypasses the
+  generic path for exactly that one position) -- the frozen §6.3 bare-list wording there is
+  unchanged. The membership's MEMBER side is an ordinary position and still gets delimiters.
+- CHALLENGE edge case found while driving this: probe 31's member side (`[1, 2] in pairs`) is
+  itself a collection literal -- correctly keeps its brackets; the probe's pinned assertion was
+  repointed (`` `[1, 2]` is one of `pairs` ``, strictly more faithful, not a regression).
+- `Canonicalizer` hashes `collection` alongside `rendered` (array vs set of same elements now hash
+  differently; confirmed reformatting/comments around an unchanged literal still hash the same).
+- Zero acceptance-pack impact: the pack's one collection literal is the membership case, unchanged
+  by construction. Goldens and `docs/sample-output` unchanged.

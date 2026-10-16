@@ -46,6 +46,7 @@ package io.explico.parse
 import io.explico.model.Condition
 import io.explico.model.ConstantValue
 import io.explico.model.DefaultValue
+import io.explico.model.LiteralCollection
 import io.explico.model.Operand
 import io.explico.model.Operator
 import io.explico.model.PackageMetadata
@@ -1084,7 +1085,11 @@ internal object AstMapper {
         val rendered = elements.joinToString(", ") { el ->
             (mapOperand(el, symbolTable, ctx) as ConstructResult.Ok).let { (it.operand as Operand.Literal).rendered }
         }
-        return ConstructResult.Ok(Operand.Literal(rendered))
+        // Spec §14 promotion: records which Rego syntax produced this literal, so the renderer can
+        // add faithful delimiters (`[...]`/`{...}`) outside the one frozen bare-list position (a
+        // membership test's own collection side) -- see Operand.Literal's own KDoc.
+        val collection = if (term.type == "set") LiteralCollection.SET else LiteralCollection.ARRAY
+        return ConstructResult.Ok(Operand.Literal(rendered, collection))
     }
 
     /**

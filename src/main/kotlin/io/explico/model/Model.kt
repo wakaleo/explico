@@ -162,13 +162,25 @@ public sealed interface Condition {
 /** A comparison operator (spec §5). */
 public enum class Operator { EQ, NEQ, GT, GTE, LT, LTE }
 
+/** Which Rego collection syntax a promoted literal collection used (spec §14 promotion); see [Operand.Literal]. */
+public enum class LiteralCollection { ARRAY, SET }
+
 /** One side of a comparison, membership test, or builtin call. */
 public sealed interface Operand {
     /** An `input`/`data` field-chain reference, e.g. `input.deployment.environment`. */
     public data class Path(val segments: List<PathSegment>) : Operand
 
-    /** A scalar (or small array/set) literal, already rendered as Rego source, e.g. `"production"`. */
-    public data class Literal(val rendered: String) : Operand
+    /**
+     * A scalar (or small array/set) literal, already rendered as Rego source, e.g. `"production"`.
+     * [collection] records which Rego collection syntax a promoted array/set literal used (spec
+     * §14 promotion) -- null for a scalar or an object literal. [rendered] itself is always the
+     * bare, comma-joined element list regardless of [collection]; the renderer adds delimiters
+     * (`[...]`/`{...}`) outside the one position where a bare list is the established, frozen
+     * phrasing (the collection side of a membership test, `` `x` is one of `"a", "b"` ``) -- an
+     * array and a set of the SAME elements are different Rego values, so this also distinguishes
+     * them for hashing (`Canonicalizer`), which a bare [rendered] string alone could not.
+     */
+    public data class Literal(val rendered: String, val collection: LiteralCollection? = null) : Operand
 
     /** A local variable bound to something other than a plain path (spec §5). */
     public data class Variable(val name: String) : Operand
