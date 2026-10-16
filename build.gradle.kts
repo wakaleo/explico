@@ -44,7 +44,7 @@ sourceSets {
     }
 }
 
-val docsSnippetsImplementation by configurations.getting {
+val docsSnippetsImplementation = configurations.getByName("docsSnippetsImplementation") {
     extendsFrom(configurations.implementation.get())
 }
 
@@ -101,7 +101,7 @@ tasks.shadowJar {
 val demoResourceFiles = fileTree("src/test/resources/acceptance") {
     include("policies/**", "examples/**", "data/**")
 }
-val generateDemoResources by tasks.registering(Copy::class) {
+val generateDemoResources = tasks.register<Copy>("generateDemoResources") {
     from(demoResourceFiles)
     into(layout.buildDirectory.dir("generated/demoResources"))
     doLast {
@@ -143,7 +143,7 @@ tasks.processResources {
 // output. A README.md marking the directory as generated is added afterward (doLast), not baked
 // into the render itself, since `render`'s own --out semantics fully replaces the directory first
 // -- writing the marker before the render would just have it deleted again.
-val generateSampleDocs by tasks.registering(JavaExec::class) {
+val generateSampleDocs = tasks.register<JavaExec>("generateSampleDocs") {
     group = "documentation"
     description = "Renders samples/ into docs/sample-output/ (dogfooding, spec §13.7)."
     dependsOn(tasks.classes)
@@ -189,7 +189,7 @@ tasks.test {
 // run explicitly. `-Dexplico.updateGolden=true` regenerates the Tier-2 goldens
 // instead of comparing against them -- a deliberate, reviewed act, never a
 // side effect of getting a build green.
-val acceptanceTest by tasks.registering(Test::class) {
+val acceptanceTest = tasks.register<Test>("acceptanceTest") {
     description = "Runs Tier-1 acceptance tests and Tier-2 golden tests (*IT classes)."
     group = "verification"
     useJUnitPlatform()
