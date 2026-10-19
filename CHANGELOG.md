@@ -1,12 +1,20 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
+
+A new opt-in feature, and fixes for two defects found while building it. Recommended over 0.1.1, especially on Windows.
 
 - **Added:** `--generate-examples` (library: `Explico.render(..., generateExamples = true)`). explico derives worked examples itself from
   each rule's conditions where the author's own fixtures leave a gap: inputs that satisfy a rule body and "near-misses" that break exactly one
   condition, each **verified by `opa eval`** and shown in a separate, labelled *Generated examples* section with mechanical names. Off by
   default (output is byte-identical without it). Bodies it cannot model get none.
 - **Added:** `RuleBody.messageArguments` (the plain input paths a message's `sprintf` reads) and `RenderedDocs.generatedExamples`.
+- **Fixed (Windows):** worked examples failed for any policy directory given as an absolute path with a drive letter (`D:\policies`):
+  `opa eval --data` treats everything before the first `:` as a document prefix, so `D:\a\x` was read as prefix `D` plus path `\a\x`.
+  Such paths (and POSIX directories with a colon in their name) are now passed as `file://` URLs. Relative paths were never affected.
+- **Fixed:** an `opa` failure reported on stdout (as `opa eval --format json` does) produced an exception with an empty message; it now
+  carries opa's output, or at least the exit code.
+- **Changed:** failed tests now print their full assertion message in the Gradle/CI log (no effect on users).
 - **Changed:** a different `sprintf` argument path now changes a rule's logic hash for `explico diff` (it changes the produced message).
 
 ## 0.1.1

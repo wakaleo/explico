@@ -16,7 +16,7 @@ plugins {
 // no domain ownership needed) are independent of the `io.explico` Kotlin package namespace: only
 // the published artifact's groupId changes here, no source package is renamed.
 group = "io.github.wakaleo"
-version = "0.1.1"
+version = "0.2.0"
 
 repositories {
     mavenCentral()
