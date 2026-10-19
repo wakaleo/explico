@@ -1,0 +1,12 @@
+# Byte-exact goldens, generated docs and Rego source text must be identical on every OS: a Windows
+# checkout with core.autocrlf=true would otherwise turn them into CRLF and fail the golden tests.
+* text=auto eol=lf
+
+# Windows batch files conventionally keep CRLF.
+*.bat text eol=crlf
+
+*.jar binary
+*.pdf binary
+*.pptx binary
+*.woff2 binary
+*.png binary

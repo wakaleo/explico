@@ -7,7 +7,24 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: build (${{ matrix.os }}, opa ${{ matrix.opa }})
+    runs-on: ${{ matrix.os }}
+    # The latest-opa row is a canary: it reports a newer opa breaking us without blocking merges.
+    continue-on-error: ${{ matrix.canary == true }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The reference configuration: also the only row that does the publish smoke test and the
+          # generated-docs drift checks (those are not OS-specific).
+          - { os: ubuntu-latest, opa: '1.19.0', primary: true }
+          - { os: macos-latest, opa: '1.19.0' }
+          - { os: windows-latest, opa: '1.19.0' }
+          - { os: ubuntu-latest, opa: 'latest', canary: true }
+    defaults:
+      run:
+        # bash on every OS (Git Bash on Windows) so ./gradlew and the multi-line steps behave the same.
+        shell: bash
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -23,10 +40,10 @@ jobs:
 
       # Pinned exactly, per CLAUDE.md: the acceptance pack (and its frozen goldens) was validated
       # against this exact opa version. A newer opa could silently change parse/eval output shape.
-      - name: Install opa 1.19.0
+      - name: Install opa ${{ matrix.opa }}
         uses: open-policy-agent/setup-opa@v2
         with:
-          version: 1.19.0
+          version: ${{ matrix.opa }}
 
       - name: Confirm opa version
         run: opa version
@@ -38,9 +55,11 @@ jobs:
       # project (deliberately not a subproject of the root build -- see CLAUDE.md) can resolve it
       # the way a real external consumer would, not via Gradle project-dependency substitution.
       - name: Publish to Maven Local (for the consumer smoke test)
+        if: matrix.primary
         run: ./gradlew publishToMavenLocal --console=plain
 
       - name: Consumer smoke test
+        if: matrix.primary
         run: ./gradlew -p consumer-smoke-test run --console=plain
 
       # Dogfooding drift check (spec §13.7): docs/sample-output/ is committed, generated output --
@@ -48,12 +67,14 @@ jobs:
       # this step catches the divergence. Same recipe docs/user-guide.md documents for a consumer's
       # own CI, applied to this repository's own generated docs.
       - name: Regenerate sample docs and check for drift
+        if: matrix.primary
         run: |
           ./gradlew generateSampleDocs --console=plain
           git diff --exit-code -- docs/sample-output
 
       # Same drift check for the showcase pages (docs/showcase/, built from samples/showcase/).
       - name: Regenerate showcase and check for drift
+        if: matrix.primary
         run: |
           ./gradlew generateShowcase --console=plain
           git diff --exit-code -- docs/showcase
