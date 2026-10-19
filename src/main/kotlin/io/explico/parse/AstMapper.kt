@@ -578,7 +578,7 @@ internal object AstMapper {
             // The message assignment (`msg := sprintf(...)`) is a RULE-level notion; a `with`-qualified
             // expression is never treated as one (it falls to [mapBodyExpr], which demotes it).
             if (expr.with == null) {
-                val assignedMessage = messageVar?.let { matchMessageAssignment(expr, it) }
+                val assignedMessage = messageVar?.let { matchMessageAssignment(expr, it, symbolTable, ctx) }
                 if (assignedMessage != null) {
                     producesValue = renderProducesValue(assignedMessage, symbolTable)
                     messageTemplate = computeMessageTemplate(assignedMessage)
@@ -622,7 +622,7 @@ internal object AstMapper {
         // the right-hand side still becomes a visible Unrendered bullet (as before), but `x` is
         // now known to be *assigned*, not merely absent, so later bare uses render as
         // `Operand.Variable(x)` per spec §5's own wording, not the generic unbound fallback.
-        val assignment = matchAssignment(expr)
+        val assignment = matchAssignment(expr) ?: matchRenderableUnificationBinding(expr, symbolTable, ctx)
         if (assignment != null) {
             val (targetVar, valueTerm) = assignment
             val plainPath = plainPathOperandOrNull(valueTerm, symbolTable, ctx)
@@ -710,8 +710,46 @@ internal object AstMapper {
     }
 
     /** If [expr] is `<messageVar> := <value>`, returns the value term; else null. */
-    private fun matchMessageAssignment(expr: OpaExpr, messageVar: String): OpaTerm? =
-        matchAssignment(expr)?.takeIf { it.first == messageVar }?.second
+    private fun matchMessageAssignment(expr: OpaExpr, messageVar: String, symbolTable: Map<String, VarBinding>, ctx: MappingContext): OpaTerm? =
+        (matchAssignment(expr) ?: matchFreshUnification(expr, symbolTable, ctx))?.takeIf { it.first == messageVar }?.second
+
+    /**
+     * `x = <value>` / `<value> = x` where `x` is a bare FRESH variable (v0-style code writes `msg = sprintf(...)`,
+     * `c = input.containers[_]`): unifying a variable that has no binding yet BINDS it, exactly like `x := <value>`
+     * (confirmed with `opa eval`; for `x = c[_]` it is `some x in c`). Returns (variable, value term), or null when
+     * the expression is negated, when neither or both sides are a bare fresh variable, or when the variable is
+     * not fresh -- an already-bound variable makes `=` an ordinary equality TEST, handled elsewhere. Fresh means:
+     * no entry in [symbolTable], not a rule of this package (that would be a reference), not `input`/`data`,
+     * and not the anonymous `_`.
+     */
+    private fun matchFreshUnification(expr: OpaExpr, symbolTable: Map<String, VarBinding>, ctx: MappingContext): Pair<String, OpaTerm>? {
+        if (expr.negated) return null
+        val terms = expr.terms as? JsonArray ?: return null
+        if (terms.size != 3) return null
+        val (name, args) = decodeCallShape(decodeTermList(terms)) ?: return null
+        if (name != "eq" || args.size != 2) return null
+        fun fresh(term: OpaTerm): Boolean {
+            if (term.type != "var" || sourceText(term.location) == "_") return false
+            val variable = stringValueOf(term)
+            return variable !in symbolTable && variable != "input" && variable != "data" &&
+                ctx.registry[ctx.currentPackage]?.contains(variable) != true
+        }
+        val leftFresh = fresh(args[0])
+        val rightFresh = fresh(args[1])
+        if (leftFresh == rightFresh) return null
+        return if (leftFresh) stringValueOf(args[0]) to args[1] else stringValueOf(args[1]) to args[0]
+    }
+
+    /**
+     * [matchFreshUnification] restricted to a value that renders completely (a plain path, a wildcard element, or a
+     * fully rendered expression) -- the same two shapes a `:=` is substituted for. Anything else is not claimed as a
+     * binding and keeps the existing "function-call" fallback, so the variable is never half-understood.
+     */
+    private fun matchRenderableUnificationBinding(expr: OpaExpr, symbolTable: Map<String, VarBinding>, ctx: MappingContext): Pair<String, OpaTerm>? {
+        val binding = matchFreshUnification(expr, symbolTable, ctx) ?: return null
+        val value = binding.second
+        return binding.takeIf { plainPathOperandOrNull(value, symbolTable, ctx) != null || expressionOperandOrNull(value, symbolTable, ctx) != null }
+    }
 
     /** If [expr] is `<localVar> := <value>` (any local variable, not just the message var), returns (variable name, value term); else null. */
     private fun matchAssignment(expr: OpaExpr): Pair<String, OpaTerm>? {

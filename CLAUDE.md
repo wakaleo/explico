@@ -1363,3 +1363,9 @@ a rule or function reference, or an unresolvable head keeps the whole comprehens
 Tier-1 assertions were amended (explicit operator approval; see the acceptance README's note) and three Tier-2 goldens
 regenerated after line-by-line review. Never relax the all-or-nothing rule or render half of a comprehension.
 `some k, v in c`: the key binds as `VarBinding.IterationKey` (plain variable `k`), not as an element.
+
+## Unification as a binding (spec §14.37)
+
+`x = <value>` with a bare FRESH `x` is a binding like `:=` (`matchFreshUnification`); the value must fully render, the
+expression must not be negated, and an already-bound `x` stays an equality test. Do not widen it to destructuring or to
+values that do not render.

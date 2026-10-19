@@ -1659,3 +1659,12 @@ coverage), recorded in the README and `ReleaseGovernanceAcceptanceIT`. The Tier-
 rendered as `c ▸ [each k]` -- the value at k -- and `startswith(k, "team-")` read as a test on the value. The key now
 binds as `VarBinding.IterationKey`: a bare use renders as the plain variable `k`, as an index (`m[k]`) it is unchanged,
 as a ref root it falls back.
+
+### 14.37 Unification as a binding
+
+`AstMapper.matchFreshUnification` recognises `eq` where exactly one side is a bare fresh variable (absent from the body's
+bindings, not a rule of the package, not `input`/`data`/`_`) and the expression is not negated; `matchRenderableUnificationBinding`
+additionally requires the other side to be a plain path, wildcard element or fully rendered expression. Such an expression is
+then handled by the same branch as `x := <value>` (substitution / `Condition.SomeIn` / expression binding), and
+`msg = <value>` for the head's message variable is accepted wherever `msg := <value>` is. Everything else keeps the
+"function-call" fallback.

@@ -1367,10 +1367,11 @@ class AstMapperTest {
     inner class UnificationAsPureComparison {
 
         @Test
-        fun freshBareVarOnOneSideStaysUnclassified() {
-            // `x = input.deployment.environment`, x never bound before this point -- possibly a
-            // fresh-variable bind (equivalent to `x := ...`), not provably a pure comparison, so
-            // spec §14's promotion must NOT treat this as Condition.Comparison.
+        fun freshBareVarUnifiedWithAPlainPathIsABindingNotAComparison() {
+            // `x = input.deployment.environment`, x never bound before this point: a fresh-variable
+            // bind, equivalent to `x := ...` (confirmed with opa eval). It is NOT a Condition.Comparison
+            // (spec §14's promotion), and since the right side is a plain path it now substitutes like
+            // `:=`, leaving no condition at all. (This test used to pin it as a "function-call" fallback.)
             val module = moduleOf(
                 """
                 {
@@ -1395,10 +1396,55 @@ class AstMapperTest {
                 """.trimIndent()
             )
             val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
-            assertThat(body.conditions).hasSize(1)
-            val fallback = body.conditions.single() as Condition.Unrendered
-            assertThat(fallback.reason).isEqualTo("function-call")
-            assertThat(fallback.sourceText).isEqualTo("x = input.deployment.environment")
+            assertThat(body.conditions).isEmpty()
+        }
+
+        private fun eqBody(vararg exprJson: String): List<Condition> {
+            val module = moduleOf(
+                """
+                {"package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                 "rules": [{"head": {"name": "allow", "ref": [{"type":"var","value":"allow"}]}, "body": [${exprJson.joinToString(",")}]},
+                           {"head": {"name": "limit", "ref": [{"type":"var","value":"limit"}], "value": {"type":"number","value":1}}, "body": []}]}
+                """.trimIndent()
+            )
+            return AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.single { it.name == "allow" }.bodies[0].conditions
+        }
+
+        private fun eqExpr(text: String, leftJson: String, rightJson: String, negated: Boolean = false) =
+            """{"index": 0, "negated": $negated, "location": {"row":1,"text":"${b64(text)}"}, "terms": [{"type":"ref","value":[{"type":"var","value":"eq"}]}, $leftJson, $rightJson]}"""
+
+        private val inputY = """{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"y"}]}"""
+
+        @Test
+        fun aNegatedUnificationIsNeverABinding() {
+            val conditions = eqBody(eqExpr("not x = input.y", """{"type":"var","value":"x"}""", inputY, negated = true))
+            assertThat(conditions.single()).isInstanceOf(Condition.Unrendered::class.java)
+        }
+
+        @Test
+        fun twoFreshVariablesAreNotClaimedAsABinding() {
+            val conditions = eqBody(eqExpr("x = y", """{"type":"var","value":"x"}""", """{"type":"var","value":"y"}"""))
+            assertThat(conditions.single()).isInstanceOf(Condition.Unrendered::class.java)
+        }
+
+        @Test
+        fun theAnonymousWildcardIsNeverAFreshVariable() {
+            val wildcard = """{"type":"var","value":"${'$'}0","location":{"text":"${b64("_")}"}}"""
+            val conditions = eqBody(eqExpr("_ = input.y", wildcard, inputY))
+            assertThat(conditions.single()).isInstanceOf(Condition.Unrendered::class.java)
+        }
+
+        @Test
+        fun aVariableThatNamesARuleOfThisPackageIsAReferenceSoTheUnificationIsAComparison() {
+            // `limit = input.y` where `limit` is a rule of this package: not a fresh variable, an equality test.
+            val conditions = eqBody(eqExpr("limit = input.y", """{"type":"var","value":"limit"}""", inputY))
+            assertThat(conditions.single()).isInstanceOf(Condition.Comparison::class.java)
+        }
+
+        @Test
+        fun aFreshVariableOnTheRightIsABindingToo() {
+            val conditions = eqBody(eqExpr("input.y = x", inputY, """{"type":"var","value":"x"}"""))
+            assertThat(conditions).isEmpty()
         }
 
         @Test

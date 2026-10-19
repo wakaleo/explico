@@ -74,7 +74,7 @@ guessing.
 | Operand-position builtins outside `count`/`lower`/`upper`/`object.get`/`time.now_ns`/arithmetic/`concat` (any user-defined function used as an operand) | n/a (`Operand.Unrendered`, condition itself still classifies) | No `Operand` shape decided yet for these (differing arity, no template precedent). Probe 15 confirms this is safe: the verbatim call text is shown inline, never silently dropped or guessed. |
 | `object.get(o, k, d)` where `k` is not a plain string literal (a var, a number, a computed expression) | n/a (`Operand.Unrendered`) | No breadcrumb-extension rule exists for a non-string key — guessing one would be exactly the "widen a template to swallow a construct approximately" failure mode this audit exists to catch. New `AstMapperTest` case (`objectGetWithANonStringKeyIsNotPromoted`); not exercised by any probe file. |
 | `count(...)` bare in condition position | `function-call` | Spec's explicit rule: operand-position builtins never render as conditions. Probe 37. |
-| `=` unification used as **binding/destructuring** (`[x, y] = [...]`, a fresh var on either side) | `function-call` | **Partially promoted, further follow-up session** — the pure-comparison case (both sides already bound) is now `Comparison` (see "Rendered faithfully" above); a genuine bind still falls back, since `Condition.Comparison` can't represent "this also assigns x and y" — the mapper positively confirms neither side maps to `Operand.Unrendered` (its signal that a fresh binding may be in play) before promoting. Probe 04. A **negated** `=` (`not x = input.y`) also still falls back regardless of whether it's a pure comparison — see the disclosed gap below. |
+| `=` unification used as **destructuring** (`[x, y] = [...]`), or binding a fresh variable to something that does not fully render | `function-call` | **Partially promoted, further follow-up sessions** (a fresh bare variable bound to a plain path, wildcard element or fully rendered expression IS promoted -- see "Unification as a binding" below) — the pure-comparison case (both sides already bound) is now `Comparison` (see "Rendered faithfully" above); a genuine bind still falls back, since `Condition.Comparison` can't represent "this also assigns x and y" — the mapper positively confirms neither side maps to `Operand.Unrendered` (its signal that a fresh binding may be in play) before promoting. Probe 04. A **negated** `=` (`not x = input.y`) also still falls back regardless of whether it's a pure comparison — see the disclosed gap below. |
 | Object literal — more than 5 pairs, a non-string key, or a nested (non-scalar) value | n/a (`Operand.Unrendered`, condition itself still classifies) | Same conservative scope as the small array/set literal's own ≤5-element/scalar-only restriction, extended to objects (see "Rendered faithfully" above and the promotion write-up below). New `AstMapperTest` cases; not exercised by any probe file. |
 | Ref-head rule reference with a DYNAMIC key (`users_by_role.admin.u1.name`, where `users_by_role[role][id] := user` is keyed by the rule's own local variables) | n/a (`Operand.Unrendered`) | **Deliberately not promoted** — see the promotion write-up below. An exact-full-path ref-head reference (`fruit.apple.seeds`) IS promoted now, see "Rendered faithfully" above. Probe 14. |
 | Declare-only `some` (`some key`, `some i, j` — no `in`) | `unclassified` | Correctly falls back once the confirmed crash (below) was fixed; `i`/`j` never become iteration bindings, so a later `arr[i]` still falls back too even though `arr` itself may now be a promoted substitution binding. Probes 07/12. |
@@ -1128,3 +1128,19 @@ helper. Measured on the real-world corpora (file mode): see the closing assessme
 
 Fixed on the way: `some k, v in c` bound the KEY as an element (`c ▸ [each k]`), so `startswith(k, "x")` read as a test on the
 value. The key is now the plain variable `k`.
+
+## Unification as a binding
+
+`x = <value>` / `<value> = x` where `x` is a bare FRESH variable binds it, exactly like `x := <value>` (and `x = c[_]` is
+`some x in c`); confirmed with `opa eval` in both orientations. Rego v0 code writes this everywhere (`msg = sprintf(...)`,
+`c = containers[_]`). It is now handled like the corresponding `:=`: a plain path substitutes, a wildcard element becomes
+"for some x in ...", a fully rendered expression substitutes, and `msg = ...` yields the *Produces* line.
+
+Deliberately conservative: exactly one side must be a bare fresh variable (no entry in the body's bindings, not a rule of the
+package, not `input`/`data`/`_`); never negated; the other side must render completely, otherwise the old "function-call"
+fallback stands. An already-bound variable keeps being an ordinary equality TEST (`any of:` for a wildcard), and destructuring
+(`[a, b] = f(x)`) is untouched. This also unblocks comprehensions whose body binds with `=`.
+
+Measured (file mode): conftest 58% -> 73%, Trivy 63% -> 65%, Gatekeeper 67%, Trivy Kubernetes slice 76% -> 80%. Most of that
+movement is the binding lines leaving the denominator (a substituted `:=` was never a condition either); the rendered count is
+unchanged. The substantive gain is that later uses of the variable read as real paths and v0 messages get their *Produces* line.
