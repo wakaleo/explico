@@ -247,7 +247,8 @@ internal object AstMapper {
      * `opa inspect ... src/.../policies`) -- NOT the same string as [ParsedFile.sourceFile], which
      * is relative to `dir` (spec §8.1, `Explico.load`'s own `policyDir.relativize`). Matching by
      * package first, then by [String.endsWith] against each candidate file's own `sourceFile`,
-     * sidesteps needing to know or reconstruct that directory prefix at all.
+     * sidesteps needing to know or reconstruct that directory prefix at all. On Windows opa reports
+     * backslash-separated paths, so the separator is normalised to '/' before comparing.
      */
     private fun buildMetadataIndex(inspectResult: OpaInspectResult?, files: List<ParsedFile>): Map<Pair<String, Int>, RuleMetadata> {
         val filesByPackage: Map<String, List<ParsedFile>> = files.groupBy { packagePath(it.module) }
@@ -261,7 +262,8 @@ internal object AstMapper {
             if (segments.size < 2) continue
             val entryPackage = segments.dropLast(1).joinToString(".")
             val ruleName = segments.last()
-            val entryFile = entry.location.file
+            // opa reports Windows paths with backslashes; ParsedFile.sourceFile is always '/'-separated.
+            val entryFile = entry.location.file?.replace('\\', '/')
             val entryRow = entry.location.row
             val metadata = RuleMetadata(
                 title = entry.annotations.title,

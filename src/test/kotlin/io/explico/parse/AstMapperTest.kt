@@ -382,6 +382,33 @@ class AstMapperTest {
         }
 
         @Test
+        fun metadataStillAttachesWhenOpaReportsWindowsStyleBackslashPaths() {
+            // On Windows `opa inspect` reports `location.file` as `C:\work\policies\approvals\change_approval.rego`,
+            // while ParsedFile.sourceFile is always '/'-separated; the match must not depend on the separator.
+            val windowsInspect = opaJson.decodeFromString(
+                io.explico.opa.OpaInspectResult.serializer(),
+                opaJson.encodeToString(io.explico.opa.OpaInspectResult.serializer(), inspectFixture()).let { json ->
+                    Regex("\"file\":\"([^\"]*)\"").replace(json) { m ->
+                        "\"file\":\"C:\\\\work\\\\policies\\\\" + m.groupValues[1].substringAfterLast("policies/").replace("/", "\\\\") + "\""
+                    }
+                },
+            )
+            assertThat(windowsInspect.annotations.mapNotNull { it.location.file }).allSatisfy { assertThat(it).contains("\\").doesNotContain("/") }
+
+            val rule = AstMapper.mapPolicySet(
+                listOf(
+                    ParsedFile("approvals/change_approval.rego", fixture("change_approval")),
+                    ParsedFile("evidence/pipeline_evidence.rego", fixture("pipeline_evidence")),
+                    ParsedFile("provenance/artifact_provenance.rego", fixture("artifact_provenance")),
+                    ParsedFile("governance/release_governance.rego", fixture("release_governance")),
+                    ParsedFile("exemptions/exemptions.rego", fixture("exemptions")),
+                ),
+                windowsInspect,
+            ).packages.first { it.path == "release.approvals" }.rules.single { it.name == "deny" }
+            assertThat(rule.metadata?.controlId).isEqualTo("REL-001")
+        }
+
+        @Test
         fun noInspectResultLeavesAllMetadataNullExactlyAsBefore() {
             val rule = wholePack().packages.first { it.path == "release.approvals" }.rules.single { it.name == "deny" }
             assertThat(rule.metadata).isNull()
