@@ -4,7 +4,7 @@
  * so a crash or an opa rejection in one file never hides the rest, and records per-file status and
  * rendering coverage. See README.md in this directory for how to run it and how to read the output.
  *
- *   java -cp "build/install/explico/lib/*" scripts/corpus-benchmark/Bench.java <corpus-dir> <out-dir> [file|dir|all]
+ *   java -cp "build/install/explico/lib/*" scripts/corpus-benchmark/Bench.java <corpus-dir> <out-dir> [file|dir|all] [v1|v0]
  *
  * Granularity (third argument, default "file"): "file" loads each file alone; "dir" loads each
  * directory's files together (same-package helpers in sibling files resolve); "all" loads the whole
@@ -22,8 +22,10 @@ import java.util.stream.*;
 /** Throwaway corpus benchmark: one temp dir per .rego file, in-process, never aborting on a crash. */
 public class Bench {
     public static void main(String[] a) throws Exception {
-        if (a.length < 2 || a.length > 3) { System.err.println("usage: Bench.java <corpus-dir> <out-dir> [file|dir|all]"); System.exit(2); }
-        String mode = a.length == 3 ? a[2] : "file";
+        if (a.length < 2 || a.length > 4) { System.err.println("usage: Bench.java <corpus-dir> <out-dir> [file|dir|all] [v1|v0]"); System.exit(2); }
+        io.explico.model.RegoVersion version = a.length == 4 && a[3].equals("v0") ? io.explico.model.RegoVersion.V0 : io.explico.model.RegoVersion.V1;
+        if (a.length == 4 && !List.of("v1", "v0").contains(a[3])) { System.err.println("version must be v1 or v0"); System.exit(2); }
+        String mode = a.length >= 3 ? a[2] : "file";
         if (!List.of("file", "dir", "all").contains(mode)) { System.err.println("mode must be file, dir or all"); System.exit(2); }
         Path root = Path.of(a[0]);
         Path out = Path.of(a[1]);
@@ -56,7 +58,7 @@ public class Bench {
                     }
                     String status; int r = 0, t = 0; String cls = "", msg = "";
                     try {
-                        var ps = Explico.load(tmp);
+                        var ps = Explico.load(tmp, version);
                         try {
                             RenderedDocs d = Explico.render(ps, tmp);
                             status = "OK"; r = d.getCoverage().getRendered(); t = d.getCoverage().getTotal();

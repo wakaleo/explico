@@ -26,13 +26,15 @@ Outputs, in `<out-dir>`:
 | `warnings.txt` | One line per rule body whose mapping threw and was isolated (spec §14.29): file and the stderr warning. Should be empty; any line is a mapper bug worth a test. |
 | `fallbacks.txt` | The first line of every `⚠ not rendered` block, for ranking which constructs to promote next. |
 
-**Rego v0 corpora** (e.g. the Gatekeeper library) are rejected by OPA 1.x by default. To measure them
-anyway, point `OPA_BIN` at the wrapper, which adds `--v0-compatible`:
+**Rego v0 corpora** (e.g. the Gatekeeper library) are rejected by OPA 1.x by default. Pass `v0` as the
+fourth argument (`RegoVersion.V0`, the same as the CLI's `--rego-version v0`):
 
 ```sh
-OPA_BIN=$PWD/scripts/corpus-benchmark/opa-v0 java -cp "build/install/explico/lib/*" \
-    scripts/corpus-benchmark/Bench.java /tmp/corpus/gatekeeper-library /tmp/out/gatekeeper
+java -cp "build/install/explico/lib/*" \
+    scripts/corpus-benchmark/Bench.java /tmp/corpus/gatekeeper-library /tmp/out/gatekeeper dir v0
 ```
+
+(`opa-v0` in this directory is the older wrapper approach, kept only for measuring versions of explico that predate `RegoVersion`.)
 
 Reading `LOAD_FAIL`: an `OpaInvocationException` is OPA itself rejecting the file -- v0 syntax, or an
 *undefined function* because the file depends on another one that this one-file-at-a-time method does
