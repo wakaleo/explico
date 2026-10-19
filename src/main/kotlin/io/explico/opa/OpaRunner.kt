@@ -112,7 +112,10 @@ internal object OpaRunner {
         stderrReader.join()
 
         if (process.exitValue() != 0) {
-            throw OpaInvocationException(stderr.toString())
+            // `opa eval --format json` reports an evaluation error as JSON on STDOUT and leaves stderr empty, so fall back
+            // to stdout, and finally to the bare exit code: never an empty message.
+            val message = stderr.toString().ifBlank { stdout.toString().trim() }.ifBlank { "opa exited with code ${process.exitValue()}" }
+            throw OpaInvocationException(message)
         }
         return stdout.toString()
     }
