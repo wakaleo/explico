@@ -189,7 +189,22 @@ explico diff samples/policies <your-copy> --out report.md
 | LOGIC_CHANGED | 0 |
 | DOCS_CHANGED | 1 |
 | UNCHANGED | 6 |
+
+## What changed
+
+- REL-004 — Release governance evidence (rev. 2) — documentation changed: title, description
 ```
+
+Right after the summary table, a short **What changed** section lists every
+non-`UNCHANGED` control in one line each — here, just REL-004, naming
+exactly the two metadata fields that actually differ. A `LOGIC_CHANGED`
+control gets its own indented sub-bullets instead (`condition removed:
+...`/`condition added: ...`, a changed message, a changed body count or
+default outcome — whatever the model can mechanically name; see
+`src/test/resources/diff/change-summary/` for a worked example of each
+shape), and its label links straight to the full card below. `REMOVED` and
+`ADDED` controls link too; `DOCS_CHANGED` has no card in this report, so its
+label stays plain text.
 
 The report's one changed section is REL-004, correctly classified
 `DOCS_CHANGED` — its logic hash is identical (no condition, operator, or

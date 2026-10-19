@@ -1426,3 +1426,19 @@ candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFI
 - Goldens/docs: `release-exemptions.md`, `release-governance.md` and the matching `docs/sample-output` files gained the block (the
   pack's own `--data`); `docs/showcase/api-authorization.md` gained one too (a dynamic-key path truncating to `data ▸ grants`).
   `diff-all-categories` unchanged -- the diff report has no `dataDir`.
+
+## Diff change summary (spec §14.42)
+
+- `diff/ChangeSummary.kt`: `bulletFor`/`subBulletsFor`, called from `DiffRenderer.render` between `## Summary` and
+  `## Changes`. `DiffRenderer.render` now computes `changed` (filtered+sorted) ONCE and passes it to both the new
+  section and `appendChanges` -- `appendChanges` no longer re-derives it.
+- `controlId` is in `Canonicalizer.canonicalMetadata`'s hash but `changedMetadataFields` never checks it: a real
+  invariant confirmed from `PolicyDiff`'s own identity resolution (`controlId ?: "$package.$name"`) -- old and new
+  control-ids are provably equal whenever a DiffEntry carries both sides, since a changed control-id is a
+  different identity (REMOVED+ADDED), never this entry.
+- `ExpressionRenderer.render` throws for `Condition.Unrendered`; `conditionPhrasesOf` filters it out before
+  calling render -- that case is covered separately, by the sorted-multiset comparison of its own source texts.
+- Fixtures: `diff/change-summary/{old,new}` (one rule per sub-bullet shape -- gained body, message-only, default
+  outcome, `every`-block-only, pure cross-body regrouping, frameworks-only docs). Goldens touched:
+  `diff-all-categories/expected/diff-report.md` only (regenerated after review); `docs/tutorial.md`'s diff
+  walkthrough re-run for real and updated to show the new section.

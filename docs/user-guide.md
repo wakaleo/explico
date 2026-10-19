@@ -98,6 +98,11 @@ Classifies every control as `ADDED`, `REMOVED`, `LOGIC_CHANGED`,
 `policy-authoring.md`'s control-id section for why that matters). Prints
 just the report's `## Summary` table to stdout.
 
+Right after that table, the report itself gains a `## What changed` section: one line per changed control
+(`removed`/`added`/`documentation changed: <fields>`/`logic changed`), the last with indented sub-bullets naming
+exactly which condition, message, body count, default outcome, or fallback source changed — mechanically derived,
+never a guess at what moved. See `samples/` or `src/test/resources/diff/change-summary/` for worked examples.
+
 ### `explico version`
 
 ```

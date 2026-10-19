@@ -1743,3 +1743,28 @@ then OPA's own value for `data.<path>` as compact JSON, resolved by `opa eval` w
 - **Out of scope:** input paths (worked examples already show those), data formats beyond what `opa eval --data` reads, redaction
   (the supplied data is copied into the docs verbatim -- see SECURITY.md/user-guide.md). The diff report has no `dataDir` and is
   unaffected.
+
+### 14.42 Diff change summary (`## What changed`)
+
+A change approver reading the diff report shouldn't have to scroll through full cards and a unified source diff to
+learn what moved. `DiffRenderer.render` inserts `## What changed` directly after `## Summary` and before `##
+Changes` (absent entirely when nothing changed, same as `## Changes`): one bullet per non-UNCHANGED entry, in
+section order (REMOVED, ADDED, LOGIC_CHANGED, DOCS_CHANGED), then by control id, id-less last.
+- **Bullet:** `- <label> — <what>`. `<label>` is `<control id> — <title>` (falling back to the rule name with no
+  title, or `<package>.<rule>` with no control id), linked to the card's own anchor for REMOVED/ADDED/
+  LOGIC_CHANGED (the same card the entry already renders further down); DOCS_CHANGED has no card in this report,
+  so its label is plain text. `<what>`: `removed`, `added`, `logic changed`, or `documentation changed: <fields>`
+  (exactly which of title/description/frameworks differ, in that order -- `controlId` is also in the metadata
+  hash, but never needs checking here: identity resolution guarantees it's equal whenever both sides exist).
+- **LOGIC_CHANGED sub-bullets** (`ChangeSummary.subBulletsFor`), each mechanically derived, never guessed:
+  `condition removed`/`condition added` (every classified condition rendered exactly as its card words it, with
+  every link stripped -- `Condition.Unrendered` is excluded, since `ExpressionRenderer.render` doesn't handle it
+  at all; set-diffed, removed before added, each side in its own source order, deduped); `message removed`/
+  `message added` (differing `producesValue` strings, same way); `bodies: <old> -> <new>` on a body-count change;
+  `default outcome changed`; `value changed` (a constant rule); `code shown as source changed` when the MULTISET
+  (sorted, order-independent) of `Condition.Unrendered` source texts differs. If none of these produced anything
+  -- the canonical hash changed, so something did, just nothing nameable this way (e.g. the same conditions
+  regrouped across bodies) -- the single fallback `the rule's structure changed; see the source diff below`.
+- **Unaffected:** the `**Source diff**`/cards (unchanged), the CLI's `diff` stdout (still the literal `## Summary`
+  slice, which ends before this new section), and `DiffRendererTest`/`CliProcessTest` (neither pins whole-report
+  text). `render`'s own documents are untouched -- this section lives only in the diff report.

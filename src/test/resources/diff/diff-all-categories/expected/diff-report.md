@@ -12,6 +12,15 @@
 | DOCS_CHANGED | 1 |
 | UNCHANGED | 4 |
 
+## What changed
+
+- [REL-001 — Production change approval](#rel-001) — removed
+- [REL-005 — New deployment window check](#rel-005) — added
+- [REL-003 — Artifact provenance](#rel-003) — logic changed
+  - condition removed: `artifact ▸ source branch` does not start with `"release/"`
+  - condition added: `artifact ▸ source branch` does not start with `"releases/"`
+- REL-004 — Release governance evidence (updated) — documentation changed: title, description
+
 ## Changes
 
 **REMOVED**

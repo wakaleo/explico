@@ -25,10 +25,25 @@ internal object DiffRenderer {
         sb.appendLine("*$DISCLAIMER*")
         sb.appendLine()
         appendSummary(sb, entries)
+        val changed = entries.filter { it.category != DiffCategory.UNCHANGED }
+            .sortedWith(compareBy({ SECTION_ORDER.indexOf(it.category) }, { it.controlId == null }, { it.controlId }))
+        appendWhatChanged(sb, changed)
         val isLinkable = linkableTargetsOf(entries)
-        appendChanges(sb, entries, oldPolicySet, newPolicySet, isLinkable)
+        appendChanges(sb, changed, oldPolicySet, newPolicySet, isLinkable)
         appendCoverageWarning(sb, entries)
         return sb.toString()
+    }
+
+    /** Spec §14.42: a short, plain list before the full cards -- see [ChangeSummary]. Absent when [changed] is empty, same as `## Changes`. */
+    private fun appendWhatChanged(sb: StringBuilder, changed: List<DiffEntry>) {
+        if (changed.isEmpty()) return
+        sb.appendLine("## What changed")
+        sb.appendLine()
+        for (entry in changed) {
+            sb.appendLine(ChangeSummary.bulletFor(entry))
+            for (sub in ChangeSummary.subBulletsFor(entry)) sb.appendLine("  - $sub")
+        }
+        sb.appendLine()
     }
 
     /**
@@ -63,9 +78,7 @@ internal object DiffRenderer {
         sb.appendLine()
     }
 
-    private fun appendChanges(sb: StringBuilder, entries: List<DiffEntry>, oldPolicySet: PolicySet, newPolicySet: PolicySet, isLinkable: (String, String) -> Boolean) {
-        val changed = entries.filter { it.category != DiffCategory.UNCHANGED }
-            .sortedWith(compareBy({ SECTION_ORDER.indexOf(it.category) }, { it.controlId == null }, { it.controlId }))
+    private fun appendChanges(sb: StringBuilder, changed: List<DiffEntry>, oldPolicySet: PolicySet, newPolicySet: PolicySet, isLinkable: (String, String) -> Boolean) {
         if (changed.isEmpty()) return
 
         sb.appendLine("## Changes")
