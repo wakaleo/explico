@@ -155,9 +155,13 @@ internal object MarkdownRenderer {
      * spec §6.7), with that basis stated in the line itself so it is true by construction. Exact, case-sensitive names only;
      * no line for any other name, a function, a split default or a rule with no body -- an effect is never guessed.
      */
-    private fun effectOfMatchLine(rule: RuleGroup): String? {
+    private fun effectOfMatchLine(rule: RuleGroup): String? =
+        effectOfMatchWord(rule)?.let { "**Effect of a match:** $it *(by the `${rule.name}` naming convention)*" }
+
+    /** The outcome word (`❌ denied` / `✅ allowed`) when [rule] has an effect by naming convention, else null. Shared by the card and the JSON export. */
+    internal fun effectOfMatchWord(rule: RuleGroup): String? {
         if (rule.name !in setOf("deny", "violation", "allow") || rule.parameters.isNotEmpty() || rule.isSplitDefaultEntry || rule.bodies.isEmpty()) return null
-        return "**Effect of a match:** ${WorkedExamples.outcomeWord(rule.name, matched = true)} *(by the `${rule.name}` naming convention)*"
+        return WorkedExamples.outcomeWord(rule.name, matched = true)
     }
 
     /**
@@ -341,6 +345,19 @@ internal object MarkdownRenderer {
      * or the one condition it breaks, rendered with the ordinary condition phrasing -- never a scenario the tool invented.
      * Renders nothing at all (no heading, no footer) when the rule received none.
      */
+    /** The mechanical name of a generated example (spec §14.39), derived from its fields only; [renderCondition] words a broken condition. */
+    internal fun generatedExampleName(rule: RuleGroup, entry: GeneratedExample, renderCondition: (Condition) -> String): String {
+        val multiBody = rule.bodies.size > 1
+        return when (entry.kind) {
+            GeneratedExample.Kind.MATCHING ->
+                if (multiBody) "satisfies every condition of Situation ${entry.bodyIndex + 1}" else "satisfies every condition"
+            GeneratedExample.Kind.NEAR_MISS -> {
+                val phrase = renderCondition(rule.bodies[entry.bodyIndex].conditions[entry.brokenConditionIndex!!])
+                if (multiBody) "breaks only: $phrase in Situation ${entry.bodyIndex + 1}" else "breaks only: $phrase"
+            }
+        }
+    }
+
     private fun appendGeneratedExamples(
         sb: StringBuilder,
         rule: RuleGroup,
@@ -354,17 +371,8 @@ internal object MarkdownRenderer {
         sb.appendLine("**Generated examples**")
         sb.appendLine()
         val referencedPaths = WorkedExamples.referencedPaths(rule)
-        val multiBody = rule.bodies.size > 1
         for (entry in entries) {
-            val name = when (entry.kind) {
-                GeneratedExample.Kind.MATCHING ->
-                    if (multiBody) "satisfies every condition of Situation ${entry.bodyIndex + 1}" else "satisfies every condition"
-                GeneratedExample.Kind.NEAR_MISS -> {
-                    val broken = rule.bodies[entry.bodyIndex].conditions[entry.brokenConditionIndex!!]
-                    val phrase = ExpressionRenderer.render(broken, anchorFor, functionAnchorFor, ruleValueAnchorFor)
-                    if (multiBody) "breaks only: $phrase in Situation ${entry.bodyIndex + 1}" else "breaks only: $phrase"
-                }
-            }
+            val name = generatedExampleName(rule, entry) { ExpressionRenderer.render(it, anchorFor, functionAnchorFor, ruleValueAnchorFor) }
             appendExampleEntry(sb, rule, name, entry.outcome, referencedPaths)
         }
         sb.appendLine()
@@ -613,7 +621,7 @@ internal object MarkdownRenderer {
         anchorId?.let { "[$title](${docFileName(packagePath)}#$it)" } ?: title
 
     /** The `<package-path>.md` file a package's own cards live in (spec §6.1's naming: dots become dashes). */
-    private fun docFileName(packagePath: String): String = "${packagePath.replace('.', '-')}.md"
+    internal fun docFileName(packagePath: String): String = "${packagePath.replace('.', '-')}.md"
 
     /** One index row's identity, as the "Controls by framework" matrix needs it: nothing about coverage or title. */
     private data class FrameworkRow(val controlId: String?, val ruleName: String, val packagePath: String, val anchorId: String?, val frameworks: List<String>)

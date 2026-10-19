@@ -168,8 +168,8 @@ project's own `kotlin("jvm")` plugin version.
 ## CLI usage
 
 ```
-explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples]
-explico diff <oldDir> <newDir> --out <reportFile> [--rego-version v1|v0]
+explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json]
+explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--rego-version v1|v0]
 explico version
 explico demo [--fetch-opa]
 ```
@@ -359,6 +359,7 @@ against the coverage percentage reported on every card and package.
 
 - [`docs/showcase/`](docs/showcase/README.md) — **start here to see it in action**: five example policies (Kubernetes admission, storage, API authorization, helpers/functions, and what a fallback looks like), each with the Rego source beside the real rendered output.
 - [`docs/user-guide.md`](docs/user-guide.md) — every CLI flag, every exit code, every public library function.
+- [`docs/json-output.md`](docs/json-output.md) — the machine-readable result (`render --json`, `diff --json`): what every field means and what it promises, for dashboards, GRC tools and scripts.
 - [`docs/policy-authoring.md`](docs/policy-authoring.md) — writing Rego policies explico renders well: METADATA conventions, the distinct-message/Situation-label convention, control-id/frameworks, fallback and coverage as design, fixture authoring.
 - [`docs/tutorial.md`](docs/tutorial.md) — a guided walkthrough of all five `samples/` policies through render → worked examples → diff, real output inline.
 - [`docs/rego-coverage.md`](docs/rego-coverage.md) — a systematic audit of every Rego construct/builtin against the real renderer: what's rendered faithfully, what falls back by design, what was fixed this session, and a ranked backlog of fallback constructs that could be promoted next.

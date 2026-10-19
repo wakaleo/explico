@@ -74,6 +74,16 @@ internal object ChangeSummary {
         DiffCategory.UNCHANGED -> error("UNCHANGED never reaches the change summary")
     }
 
+    /** The entry's label without markdown (also the JSON export's `label`). */
+    fun plainLabelOf(entry: DiffEntry): String = targetOf(entry).let { (packagePath, rule) -> labelFor(entry.controlId, packagePath, rule) }
+
+    /** The displayed side's package path and rule (also the JSON export's `package`/`rule`). */
+    fun displayedTarget(entry: DiffEntry): Pair<String, RuleGroup> = targetOf(entry)
+
+    /** The card anchor this entry's label links to; null for DOCS_CHANGED, which has no card in the report. */
+    fun anchorOf(entry: DiffEntry): String? =
+        if (entry.category == DiffCategory.DOCS_CHANGED) null else targetOf(entry).let { (packagePath, rule) -> MarkdownRenderer.anchorIdOf(rule, packagePath) }
+
     private fun labelFor(controlId: String?, packagePath: String, rule: RuleGroup): String =
         controlId?.let { "$it — ${rule.metadata?.title ?: rule.name}" } ?: "$packagePath.${rule.name}"
 
@@ -84,7 +94,7 @@ internal object ChangeSummary {
      * this entry), so `controlId` never needs checking here: title/description/frameworks always account for
      * every real DOCS_CHANGED difference.
      */
-    private fun changedMetadataFields(entry: DiffEntry): List<String> {
+    internal fun changedMetadataFields(entry: DiffEntry): List<String> {
         val old = entry.oldRule?.metadata
         val new = entry.newRule?.metadata
         val fields = mutableListOf<String>()

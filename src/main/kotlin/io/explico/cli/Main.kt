@@ -58,13 +58,14 @@ private class RenderCommand : CliktCommand(name = "render") {
         "--generate-examples",
         help = "Also derive worked examples from each rule's conditions where --examples leaves a gap (each verified by opa eval; runs the policy)",
     ).flag()
+    private val json by option("--json", help = "Also write explico.json, the machine-readable result (see docs/json-output.md)").flag()
 
     override fun run() {
         requireOpaOrExit()
         try {
             val policySet = Explico.load(policyDir, parseRegoVersion(regoVersion))
             val examples = examplesDir?.let { Explico.loadExamples(it) }
-            val rendered = Explico.render(policySet, policyDir, examples, dataDir, generateExamples)
+            val rendered = Explico.render(policySet, policyDir, examples, dataDir, generateExamples, json)
             replaceOutputDirectory(out, rendered.files)
             echo("Rendering coverage: ${rendered.coverage.rendered} of ${rendered.coverage.total} conditions (${rendered.coverage.percent}%)")
             rendered.generatedExamples?.let { echo("Generated examples for ${it.rulesWithExamples} of ${it.rulesConsidered} rules") }
@@ -84,7 +85,7 @@ private class DiffCommand : CliktCommand(name = "diff") {
     private val out by option("--out", help = "Output file for the change report").path().required()
     private val regoVersion by option("--rego-version", help = "Rego syntax of the policies: v1 (default) or v0 (legacy, e.g. the Gatekeeper library)")
         .choice("v1", "v0").default("v1")
-
+    private val jsonOut by option("--json", help = "Also write the machine-readable change report (JSON) to this file").path()
 
     override fun run() {
         requireOpaOrExit()
@@ -94,6 +95,10 @@ private class DiffCommand : CliktCommand(name = "diff") {
             val report = Explico.diff(old, new)
             out.parent?.let { Files.createDirectories(it) }
             Files.writeString(out, report.markdown)
+            jsonOut?.let { target ->
+                target.parent?.let { Files.createDirectories(it) }
+                Files.writeString(target, report.json)
+            }
             echo(summarySection(report.markdown))
         } catch (e: OpaInvocationException) {
             failWith(2, e.stderr)

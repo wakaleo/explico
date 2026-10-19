@@ -2,6 +2,7 @@
 package io.explico
 
 import io.explico.diff.DiffEntry
+import io.explico.diff.DiffJson
 import io.explico.diff.DiffRenderer
 import io.explico.diff.PolicyDiff
 import io.explico.generate.ExampleGenerator
@@ -14,6 +15,7 @@ import io.explico.parse.AstMapper
 import io.explico.parse.ParsedFile
 import io.explico.render.Coverage
 import io.explico.render.CoverageSummary
+import io.explico.render.JsonExport
 import io.explico.render.ExampleSet
 import io.explico.render.MarkdownRenderer
 import io.explico.render.PolicyDigest
@@ -42,7 +44,12 @@ public data class RenderedDocs @JvmOverloads constructor(
 public data class GeneratedExamplesSummary(val rulesWithExamples: Int, val rulesConsidered: Int)
 
 /** The classified change entries between two policy versions, plus the rendered change report (spec §7). */
-public data class DiffReport(val entries: List<DiffEntry>, val markdown: String)
+public data class DiffReport @JvmOverloads constructor(
+    val entries: List<DiffEntry>,
+    val markdown: String,
+    /** The machine-readable change report (schema `explico/diff/1`, spec §14.45). */
+    val json: String = "",
+)
 
 /**
  * Renders `.rego` policy directories into Markdown and reports rendering coverage.
@@ -114,6 +121,8 @@ public object Explico {
         examples: ExampleSet? = null,
         dataDir: Path? = null,
         generateExamples: Boolean = false,
+        /** When true, `files` also contains `explico.json` (schema `explico/render/1`, spec §14.45). Off by default. */
+        json: Boolean = false,
     ): RenderedDocs {
         val examplesByPackage = evaluateWorkedExamples(policySet, policyDir, examples, dataDir)
         val generated = if (generateExamples) generateWorkedExamples(policySet, policyDir, dataDir, examplesByPackage) else null
@@ -133,7 +142,8 @@ public object Explico {
                 policyDigest,
                 dataValues,
             )
-        } + ("index.md" to MarkdownRenderer.renderIndex(policySet, examplesByPackage, policyDigest))
+        } + ("index.md" to MarkdownRenderer.renderIndex(policySet, examplesByPackage, policyDigest)) +
+            (if (json) mapOf("explico.json" to JsonExport.render(policySet, policyDigest, examplesByPackage, generated?.byPackage ?: emptyMap(), dataValues)) else emptyMap())
 
         val packageCoverages = policySet.packages.map { Coverage.of(it) }
         val overallCoverage = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })
@@ -152,7 +162,7 @@ public object Explico {
     @JvmStatic
     public fun diff(old: PolicySet, new: PolicySet): DiffReport {
         val entries = PolicyDiff.diff(old, new)
-        return DiffReport(entries, DiffRenderer.render(entries, old, new))
+        return DiffReport(entries, DiffRenderer.render(entries, old, new), DiffJson.render(entries))
     }
 
     /**

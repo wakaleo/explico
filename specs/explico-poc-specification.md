@@ -1807,3 +1807,20 @@ non-empty: `*Authors: <a>, ...*` (`name <email>`, a bare name, or a bare email -
   `MarkdownRendererTest.descriptionTrailingNewline...` was narrowly repinned (its rule is named `deny`); its invariant -- one blank line after the
   description -- is unchanged. No Tier-1 assertion changed.
 
+### 14.45 JSON output (`explico/render/1`, `explico/diff/1`)
+
+Opt-in machine-readable result so other tools need not parse Markdown. `Explico.render(..., json = true)` / `render --json` adds `explico.json` to
+the output (absent otherwise; every Markdown file is byte-identical either way); `DiffReport.json` is always computed and `diff --json <file>` writes it.
+Schemas and every field are documented in `docs/json-output.md`.
+- **No second interpretation.** `JsonExport` / `DiffJson` only re-use what the Markdown is built from: a condition's `text` is `ExpressionRenderer.render`
+  with no links (so it equals the card bullet, links stripped); unrendered conditions carry `source`/`reason` and a null `text`; coverage is `Coverage`;
+  effect of a match is `MarkdownRenderer.effectOfMatchWord` (extracted, shared with the card line, glyph dropped); generated-example names are
+  `MarkdownRenderer.generatedExampleName` (extracted); diff `label`/`details`/`fields` are `ChangeSummary`'s own strings. The acceptance test asserts the
+  invariant directly: every rendered condition text is a bullet of its package document.
+- **More than the card where the card summarises:** `workedExamples` lists every fixture (not 3+2) and `referenceData.value` is the full resolved
+  value (not cut at 5). `referenceData` is empty without a data directory.
+- **Format:** `kotlinx-serialization-json` only (already shipped); `buildJsonObject` insertion order is the key order; pretty-printed with a 2-space
+  indent and one trailing newline; sorted packages/custom keys; no clock, no HashMap iteration. `schema` is versioned (`explico/render/1`).
+- **API compatibility:** `render` gains a trailing `json` parameter (its older overloads remain, `@JvmOverloads`); `DiffReport` gains `json` with a default
+  and a `@JvmOverloads` constructor, so the 2-argument form still links (`JsonApiJavaInteropTest`).
+

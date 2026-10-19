@@ -12,7 +12,7 @@ Four subcommands: `render`, `diff`, `version`, `demo`.
 ### `explico render`
 
 ```
-explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples]
+explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json]
 ```
 
 | Argument/flag | Required | Meaning |
@@ -22,6 +22,7 @@ explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--r
 | `--examples <dir>` | no | Directory of worked-example fixtures (`*.json`, spec §6.7's format — see `policy-authoring.md`). When supplied, control cards gain a **Worked examples** section and `index.md` gains an example-coverage column. |
 | `--data <dir>` | no | A data document (or directory) made available to `opa eval`, for policies that reference `data.*` paths beyond a fixture's own `input`. Independent of `--examples`: supplying it alone (no fixtures at all) also runs `opa eval` -- see *Reference data* below -- and makes every card whose bodies read a plain `data.*` document show what that document holds. |
 | `--generate-examples` | no | Also derive worked examples from each rule's conditions where `--examples` leaves a gap (each verified by `opa eval`; labelled as generated; runs the policy). See *Generated examples* below. |
+| `--json` | no | Also write `explico.json`, the machine-readable result (see [`json-output.md`](json-output.md)). Off by default; nothing else changes. |
 | `--rego-version v1\|v0` | no | The Rego syntax of the policies: `v1` (default) or `v0` (legacy: `deny[msg] { ... }` with no `if`/`contains`, as in the Gatekeeper library). Passed to every `opa` call as `--v0-compatible`. Never auto-detected; v0 mode applies to the whole directory (v1 files that `import rego.v1` still parse). The `opa` binary must be 1.x either way. `diff` applies it to both directories. |
 
 Writes one `<package-path>.md` file per Rego package plus `index.md`, and
@@ -83,7 +84,7 @@ plain `data.*` document show what that document actually holds in the supplied d
 ### `explico diff`
 
 ```
-explico diff <oldDir> <newDir> --out <reportFile> [--rego-version v1|v0]
+explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--rego-version v1|v0]
 ```
 
 | Argument/flag | Required | Meaning |
@@ -91,6 +92,7 @@ explico diff <oldDir> <newDir> --out <reportFile> [--rego-version v1|v0]
 | `<oldDir>` | yes | The "before" policy directory. |
 | `<newDir>` | yes | The "after" policy directory. |
 | `--out <reportFile>` | yes | Output file for the single Markdown change report. |
+| `--json <file>` | no | Also write the machine-readable change report (JSON) to this file. See [`json-output.md`](json-output.md). |
 
 Classifies every control as `ADDED`, `REMOVED`, `LOGIC_CHANGED`,
 `DOCS_CHANGED`, or `UNCHANGED` (a control-id-preserving rename lands as
@@ -170,14 +172,15 @@ object Explico {
 - **`loadExamples(dir)`** — loads `*.json` fixtures from `dir`, in filename
   order. Throws `io.explico.render.DuplicateFixtureNameException` (public)
   if two fixtures share a `name`.
-- **`render(policySet, policyDir, examples, dataDir, generateExamples = false)`** — returns
+- **`render(policySet, policyDir, examples, dataDir, generateExamples = false, json = false)`** — returns
   `RenderedDocs(files: Map<String, String>, coverage: CoverageSummary,
   generatedExamples: GeneratedExamplesSummary?)`, the rendered Markdown keyed by
   output filename plus overall coverage (`coverage.rendered`, `coverage.total`,
   `coverage.percent`). `generatedExamples` is null unless `generateExamples = true`,
-  then `rulesWithExamples` of `rulesConsidered`.
+  then `rulesWithExamples` of `rulesConsidered`. A trailing `json = true` also adds `explico.json` to `files`
+  (see [`json-output.md`](json-output.md)).
 - **`diff(old, new)`** — returns `DiffReport(entries: List<DiffEntry>,
-  markdown: String)`. Each `DiffEntry` carries its `category`
+  markdown: String, json: String)`. Each `DiffEntry` carries its `category`
   (`DiffCategory`: `ADDED`/`REMOVED`/`LOGIC_CHANGED`/`DOCS_CHANGED`/`UNCHANGED`),
   `controlId`, and the old/new `PolicyPackage`+`RuleGroup` (null on the
   absent side for `ADDED`/`REMOVED`). Throws

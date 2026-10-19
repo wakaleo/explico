@@ -1471,3 +1471,12 @@ candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFI
   (`https://repo1.maven.org/maven2/io/github/wakaleo/explico/<ver>/explico-<ver>.jar`) vs `./gradlew jar`, ignoring `internal` classes. Generated
   `copy()` changes are an accepted pre-1.0 cost (noted in the CHANGELOG), not worth hand-written overloads.
 
+## JSON output (spec §14.45)
+
+- `render/JsonExport.kt` and `diff/DiffJson.kt` build `explico.json` / `DiffReport.json`. They must stay a *projection of what the Markdown already uses*:
+  never recompute a fact. Shared helpers were extracted for that (`MarkdownRenderer.effectOfMatchWord`, `generatedExampleName`, `docFileName`,
+  `ChangeSummary.plainLabelOf/anchorOf/displayedTarget/changedMetadataFields`). When a card gains a field, add it to the JSON in the same change and to
+  `docs/json-output.md`; a changed or renamed field needs a new `schema` version.
+- Opt-in (`json = false` default): with it off nothing changes, which is why no golden moved. `RealisticJsonExportAcceptanceIT` asserts that every rendered
+  condition `text` is a bullet of its package document -- keep that true.
+- Pretty printing is `JsonExport.prettyJson` (2-space, trailing newline), shared with the diff export.

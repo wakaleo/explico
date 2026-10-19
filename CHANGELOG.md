@@ -8,6 +8,9 @@ A new opt-in feature, and fixes for two defects found while building it. Recomme
   each rule's conditions where the author's own fixtures leave a gap: inputs that satisfy a rule body and "near-misses" that break exactly one
   condition, each **verified by `opa eval`** and shown in a separate, labelled *Generated examples* section with mechanical names. Off by
   default (output is byte-identical without it). Bodies it cannot model get none.
+- **Added:** machine-readable output. `render --json` writes `explico.json` (packages, rules, conditions with the exact card phrase or their verbatim
+  source, coverage, metadata, effect of a match, every worked-example verdict, reference data); `diff --json <file>` writes the change report as JSON.
+  Library: `render(..., json = true)` and `DiffReport.json`. Opt-in; the Markdown is byte-identical either way. Schema in `docs/json-output.md`.
 - **Added:** every card for a rule named `deny`/`violation`/`allow` gains `**Effect of a match:** ❌ denied`/`✅ allowed`, stating the naming convention it
   rests on; no line for any other name. The index names every rule below 100% rendered with a link to its card, and the legend explains why a helper
   can show 0%. `explico --help` now describes each command.
