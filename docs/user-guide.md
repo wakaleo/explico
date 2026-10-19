@@ -12,7 +12,7 @@ Four subcommands: `render`, `diff`, `version`, `demo`.
 ### `explico render`
 
 ```
-explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>]
+explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>] [--fail-under <percent>] [--fail-on-gaps]
 ```
 
 | Argument/flag | Required | Meaning |
@@ -24,6 +24,8 @@ explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--r
 | `--generate-examples` | no | Also derive worked examples from each rule's conditions where `--examples` leaves a gap (each verified by `opa eval`; labelled as generated; runs the policy). See *Generated examples* below. |
 | `--json` | no | Also write `explico.json`, the machine-readable result (see [`json-output.md`](json-output.md)). Off by default; nothing else changes. |
 | `--requirements <file>` | no | A text file listing the requirements your organisation must evidence, one per line (blank lines and `#` comments ignored, lines trimmed, duplicates collapsed). Adds a *Requirements coverage* table to `index.md`: each requirement in the file's order with the controls that name it, or **No control**; and the framework strings your controls use that are *not* on the list (a typo catcher). Matching is exact string equality with the METADATA `frameworks` strings. A missing file is a usage error (exit `1`). |
+| `--fail-under <percent>` | no | CI gate: exit `5` if overall rendering coverage is below this integer (0-100). Compared exactly (22 of 23 conditions is 95.65%: it passes 95 and fails 96). The output is still written. |
+| `--fail-on-gaps` | no | CI gate: exit `5` if the documentation has gaps — a control with no description or no framework, a title shared by controls, and (with `--requirements`) a requirement with no control or a framework string not on the list. Each gap is listed on stderr. |
 | `--rego-version v1\|v0` | no | The Rego syntax of the policies: `v1` (default) or `v0` (legacy: `deny[msg] { ... }` with no `if`/`contains`, as in the Gatekeeper library). Passed to every `opa` call as `--v0-compatible`. Never auto-detected; v0 mode applies to the whole directory (v1 files that `import rego.v1` still parse). The `opa` binary must be 1.x either way. `diff` applies it to both directories. |
 
 Writes one `<package-path>.md` file per Rego package plus `index.md`, and
@@ -85,7 +87,7 @@ plain `data.*` document show what that document actually holds in the supplied d
 ### `explico diff`
 
 ```
-explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--rego-version v1|v0]
+explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--fail-on <categories>] [--rego-version v1|v0]
 ```
 
 | Argument/flag | Required | Meaning |
@@ -94,6 +96,7 @@ explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--rego-versio
 | `<newDir>` | yes | The "after" policy directory. |
 | `--out <reportFile>` | yes | Output file for the single Markdown change report. |
 | `--json <file>` | no | Also write the machine-readable change report (JSON) to this file. See [`json-output.md`](json-output.md). |
+| `--fail-on <categories>` | no | CI gate: exit `5` if any control is in one of these categories — comma-separated, case-insensitive: `ADDED`, `REMOVED`, `LOGIC_CHANGED`, `DOCS_CHANGED`. The report is still written and the Summary still printed; stderr names the matching controls. |
 
 Classifies every control as `ADDED`, `REMOVED`, `LOGIC_CHANGED`,
 `DOCS_CHANGED`, or `UNCHANGED` (a control-id-preserving rename lands as
@@ -141,7 +144,7 @@ file. See the README's Quick demo section for a full walkthrough.
 
 ## Exit codes
 
-All four commands share the same exit-code contract:
+All four commands share the same exit-code contract (`5` applies to the gates on `render` and `diff`):
 
 | Code | Meaning |
 |---|---|
@@ -150,6 +153,7 @@ All four commands share the same exit-code contract:
 | `2` | Rego parse error — `opa`'s own stderr passed through verbatim, never paraphrased |
 | `3` | `opa` binary missing or an incompatible version (`render`/`diff`/`demo`); the message names the exact version required |
 | `4` | Duplicate control-ids (`diff`) or duplicate fixture names (`render --examples`) |
+| `5` | A CI gate failed (`render --fail-under` / `--fail-on-gaps`, `diff --fail-on`). The output was still written and the normal stdout printed; the gate message is on stderr |
 
 A non-zero exit is always accompanied by a clear, one-paragraph message on
 stderr — never a raw stack trace.
@@ -180,7 +184,8 @@ object Explico {
   `coverage.percent`). `generatedExamples` is null unless `generateExamples = true`,
   then `rulesWithExamples` of `rulesConsidered`. A trailing `json = true` also adds `explico.json` to `files`
   (see [`json-output.md`](json-output.md)); a further trailing `requirements: List<String>` adds the *Requirements coverage* section (see
-  *Keeping your documentation complete* in [`policy-authoring.md`](policy-authoring.md)).
+  *Keeping your documentation complete* in [`policy-authoring.md`](policy-authoring.md)). `RenderedDocs.gaps` is always filled: one line
+  per documentation gap, worded once for every consumer (empty when the documentation is complete).
 - **`diff(old, new)`** — returns `DiffReport(entries: List<DiffEntry>,
   markdown: String, json: String)`. Each `DiffEntry` carries its `category`
   (`DiffCategory`: `ADDED`/`REMOVED`/`LOGIC_CHANGED`/`DOCS_CHANGED`/`UNCHANGED`),

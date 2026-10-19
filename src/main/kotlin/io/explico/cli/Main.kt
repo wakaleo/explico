@@ -2,6 +2,9 @@
 package io.explico.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.parameters.options.convert
+import com.github.ajalt.clikt.parameters.types.restrictTo
+import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.NoOpCliktCommand
 import com.github.ajalt.clikt.core.ProgramResult
@@ -67,6 +70,12 @@ private class RenderCommand : CliktCommand(name = "render") {
         "--requirements",
         help = "Text file listing the requirements to evidence, one per line (# comments allowed); adds a requirements-coverage table to index.md",
     ).path(mustExist = true, canBeDir = false)
+    private val failUnder by option("--fail-under", help = "Exit 5 if overall rendering coverage is below this percent (0-100); the output is still written")
+        .int().restrictTo(0..100)
+    private val failOnGaps by option(
+        "--fail-on-gaps",
+        help = "Exit 5 if the documentation has gaps: a control with no description or framework, a shared title, or (with --requirements) a requirement with no control",
+    ).flag()
 
     override fun run() {
         requireOpaOrExit()
@@ -77,6 +86,11 @@ private class RenderCommand : CliktCommand(name = "render") {
             replaceOutputDirectory(out, rendered.files)
             echo("Rendering coverage: ${rendered.coverage.rendered} of ${rendered.coverage.total} conditions (${rendered.coverage.percent}%)")
             rendered.generatedExamples?.let { echo("Generated examples for ${it.rulesWithExamples} of ${it.rulesConsidered} rules") }
+            val failures = listOfNotNull(
+                failUnder?.let { Gates.failUnder(rendered.coverage, it) },
+                if (failOnGaps) Gates.failOnGaps(rendered.gaps) else null,
+            )
+            if (failures.isNotEmpty()) failWith(Gates.EXIT_GATE_FAILED, failures.joinToString("\n"))
         } catch (e: OpaInvocationException) {
             failWith(2, e.stderr)
         } catch (e: DuplicateFixtureNameException) {
@@ -94,6 +108,10 @@ private class DiffCommand : CliktCommand(name = "diff") {
     private val regoVersion by option("--rego-version", help = "Rego syntax of the policies: v1 (default) or v0 (legacy, e.g. the Gatekeeper library)")
         .choice("v1", "v0").default("v1")
     private val jsonOut by option("--json", help = "Also write the machine-readable change report (JSON) to this file").path()
+    private val failOn by option(
+        "--fail-on",
+        help = "Exit 5 if any control is in one of these categories (comma-separated: ADDED, REMOVED, LOGIC_CHANGED, DOCS_CHANGED); the report is still written",
+    ).convert { value -> try { Gates.parseFailOn(value) } catch (e: IllegalArgumentException) { fail(e.message ?: "invalid categories") } }
 
     override fun run() {
         requireOpaOrExit()
@@ -108,6 +126,7 @@ private class DiffCommand : CliktCommand(name = "diff") {
                 Files.writeString(target, report.json)
             }
             echo(summarySection(report.markdown))
+            failOn?.let { categories -> Gates.failOn(report.entries, categories)?.let { failWith(Gates.EXIT_GATE_FAILED, it) } }
         } catch (e: OpaInvocationException) {
             failWith(2, e.stderr)
         } catch (e: DuplicateControlIdException) {

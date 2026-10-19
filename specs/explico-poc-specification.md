@@ -588,7 +588,8 @@ object Explico {
     fun diff(old: PolicySet, new: PolicySet): DiffReport  // model + markdown + json
 }
 data class RenderedDocs(val files: Map<String, String>, val coverage: CoverageSummary,
-                        val generatedExamples: GeneratedExamplesSummary? = null)
+                        val generatedExamples: GeneratedExamplesSummary? = null,
+                        val gaps: List<String> = emptyList())     // §14.47
 data class GeneratedExamplesSummary(val rulesWithExamples: Int, val rulesConsidered: Int)
 data class DiffReport(val entries: List<DiffEntry>, val markdown: String, val json: String = "")
 ```
@@ -600,7 +601,9 @@ Everything else is `internal`. KDoc on every public declaration.
 ```
 explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>]
                [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>]
-explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--rego-version v1|v0]
+               [--fail-under <percent>] [--fail-on-gaps]
+explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--fail-on <categories>]
+               [--rego-version v1|v0]
 explico version
 explico demo [--fetch-opa]                  # §13.2
 ```
@@ -608,7 +611,8 @@ explico demo [--fetch-opa]                  # §13.2
 - `render`: writes the files from `RenderedDocs`, prints coverage summary to stdout.
 - `diff`: writes the report, prints the summary table to stdout.
 - Exit codes: `0` success · `1` usage error · `2` Rego parse error (opa stderr
-  passed through) · `3` opa binary missing/incompatible · `4` duplicate control-ids.
+  passed through) · `3` opa binary missing/incompatible · `4` duplicate control-ids ·
+  `5` a CI gate failed (§14.47).
 - `--out` contents are fully replaced (delete stale files from previous runs).
 
 ---
@@ -1848,4 +1852,20 @@ A compliance owner asks "is the documentation complete?" and "which requirements
   given, else `{total, covered, items:[{requirement, controls}], unlisted}`.
 - **Layout.** Each optional section sits between blank lines with no double blank line, in any combination (`IndexLayoutTest` pins whitespace; the acceptance tests do not).
 - **Compatibility.** `render` gains a trailing `requirements` parameter (`@JvmOverloads`: every shorter overload still links -- `RequirementsApiJavaInteropTest`).
+
+### 14.47 CI gates (exit code 5)
+
+Compliance pipelines need explico to FAIL the build, not only write a report. A gate NEVER suppresses output: files are written and the normal stdout printed first,
+then the gate message goes to stderr (no stack trace) and the process exits `5`; several failing gates give ONE exit 5 with every message. Usage errors stay exit 1.
+Decisions and wording live in `cli/Gates.kt` (testable without a process).
+- `render --fail-under <percent>` (integer 0..100, a Clikt range check): fails when `rendered*100 < percent*total` -- an EXACT comparison, so 22 of 23 (95.65%) passes 95
+  and fails 96 although the CLI prints 95%; zero conditions count as 100%. Message: `explico: gate failed (--fail-under 96): rendering coverage is 95% (22 of 23 conditions)`.
+- `render --fail-on-gaps`: fails when `RenderedDocs.gaps` is non-empty. `gaps` is a public list (always computed, last `RenderedDocs` parameter, `@JvmOverloads`) worded ONCE by
+  `Quality.gapDescriptions` so the CLI, a pipeline script and a dashboard agree: `control X has no description`, `control X names no framework`, `controls A, B share the title
+  "T"`, then (with a requirements list) `requirement R has no control` in list order and `framework string F is not in the requirements list`. Message: a header
+  `explico: gate failed (--fail-on-gaps): N gap(s)` and one `  - <gap>` line each.
+- `diff --fail-on <categories>`: comma-separated, case-insensitive subset of `ADDED, REMOVED, LOGIC_CHANGED, DOCS_CHANGED` (`UNCHANGED` or an unknown name is a usage error naming
+  the valid values). Fails when any entry is in a listed category. Message: `explico: gate failed (--fail-on LOGIC_CHANGED,REMOVED): 2 control(s): REL-001, REL-003` -- categories
+  echoed as given (upper-cased), controls by control id (`package.rule` when none) in the diff report's own order.
+- The diff gate reports structure only, like the report itself: it does not say whether a change is stricter or looser.
 

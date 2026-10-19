@@ -19,6 +19,7 @@ import io.explico.render.JsonExport
 import io.explico.render.ExampleSet
 import io.explico.render.MarkdownRenderer
 import io.explico.render.PolicyDigest
+import io.explico.render.Quality
 import io.explico.render.ReferenceData
 import io.explico.render.WorkedExample
 import io.explico.render.WorkedExamples
@@ -35,6 +36,8 @@ public data class RenderedDocs @JvmOverloads constructor(
     val files: Map<String, String>,
     val coverage: CoverageSummary,
     val generatedExamples: GeneratedExamplesSummary? = null,
+    /** One line per documentation gap (spec §14.47), always computed; empty when the documentation is complete. */
+    val gaps: List<String> = emptyList(),
 )
 
 /**
@@ -149,10 +152,12 @@ public object Explico {
 
         val packageCoverages = policySet.packages.map { Coverage.of(it) }
         val overallCoverage = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })
+        val normalisedRequirements = Quality.normalise(requirements)
         return RenderedDocs(
             files = files,
             coverage = overallCoverage,
             generatedExamples = generated?.let { GeneratedExamplesSummary(it.rulesWithExamples, it.rulesConsidered) },
+            gaps = Quality.gapDescriptions(Quality.findingsOf(policySet), normalisedRequirements.takeIf { it.isNotEmpty() }?.let { Quality.coverageOf(policySet, it) }),
         )
     }
 

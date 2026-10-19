@@ -78,6 +78,8 @@ and tested. What it produces:
 - **Reference data**: with `--data`, the values of the `data.*` documents a rule reads.
 - **`explico diff`**: a plain "What changed" list, then per-control cards and source diffs,
   insensitive to formatting, comments and variable names.
+- **CI gates**: `--fail-under`, `--fail-on-gaps` and `diff --fail-on` exit `5` so a pipeline can enforce rendering coverage, complete
+  documentation and review of policy changes — the output is still written.
 - **JSON** (`--json`) for dashboards, GRC tools and scripts — the same facts, machine-readable
   ([`docs/json-output.md`](docs/json-output.md)).
 
@@ -186,7 +188,8 @@ project's own `kotlin("jvm")` plugin version.
 
 ```
 explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>]
-explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--rego-version v1|v0]
+               [--fail-under <percent>] [--fail-on-gaps]
+explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--fail-on <categories>] [--rego-version v1|v0]
 explico version
 explico demo [--fetch-opa]
 ```
@@ -352,6 +355,7 @@ fun main() {
 | 2 | Rego parse error — `opa`'s own stderr passed through verbatim |
 | 3 | `opa` binary missing or an incompatible version |
 | 4 | Duplicate control-ids (`diff`) or duplicate fixture names (`render --examples`) |
+| 5 | A CI gate failed (`--fail-under`, `--fail-on-gaps`, `diff --fail-on`) — the output is still written |
 
 ## Limitations (by design)
 

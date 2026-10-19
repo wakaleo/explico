@@ -1489,3 +1489,13 @@ candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFI
   spacing bug passed them (found by reading real output, not by a failing test).
 - `cli/parseRequirements` is the file format; the library re-normalises, so the two cannot disagree.
 
+## CI gates (spec §14.47)
+
+- Exit code 5. `cli/Gates.kt` holds decisions + messages (unit-testable); `Main.kt` writes output FIRST, then fails via `failWith(5, ...)`. A gate must never suppress output.
+- `--fail-under` compares exactly (`rendered*100 < percent*total`), not on the floored percent it prints. Zero conditions = 100%.
+- Gap wording lives in `Quality.gapDescriptions` and surfaces as `RenderedDocs.gaps`, so the CLI and library consumers cannot diverge. New kinds of gap go there (and in
+  the spec), never in the CLI.
+- `--fail-on` echoes categories as given, lists controls in the diff report's order. It never says stricter/looser.
+- Two `/accept` tests of mine passed vacuously before the feature existed (an empty-list determinism check; an unknown option also exits 1); both were fixed to need the
+  feature. When asserting "bad input is a usage error", first assert a good value is accepted.
+

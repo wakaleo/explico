@@ -191,6 +191,26 @@ NIST 800-53 CM-3
 a closing line lists *framework strings not in the requirements list*, which is how a typo shows up on both sides. The same
 data is in `explico.json` (`requirements`: total, covered, items, unlisted).
 
+## Enforcing it in CI
+
+Reports are only useful if someone reads them. Three opt-in gates make a pipeline fail instead (exit code `5`); the output is
+still written and the usual lines still printed, and the reason is on stderr:
+
+```
+explico render policies --out docs --examples examples --data data \
+    --requirements requirements.txt --fail-on-gaps --fail-under 90
+explico diff main-checkout/policies pr-checkout/policies --out change-report.md --fail-on LOGIC_CHANGED,REMOVED
+```
+
+- `--fail-under <percent>` — the overall share of conditions rendered as readable text must reach this. Use it to stop coverage
+  quietly sliding as policies change.
+- `--fail-on-gaps` — the documentation must be complete: no control without a description or framework, no shared titles and, with
+  `--requirements`, every requirement covered and every framework string spelled as listed.
+- `diff --fail-on` — fail when a control is `ADDED`, `REMOVED`, `LOGIC_CHANGED` or `DOCS_CHANGED`, e.g. to require a human review
+  of any logic change. It reports *structure*, not whether a change is stricter or looser.
+
+Library users get the same facts without the CLI: `RenderedDocs.gaps` (one worded line per gap) and `DiffReport.entries`.
+
 ## What `--data` adds to a card
 
 If you pass `--data`, a card whose rule reads a plain `data.*` document (an exemption list, a threshold table, a freeze

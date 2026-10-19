@@ -70,5 +70,18 @@ internal object Quality {
         return RequirementsCoverage(items, unlisted)
     }
 
+    /**
+     * One line per documentation gap (spec §14.47), worded here ONCE so the CLI gate, a pipeline script and a dashboard agree: a control
+     * with no description, one naming no framework, controls sharing a title, then (when a requirements list was given) each requirement with
+     * no control in list order and each framework string not on the list.
+     */
+    fun gapDescriptions(findings: Findings, coverage: RequirementsCoverage?): List<String> = buildList {
+        findings.missingDescription.forEach { add("control ${it.label} has no description") }
+        findings.noFramework.forEach { add("control ${it.label} names no framework") }
+        findings.duplicateTitles.forEach { (title, controls) -> add("controls ${controls.joinToString(", ") { it.label }} share the title \"$title\"") }
+        coverage?.items?.filter { it.controls.isEmpty() }?.forEach { add("requirement ${it.requirement} has no control") }
+        coverage?.unlisted?.forEach { add("framework string $it is not in the requirements list") }
+    }
+
     fun normalise(requirements: List<String>): List<String> = requirements.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
 }
