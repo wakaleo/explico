@@ -1,0 +1,2 @@
+{ "name": "private encrypted bucket", "description": "Follows all three rules.",
+  "input": { "name": "archive", "acl": "private", "encrypted": true, "env": "production", "retention_days": 365 } }

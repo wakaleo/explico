@@ -1,0 +1,7 @@
+{
+  "name": "privileged pod from an unknown registry",
+  "description": "A pod that breaks two rules at once.",
+  "input": { "request": { "kind": { "kind": "Pod" }, "object": {
+    "metadata": { "labels": { "owner": "payments" } },
+    "spec": { "containers": [ { "name": "app", "image": "docker.io/evil/app:1", "securityContext": { "privileged": true } } ] } } } }
+}

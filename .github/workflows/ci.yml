@@ -51,3 +51,9 @@ jobs:
         run: |
           ./gradlew generateSampleDocs --console=plain
           git diff --exit-code -- docs/sample-output
+
+      # Same drift check for the showcase pages (docs/showcase/, built from samples/showcase/).
+      - name: Regenerate showcase and check for drift
+        run: |
+          ./gradlew generateShowcase --console=plain
+          git diff --exit-code -- docs/showcase

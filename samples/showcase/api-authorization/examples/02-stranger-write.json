@@ -1,0 +1,2 @@
+{ "name": "stranger writes without a grant", "description": "No role, no ownership, no grant.",
+  "input": { "method": "DELETE", "user": { "id": "u9", "roles": [] }, "resource": { "owner": "u1" } } }

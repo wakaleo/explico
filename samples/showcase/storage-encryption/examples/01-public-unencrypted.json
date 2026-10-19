@@ -1,0 +1,2 @@
+{ "name": "public unencrypted production bucket", "description": "Breaks all three rules.",
+  "input": { "name": "logs", "acl": "public-read", "encrypted": false, "env": "production", "retention_days": 30 } }

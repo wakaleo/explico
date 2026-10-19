@@ -1317,3 +1317,10 @@ was proposed in, not deferred to a separate increment.
   frontier. **Rego v0 syntax is unsupported** (OPA 1.x rejects it) -- a product decision, see
   `docs/rego-coverage.md`.
 
+
+## Documentation showcase
+
+`docs/showcase/` is generated (`./gradlew generateShowcase`) from `samples/showcase/`; never hand-edit
+it, and CI drift-checks it. Give showcase rules distinct names: same-named rules misattribute worked-example
+messages across cards (known limitation). Adding an example means a new `samples/showcase/<name>/` plus an
+entry in `showcaseExamples` in `build.gradle.kts`.

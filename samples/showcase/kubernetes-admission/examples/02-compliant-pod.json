@@ -1,0 +1,7 @@
+{
+  "name": "compliant pod",
+  "description": "An unprivileged pod from the approved registry with an owner label.",
+  "input": { "request": { "kind": { "kind": "Pod" }, "object": {
+    "metadata": { "labels": { "owner": "payments" } },
+    "spec": { "containers": [ { "name": "app", "image": "registry.corp.example/app:1", "securityContext": { "privileged": false } } ] } } } }
+}

@@ -1,0 +1,1 @@
+{"name":"five regions","description":"Triggers FB-001.","input":{"environment":"production","regions":["a","b","c","d","e"]}}

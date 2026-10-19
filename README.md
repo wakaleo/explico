@@ -349,6 +349,7 @@ against the coverage percentage reported on every card and package.
 
 ## Documentation
 
+- [`docs/showcase/`](docs/showcase/README.md) — **start here to see it in action**: five example policies (Kubernetes admission, storage, API authorization, helpers/functions, and what a fallback looks like), each with the Rego source beside the real rendered output.
 - [`docs/user-guide.md`](docs/user-guide.md) — every CLI flag, every exit code, every public library function.
 - [`docs/policy-authoring.md`](docs/policy-authoring.md) — writing Rego policies explico renders well: METADATA conventions, the distinct-message/Situation-label convention, control-id/frameworks, fallback and coverage as design, fixture authoring.
 - [`docs/tutorial.md`](docs/tutorial.md) — a guided walkthrough of all five `samples/` policies through render → worked examples → diff, real output inline.

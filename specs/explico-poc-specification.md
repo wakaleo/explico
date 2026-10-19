@@ -1586,3 +1586,12 @@ Rationale in `docs/rego-coverage.md`.
 - **Disclosed, not addressed:** Rego v0 syntax is rejected by OPA 1.x and therefore not rendered.
 
 Rationale and measurements in `docs/rego-coverage.md`.
+
+### 14.30 Documentation showcase
+
+`docs/showcase/` pairs authored Rego policies (`samples/showcase/<example>/{policies,examples,data}`) with
+their real rendered output, one page per example plus an index. `./gradlew generateShowcase` renders each
+example through the CLI and stitches source and output together; CI regenerates it and fails on drift,
+like `docs/sample-output/`. Examples deliberately give each rule its own name: several same-named rules
+(`deny contains msg` repeated) make every card list the whole group's example messages and repeat the
+example list, a known attribution limitation (§14.19) that a showcase must not display unexplained.

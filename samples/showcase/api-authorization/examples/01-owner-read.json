@@ -1,0 +1,2 @@
+{ "name": "owner reads own record", "description": "A plain user reading a record they own.",
+  "input": { "method": "GET", "user": { "id": "u1", "roles": ["viewer"] }, "resource": { "owner": "u1" } } }
