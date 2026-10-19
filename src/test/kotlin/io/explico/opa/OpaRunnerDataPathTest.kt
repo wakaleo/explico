@@ -43,10 +43,10 @@ class OpaRunnerDataPathTest {
     }
 
     @Test
-    fun aPlainPathIsPassedThroughUntouched(@TempDir tmp: Path) {
-        val dir = tmp.resolve("policies")
-        policyIn(dir)
-        assertThat(OpaRunner.dataArgument(dir)).isEqualTo(dir.toString())
+    fun aPathWithNoColonIsPassedThroughUntouched() {
+        // A relative path has no drive letter on any OS (an absolute Windows path always does, and is a file URL below).
+        val relative = Path.of("src", "policies")
+        assertThat(OpaRunner.dataArgument(relative)).isEqualTo(relative.toString())
     }
 
     @Test
