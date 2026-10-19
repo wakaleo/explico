@@ -34,6 +34,7 @@ OPA-compliant reader can see.
 | `authors` | Yes | The `*Authors: ...*` line: `name <email>`, a bare name, or a bare email, exactly as declared (opa itself splits a `"Name <email>"` string) |
 | `related_resources` | Yes | The `*Related resources: ...*` line: each entry a link, labelled by its `description` (or by the `ref` itself when it has none) |
 | Any other `custom.*` key besides `control-id`/`frameworks` | Yes, if its value is a scalar or a list of scalars | The `*Custom: key: value, ...*` line, keys sorted alphabetically (a list is comma-joined). A key whose value has structure (an object, a list containing an object) is skipped entirely — explico never guesses at what it means |
+| The same `authors` / `related_resources` / `custom.*` fields on a `scope: package` block | Yes | The same three lines on the package page, after the description and before the first card. A package-scope `control-id`/`frameworks` is not used |
 | `organizations`, `schemas` | **No** | Valid, standard OPA fields — `opa parse` itself parses and preserves them — explico's own JSON decoding just doesn't model them, so they're silently unused, never an error |
 
 ### REL-001: source to card, field by field

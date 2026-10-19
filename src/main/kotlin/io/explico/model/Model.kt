@@ -25,8 +25,17 @@ public data class PolicyPackage(
     val metadata: PackageMetadata? = null,
 )
 
-/** METADATA annotations attached at package scope -- title/description only, since `custom`/control-id/frameworks are rule-level concepts (spec review item 4). */
-public data class PackageMetadata(val title: String?, val description: String?)
+/** METADATA annotations attached at package scope: title, description, and (spec §14.43) authors / related resources / extra custom keys. `control-id` and `frameworks` are rule-level concepts and stay unused here (spec review item 4). */
+public data class PackageMetadata(
+    val title: String?,
+    val description: String?,
+    /** The package's `authors:` METADATA (spec §14.43), mapped exactly as a rule's. */
+    val authors: List<Author> = emptyList(),
+    /** The package's `related_resources:` METADATA (spec §14.43). */
+    val relatedResources: List<RelatedResource> = emptyList(),
+    /** Extra `custom:` keys with scalar / scalar-list values, sorted by key (spec §14.43); `control-id`/`frameworks` are never carried. */
+    val customFields: Map<String, String> = emptyMap(),
+)
 
 /** All rule definitions sharing one name in one package. Bodies are OR-ed. */
 public data class RuleGroup(

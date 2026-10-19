@@ -1345,7 +1345,7 @@ Found by rendering realistic policies (`src/test/resources/realistic/policies/`)
   remain excluded.
 - **`default` declarations** populate `RuleGroup.default` (verbatim value source) and are never
   bodies/Situations. A default-only name yields a body-less card.
-- **`PolicyPackage.metadata`** (`PackageMetadata(title, description)`) holds package-scope
+- **`PolicyPackage.metadata`** (`PackageMetadata(title, description, authors, relatedResources, customFields)`) holds package-scope
   METADATA and is rendered under the package heading.
 
 Disclosed: cross-file `default` unlinked; `Canonicalizer` does not hash `default`; anchors for a
@@ -1785,7 +1785,9 @@ non-empty: `*Authors: <a>, ...*` (`name <email>`, a bare name, or a bare email -
 - **Diff:** the three fields are part of the metadata hash (`Canonicalizer.canonicalMetadata`), so an edit is DOCS_CHANGED and never alters the logic
   hash; `ChangeSummary` names them (`authors`, `related resources`, `custom fields`) and the DOCS_CHANGED table adds a row for each ONLY when it
   differs, so an edit touching none of them renders exactly the three rows it always did.
-- **Scope / disclosed:** rule-level METADATA only (as `frameworks`); package-level METADATA is unchanged (title and description). `organizations` and
+- **Scope / disclosed:** both rule-level and package-level METADATA (the latter added before 0.2.0 shipped: `PackageMetadata` gains the same three fields, mapped
+  by the same rules, rendered on the package page after the description and before the first card by the SAME helper, `appendPassthroughLines`, so the two
+  cannot diverge; a package-scope `control-id`/`frameworks` stays unused). `organizations` and
   `schemas` stay unmodelled. The acceptance pack declares none of these, so every Tier-2 golden is unchanged.
 
 ### 14.44 Polish: effect of a match, below-100% note, CLI descriptions

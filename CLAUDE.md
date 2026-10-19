@@ -1450,7 +1450,7 @@ candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFI
   list is skipped -- never guessed.
 - `RuleMetadata`'s new fields default empty. They are in `Canonicalizer.canonicalMetadata` (DOCS_CHANGED, not logic), named by `ChangeSummary`, and get
   `DiffRenderer.appendDocsTable` rows ONLY when they differ -- an edit touching none of them keeps the original three-row table (goldens unchanged).
-- Rule-level only; `PackageMetadata`, `organizations` and `schemas` are untouched (disclosed). Zero acceptance-pack impact: the new fixture is
+- Rule AND package level (`PackageMetadata` has the same three fields; ONE `appendPassthroughLines` helper renders both, so wording cannot diverge). `organizations` and `schemas` are untouched (disclosed). Zero acceptance-pack impact: the new fixture is
   `realistic/metadata-passthrough/`; an `/accept` placement test of mine wrongly expected a blank line right after `*Authors:*` and was corrected.
 
 ## Polish bundle (spec §14.44)
@@ -1462,4 +1462,3 @@ candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFI
   collapses whitespace because help wraps at terminal width.
 - Repinned (narrowly, not Tier-1): `MarkdownRendererTest.descriptionTrailingNewline...`. Regenerated after review: pack docs + index + diff goldens,
   sample-output, showcase, README/tutorial excerpts.
-

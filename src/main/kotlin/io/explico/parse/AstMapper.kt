@@ -216,7 +216,15 @@ internal object AstMapper {
         filesInPackage
             .flatMap { it.module.annotations }
             .firstOrNull { it.scope == "package" }
-            ?.let { PackageMetadata(title = it.title, description = it.description) }
+            ?.let {
+                PackageMetadata(
+                    title = it.title,
+                    description = it.description,
+                    authors = it.authors.filter { a -> a.name != null || a.email != null }.map { a -> Author(a.name, a.email) },
+                    relatedResources = it.relatedResources.mapNotNull { r -> r.ref?.let { ref -> RelatedResource(ref, r.description) } },
+                    customFields = it.custom?.customFields ?: emptyMap(),
+                )
+            }
 
     /**
      * Per-rule metadata (review item 1): an `opa inspect` annotation entry's own `path` field names

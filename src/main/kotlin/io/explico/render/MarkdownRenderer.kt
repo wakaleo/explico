@@ -46,6 +46,12 @@ internal object MarkdownRenderer {
             sb.appendLine(description.trimEnd())
             sb.appendLine()
         }
+        pkg.metadata?.let { m ->
+            if (m.authors.isNotEmpty() || m.relatedResources.isNotEmpty() || m.customFields.isNotEmpty()) {
+                appendPassthroughLines(sb, m.authors, m.relatedResources, m.customFields)
+                sb.appendLine()
+            }
+        }
 
         val anchorIds = cardAnchorIds(pkg)
         for ((index, rule) in pkg.rules.withIndex()) {
@@ -154,6 +160,23 @@ internal object MarkdownRenderer {
         return "**Effect of a match:** ${WorkedExamples.outcomeWord(rule.name, matched = true)} *(by the `${rule.name}` naming convention)*"
     }
 
+    /**
+     * Spec §14.43: the standard `authors` / `related_resources` fields and any other scalar `custom:` key, one line each in that
+     * order, only when non-empty. ONE helper for a rule card and a package page, so their wording cannot diverge.
+     */
+    private fun appendPassthroughLines(
+        sb: StringBuilder,
+        authors: List<io.explico.model.Author>,
+        relatedResources: List<io.explico.model.RelatedResource>,
+        customFields: Map<String, String>,
+    ) {
+        if (authors.isNotEmpty()) sb.appendLine("*Authors: ${authors.joinToString(", ") { authorText(it) }}*")
+        if (relatedResources.isNotEmpty()) {
+            sb.appendLine("*Related resources: ${relatedResources.joinToString(", ") { "[${it.description ?: it.ref}](${it.ref})" }}*")
+        }
+        if (customFields.isNotEmpty()) sb.appendLine("*Custom: ${customFields.entries.joinToString(", ") { "${it.key}: ${it.value}" }}*")
+    }
+
     private fun appendMetadataLines(sb: StringBuilder, rule: RuleGroup, pkg: PolicyPackage) {
         val metadata = rule.metadata
         // "?" only for a default-only rule with zero bodies in this file (review item 3) -- should
@@ -164,16 +187,7 @@ internal object MarkdownRenderer {
         if (!metadata?.frameworks.isNullOrEmpty()) {
             sb.appendLine("*Frameworks: ${metadata.frameworks.joinToString(", ")}*")
         }
-        // Spec §14.43: standard `authors`/`related_resources` and any other scalar `custom:` key, one line each, only when non-empty.
-        if (!metadata?.authors.isNullOrEmpty()) {
-            sb.appendLine("*Authors: ${metadata.authors.joinToString(", ") { authorText(it) }}*")
-        }
-        if (!metadata?.relatedResources.isNullOrEmpty()) {
-            sb.appendLine("*Related resources: ${metadata.relatedResources.joinToString(", ") { "[${it.description ?: it.ref}](${it.ref})" }}*")
-        }
-        if (!metadata?.customFields.isNullOrEmpty()) {
-            sb.appendLine("*Custom: ${metadata.customFields.entries.joinToString(", ") { "${it.key}: ${it.value}" }}*")
-        }
+        appendPassthroughLines(sb, metadata?.authors.orEmpty(), metadata?.relatedResources.orEmpty(), metadata?.customFields.orEmpty())
         // Review item 8: a user-defined function's own card declares its parameters, so a reader
         // landing here via a FunctionCall's link knows what the caller supplied them as.
         if (rule.parameters.isNotEmpty()) {

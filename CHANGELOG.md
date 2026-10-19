@@ -12,7 +12,7 @@ A new opt-in feature, and fixes for two defects found while building it. Recomme
   rests on; no line for any other name. The index names every rule below 100% rendered with a link to its card, and the legend explains why a helper
   can show 0%. `explico --help` now describes each command.
 - **Added:** a card now shows a rule's METADATA `authors`, `related_resources` and any other `custom:` key whose value is a scalar or a list of
-  scalars (previously dropped), as `*Authors:*`, `*Related resources:*` and `*Custom:*` lines. Edits to them are `DOCS_CHANGED` in `explico diff`.
+  scalars (previously dropped), as `*Authors:*`, `*Related resources:*` and `*Custom:*` lines -- on a card, and on the package page for `scope: package` METADATA. Edits to them are `DOCS_CHANGED` in `explico diff`.
 - **Added:** a `## What changed` section at the top of the diff report: one line per changed control --
   `removed`/`added`/`documentation changed: <fields>`/`logic changed`, the last with indented sub-bullets naming
   exactly which conditions, messages, body count, default outcome or fallback source changed -- so a reviewer
