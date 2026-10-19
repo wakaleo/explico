@@ -102,6 +102,17 @@ private val CONDITION_BUILTINS = setOf(
 private val OPERAND_BUILTINS = setOf(
     "count", "lower", "upper",
     "sum", "max", "min", "to_number", "trim_space", "object.keys", "time.parse_rfc3339_ns",
+    "abs", "ceil", "floor", "round", "sort", "json.unmarshal",
+)
+
+/**
+ * Operand-position builtins with 2 or 3 arguments, by exact arity (found by benchmarking real-world
+ * corpora). Each phrase in `ExpressionRenderer.MULTI_ARG_OPERAND_TEMPLATES` was checked against a real
+ * `opa eval` of the builtin. A call with any other argument count is not promoted.
+ */
+private val MULTI_ARG_OPERAND_BUILTINS = mapOf(
+    "split" to 2, "trim_prefix" to 2, "trim_suffix" to 2, "trim" to 2, "replace" to 3, "substring" to 3,
+    "array.concat" to 2, "indexof" to 2,
 )
 
 /** Arithmetic infix operators (spec §14 promotion, backlog rank #1 after §14.8) -- opa's own operator names for `+`/`-`/`*`/`/`/`%`, confirmed via a real `opa parse` run; always binary. */
@@ -1249,6 +1260,9 @@ internal object AstMapper {
         if (unsupported != null) return unsupported
         val operands = mapped.map { (it as ConstructResult.Ok).operand }
         if (name in OPERAND_BUILTINS && args.size == 1) {
+            return ConstructResult.Ok(Operand.BuiltinCall(name, operands))
+        }
+        if (MULTI_ARG_OPERAND_BUILTINS[name] == operands.size) {
             return ConstructResult.Ok(Operand.BuiltinCall(name, operands))
         }
         if (name == "object.get" && operands.size == 3 && operands[0] is Operand.Path && isStringLiteral(operands[1])) {

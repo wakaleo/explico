@@ -1620,3 +1620,11 @@ match a loaded function of exactly that arity; otherwise the call stays `Unrende
 collection of a `some x in`. `x := <that>[_]` then promotes to `Condition.SomeIn` + `VarBinding.Iteration` through the
 existing trailing-wildcard rule. No model change. Only partial rules; local bindings shadow; an unmappable tail keeps the
 whole-chain fallback. Canonical hashes use the resolved package, so renaming an import alias does not change a hash.
+
+### 14.34 Fixed-arity operand builtins
+
+Operand builtins `split`, `trim_prefix`, `trim_suffix`, `trim`, `replace`, `substring`, `array.concat`, `indexof`
+(`MULTI_ARG_OPERAND_BUILTINS`, exact arity) and `abs`, `ceil`, `floor`, `round`, `sort`, `json.unmarshal`
+(`OPERAND_BUILTINS`) render through `Operand.BuiltinCall`, with phrases verified against a real `opa eval` of each
+builtin (`MULTI_ARG_OPERAND_TEMPLATES` / `OPERAND_BUILTIN_TEMPLATES`). A call with any other argument count stays
+`Operand.Unrendered`. `json.marshal` stays unpromoted.

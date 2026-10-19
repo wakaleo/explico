@@ -273,6 +273,31 @@ class ExpressionRendererTest {
     }
 
     @Test
+    @DisplayName("fixed-arity string/number/collection operand builtins render their opa-verified phrases, nested and with a wildcard")
+    fun multiArgOperandBuiltinsRenderTheirPhrases() {
+        fun path(vararg f: String) = Operand.Path((listOf("input") + f).map { PathSegment.Field(it) })
+        fun lit(v: String) = Operand.Literal(v)
+        fun cmp(call: Operand) = ExpressionRenderer.render(Condition.Comparison(call, Operator.EQ, lit("1")), noAnchor)
+        assertThat(cmp(Operand.BuiltinCall("split", listOf(path("s"), lit("\":\""))))).isEqualTo("the parts of `s` split on `\":\"` is `1`")
+        assertThat(cmp(Operand.BuiltinCall("trim_prefix", listOf(path("s"), lit("\"a\""))))).isEqualTo("`s` without its leading `\"a\"` is `1`")
+        assertThat(cmp(Operand.BuiltinCall("trim_suffix", listOf(path("s"), lit("\"a\""))))).isEqualTo("`s` without its trailing `\"a\"` is `1`")
+        assertThat(cmp(Operand.BuiltinCall("trim", listOf(path("s"), lit("\"a\""))))).isEqualTo("`s` trimmed of `\"a\"` at both ends is `1`")
+        assertThat(cmp(Operand.BuiltinCall("replace", listOf(path("s"), lit("\"a\""), lit("\"b\""))))).isEqualTo("`s` with every `\"a\"` replaced by `\"b\"` is `1`")
+        assertThat(cmp(Operand.BuiltinCall("substring", listOf(path("s"), lit("0"), lit("3"))))).isEqualTo("the substring of `s` from position `0`, length `3` is `1`")
+        assertThat(cmp(Operand.BuiltinCall("array.concat", listOf(path("a"), path("b"))))).isEqualTo("`a` followed by `b` is `1`")
+        assertThat(cmp(Operand.BuiltinCall("indexof", listOf(path("s"), lit("\"x\""))))).isEqualTo("the position of `\"x\"` in `s` (-1 if absent) is `1`")
+        assertThat(cmp(Operand.BuiltinCall("abs", listOf(path("n"))))).isEqualTo("the absolute value of `n` is `1`")
+        assertThat(cmp(Operand.BuiltinCall("ceil", listOf(path("n"))))).isEqualTo("`n` rounded up is `1`")
+        assertThat(cmp(Operand.BuiltinCall("floor", listOf(path("n"))))).isEqualTo("`n` rounded down is `1`")
+        assertThat(cmp(Operand.BuiltinCall("round", listOf(path("n"))))).isEqualTo("`n` rounded to the nearest whole number is `1`")
+        assertThat(cmp(Operand.BuiltinCall("sort", listOf(path("n"))))).isEqualTo("`n` sorted is `1`")
+        assertThat(cmp(Operand.BuiltinCall("json.unmarshal", listOf(path("n"))))).isEqualTo("`n` parsed as JSON is `1`")
+        // An any-index argument still earns the "any of:" prefix through a multi-argument template.
+        val wildcard = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("items"), PathSegment.AnyIndex, PathSegment.Field("name")))
+        assertThat(cmp(Operand.BuiltinCall("split", listOf(wildcard, lit("\":\""))))).startsWith("any of: ")
+    }
+
+    @Test
     @DisplayName("Operand.BuiltinCall(object.keys) renders as spec §6.3/§14's \"the keys of X\" template, including nested inside count")
     fun operandBuiltinCallObjectKeysRendersFaithfullyEvenNestedInsideCount() {
         val labels = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("labels")))

@@ -2856,6 +2856,52 @@ class AstMapperTest {
     }
 
     @Nested
+    inner class FixedArityOperandBuiltins {
+
+        private fun comparisonLeft(callName: String, vararg argJson: String): Operand {
+            val module = moduleOf(
+                """
+                {"package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                 "rules": [{"head": {"name": "deny", "ref": [{"type":"var","value":"deny"}]},
+                   "body": [{"index": 0, "location": {"row":1,"text":"${b64("$callName(...) == 1")}"},
+                     "terms": [{"type":"ref","value":[{"type":"var","value":"equal"}]},
+                       {"type":"call","location":{"text":"${b64("$callName(...)")}"},"value":[
+                         {"type":"ref","value":[${callName.split('.').joinToString(",") { """{"type":"${if (it == callName.split('.').first()) "var" else "string"}","value":"$it"}""" }}]}
+                         ${argJson.joinToString("") { ",$it" }}]},
+                       {"type":"number","value":1}]}]}]}
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages.single().rules.single().bodies.single()
+            return (body.conditions.single() as Condition.Comparison).left
+        }
+
+        private val pathArg = """{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"s"}]}"""
+        private val strArg = """{"type":"string","value":":"}"""
+
+        @Test
+        fun theExactArityIsPromotedToABuiltinCall() {
+            assertThat(comparisonLeft("split", pathArg, strArg)).isEqualTo(Operand.BuiltinCall("split", listOf(Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("s"))), Operand.Literal("\":\""))))
+            assertThat(comparisonLeft("replace", pathArg, strArg, strArg)).isInstanceOf(Operand.BuiltinCall::class.java)
+            assertThat(comparisonLeft("array.concat", pathArg, pathArg)).isInstanceOf(Operand.BuiltinCall::class.java)
+        }
+
+        @Test
+        fun anyOtherArityStaysRawSource() {
+            // opa's own checker rejects these, but the mapper must not rely on that.
+            assertThat(comparisonLeft("split", pathArg)).isInstanceOf(Operand.Unrendered::class.java)
+            assertThat(comparisonLeft("replace", pathArg, strArg)).isInstanceOf(Operand.Unrendered::class.java)
+            assertThat(comparisonLeft("abs", pathArg, pathArg)).isInstanceOf(Operand.Unrendered::class.java)
+        }
+
+        @Test
+        fun anArgumentThatIsItselfUnrenderableKeepsTheCallButIsCountedInside() {
+            val unbound = """{"type":"var","value":"nowhere"}"""
+            val call = comparisonLeft("split", unbound, strArg) as Operand.BuiltinCall
+            assertThat(call.args.first()).isInstanceOf(Operand.Unrendered::class.java)
+        }
+    }
+
+    @Nested
     inner class FunctionCallsAndMessagePlaceholders {
         // Review items 8-9.
 

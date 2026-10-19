@@ -263,6 +263,10 @@ internal object ExpressionRenderer {
             val (rightText, rightAny) = renderOperand(operand.args[1], ruleValueAnchorFor)
             return template(leftText, rightText) to (leftAny || rightAny)
         }
+        MULTI_ARG_OPERAND_TEMPLATES[operand.name]?.let { template ->
+            val rendered = operand.args.map { renderOperand(it, ruleValueAnchorFor) }
+            return template(rendered.map { it.first }) to rendered.any { it.second }
+        }
         val template = OPERAND_BUILTIN_TEMPLATES[operand.name]
             ?: throw IllegalArgumentException("Unrecognised operand-position builtin '${operand.name}'; AstMapper should never produce this.")
         val (argText, hasAnyIndex) = renderOperand(operand.args.single(), ruleValueAnchorFor)
@@ -371,6 +375,12 @@ private val OPERAND_BUILTIN_TEMPLATES: Map<String, (String) -> String> = mapOf(
     "trim_space" to { a -> "$a trimmed" },
     "object.keys" to { a -> "the keys of $a" },
     "time.parse_rfc3339_ns" to { a -> "the time $a" },
+    "abs" to { a -> "the absolute value of $a" },
+    "ceil" to { a -> "$a rounded up" },
+    "floor" to { a -> "$a rounded down" },
+    "round" to { a -> "$a rounded to the nearest whole number" },
+    "sort" to { a -> "$a sorted" },
+    "json.unmarshal" to { a -> "$a parsed as JSON" },
 )
 
 /**
@@ -382,6 +392,18 @@ private val OPERAND_BUILTIN_TEMPLATES: Map<String, (String) -> String> = mapOf(
  * (which may itself be non-backtick-wrapped prose, e.g. "the number of `x`") is interpolated as
  * plain text, never re-wrapped or concatenated at the character level.
  */
+/** Phrases for the fixed-arity 2/3-argument operand builtins (AstMapper's `MULTI_ARG_OPERAND_BUILTINS`); each verified against a real `opa eval`. */
+private val MULTI_ARG_OPERAND_TEMPLATES: Map<String, (List<String>) -> String> = mapOf(
+    "split" to { a -> "the parts of ${a[0]} split on ${a[1]}" },
+    "trim_prefix" to { a -> "${a[0]} without its leading ${a[1]}" },
+    "trim_suffix" to { a -> "${a[0]} without its trailing ${a[1]}" },
+    "trim" to { a -> "${a[0]} trimmed of ${a[1]} at both ends" },
+    "replace" to { a -> "${a[0]} with every ${a[1]} replaced by ${a[2]}" },
+    "substring" to { a -> "the substring of ${a[0]} from position ${a[1]}, length ${a[2]}" },
+    "array.concat" to { a -> "${a[0]} followed by ${a[1]}" },
+    "indexof" to { a -> "the position of ${a[1]} in ${a[0]} (-1 if absent)" },
+)
+
 private val ARITHMETIC_TEMPLATES: Map<String, (String, String) -> String> = mapOf(
     "plus" to { a, b -> "$a plus $b" },
     "minus" to { a, b -> "$a minus $b" },

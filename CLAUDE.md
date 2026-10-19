@@ -1344,3 +1344,8 @@ real code are mostly custom/external builtins -- correct as fallbacks. Use `Benc
 `partialRuleRootedPath` (called from `mapRefChain`, and from `mapSomeIn` with `allowBareRule`) renders `<alias>.<partialRule>[...]`
 as the rule's document path `data ▸ pkg ▸ rule ▸ ...`. Partial rules only; the exact bare reference in ordinary operand
 position is unchanged (still a fallback), deliberately.
+
+## More operand builtins (spec §14.34)
+
+Fixed-arity operand builtins live in `MULTI_ARG_OPERAND_BUILTINS` (mapper) and `MULTI_ARG_OPERAND_TEMPLATES`
+(renderer) -- verify any new phrase against a real `opa eval` first.

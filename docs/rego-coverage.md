@@ -1095,3 +1095,9 @@ iteration (`x == workloads.containers`) stays as before.
 
 Measured by the corpus benchmark (Trivy Kubernetes checks with their library loaded, `all` mode): condition coverage
 63% -> 75%, fallbacks 352 -> 271 (49% / 509 before cross-package calls).
+
+## More operand builtins
+
+`split`, `trim_prefix`, `trim_suffix`, `trim`, `replace`, `substring`, `array.concat`, `indexof`, `abs`, `ceil`, `floor`,
+`round`, `sort` and `json.unmarshal` now render in operand position (e.g. "the parts of `image` split on `":"`"), each
+phrase checked against a real `opa eval`. Exact argument counts only; anything else stays verbatim source.
