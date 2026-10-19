@@ -1462,3 +1462,12 @@ candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFI
   collapses whitespace because help wraps at terminal width.
 - Repinned (narrowly, not Tier-1): `MarkdownRendererTest.descriptionTrailingNewline...`. Regenerated after review: pack docs + index + diff goldens,
   sample-output, showcase, README/tutorial excerpts.
+
+## Public model compatibility (0.2.0 API review)
+
+- `RuleMetadata`, `PackageMetadata`, `RuleBody` carry `@JvmOverloads` so adding a defaulted field never removes the previous JVM constructor.
+  `ModelBinaryCompatibilityTest` pins the 0.1.1 signatures. When adding a field to ANY public model class: add it LAST with a default, give the
+  class `@JvmOverloads constructor`, and compare the public surface with the previous release: `javap -public` over the published jar
+  (`https://repo1.maven.org/maven2/io/github/wakaleo/explico/<ver>/explico-<ver>.jar`) vs `./gradlew jar`, ignoring `internal` classes. Generated
+  `copy()` changes are an accepted pre-1.0 cost (noted in the CHANGELOG), not worth hand-written overloads.
+

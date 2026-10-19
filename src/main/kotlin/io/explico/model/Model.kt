@@ -26,7 +26,7 @@ public data class PolicyPackage(
 )
 
 /** METADATA annotations attached at package scope: title, description, and (spec §14.43) authors / related resources / extra custom keys. `control-id` and `frameworks` are rule-level concepts and stay unused here (spec review item 4). */
-public data class PackageMetadata(
+public data class PackageMetadata @JvmOverloads constructor(
     val title: String?,
     val description: String?,
     /** The package's `authors:` METADATA (spec §14.43), mapped exactly as a rule's. */
@@ -83,7 +83,7 @@ public data class RuleGroup(
 public data class ConstantValue(val rendered: String, val sourceLocation: SourceRef)
 
 /** METADATA annotations attached to a rule, at rule or document scope. */
-public data class RuleMetadata(
+public data class RuleMetadata @JvmOverloads constructor(
     val title: String?,
     val description: String?,
     val controlId: String?,
@@ -114,7 +114,7 @@ public data class RelatedResource(val ref: String, val description: String?)
 public data class DefaultValue(val rendered: String, val sourceLocation: SourceRef)
 
 /** One rule body: conditions are AND-ed. */
-public data class RuleBody(
+public data class RuleBody @JvmOverloads constructor(
     val conditions: List<Condition>,
     val producesValue: String?,
     /**

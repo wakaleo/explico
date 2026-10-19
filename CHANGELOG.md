@@ -33,6 +33,10 @@ A new opt-in feature, and fixes for two defects found while building it. Recomme
   Such paths (and POSIX directories with a colon in their name) are now passed as `file://` URLs. Relative paths were never affected.
 - **Fixed:** an `opa` failure reported on stdout (as `opa eval --format json` does) produced an exception with an empty message; it now
   carries opa's output, or at least the exit code.
+- **Compatibility:** the public model grew (`RuleMetadata`, `PackageMetadata`, `RuleBody`, `RenderedDocs` gained fields). Their 0.1.x JVM constructors are kept
+  (`@JvmOverloads`), so existing Java and already-compiled callers still link; `ModelBinaryCompatibilityTest` pins this against the 0.1.1 signatures.
+  What does change is the generated data-class `copy(...)` signature (extra parameters), which affects only code that calls `copy()` on explico's model
+  and was compiled against 0.1.x -- recompile it. The model is not binary-stable for `copy()`/destructuring before 1.0.
 - **Changed:** failed tests now print their full assertion message in the Gradle/CI log (no effect on users).
 - **Changed:** a different `sprintf` argument path now changes a rule's logic hash for `explico diff` (it changes the produced message).
 
