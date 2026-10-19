@@ -81,9 +81,10 @@ checkout of this repository needed — just a JDK and `opa`:
 java -jar explico.jar demo
 ```
 
-(No release has been tagged yet — see the Install section below for
-building the jar locally instead: `./gradlew shadowJar`, then `java -jar
-build/libs/explico-<version>.jar demo`.)
+(The release asset is named `explico-<version>-all.jar`; rename it to
+`explico.jar`, or use its real name in the command. To build it yourself
+instead: `./gradlew shadowJar`, then `java -jar
+build/libs/explico-<version>-all.jar demo`.)
 
 This extracts a small real policy set to `./explico-demo/`, renders it, and
 prints exactly where to look:
@@ -113,10 +114,12 @@ See [`docs/tutorial.md`](docs/tutorial.md).
 
 Requires:
 
-- JDK 21. If you don't already have one, you don't need to install it
-  yourself — this project's `settings.gradle.kts` applies Gradle's
-  [foojay toolchain resolver](https://github.com/gradle/foojay-toolchains),
-  so `./gradlew` auto-downloads a JDK 21 toolchain the first time it's needed.
+- **To run or depend on explico: JDK 17 or newer** (the jars are Java 17
+  bytecode, and CI runs the runnable jar on JDK 17). **To build it from
+  source: nothing to install** — this project's `settings.gradle.kts` applies
+  Gradle's [foojay toolchain resolver](https://github.com/gradle/foojay-toolchains),
+  so `./gradlew` auto-downloads the JDK 21 toolchain it compiles with the first
+  time it's needed.
 - [`opa`](https://www.openpolicyagent.org/docs/latest/#running-opa),
   major version 1 (`opa version`), on `PATH` — or set the `OPA_BIN`
   environment variable to a specific binary. Developed and tested against
@@ -141,23 +144,19 @@ colleague's copy), from the directory containing this README:
 
 ### As a library
 
-**Not yet published.** The Maven Central publishing pipeline
-(`release.yml`, see `CLAUDE.md`) exists and is tested, but no release tag has
-gone through it yet. Until a real `v0.1.0` tag is pushed, build and use it
-locally instead:
-
-```
-./gradlew publishToMavenLocal
-```
-
-then, in a consuming project, add `mavenLocal()` to `repositories { }` and:
+Published to Maven Central as `io.github.wakaleo:explico`. Use **0.1.1 or
+newer**: 0.1.0's library jar mistakenly bundled the runnable jar's
+dependencies (see [`CHANGELOG.md`](CHANGELOG.md)).
 
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.wakaleo:explico:0.1.0")
+    implementation("io.github.wakaleo:explico:0.1.1")
 }
 ```
+
+To try an unreleased build instead, run `./gradlew publishToMavenLocal` and add
+`mavenLocal()` to the consuming project's `repositories { }`.
 
 The published artifact's compiled metadata targets **Kotlin 2.3.0** — a
 consumer on an older Kotlin Gradle plugin version will hit an opaque
@@ -177,7 +176,7 @@ explico demo [--fetch-opa]
 Run from a source checkout with `./gradlew run --args="..."`, via the
 installed distribution (`./gradlew installDist`, then
 `build/install/explico/bin/explico ...`), or via the standalone shadow jar
-(`./gradlew shadowJar`, then `java -jar build/libs/explico-<version>.jar
+(`./gradlew shadowJar`, then `java -jar build/libs/explico-<version>-all.jar
 ...` — see Quick demo above). Full detail on every flag and exit code:
 [`docs/user-guide.md`](docs/user-guide.md).
 

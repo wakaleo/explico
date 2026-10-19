@@ -1,5 +1,8 @@
 plugins {
     kotlin("jvm") version "2.3.0"
+    // `api` configuration: Fixture.input (public) is a kotlinx.serialization JsonObject, so consumers need that
+    // library at COMPILE time, not just runtime (0.1.0 published it runtime-only).
+    `java-library`
     kotlin("plugin.serialization") version "2.3.0"
     application
     id("com.vanniktech.maven.publish") version "0.37.0"
@@ -13,7 +16,7 @@ plugins {
 // no domain ownership needed) are independent of the `io.explico` Kotlin package namespace: only
 // the published artifact's groupId changes here, no source package is renamed.
 group = "io.github.wakaleo"
-version = "0.1.0"
+version = "0.1.1"
 
 repositories {
     mavenCentral()
@@ -21,10 +24,16 @@ repositories {
 
 kotlin {
     jvmToolchain(21)
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        // Compile against the JDK 17 API surface, so a call to a newer JDK API fails here, not on a consumer's machine.
+        freeCompilerArgs.add("-Xjdk-release=17")
+    }
 }
+tasks.withType<JavaCompile> { options.release.set(17) }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("com.github.ajalt.clikt:clikt:5.0.3")
 
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
@@ -69,14 +78,24 @@ application {
 }
 
 // Single runnable jar (spec §13.1): shadow auto-configures Main-Class from application.mainClass
-// above, no extra manifest wiring needed. Dropping the default "all" classifier gives a clean
-// explico-<version>.jar instead of explico-<version>-all.jar for the release-asset name (§10.2).
+// above, no extra manifest wiring needed. It KEEPS the default "all" classifier
+// (explico-<version>-all.jar): an empty classifier writes the very same file name as the library jar,
+// so the PUBLISHED Maven artifact silently became the fat jar (found after tagging 0.1.0) --
+// bundling Kotlin, kotlinx.serialization and Clikt while the POM also declares them.
 // Enable-Native-Access: ALL-UNNAMED silences the same JNA warning applicationDefaultJvmArgs
 // silences for the installed-distribution path (above) -- but a plain `java -jar` launch of this
 // jar doesn't go through that generated start script, so it needs the equivalent manifest
 // attribute instead (the only JDK-supported way to do this from inside the jar itself).
+// The runnable fat jar is a GitHub Release asset only. The shadow plugin would otherwise publish it to Maven
+// Central as an extra "-all" artifact (and a shadowRuntimeElements variant in the Gradle module metadata).
+(components["java"] as org.gradle.api.component.AdhocComponentWithVariants)
+    .withVariantsFromConfiguration(configurations["shadowRuntimeElements"]) { skip() }
+
+// The licence travels inside both jars (Central does not require it, consumers' compliance tooling expects it).
+tasks.jar { from("LICENSE") { into("META-INF") } }
+
 tasks.shadowJar {
-    archiveClassifier.set("")
+    from("LICENSE") { into("META-INF") }
     // Each Kotlin dependency jar carries its own same-named META-INF/*.kotlin_module file; shadow's
     // KotlinModuleMetadataTransformer needs to see all of them (not just the first, which EXCLUDE
     // would leave it) to merge correctly -- confirmed via the exact build warning this produced
@@ -252,6 +271,8 @@ tasks.test {
     // ShadowJarProcessTest (spec §13.1) runs the real built jar as a subprocess, so it must
     // already exist. Only real cost is a fast (~1-3s) shadowJar build before every `test` run.
     dependsOn(tasks.shadowJar)
+    // LibraryJarShapeTest inspects the thin library jar that is actually published.
+    dependsOn(tasks.jar)
 }
 
 // Tier-1 acceptance tests and Tier-2 golden tests (spec §9): require the `opa`

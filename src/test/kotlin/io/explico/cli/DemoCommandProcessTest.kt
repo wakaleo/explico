@@ -35,7 +35,7 @@ class DemoCommandProcessTest {
         val version = javaClass.getResourceAsStream("/explico-version.properties")!!.use { stream ->
             Properties().apply { load(stream) }.getProperty("version")
         }
-        val jar = Path.of("build/libs/explico-$version.jar").toAbsolutePath()
+        val jar = Path.of("build/libs/explico-$version-all.jar").toAbsolutePath()
         check(Files.exists(jar)) { "Shadow jar not found at $jar -- run ./gradlew shadowJar first" }
         jar
     }

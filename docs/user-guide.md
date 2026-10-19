@@ -178,11 +178,11 @@ repositories {
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(17)
 }
 
 dependencies {
-    implementation("io.github.wakaleo:explico:0.1.0")
+    implementation("io.github.wakaleo:explico:0.1.1")
 }
 
 application {
@@ -204,8 +204,10 @@ application {
   nothing pointing at "bump your Kotlin version" as the fix. If you hit an
   unreadable internal-compiler stack trace anywhere in this setup, try
   2.3.0+ before assuming the problem is in your own code.
-- **JVM 21 toolchain** — matches what this project itself builds and tests
-  against (`jvmToolchain(21)`, `CLAUDE.md`).
+- **JVM 17 or newer** at runtime — the library's bytecode targets Java 17
+  (checked by the compiler against the JDK 17 API surface), and CI runs the
+  runnable jar on a real JDK 17. This project itself builds on a JDK 21
+  toolchain.
 
 With that scaffold in place, `samples/policies` (or your own policy
 directory) needs to exist relative to wherever you run Gradle from — the

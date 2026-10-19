@@ -1364,3 +1364,19 @@ regenerated after line-by-line review. Never relax the all-or-nothing rule or re
 `x = <value>` with a bare FRESH `x` is a binding like `:=` (`matchFreshUnification`); the value must fully render, the
 expression must not be negated, and an already-bound `x` stays an equality test. Do not widen it to destructuring or to
 values that do not render.
+
+## 0.1.1 packaging corrections and the integrated release workflow (spec §14.38)
+
+0.1.0 shipped with a fat library jar on Maven Central: `shadowJar` had an empty classifier, so it wrote the same file
+name as the library jar and `publishToMavenLocal`/`publishToMavenCentral` published it. Never again:
+- `shadowJar` keeps the default `-all` classifier; the shadow variant is skipped from the Maven publication
+  (`withVariantsFromConfiguration(...) { skip() }`); the fat jar is a GitHub Release asset only.
+- `LibraryJarShapeTest` (part of `check`) fails if the library jar bundles non-`io/explico/` classes, has a `Main-Class`,
+  exceeds 2 MB, or lacks `META-INF/LICENSE`. Reintroducing the 0.1.0 mistake makes it fail (verified).
+- `kotlinx-serialization-json` is an `api` dependency (`Fixture.input` exposes `JsonObject`); `java-library` applied.
+- Bytecode targets Java 17 (`jvmTarget` + `-Xjdk-release=17`, `JavaCompile.release = 17`); toolchain stays 21. CI runs the
+  runnable jar on a real JDK 17.
+- `release.yml` now calls `ci.yml` (`workflow_call`) first, checks the tag equals `build.gradle.kts`'s version, signs with
+  the real key and verifies the signatures in a clean keyring plus that the key is on keyserver.ubuntu.com, and only then
+  publishes. A manual **dry run** (`workflow_dispatch`, default on) does everything except upload and the GitHub Release --
+  use it before tagging, because Central rations publishes. Central versions are permanent: verify, then tag.

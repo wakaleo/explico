@@ -1668,3 +1668,12 @@ additionally requires the other side to be a plain path, wildcard element or ful
 then handled by the same branch as `x := <value>` (substitution / `Condition.SomeIn` / expression binding), and
 `msg = <value>` for the head's message variable is accepted wherever `msg := <value>` is. Everything else keeps the
 "function-call" fallback.
+
+### 14.38 Release packaging corrections (0.1.1) and the integrated release workflow
+
+The library jar is the thin `explico-<version>.jar` (only `io.explico` classes, no `Main-Class`, `META-INF/LICENSE`); the
+runnable jar is `explico-<version>-all.jar` and is NOT part of the Maven publication. `kotlinx-serialization-json` is a
+compile-scope (`api`) dependency because the public `Fixture.input` exposes its `JsonObject`. Bytecode targets Java 17
+(API surface checked at compile time; the runnable jar is smoke-tested on JDK 17 in CI). `LibraryJarShapeTest` guards the
+jar's shape. `release.yml` is gated on the full CI matrix, verifies tag == version, signs and verifies signatures and the
+public key before any upload, and supports a no-upload dry run. See `CHANGELOG.md` for the user-facing summary.
