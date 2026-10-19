@@ -47,7 +47,7 @@ criteria. No speculative abstraction, no plugin systems, no configuration files.
 - No LLM integration of any kind.
 - No differential evaluation **across versions** / decision-flip analysis (future
   phase). Single-version fixture evaluation for worked examples IS in scope (§6.7).
-- No HTML output, no web server, no graphical rendering (Markdown only).
+- No HTML output, no web server, no graphical rendering (Markdown, plus the opt-in JSON of §14.45 for other tools).
 - No inlining/flattening of helper rule bodies (references are rendered as links).
 - No support for: `every`, `with` statements, `else` chains, or a comprehension containing anything
   the tool cannot itself render. These render via the fallback mechanism (§6.6). (Comprehensions
@@ -100,12 +100,16 @@ explico/
 ├── ARCHITECTURE.md                (§10)
 ├── src/
 │   ├── main/kotlin/io/explico/
-│   │   ├── opa/                   OpaRunner.kt, OpaJson.kt (DTOs for opa output)
+│   │   ├── opa/                   OpaRunner.kt, OpaJson.kt (DTOs for opa output), OpaFetcher.kt
 │   │   ├── model/                 Model.kt (domain model, §5)
 │   │   ├── parse/                 AstMapper.kt (opa JSON → domain model)
-│   │   ├── render/                PathHumanizer.kt, ExpressionRenderer.kt,
-│   │   │                          MarkdownRenderer.kt, Coverage.kt
-│   │   ├── diff/                  Canonicalizer.kt, PolicyDiff.kt, DiffRenderer.kt
+│   │   ├── render/                PathHumanizer.kt, ExpressionRenderer.kt, MarkdownRenderer.kt,
+│   │   │                          Coverage.kt, Examples.kt (worked examples, §6.7),
+│   │   │                          ReferenceData.kt (§14.41), PolicyDigest.kt (§14.40),
+│   │   │                          JsonExport.kt (§14.45)
+│   │   ├── generate/              InputSynthesizer.kt, ExampleGenerator.kt (§14.39)
+│   │   ├── diff/                  Canonicalizer.kt, PolicyDiff.kt, LineDiffer.kt, DiffRenderer.kt,
+│   │   │                          ChangeSummary.kt (§14.42), DiffJson.kt (§14.45)
 │   │   ├── Explico.kt             public library facade
 │   │   └── cli/Main.kt            Clikt commands
 │   └── test/
@@ -579,13 +583,14 @@ object Explico {
     fun load(policyDir: Path, regoVersion: RegoVersion = RegoVersion.V1): PolicySet           // §14.35
     fun loadExamples(dir: Path): ExampleSet
     fun render(policySet: PolicySet, policyDir: Path, examples: ExampleSet? = null,
-               dataDir: Path? = null, generateExamples: Boolean = false): RenderedDocs      // §14.39
-    fun diff(old: PolicySet, new: PolicySet): DiffReport  // model + markdown
+               dataDir: Path? = null, generateExamples: Boolean = false,                    // §14.39
+               json: Boolean = false): RenderedDocs                                         // §14.45
+    fun diff(old: PolicySet, new: PolicySet): DiffReport  // model + markdown + json
 }
 data class RenderedDocs(val files: Map<String, String>, val coverage: CoverageSummary,
                         val generatedExamples: GeneratedExamplesSummary? = null)
 data class GeneratedExamplesSummary(val rulesWithExamples: Int, val rulesConsidered: Int)
-data class DiffReport(val entries: List<DiffEntry>, val markdown: String)
+data class DiffReport(val entries: List<DiffEntry>, val markdown: String, val json: String = "")
 ```
 
 Everything else is `internal`. KDoc on every public declaration.
@@ -594,8 +599,10 @@ Everything else is `internal`. KDoc on every public declaration.
 
 ```
 explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>]
-explico diff <oldDir> <newDir> --out <reportFile>
+               [--rego-version v1|v0] [--generate-examples] [--json]
+explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--rego-version v1|v0]
 explico version
+explico demo [--fetch-opa]                  # §13.2
 ```
 
 - `render`: writes the files from `RenderedDocs`, prints coverage summary to stdout.

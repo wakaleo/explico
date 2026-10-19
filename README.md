@@ -61,11 +61,25 @@ would do.
 
 ## Status
 
-This is a proof of concept, built against
+explico is an early release (0.2.x), built against
 [`specs/explico-poc-specification.md`](specs/explico-poc-specification.md),
-which is the authoritative design document. The full pipeline described
-below is implemented and tested: `render`, `diff`, worked examples, and the
-CLI. See [`CLAUDE.md`](CLAUDE.md) for the project's development conventions,
+which is the authoritative design document. The full pipeline is implemented
+and tested. What it produces:
+
+- **Control cards** (one Markdown document per Rego package, plus `index.md`) with each rule's
+  METADATA (title, description, control id, frameworks, authors, related resources, other custom
+  keys), what a match means by the `deny`/`allow` naming convention, every condition in plain
+  words, and a per-card and per-package **rendering coverage** figure. A framework → controls
+  matrix, per-title links, and a policy digest tie the set together.
+- **Worked examples**: your fixtures evaluated by real `opa eval` (never predicted), plus
+  optional `--generate-examples` that derive and verify extra ones.
+- **Reference data**: with `--data`, the values of the `data.*` documents a rule reads.
+- **`explico diff`**: a plain "What changed" list, then per-control cards and source diffs,
+  insensitive to formatting, comments and variable names.
+- **JSON** (`--json`) for dashboards, GRC tools and scripts — the same facts, machine-readable
+  ([`docs/json-output.md`](docs/json-output.md)).
+
+See [`CLAUDE.md`](CLAUDE.md) for the project's development conventions,
 non-negotiables, and a full log of the judgment calls made where the spec
 doesn't pin an exact detail.
 
@@ -95,7 +109,8 @@ Open explico-demo/docs/release-approvals.md to see a rendered control card.
 ```
 
 `explico-demo/docs/index.md` is worth a look too — tables of every rule
-across all 6 rendered documents, with a coverage column per control. Running
+across all 6 rendered documents, each title linked to its card, with a *Rendered* column per rule
+and a controls-by-framework matrix. Running
 `demo` again in the same directory refuses rather than overwriting
 (`'explico-demo' already exists...`, exit code `1`) — remove the directory
 first if you want to re-run it: `rm -rf explico-demo`.
@@ -336,16 +351,16 @@ fun main() {
 | 3 | `opa` binary missing or an incompatible version |
 | 4 | Duplicate control-ids (`diff`) or duplicate fixture names (`render --examples`) |
 
-## Limitations (by design — POC scope)
+## Limitations (by design)
 
-These are permanent, deliberate non-goals (spec §1.2), not gaps to be filled
-in later. Reproduced verbatim from the spec so this list can't drift from it:
+These are deliberate non-goals (spec §1.2), not gaps to be filled in
+later. Reproduced from the spec so this list can't drift from it:
 
 | # | Out of scope |
 |---|---|
 | 1 | No LLM integration of any kind. |
 | 2 | No differential evaluation **across versions** / decision-flip analysis (future phase). Single-version fixture evaluation for worked examples IS in scope (§6.7). |
-| 3 | No HTML output, no web server, no graphical rendering (Markdown only). |
+| 3 | No HTML output, no web server, no graphical rendering (Markdown, plus opt-in JSON for tools). |
 | 4 | No inlining/flattening of helper rule bodies (references are rendered as links). |
 | 5 | No rendering of: `every`, `with` statements, `else` chains, or a comprehension containing anything explico cannot itself render (comprehensions whose whole body renders are rendered). These render via the fallback mechanism (§6.6). |
 | 6 | No git integration. Diff takes two plain directories; the caller checks out versions themselves (e.g. via `git worktree`). |

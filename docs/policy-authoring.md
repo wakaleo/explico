@@ -166,6 +166,15 @@ with logic is the policy author's job, not something explico's honesty
 guarantee extends to — that guarantee is specifically about the *logic*,
 never about auditing the prose a human attached to it.
 
+## What `--data` adds to a card
+
+If you pass `--data`, a card whose rule reads a plain `data.*` document (an exemption list, a threshold table, a freeze
+window) gains a **Reference data** block showing what that document holds in the supplied data — so a reviewer sees the
+list, not just its name. Nothing to write in your policy for this. Two things to know: only plain data documents appear
+(a `data.` path that names another rule or package is a rule, not data, and is never queried), and only the path *before*
+any iteration is shown (`data.limits.owners[o].name` shows `data.limits.owners`). A path the data does not define says so
+explicitly. The same facts are in the [JSON output](json-output.md) (`referenceData`), where long values are not cut.
+
 ## Writing conditions that render as structured text
 
 Each leaf condition in a rule body renders as one bullet if explico
@@ -412,7 +421,7 @@ available first:
 The same fixture set that powers today's Worked examples section is also
 the natural seed for **cross-version change-impact analysis** — evaluating
 whether a policy change flips any real scenario's verdict — which spec
-§1.2 explicitly names as future-phase scope, not something this POC does
+§1.2 explicitly names as future-phase scope, not something explico does
 yet. A well-sourced, sanitised, real-world-grounded fixture corpus built
 now isn't just documentation for today's cards; it's the regression suite
 a future differential-evaluation feature would run against. Time spent

@@ -284,6 +284,9 @@ languages.
 ## Where to go next
 
 - Every flag and exit code, exhaustively: [`user-guide.md`](user-guide.md).
+- The same result as data for dashboards and scripts (`--json`): [`json-output.md`](json-output.md).
+- Extra, machine-derived worked examples for rules your fixtures leave a gap for (`--generate-examples`): the
+  *Generated examples* section of [`user-guide.md`](user-guide.md).
 - Writing your own policies for explico to render well:
   [`policy-authoring.md`](policy-authoring.md).
 - The pipeline and design rationale: [`../ARCHITECTURE.md`](../ARCHITECTURE.md).

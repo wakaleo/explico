@@ -10,9 +10,11 @@ see `specs/explico-poc-specification.md` (the authoritative design) and
 .rego files ──opa parse──▶ OpaModule JSON ──┐
                                              ├──▶ AstMapper ──▶ domain model ──┬──▶ MarkdownRenderer ──▶ render output
 .rego dir   ──opa inspect─▶ METADATA JSON ───┘         (parse/)  (model/)     │         (render/)
+                                                                              ├──▶ JsonExport ──▶ explico.json (opt-in)
                                                                               ├──▶ Canonicalizer + PolicyDiff
-fixtures    ──opa eval────▶ verdict JSON ───────────────────────────────────▶│    + DiffRenderer ──▶ diff report
-                                                       (Explico.kt orchestrates all of it)   (diff/)
+fixtures    ──opa eval────▶ verdict JSON ───────────────────────────────────▶│    + DiffRenderer + DiffJson ──▶ diff report
+data.*      ──opa eval────▶ reference-data values ─────────────────────────▶│                                   (diff/)
+                                                       (Explico.kt orchestrates all of it)
 ```
 
 1. **`opa/`** — `OpaRunner` shells out to the `opa` binary (`parse`, `inspect`,
@@ -31,10 +33,19 @@ fixtures    ──opa eval────▶ verdict JSON ────────�
    `ExpressionRenderer` (a `Condition` → one English-ish bullet),
    `MarkdownRenderer` (assembles cards/pages/index), `Coverage` (rendered vs.
    total conditions), `Examples`/`WorkedExamples` (fixture verdicts, obtained
-   via `opa eval` and orchestrated from `Explico.kt`, then rendered here).
+   via `opa eval` and orchestrated from `Explico.kt`, then rendered here),
+   `ReferenceData` (which `data.*` documents a rule reads, never a loaded rule —
+   resolved by `opa eval` from `Explico.kt`), `PolicyDigest` (a SHA-256 over the
+   `.rego` files, shown on every document) and `JsonExport` (the opt-in
+   `explico.json`: a projection of exactly what the Markdown uses, never a second
+   interpretation).
+   `generate/` (`InputSynthesizer`, `ExampleGenerator`) derives candidate inputs
+   from a rule's conditions for `--generate-examples`; every candidate is
+   verified by `opa eval` through the same worked-example path before it is shown.
 4. **`diff/`** — also pure functions over the domain model:
    `Canonicalizer` (SHA-256 of a rule's logic/metadata, insensitive to
-   formatting/comments/variable names), `PolicyDiff` (identity resolution +
+   formatting/comments/variable names), `ChangeSummary` (the plain "What changed"
+   list) and `DiffJson` (its JSON), `PolicyDiff` (identity resolution +
    ADDED/REMOVED/LOGIC_CHANGED/DOCS_CHANGED/UNCHANGED classification),
    `LineDiffer` (dependency-free LCS line diff), `DiffRenderer` (the change
    report, reusing `MarkdownRenderer.renderCard` rather than a second,
@@ -45,7 +56,7 @@ fixtures    ──opa eval────▶ verdict JSON ────────�
    the module producing them (`CoverageSummary`, `Fixture`/`ExampleSet`,
    `DiffEntry`/`DiffCategory`) because they're part of a public function's
    signature. Everything else is `internal`.
-6. **`cli/Main.kt`** — a thin Clikt wrapper: three commands, each catching
+6. **`cli/Main.kt`** — a thin Clikt wrapper: four commands (`render`, `diff`, `version`, `demo`), each catching
    exactly the exception types the library throws and mapping them to the
    spec's exit codes, never letting an exception reach the JVM's default
    handler (which would print a raw stack trace).
