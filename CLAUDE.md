@@ -30,8 +30,8 @@ prose standing in for logic the tool didn't actually check.
    examples, §6.7). Kotlin code only maps `opa`'s JSON output into the domain
    model (`parse/AstMapper.kt`). See spec §4.
 2. **The fallback is sacred.** Any construct the mapper cannot classify —
-   comprehensions, `every`, user-defined functions with parameters, `with`,
-   `else` chains, anything unclassified — becomes `Condition.Unrendered` /
+   `every`, `with`, `else` chains, a comprehension with any unrenderable part,
+   anything unclassified — becomes `Condition.Unrendered` /
    `Operand.Unrendered` with the verbatim source (sliced from the file via the
    AST's row/col span) and a machine-readable `reason`. NEVER render a guess.
    When in doubt, fall back. This is the project's cardinal sin to violate.
@@ -382,8 +382,8 @@ spec's "no opa needed" framing for these three files specifically.
   by definition it didn't understand the construct; only a classified
   construct's formatting is invisible to the hash (because only its *parsed
   structure* is hashed, never its source text). Proven with a real fixture
-  pair reformatting whitespace inside `count({a | some a in ...})` (REL-004's
-  own comprehension-fallback shape) — the reformatted version's hash legitimately
+  pair reformatting whitespace inside an `every` block (originally a `count({a | ...})` comprehension, which
+  is now rendered and so hashes structurally -- spec §14.36) — the reformatted version's hash legitimately
   differs, confirming the caveat is real, not hypothetical.
   (`reformattingInsideAnUnrenderedFallbackSpanYieldsADifferentLogicHash`).
 - **`RuleBody.sourceText` added to the domain model** (spec §5 amendment): the
@@ -425,8 +425,9 @@ spec's "no opa needed" framing for these three files specifically.
     side (`newRule ?: oldRule`) has condition-level coverage below 100% —
     including `DOCS_CHANGED` entries, since the exact wording ("N changed
     controls") doesn't restrict itself to `LOGIC_CHANGED` only, and REL-004's
-    own real coverage gap (7 of 8, from its `count({a | ...})` comprehension
-    fallback) is exactly the case the `diff-all-categories` golden exercises.
+    own coverage gap (7 of 8, from its then-fallback `count({a | ...})` comprehension) was originally the
+    case the `diff-all-categories` golden exercised; comprehensions render now (§14.36), so that warning is
+    covered by `DiffRendererTest`'s `every` fixtures instead.
   None of this is confirmed by more than one golden yet (only
   `diff-all-categories` exists) — reasonable-but-not-battle-tested, same
   status MarkdownRenderer's own choices had after session 4, before session
@@ -1354,3 +1355,11 @@ Fixed-arity operand builtins live in `MULTI_ARG_OPERAND_BUILTINS` (mapper) and `
 
 `RegoVersion` is chosen explicitly (`--rego-version`, `Explico.load(dir, V0)`), stored on `PolicySet`, and threaded to every
 `opa` call; never auto-detect it.
+
+## Comprehensions (spec §14.36) -- an operator-approved amendment of a frozen contract
+
+`Operand.Comprehension` renders "(the set of X such that ...)"; **all-or-nothing** -- one unrenderable condition/operand,
+a rule or function reference, or an unresolvable head keeps the whole comprehension as verbatim source. REL-004's two
+Tier-1 assertions were amended (explicit operator approval; see the acceptance README's note) and three Tier-2 goldens
+regenerated after line-by-line review. Never relax the all-or-nothing rule or render half of a comprehension.
+`some k, v in c`: the key binds as `VarBinding.IterationKey` (plain variable `k`), not as an element.

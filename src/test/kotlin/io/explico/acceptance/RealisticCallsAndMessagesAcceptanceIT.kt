@@ -151,7 +151,7 @@ class RealisticCallsAndMessagesAcceptanceIT {
         @DisplayName("a call whose argument is a comprehension stays fenced source and is not linked")
         fun unmappableArgumentStaysFenced() {
             val card = section(funcFiles["funcs.md"] ?: "", "funcs.deny")
-            assertThat(fencedSource(card)).contains("in_region(input.region, {r | some r in input.regions})")
+            assertThat(fencedSource(card)).contains("in_region(input.region, {r | some r in input.regions; net.cidr_is_valid(r)})")
             assertThat(bullets(card).count { it.contains("](#funcs-in-region)") }).isEqualTo(1)
         }
 

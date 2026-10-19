@@ -169,6 +169,9 @@ public sealed interface Condition {
 /** A comparison operator (spec §5). */
 public enum class Operator { EQ, NEQ, GT, GTE, LT, LTE }
 
+/** The collection a [Operand.Comprehension] builds. */
+public enum class ComprehensionKind { SET, ARRAY, OBJECT }
+
 /** Which Rego collection syntax a promoted literal collection used (spec §14 promotion); see [Operand.Literal]. */
 public enum class LiteralCollection { ARRAY, SET }
 
@@ -227,6 +230,21 @@ public sealed interface Operand {
      * promoted and stays [Unrendered] whole, same conservative posture as every other promotion.
      */
     public data class ParameterPath(val name: String, val segments: List<PathSegment>) : Operand
+
+    /**
+     * A set, array or object comprehension (`{a | ...}`, `[x | ...]`, `{k: v | ...}`), rendered as a
+     * parenthesised phrase such as "(the set of `x` such that ...)". [term] is the head term (the KEY of an
+     * [ComprehensionKind.OBJECT] comprehension, whose value is [valueTerm]); [body] holds the conditions
+     * that must all hold. Only produced when EVERYTHING inside is rendered: any unrenderable condition or
+     * operand keeps the whole comprehension as verbatim source, and a body never contains a rule or
+     * function reference (nothing in a nested phrase could be linked).
+     */
+    public data class Comprehension(
+        val kind: ComprehensionKind,
+        val term: Operand,
+        val valueTerm: Operand?,
+        val body: List<Condition>,
+    ) : Operand
 
     /** An operand the mapper cannot classify, e.g. an unrecognised operand-position builtin call. */
     public data class Unrendered(val sourceText: String) : Operand

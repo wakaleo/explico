@@ -49,8 +49,9 @@ criteria. No speculative abstraction, no plugin systems, no configuration files.
   phase). Single-version fixture evaluation for worked examples IS in scope (§6.7).
 - No HTML output, no web server, no graphical rendering (Markdown only).
 - No inlining/flattening of helper rule bodies (references are rendered as links).
-- No support for: comprehensions, `every`, user-defined functions with parameters,
-  `with` statements, `else` chains. These render via the fallback mechanism (§6.6).
+- No support for: `every`, `with` statements, `else` chains, or a comprehension containing anything
+  the tool cannot itself render. These render via the fallback mechanism (§6.6). (Comprehensions
+  whose whole body renders ARE rendered since §14.36; user-defined functions with parameters since §14.)
 - No git integration. Diff takes two plain directories; the caller checks out
   versions themselves (e.g. via `git worktree`).
 - No Rego parsing in Kotlin. Parsing is delegated to the `opa` binary (§4).
@@ -1636,3 +1637,25 @@ stores it on `PolicySet.regoVersion`, and `OpaRunner.parse/inspect/eval` append 
 examples read it from the `PolicySet`). The CLI gains `--rego-version v1|v0` on `render` and `diff`. Deliberately explicit,
 never detected: a wrong guess can silently change what a policy means. The README's "Targets OPA 1.x" remains true of the
 `opa` binary. Measured: the Gatekeeper library went from 0 to 91 of 91 files rendering (66% condition coverage).
+
+### 14.36 Comprehensions (operator-approved amendment of the §1.2 non-goal)
+
+`Operand.Comprehension(kind: SET|ARRAY|OBJECT, term, valueTerm, body)` renders as a parenthesised phrase: "(the set of
+`x` such that C1; C2)", "(the list of ...)", "(the object mapping K to V such that ...)"; `count(c) == 0` / `> 0` reads
+"... is empty" / "is not empty". All-or-nothing (the fallback rule is unchanged): the body is mapped with the same
+per-expression logic as a rule body (`mapBodyExpr`, shared) inside a COPY of the symbol table, and the comprehension is
+built only if every condition is fully rendered, none is a rule/function reference (nothing in a nested phrase can be
+linked), and the head term resolves. Otherwise the enclosing condition falls back to verbatim source exactly as before
+(`reason: comprehension`). `Canonicalizer` hashes it structurally (variable renames, reformatting and comments are
+invisible; a changed condition or set/array/object kind changes the hash).
+
+**Frozen-contract amendment.** The acceptance README pinned REL-004's `count({a | ...}) == 0` as a ⚠ fallback and REL-004
+as below 100%. With the operator's approval only those two REL-004 assertions changed (Situation 1 is fully rendered;
+REL-004's card is 8 of 8, and the `all_checks_passed` `every` helper carries the pack's fallback and sub-100%
+coverage), recorded in the README and `ReleaseGovernanceAcceptanceIT`. The Tier-2 goldens `index.md`,
+`release-governance.md` and `diff-report.md` were regenerated after line-by-line review (overall coverage 91% -> 95%).
+
+**Bug found and fixed on the way.** `some k, v in c` bound BOTH variables as elements of `c`, so a bare `k` (the KEY)
+rendered as `c ▸ [each k]` -- the value at k -- and `startswith(k, "team-")` read as a test on the value. The key now
+binds as `VarBinding.IterationKey`: a bare use renders as the plain variable `k`, as an index (`m[k]`) it is unchanged,
+as a ref root it falls back.

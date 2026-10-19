@@ -146,6 +146,15 @@ internal object Canonicalizer {
             put("packagePath", JsonPrimitive(operand.packagePath))
             put("type", JsonPrimitive("FunctionCall"))
         }
+        is Operand.Comprehension -> buildJsonObject {
+            // Keys are inserted alphabetically; variables are aliased in that traversal order (body
+            // first), which is consistent for any renamed copy of the same comprehension.
+            put("body", buildJsonArray { operand.body.forEach { add(canonicalCondition(it, aliases)) } })
+            put("kind", JsonPrimitive(operand.kind.name))
+            put("term", canonicalOperand(operand.term, aliases))
+            put("type", JsonPrimitive("Comprehension"))
+            put("valueTerm", operand.valueTerm?.let { canonicalOperand(it, aliases) } ?: JsonNull)
+        }
         is Operand.ParameterPath -> buildJsonObject {
             put("name", JsonPrimitive(aliasFor(operand.name, aliases)))
             put("segments", buildJsonArray { operand.segments.forEach { add(canonicalSegment(it, aliases)) } })

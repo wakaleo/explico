@@ -29,7 +29,7 @@ expected/            ahead-of-time expected markdown (see "Two-tier testing")
 | `approvals/change_approval.rego` | REL-001 Production change approval | eq vs literal, negated truthy, **path-vs-path** eq, two bodies, sprintf messages, full metadata → **100% coverage showcase** |
 | `evidence/pipeline_evidence.rego` | REL-002 Pipeline evidence | `some … in`, var-rooted path (`stage.status`), `!=`, set membership, **helper rule** (`is_release_candidate`), **cross-package negated reference** (`exemptions.exempt_service`) |
 | `provenance/artifact_provenance.rego` | REL-003 Artifact provenance | negated builtin (`startswith`), **quoted key-literal path** (`labels["signed-off-by"]`), string-literal message (no sprintf) |
-| `governance/release_governance.rego` | REL-004 Release governance evidence | **comprehension → fallback block**, `data.*` paths, numeric `>=`/`<=`, helper containing **`every` → fallback**, three bodies → **coverage < 100%** |
+| `governance/release_governance.rego` | REL-004 Release governance evidence | **comprehension** (originally a fallback block; rendered since the amendment below), `data.*` paths, numeric `>=`/`<=`, helper containing **`every` → fallback**, three bodies; the package's **coverage < 100%** comes from the `every` helper |
 | `exemptions/exemptions.rego` | (helper, **no METADATA**) | name-based identity, visible "no description" gap marker, `data.*` membership |
 
 ## Two-tier testing
@@ -78,13 +78,21 @@ approved renderer.
 
 ### REL-004 (`release-governance.md`)
 - Exactly three `### Situation` headings.
-- Situation 1 contains a ⚠ **not rendered — shown as source** block whose fenced
-  content includes `count({a |`.
+- Situation 1 is fully rendered: it contains the comprehension phrase `(the set of`
+  … `such that` … `) is empty`, and no ⚠ block.
 - Situation 2 fully rendered: `` `deployment ▸ timestamp` is at least `` …
   `` `data ▸ release ▸ freeze windows` `` breadcrumbs present.
 - Situation 3 references rule `all_checks_passed`; the `all_checks_passed` card
   contains a ⚠ block whose fenced content includes `every check in`.
-- Coverage footer reports **less than 100%** and the card lists the fallback count.
+- REL-004's own coverage footer reports **8 of 8** conditions (it no longer has a fallback);
+  the `all_checks_passed` card's footer reports **less than 100%** (`0 of 1`), listing the `every`
+  fallback, and the package footer is **less than 100%**.
+
+> **Amendment (operator-approved).** Comprehensions were originally an explicit non-goal, so
+> REL-004's `count({a | ...}) == 0` was pinned as a ⚠ fallback block and REL-004's own card as
+> below 100%. The operator then approved rendering comprehensions (spec §14.36). Only the two
+> REL-004 bullets above and the fixture-matrix note changed; every other assertion in this file is
+> exactly as originally frozen. The `every` helper still provides the pack's fallback block.
 
 ### Helper with no metadata (`release-exemptions.md`)
 - Heading falls back to `## release.exemptions.exempt_service`.

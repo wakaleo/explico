@@ -1,0 +1,1 @@
+{"name":"self-approved with failures","description":"The author approved their own change and three checks failed.","input":{"environment":"production","author":"asmith","approvals":[{"user":"asmith","role":"release-manager"}],"checks":[{"status":"failed"},{"status":"failed"},{"status":"failed"}]}}

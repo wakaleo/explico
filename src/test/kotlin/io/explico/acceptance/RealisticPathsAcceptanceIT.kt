@@ -123,7 +123,7 @@ class RealisticPathsAcceptanceIT {
         @DisplayName("terraform.s3.deny: `rc.type` renders as a resource changes ▸ … ▸ type breadcrumb")
         fun terraformLaterUseIsABreadcrumb() {
             val card = section(files["terraform-s3.md"] ?: "", "terraform.s3.deny")
-            val bullet = bullets(card).single { it.contains("\"aws_s3_bucket\"") }
+            val bullet = bullets(card).single { it.contains("\"aws_s3_bucket\"") && it.contains("[each rc]") }
             assertThat(bullet).containsPattern("resource changes ▸ .*type")
         }
     }

@@ -69,7 +69,7 @@ guessing.
 
 | Construct | Reason category | Rationale |
 |---|---|---|
-| Comprehensions (array/set/object), bare or wrapped in `count(...)` | `comprehension` | Explicit non-goal (spec §1.2). Probes 09 (nested `every`), 29, 30; pack REL-004. |
+| A comprehension (array/set/object) containing anything unrenderable (a condition without a phrase, a `with`, a rule or function reference, an unresolvable head) | `comprehension` | All-or-nothing: the whole comprehension stays verbatim source. A fully renderable one is rendered since spec §14.36 -- see "Comprehensions" below. |
 | `every` (incl. nested `every` inside `every`) | `every` | Explicit non-goal. Probe 09 confirms nesting doesn't get partial credit — the whole outer block falls back as one unit, never guessing at the inner structure. |
 | Operand-position builtins outside `count`/`lower`/`upper`/`object.get`/`time.now_ns`/arithmetic/`concat` (any user-defined function used as an operand) | n/a (`Operand.Unrendered`, condition itself still classifies) | No `Operand` shape decided yet for these (differing arity, no template precedent). Probe 15 confirms this is safe: the verbatim call text is shown inline, never silently dropped or guessed. |
 | `object.get(o, k, d)` where `k` is not a plain string literal (a var, a number, a computed expression) | n/a (`Operand.Unrendered`) | No breadcrumb-extension rule exists for a non-string key — guessing one would be exactly the "widen a template to swallow a construct approximately" failure mode this audit exists to catch. New `AstMapperTest` case (`objectGetWithANonStringKeyIsNotPromoted`); not exercised by any probe file. |
@@ -1109,3 +1109,22 @@ Resolved as an explicit option rather than a detection heuristic: `--rego-versio
 bracket-form partial rules, `x[_]` membership), so nothing else changed. Default stays v1. Measured: the Gatekeeper
 library went from 0 files rendering under the default to 91/91 (66% condition coverage). Auto-detection was rejected
 because a wrong guess can silently change a policy's meaning, and there is no way to verify which version the author intended.
+
+## Comprehensions
+
+Set, array and object comprehensions are now rendered when EVERYTHING inside renders (operator-approved amendment of the
+original §1.2 non-goal and of REL-004's frozen Tier-1 assertions; spec §14.36):
+
+- `count({a | some a in input.change.approvals; a.role == "release-manager"}) == 0` ->
+  "(the set of `change ▸ approvals ▸ [each a]` such that for some a in `change ▸ approvals`; `change ▸ approvals ▸ [each a] ▸ role` is `"release-manager"`) is empty"
+- `[x | ...]` -> "the list of"; `{k: v | ...}` -> "the object mapping K to V"; any other comparison keeps "the number of (...)".
+- A comprehension assigned to a variable (`names := {n | ...}`) substitutes at each later use; it can be a membership
+  collection or a user-function argument.
+- All-or-nothing: one condition explico cannot render (or a `with`, a rule/function reference, an unresolvable head) keeps the
+  WHOLE comprehension as source, with no partial credit. Variables bound inside never leak out; outer ones are visible inside.
+
+Effect on the acceptance pack: REL-004 goes from 7/8 to 8/8; overall 91% -> 95%. The pack's remaining fallback is the `every`
+helper. Measured on the real-world corpora (file mode): see the closing assessment in the session notes.
+
+Fixed on the way: `some k, v in c` bound the KEY as an element (`c ▸ [each k]`), so `startswith(k, "x")` read as a test on the
+value. The key is now the plain variable `k`.

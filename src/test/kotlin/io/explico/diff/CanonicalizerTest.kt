@@ -183,12 +183,28 @@ class CanonicalizerTest {
         // Deliberate, disclosed behaviour, not a bug: an Unrendered condition/operand's sourceText
         // is verbatim source the tool couldn't classify, so it can't verify two differently
         // formatted spans mean the same thing -- unlike a classified construct, where formatting
-        // is invisible because only the parsed structure is hashed. count({a | ...}) is exactly
-        // this case (spec §5's disclosed operand-position-builtin gap): reformatting purely inside
-        // the comprehension's whitespace changes the hash.
+        // is invisible because only the parsed structure is hashed. An `every` block is such a
+        // construct (comprehensions used to be, until they were rendered): reformatting purely
+        // inside its whitespace changes the hash.
         val fallbackBase = denyRule("fallback-base")
         val fallbackReformatted = denyRule("fallback-reformatted")
         assertThat(Canonicalizer.logicHash(fallbackReformatted)).isNotEqualTo(Canonicalizer.logicHash(fallbackBase))
+    }
+
+    @Test
+    @DisplayName("comprehensions: reformatting and a comment change nothing; renaming its variables changes nothing")
+    fun aRenderedComprehensionHashesStructurallyNotBySourceText() {
+        val base = Canonicalizer.logicHash(denyRule("comprehension-base"))
+        assertThat(Canonicalizer.logicHash(denyRule("comprehension-reformatted"))).isEqualTo(base)
+        assertThat(Canonicalizer.logicHash(denyRule("comprehension-renamed-vars"))).isEqualTo(base)
+    }
+
+    @Test
+    @DisplayName("comprehensions: changing a condition inside, or set -> array, changes the hash")
+    fun changingAComprehensionsMeaningChangesTheHash() {
+        val base = Canonicalizer.logicHash(denyRule("comprehension-base"))
+        assertThat(Canonicalizer.logicHash(denyRule("comprehension-condition-changed"))).isNotEqualTo(base)
+        assertThat(Canonicalizer.logicHash(denyRule("comprehension-kind-changed"))).isNotEqualTo(base)
     }
 
     @Test

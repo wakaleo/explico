@@ -121,7 +121,7 @@ class RealisticOperandFunctionCallsAcceptanceIT {
         fun wholeConditionStaysFenced() {
             val c = card("bad_arg")
             assertThat(c.lines().count { it.contains("⚠") }).isEqualTo(1)
-            assertThat(fenced(c)).contains("limit_for({e | some e in input.envs})")
+            assertThat(fenced(c)).contains("limit_for({e | some e in input.envs; net.cidr_is_valid(e)})")
             assertThat(bullets(c).filter { !it.startsWith("- ⚠") }.joinToString("\n")).doesNotContain(LIMIT_LINK)
         }
     }

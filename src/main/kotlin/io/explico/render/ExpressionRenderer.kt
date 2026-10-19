@@ -32,6 +32,7 @@
  */
 package io.explico.render
 
+import io.explico.model.ComprehensionKind
 import io.explico.model.Condition
 import io.explico.model.LiteralCollection
 import io.explico.model.Operand
@@ -250,6 +251,28 @@ internal object ExpressionRenderer {
         // explicit examples (only Condition-level Unrendered's block format is spec'd) -- this
         // session's interpretation for the inline case, kept as visible source rather than hidden.
         is Operand.Unrendered -> "`${operand.sourceText}`" to false
+        is Operand.Comprehension -> renderComprehension(operand, ruleValueAnchorFor)
+    }
+
+    /**
+     * `(the set of T such that C1; C2)` / `(the list of ...)` / `(the object mapping K to V such that ...)`.
+     * Parenthesised so the phrase stays delimited inside a larger sentence ("the number of (...) is
+     * greater than `2`"). The body conditions are rendered by [render] itself -- their anchor callbacks
+     * can safely throw, because AstMapper never builds a comprehension containing a rule or function
+     * reference. Whether any inner path has a wildcard is already expressed inside the body's own
+     * phrases, so it does not add an "any of:" prefix to the outer sentence.
+     */
+    private fun renderComprehension(operand: Operand.Comprehension, ruleValueAnchorFor: (Operand.RuleValueReference) -> String?): Pair<String, Boolean> {
+        val noLink = { _: Condition.RuleReference -> throw IllegalStateException("a comprehension body never contains a rule reference") }
+        val noFunctionLink = { _: Condition.FunctionCall -> throw IllegalStateException("a comprehension body never contains a function call") }
+        val term = renderOperand(operand.term, ruleValueAnchorFor).first
+        val head = when (operand.kind) {
+            ComprehensionKind.SET -> "the set of $term"
+            ComprehensionKind.ARRAY -> "the list of $term"
+            ComprehensionKind.OBJECT -> "the object mapping $term to ${renderOperand(operand.valueTerm!!, ruleValueAnchorFor).first}"
+        }
+        val body = operand.body.joinToString("; ") { render(it, noLink, noFunctionLink, ruleValueAnchorFor) }
+        return (if (body.isEmpty()) "($head)" else "($head such that $body)") to false
     }
 
     private fun renderOperandBuiltinCall(operand: Operand.BuiltinCall, ruleValueAnchorFor: (Operand.RuleValueReference) -> String?): Pair<String, Boolean> {

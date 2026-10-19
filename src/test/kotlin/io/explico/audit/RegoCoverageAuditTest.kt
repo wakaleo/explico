@@ -133,7 +133,8 @@ class RegoCoverageAuditTest {
         // later bare uses of v extend the collection's breadcrumb with "[each v]". The KEY variable k
         // is NOT an element of the collection (it is the key itself), so a bare use renders as the
         // plain variable `k`, introduced by the "for some k, v in ..." bullet; the earlier
-        // "[each k]" rendering claimed the value at k where the policy tests the key.
+        // "[each k]" rendering claimed the value at k where the policy tests the key (fixed
+        // alongside comprehension rendering, where an object comprehension's key exposed it).
         val conditions = conditionsOf(loadProbe("06-some-kv-in-object.rego"), "deny")
         assertThat(conditions).hasSize(3)
         assertThat(render(conditions[0])).isEqualTo("for some k, v in `change ▸ metadata`")
@@ -415,17 +416,24 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun arrayComprehensionAsRawOperandFallsBackTheWholeCondition() {
+    fun arrayComprehensionAsAnOperandNowRendersWhenItsWholeBodyDoes() {
+        // Was a whole-condition fallback; comprehensions are rendered when everything inside is.
         val conditions = conditionsOf(loadProbe("29-array-comprehension-raw-operand.rego"), "deny")
         assertThat(conditions).hasSize(1)
-        assertUnrendered(conditions.single(), "comprehension")
+        assertThat(render(conditions.single())).isEqualTo(
+            "(the list of `pipeline ▸ stages ▸ [each s] ▸ name` such that for some s in `pipeline ▸ stages`; " +
+                "`pipeline ▸ stages ▸ [each s] ▸ status` is `\"failed\"`) is `[\"build\"]`",
+        )
     }
 
     @Test
-    fun objectComprehensionAsRawOperandFallsBackTheWholeCondition() {
+    fun objectComprehensionAsAnOperandNowRendersWhenItsWholeBodyDoes() {
         val conditions = conditionsOf(loadProbe("30-object-comprehension-raw-operand.rego"), "deny")
         assertThat(conditions).hasSize(1)
-        assertUnrendered(conditions.single(), "comprehension")
+        assertThat(render(conditions.single())).isEqualTo(
+            "(the object mapping `pipeline ▸ stages ▸ [each s] ▸ name` to `pipeline ▸ stages ▸ [each s] ▸ status` " +
+                "such that for some s in `pipeline ▸ stages`) is `{}`",
+        )
     }
 
     @Test

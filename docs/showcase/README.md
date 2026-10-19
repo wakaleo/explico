@@ -5,7 +5,8 @@ Real Rego policies beside the documents explico renders from them. **Do not edit
 | Example | What it shows |
 |---|---|
 | [API authorization](api-authorization.md) | Three small rules (role membership, an ownership comparison, a lookup in external `data`) and an `allow` decision that combines them; references between rules become links. |
-| [When explico will not paraphrase](fallbacks.md) | A comprehension and an `every` block. explico shows the verbatim Rego in a marked block and reports it in the coverage footer, rather than describing logic it did not check. |
+| [Comprehensions](comprehensions.md) | Set, list and variable-bound comprehensions rendered as readable phrases: counting matching items, an emptiness check, and a set substituted into a membership test. |
+| [When explico will not paraphrase](fallbacks.md) | A comprehension with one condition explico cannot render (all-or-nothing, so the whole thing stays source) and an `every` block. explico shows the verbatim Rego in a marked block and reports it in the coverage footer, rather than describing logic it did not check. |
 | [Helpers, constants and functions](helpers-and-functions.md) | A constant rule, a user-defined function with a parameter, and rules that call both. References become links to the target's card. |
 | [Kubernetes admission control](kubernetes-admission.md) | Three Gatekeeper-style `deny` rules over a Pod admission request: iteration with `some ... in`, a negated builtin, a missing-field check, and `sprintf` messages that become the card's *Produces* line. |
 | [Storage bucket controls](storage-encryption.md) | Infrastructure-plan rules with framework tags in METADATA, a membership test against a set literal, and a numeric comparison. |

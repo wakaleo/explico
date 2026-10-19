@@ -273,12 +273,19 @@ class AstMapperTest {
         }
 
         @Test
-        fun countOfComprehensionFallsBackWithVerbatimSourceFromLocationText() {
+        fun countOfComprehensionIsNowRenderedAsAComprehensionOperand() {
+            // REL-004's `count({a | some a in ...; a.role == "release-manager"}) == 0` was the pack's
+            // verbatim-source comprehension fallback; the operator approved rendering comprehensions
+            // (see the acceptance README's amendment note), so it is now a Comparison over count(Comprehension).
             val body = onlyFile("release_governance", "governance/release_governance.rego").packages[0].rules.single { it.name == "deny" }.bodies[0]
-            val fallback = body.conditions[1] as Condition.Unrendered
-            assertThat(fallback.reason).isEqualTo("comprehension")
-            assertThat(fallback.sourceText).startsWith("count({a |")
-            assertThat(fallback.sourceText).contains("release-manager")
+            val comparison = body.conditions[1] as Condition.Comparison
+            val count = comparison.left as Operand.BuiltinCall
+            assertThat(count.name).isEqualTo("count")
+            val comprehension = count.args.single() as Operand.Comprehension
+            assertThat(comprehension.kind).isEqualTo(io.explico.model.ComprehensionKind.SET)
+            assertThat(comprehension.body).hasSize(2)
+            assertThat(comprehension.body[0]).isInstanceOf(Condition.SomeIn::class.java)
+            assertThat((comprehension.body[1] as Condition.Comparison).right).isEqualTo(Operand.Literal("\"release-manager\""))
         }
 
         @Test
@@ -2898,6 +2905,109 @@ class AstMapperTest {
             val unbound = """{"type":"var","value":"nowhere"}"""
             val call = comparisonLeft("split", unbound, strArg) as Operand.BuiltinCall
             assertThat(call.args.first()).isInstanceOf(Operand.Unrendered::class.java)
+        }
+    }
+
+    @Nested
+    inner class ComprehensionOperands {
+
+        private fun seg(vararg names: String) = names.joinToString(",") { """{"type":"string","value":"$it"}""" }
+        private val someAInXs = """{"index": 0, "location": {"row":1,"text":"${b64("some a in input.xs")}"}, "terms": {"symbols": [{"type":"call","value":[
+            {"type":"ref","value":[{"type":"var","value":"internal"},{"type":"string","value":"member_2"}]},
+            {"type":"var","value":"a"}, {"type":"ref","value":[{"type":"var","value":"input"},${seg("xs")}]}]}]}}"""
+        private val aRoleIsM = """{"index": 1, "location": {"row":1,"text":"${b64("a.role == \"m\"")}"}, "terms": [
+            {"type":"ref","value":[{"type":"var","value":"equal"}]},
+            {"type":"ref","value":[{"type":"var","value":"a"},${seg("role")}]}, {"type":"string","value":"m"}]}"""
+
+        /** A rule `deny if count(<comprehension>) > 0`, optionally preceded by [precedingExprs]; returns its first body's conditions. */
+        private fun conditionsFor(compJson: String, vararg precedingExprs: String): List<Condition> {
+            val module = moduleOf(
+                """
+                {"package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                 "rules": [{"head": {"name": "deny", "ref": [{"type":"var","value":"deny"}]},
+                   "body": [${precedingExprs.joinToString("") { "$it," }}
+                     {"index": 9, "location": {"row":5,"text":"${b64("count(...) > 0")}"}, "terms": [
+                       {"type":"ref","value":[{"type":"var","value":"gt"}]},
+                       {"type":"call","location":{"text":"${b64("count(...)")}"},"value":[{"type":"ref","value":[{"type":"var","value":"count"}]}, $compJson]},
+                       {"type":"number","value":0}]}]}]}
+                """.trimIndent()
+            )
+            return AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages.single().rules.single().bodies.single().conditions
+        }
+
+        private fun setComp(headJson: String, vararg bodyExprs: String) =
+            """{"type":"setcomprehension","value":{"term": $headJson, "body": [${bodyExprs.joinToString(",")}]}}"""
+
+        private fun comprehensionIn(conditions: List<Condition>): Operand.Comprehension =
+            ((conditions.last() as Condition.Comparison).left as Operand.BuiltinCall).args.single() as Operand.Comprehension
+
+        @Test
+        fun aFullyRenderableSetComprehensionIsBuiltWithItsHeadResolvedThroughTheBodysBindings() {
+            val comp = comprehensionIn(conditionsFor(setComp("""{"type":"var","value":"a"}""", someAInXs, aRoleIsM)))
+            assertThat(comp.kind).isEqualTo(io.explico.model.ComprehensionKind.SET)
+            assertThat((comp.term as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("xs"), PathSegment.VarIndex("a"))
+            assertThat(comp.body).hasSize(2)
+        }
+
+        @Test
+        fun theComprehensionsOwnVariablesDoNotLeakIntoTheEnclosingBody() {
+            // After the comprehension, `a` is NOT bound in the rule body: a later use of `a` is unbound.
+            val conditions = conditionsFor(setComp("""{"type":"var","value":"a"}""", someAInXs, aRoleIsM))
+            assertThat(conditions).hasSize(1) // only the count comparison; no SomeIn leaked out
+        }
+
+        @Test
+        fun aVariableBoundOutsideIsVisibleInsideTheBody() {
+            val outerSome = """{"index": 0, "location": {"row":1,"text":"${b64("some o in input.os")}"}, "terms": {"symbols": [{"type":"call","value":[
+                {"type":"ref","value":[{"type":"var","value":"internal"},{"type":"string","value":"member_2"}]},
+                {"type":"var","value":"o"}, {"type":"ref","value":[{"type":"var","value":"input"},${seg("os")}]}]}]}}"""
+            val usesOuter = """{"index": 1, "location": {"row":1,"text":"${b64("a.team == o.name")}"}, "terms": [
+                {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                {"type":"ref","value":[{"type":"var","value":"a"},${seg("team")}]},
+                {"type":"ref","value":[{"type":"var","value":"o"},${seg("name")}]}]}"""
+            val comp = comprehensionIn(conditionsFor(setComp("""{"type":"var","value":"a"}""", someAInXs, usesOuter), outerSome))
+            val cmp = comp.body[1] as Condition.Comparison
+            assertThat((cmp.right as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("os"), PathSegment.VarIndex("o"), PathSegment.Field("name"))
+        }
+
+        @Test
+        fun anUnbindableHeadKeepsTheWholeComprehensionAsAFallback() {
+            val conditions = conditionsFor(setComp("""{"type":"var","value":"nowhere"}""", someAInXs, aRoleIsM))
+            assertThat((conditions.single() as Condition.Unrendered).reason).isEqualTo("comprehension")
+        }
+
+        @Test
+        fun anUnrenderableConditionInsideKeepsTheWholeComprehensionAsAFallback() {
+            val unsupported = """{"index": 1, "location": {"row":1,"text":"${b64("net.cidr_is_valid(a)")}"}, "terms": [
+                {"type":"ref","value":[{"type":"var","value":"net"},{"type":"string","value":"cidr_is_valid"}]},
+                {"type":"var","value":"a"}]}"""
+            val conditions = conditionsFor(setComp("""{"type":"var","value":"a"}""", someAInXs, unsupported))
+            assertThat((conditions.single() as Condition.Unrendered).reason).isEqualTo("comprehension")
+        }
+
+        @Test
+        fun aWithOverrideInsideKeepsTheWholeComprehensionAsAFallback() {
+            val withExpr = """{"index": 1, "location": {"row":1,"text":"${b64("a.role == \"m\" with input as {}")}"}, "with": [{"target": {"type":"ref","value":[{"type":"var","value":"input"}]}, "value": {"type":"object","value":[]}}],
+                "terms": [{"type":"ref","value":[{"type":"var","value":"equal"}]}, {"type":"ref","value":[{"type":"var","value":"a"},${seg("role")}]}, {"type":"string","value":"m"}]}"""
+            val conditions = conditionsFor(setComp("""{"type":"var","value":"a"}""", someAInXs, withExpr))
+            assertThat((conditions.single() as Condition.Unrendered).reason).isEqualTo("comprehension")
+        }
+
+        @Test
+        fun aNestedComprehensionIsRenderedWhenItsOwnBodyIs() {
+            val inner = setComp("""{"type":"var","value":"b"}""", someAInXs.replace("\"a\"", "\"b\"").replace("some a in", "some b in"))
+            val nestedCompare = """{"index": 1, "location": {"row":1,"text":"${b64("count({b | ...}) > 0")}"}, "terms": [
+                {"type":"ref","value":[{"type":"var","value":"gt"}]},
+                {"type":"call","location":{"text":"${b64("count(...)")}"},"value":[{"type":"ref","value":[{"type":"var","value":"count"}]}, $inner]},
+                {"type":"number","value":0}]}"""
+            val comp = comprehensionIn(conditionsFor(setComp("""{"type":"var","value":"a"}""", someAInXs, nestedCompare)))
+            assertThat(((comp.body[1] as Condition.Comparison).left as Operand.BuiltinCall).args.single()).isInstanceOf(Operand.Comprehension::class.java)
+        }
+
+        @Test
+        fun aComprehensionMissingItsBodyFallsBackInsteadOfCrashing() {
+            val conditions = conditionsFor("""{"type":"setcomprehension","value":{"term":{"type":"var","value":"a"}}}""")
+            assertThat((conditions.single() as Condition.Unrendered).reason).isEqualTo("comprehension")
         }
     }
 

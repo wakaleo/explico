@@ -48,10 +48,14 @@ class ReleaseGovernanceAcceptanceIT {
         }
 
         @Test
-        @DisplayName("Situation 1 contains a ⚠ not rendered — shown as source block whose fenced content includes `count({a |`")
-        fun situation1FallsBackWithCountComprehension() {
-            assertThat(markdown).contains("⚠ **not rendered — shown as source:**")
-            assertThat(markdown).contains("count({a |")
+        @DisplayName("Situation 1 is fully rendered: it contains the comprehension phrase `(the set of` … `such that` … `) is empty`, and no ⚠ block")
+        fun situation1RendersTheComprehension() {
+            // AMENDED (operator-approved, see the acceptance README's amendment note): this was
+            // "Situation 1 contains a ⚠ not rendered block whose fenced content includes `count({a |`".
+            val rel004 = rel004Card()
+            val situation1 = rel004.substringAfter("### Situation 1").substringBefore("### Situation 2")
+            assertThat(situation1).contains("(the set of").contains("such that").contains(") is empty")
+            assertThat(situation1).doesNotContain("⚠").doesNotContain("count({a |")
         }
 
         @Test
@@ -70,19 +74,30 @@ class ReleaseGovernanceAcceptanceIT {
         }
 
         @Test
-        @DisplayName("Coverage footer reports less than 100% and the card lists the fallback count")
-        fun coverageBelowFullAndFallbackCountListed() {
-            // Scope to REL-004's own card (up to the next heading) -- release-governance.md also
-            // has an all_checks_passed card, whose coverage footer must not be mistaken for this one.
-            val rel004CardStart = markdown.indexOf("## REL-004")
-            assertThat(rel004CardStart).isGreaterThanOrEqualTo(0)
-            val nextHeadingStart = markdown.indexOf("\n## ", rel004CardStart + 1).let { if (it == -1) markdown.length else it }
-            val rel004Card = markdown.substring(rel004CardStart, nextHeadingStart)
+        @DisplayName("REL-004's own coverage footer reports 8 of 8; the `all_checks_passed` card reports less than 100% listing the `every` fallback; the package footer is less than 100%")
+        fun coverageMovedToTheEveryHelper() {
+            // AMENDED (operator-approved): this was "Coverage footer reports less than 100% and the
+            // card lists the fallback count" for REL-004's own card, which had the comprehension fallback.
+            assertThat(Regex("Rendering coverage: (\\d+) of (\\d+) conditions").find(rel004Card())!!.destructured.toList()).containsExactly("8", "8")
 
-            val coverageMatch = Regex("Rendering coverage: (\\d+) of (\\d+) conditions").find(rel004Card)
-            assertThat(coverageMatch).isNotNull()
-            val (rendered, total) = coverageMatch!!.destructured
+            val helperStart = markdown.indexOf("## release.governance.all_checks_passed")
+            assertThat(helperStart).isGreaterThanOrEqualTo(0)
+            val helperEnd = markdown.indexOf("\n## ", helperStart + 1).let { if (it == -1) markdown.length else it }
+            val helperCard = markdown.substring(helperStart, helperEnd)
+            val (rendered, total) = Regex("Rendering coverage: (\\d+) of (\\d+) conditions").find(helperCard)!!.destructured
             assertThat(rendered.toInt()).isLessThan(total.toInt())
+            assertThat(helperCard).contains("every check in")
+
+            val (pkgRendered, pkgTotal) = Regex("Package rendering coverage: (\\d+) of (\\d+) conditions").find(markdown)!!.destructured
+            assertThat(pkgRendered.toInt()).isLessThan(pkgTotal.toInt())
+        }
+
+        /** REL-004's own card, up to the next heading (release-governance.md also has an `all_checks_passed` card). */
+        private fun rel004Card(): String {
+            val start = markdown.indexOf("## REL-004")
+            assertThat(start).isGreaterThanOrEqualTo(0)
+            val end = markdown.indexOf("\n## ", start + 1).let { if (it == -1) markdown.length else it }
+            return markdown.substring(start, end)
         }
     }
 }

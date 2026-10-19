@@ -1,1 +1,1 @@
-{"name":"five regions","description":"Triggers FB-001.","input":{"environment":"production","regions":["a","b","c","d","e"]}}
+{"name":"five valid CIDR regions","description":"Triggers FB-001.","input":{"environment":"production","regions":["10.0.0.0/8","10.1.0.0/16","10.2.0.0/16","10.3.0.0/16","10.4.0.0/16"]}}

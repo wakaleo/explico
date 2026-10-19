@@ -43,6 +43,7 @@
  */
 package io.explico.parse
 
+import io.explico.model.ComprehensionKind
 import io.explico.model.Condition
 import io.explico.model.ConstantValue
 import io.explico.model.DefaultValue
@@ -64,6 +65,7 @@ import io.explico.opa.OpaRule
 import io.explico.opa.OpaRuleHead
 import io.explico.opa.OpaTerm
 import io.explico.opa.opaJson
+import io.explico.render.Coverage
 import io.explico.render.PathHumanizer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonArray
@@ -152,8 +154,9 @@ private sealed interface VarBinding {
     /**
      * The KEY (or array index) variable of `some k, v in c`: it ranges over [collection]'s keys, so it is NOT
      * an element of it -- rendering a bare `k` as `c ▸ [each k]` would claim the value at `k` where the
-     * policy tests the key itself. A bare use renders as the plain variable [Operand.Variable]; as an index
-     * (`m[k]`) it still reads `m ▸ [each k]`, which is exact; as a ref root (`k.x`) it falls back.
+     * policy tests the key itself (found while rendering object comprehensions). A bare use renders as the
+     * plain variable [Operand.Variable]; as an index (`m[k]`) it still reads `m ▸ [each k]`, which is exact;
+     * as a ref root (`k.x`) it falls back.
      */
     data class IterationKey(val collection: Operand.Path) : VarBinding
     data class Substitution(val path: Operand.Path) : VarBinding
@@ -572,64 +575,17 @@ internal object AstMapper {
         val conditions = mutableListOf<Condition>()
 
         for (expr in rule.body) {
-            // A `with` override (spec §14 finding): attaches to ANY expr shape, and silently
-            // changes what's actually being evaluated (a modified, hypothetical input/data/function),
-            // which no existing Condition template describes -- demoted before shape-dispatch so it
-            // can never be misclassified as testing the real input.
-            if (expr.with != null) {
-                conditions += Condition.Unrendered(sourceText(expr.location), "with-override")
-                continue
-            }
-            val assignedMessage = messageVar?.let { matchMessageAssignment(expr, it) }
-            if (assignedMessage != null) {
-                producesValue = renderProducesValue(assignedMessage, symbolTable)
-                messageTemplate = computeMessageTemplate(assignedMessage)
-                continue
-            }
-            // A local-variable assignment (spec §5 promotion, spec §14 backlog): `x := <plain
-            // path>` records the binding and disappears from the output entirely -- no fallback
-            // bullet, substituted inline wherever `x` is used later in this body. Anything else on
-            // the right-hand side still becomes a visible Unrendered bullet (as before), but `x` is
-            // now known to be *assigned*, not merely absent, so later bare uses render as
-            // `Operand.Variable(x)` per spec §5's own wording, not the generic unbound fallback.
-            val assignment = matchAssignment(expr)
-            if (assignment != null) {
-                val (targetVar, valueTerm) = assignment
-                val plainPath = plainPathOperandOrNull(valueTerm, symbolTable, ctx)
-                val expression = if (plainPath == null) expressionOperandOrNull(valueTerm, symbolTable, ctx) else null
-                when {
-                    // `x := <collection>[_]` (review item 5): Rego's wildcard index means "for some
-                    // element of <collection>" -- the exact same existential claim `some x in
-                    // <collection>` makes, confirmed by both desugaring through internal.member_2
-                    // identically once bound. Rendered through that SAME real Condition.SomeIn +
-                    // VarBinding.Iteration mechanism, not silently substituted -- substitution would
-                    // hide the fact that x ranges over elements of a collection, not one fixed value.
-                    // Only the TRAILING position qualifies: a middle wildcard (`x := input.a[_].b`)
-                    // falls through to plain substitution below -- real but rare, and the resulting
-                    // path (with the AnyIndex preserved mid-chain) still renders honestly via
-                    // PathHumanizer's existing AnyIndex handling, just without an explicit SomeIn bullet.
-                    plainPath != null && plainPath.segments.lastOrNull() == PathSegment.AnyIndex -> {
-                        val collection = Operand.Path(plainPath.segments.dropLast(1))
-                        symbolTable[targetVar] = VarBinding.Iteration(collection)
-                        conditions += Condition.SomeIn(targetVar, collection)
-                    }
-                    plainPath != null -> symbolTable[targetVar] = VarBinding.Substitution(plainPath)
-                    // Mapped BEFORE targetVar is bound, so a self-reference (`x := x + 1`) sees x as
-                    // unbound and stays a fallback rather than looping or substituting itself.
-                    expression != null -> symbolTable[targetVar] = VarBinding.Expression(expression)
-                    else -> {
-                        symbolTable[targetVar] = VarBinding.NonPath
-                        // Review item 12: a distinct reason from a genuinely unresolved CONDITION
-                        // call's "function-call" -- this is specifically a local-variable
-                        // assignment the mapper can't substitute, which MarkdownRenderer groups
-                        // with its own kind only (never with an adjacent, differently-reasoned
-                        // fallback) into one labelled "helper definition(s)" block.
-                        conditions += Condition.Unrendered(sourceText(expr.location), "helper-assignment")
-                    }
+            // The message assignment (`msg := sprintf(...)`) is a RULE-level notion; a `with`-qualified
+            // expression is never treated as one (it falls to [mapBodyExpr], which demotes it).
+            if (expr.with == null) {
+                val assignedMessage = messageVar?.let { matchMessageAssignment(expr, it) }
+                if (assignedMessage != null) {
+                    producesValue = renderProducesValue(assignedMessage, symbolTable)
+                    messageTemplate = computeMessageTemplate(assignedMessage)
+                    continue
                 }
-                continue
             }
-            conditions += mapCondition(expr, symbolTable, ctx)
+            mapBodyExpr(expr, symbolTable, ctx, conditions)
         }
 
         return RuleBody(
@@ -643,6 +599,67 @@ internal object AstMapper {
             // item 10).
             yieldsValue = yieldsValueOrNull(rule, symbolTable, ctx),
         )
+    }
+
+    /**
+     * Maps ONE body expression into [conditions]: a `with`-override demotes to a fallback, a local
+     * assignment records its [VarBinding] (and may add a visible fallback bullet), anything else goes
+     * through [mapCondition]. Shared by a rule body and a comprehension body, so both treat every
+     * construct identically.
+     */
+    private fun mapBodyExpr(expr: OpaExpr, symbolTable: MutableMap<String, VarBinding>, ctx: MappingContext, conditions: MutableList<Condition>) {
+        // A `with` override (spec §14 finding): attaches to ANY expr shape, and silently
+        // changes what's actually being evaluated (a modified, hypothetical input/data/function),
+        // which no existing Condition template describes -- demoted before shape-dispatch so it
+        // can never be misclassified as testing the real input.
+        if (expr.with != null) {
+            conditions += Condition.Unrendered(sourceText(expr.location), "with-override")
+            return
+        }
+        // A local-variable assignment (spec §5 promotion, spec §14 backlog): `x := <plain
+        // path>` records the binding and disappears from the output entirely -- no fallback
+        // bullet, substituted inline wherever `x` is used later in this body. Anything else on
+        // the right-hand side still becomes a visible Unrendered bullet (as before), but `x` is
+        // now known to be *assigned*, not merely absent, so later bare uses render as
+        // `Operand.Variable(x)` per spec §5's own wording, not the generic unbound fallback.
+        val assignment = matchAssignment(expr)
+        if (assignment != null) {
+            val (targetVar, valueTerm) = assignment
+            val plainPath = plainPathOperandOrNull(valueTerm, symbolTable, ctx)
+            val expression = if (plainPath == null) expressionOperandOrNull(valueTerm, symbolTable, ctx) else null
+            when {
+                // `x := <collection>[_]` (review item 5): Rego's wildcard index means "for some
+                // element of <collection>" -- the exact same existential claim `some x in
+                // <collection>` makes, confirmed by both desugaring through internal.member_2
+                // identically once bound. Rendered through that SAME real Condition.SomeIn +
+                // VarBinding.Iteration mechanism, not silently substituted -- substitution would
+                // hide the fact that x ranges over elements of a collection, not one fixed value.
+                // Only the TRAILING position qualifies: a middle wildcard (`x := input.a[_].b`)
+                // falls through to plain substitution below -- real but rare, and the resulting
+                // path (with the AnyIndex preserved mid-chain) still renders honestly via
+                // PathHumanizer's existing AnyIndex handling, just without an explicit SomeIn bullet.
+                plainPath != null && plainPath.segments.lastOrNull() == PathSegment.AnyIndex -> {
+                    val collection = Operand.Path(plainPath.segments.dropLast(1))
+                    symbolTable[targetVar] = VarBinding.Iteration(collection)
+                    conditions += Condition.SomeIn(targetVar, collection)
+                }
+                plainPath != null -> symbolTable[targetVar] = VarBinding.Substitution(plainPath)
+                // Mapped BEFORE targetVar is bound, so a self-reference (`x := x + 1`) sees x as
+                // unbound and stays a fallback rather than looping or substituting itself.
+                expression != null -> symbolTable[targetVar] = VarBinding.Expression(expression)
+                else -> {
+                    symbolTable[targetVar] = VarBinding.NonPath
+                    // Review item 12: a distinct reason from a genuinely unresolved CONDITION
+                    // call's "function-call" -- this is specifically a local-variable
+                    // assignment the mapper can't substitute, which MarkdownRenderer groups
+                    // with its own kind only (never with an adjacent, differently-reasoned
+                    // fallback) into one labelled "helper definition(s)" block.
+                    conditions += Condition.Unrendered(sourceText(expr.location), "helper-assignment")
+                }
+            }
+            return
+        }
+        conditions += mapCondition(expr, symbolTable, ctx)
     }
 
     /**
@@ -732,7 +749,47 @@ internal object AstMapper {
         is Operand.Unrendered -> false
         is Operand.BuiltinCall -> operand.args.all { isFullyRendered(it) }
         is Operand.FunctionCall -> operand.args.all { isFullyRendered(it) }
+        // Built only when everything inside was fully rendered (see [mapComprehension]).
+        is Operand.Comprehension -> true
         else -> true
+    }
+
+    /**
+     * A set/array/object comprehension, rendered ONLY when the whole of it is: the body is mapped with
+     * the very same per-expression logic a rule body uses ([mapBodyExpr], in a COPY of the symbol table
+     * so the comprehension's own variables never leak out, while outer ones stay visible), and then
+     * every condition must be a fully rendered one that needs no link. An unrenderable condition or
+     * operand, a rule/function reference (nothing in a nested phrase could be linked), or an
+     * unmappable head term makes the whole comprehension [ConstructResult.Unsupported] -- the
+     * enclosing condition then falls back to verbatim source exactly as every comprehension did
+     * before. The head is mapped AFTER the body, since it usually names a variable the body binds.
+     */
+    private fun mapComprehension(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): ConstructResult {
+        val parts = term.value as? JsonObject ?: return ConstructResult.Unsupported("comprehension")
+        val kind = when (term.type) {
+            "setcomprehension" -> ComprehensionKind.SET
+            "arraycomprehension" -> ComprehensionKind.ARRAY
+            else -> ComprehensionKind.OBJECT
+        }
+        val bodyJson = parts["body"] as? JsonArray ?: return ConstructResult.Unsupported("comprehension")
+        val bodyExprs = opaJson.decodeFromJsonElement(ListSerializer(OpaExpr.serializer()), bodyJson)
+        val local = symbolTable.toMutableMap()
+        val conditions = mutableListOf<Condition>()
+        for (expr in bodyExprs) mapBodyExpr(expr, local, ctx, conditions)
+        val renderable = conditions.all { c ->
+            c !is Condition.Unrendered && c !is Condition.RuleReference && c !is Condition.FunctionCall &&
+                Coverage.operandsOf(c).all { isFullyRendered(it) }
+        }
+        if (!renderable) return ConstructResult.Unsupported("comprehension")
+
+        fun head(key: String): Operand? {
+            val headTerm = parts[key] ?: return null
+            val mapped = mapOperand(opaJson.decodeFromJsonElement(OpaTerm.serializer(), headTerm), local, ctx)
+            return (mapped as? ConstructResult.Ok)?.operand?.takeIf { isFullyRendered(it) }
+        }
+        val first = head(if (kind == ComprehensionKind.OBJECT) "key" else "term") ?: return ConstructResult.Unsupported("comprehension")
+        val second = if (kind == ComprehensionKind.OBJECT) head("value") ?: return ConstructResult.Unsupported("comprehension") else null
+        return ConstructResult.Ok(Operand.Comprehension(kind, first, second, conditions))
     }
 
     private fun plainPathOperandOrNull(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): Operand.Path? {
@@ -988,7 +1045,7 @@ internal object AstMapper {
         "array", "set" -> mapCollectionLiteral(term, symbolTable, ctx)
         "object" -> mapObjectLiteral(term, symbolTable, ctx)
         "call" -> mapCallOperand(term, symbolTable, ctx)
-        "setcomprehension", "arraycomprehension", "objectcomprehension" -> ConstructResult.Unsupported("comprehension")
+        "setcomprehension", "arraycomprehension", "objectcomprehension" -> mapComprehension(term, symbolTable, ctx)
         else -> ConstructResult.Unsupported("unclassified")
     }
 

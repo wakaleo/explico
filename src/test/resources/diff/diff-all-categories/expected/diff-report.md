@@ -128,4 +128,3 @@ a sign-off label identifying who approved the build.
 
 ---
 
-⚠ 1 changed controls contain conditions that could not be rendered; review source diffs directly.

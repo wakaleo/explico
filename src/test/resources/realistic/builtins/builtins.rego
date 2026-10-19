@@ -27,6 +27,6 @@ deny contains msg if {
 
 deny contains msg if {
 	json.is_valid(input.payload)
-	is_string({x | some x in input.xs})
+	is_string({x | some x in input.xs; net.cidr_is_valid(x)})
 	msg := "unsupported or unmappable"
 }

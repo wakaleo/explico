@@ -220,7 +220,7 @@ class RealisticBuiltinsAndHelpersAcceptanceIT {
         @DisplayName("a type check with an unmappable comprehension argument stays verbatim fenced source; json.is_valid no longer does")
         fun unmappableStaysFencedJsonIsValidNowRenders() {
             val fence = fencedSource(card)
-            assertThat(fence).contains("is_string({x | some x in input.xs})").doesNotContain("json.is_valid")
+            assertThat(fence).contains("is_string({x | some x in input.xs; net.cidr_is_valid(x)})").doesNotContain("json.is_valid")
             assertThat(renderedBullets(card).any { it.contains("is valid JSON") }).isTrue()
             assertThat(renderedBullets(card).none { it.contains("some x in") }).isTrue()
             assertThat(warnBullets(card)).hasSize(1)

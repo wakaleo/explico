@@ -47,11 +47,7 @@ inside a freeze window, and all mandatory checks must have passed.
 ### Situation 1 — all of the following are true
 
 - `deployment ▸ environment` is `"production"`
-- ⚠ **not rendered — shown as source:**
-
-  ```rego
-  count({a | some a in input.change.approvals; a.role == "release-manager"}) == 0
-  ```
+- (the set of `change ▸ approvals ▸ [each a]` such that for some a in `change ▸ approvals`; `change ▸ approvals ▸ [each a] ▸ role` is `"release-manager"`) is empty
 
 *Produces:* "no release manager approval is recorded"
 
@@ -87,8 +83,8 @@ inside a freeze window, and all mandatory checks must have passed.
 
 *Examples are evaluated against this policy version by OPA at generation time.*
 
-*Rendering coverage: 7 of 8 conditions*
+*Rendering coverage: 8 of 8 conditions*
 
 ---
 
-*Package rendering coverage: 7 of 9 conditions (77%)*
+*Package rendering coverage: 8 of 9 conditions (88%)*

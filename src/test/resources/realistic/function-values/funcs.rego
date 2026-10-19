@@ -34,7 +34,7 @@ via_var contains msg if {
 }
 
 bad_arg contains msg if {
-	limit_for({e | some e in input.envs}) > 1
+	limit_for({e | some e in input.envs; net.cidr_is_valid(e)}) > 1
 	msg := "b"
 }
 

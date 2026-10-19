@@ -273,6 +273,29 @@ class ExpressionRendererTest {
     }
 
     @Test
+    @DisplayName("comprehensions render as parenthesised phrases: set, list and object, with and without a body")
+    fun comprehensionsRenderAsParenthesisedPhrases() {
+        fun path(vararg f: String) = Operand.Path((listOf("input") + f).map { PathSegment.Field(it) })
+        val role = Condition.Comparison(path("a", "role"), Operator.EQ, Operand.Literal("\"m\""))
+        val set = Operand.Comprehension(io.explico.model.ComprehensionKind.SET, path("a"), null, listOf(role))
+        val list = Operand.Comprehension(io.explico.model.ComprehensionKind.ARRAY, path("a"), null, listOf(role))
+        val obj = Operand.Comprehension(io.explico.model.ComprehensionKind.OBJECT, path("k"), path("v"), listOf(role))
+        val noBody = Operand.Comprehension(io.explico.model.ComprehensionKind.SET, path("a"), null, emptyList())
+        fun cmp(operand: Operand, op: Operator = Operator.EQ, right: String = "1") =
+            ExpressionRenderer.render(Condition.Comparison(operand, op, Operand.Literal(right)), noAnchor)
+
+        assertThat(cmp(set)).isEqualTo("(the set of `a` such that `a ▸ role` is `\"m\"`) is `1`")
+        assertThat(cmp(list)).isEqualTo("(the list of `a` such that `a ▸ role` is `\"m\"`) is `1`")
+        assertThat(cmp(obj)).isEqualTo("(the object mapping `k` to `v` such that `a ▸ role` is `\"m\"`) is `1`")
+        assertThat(cmp(noBody)).isEqualTo("(the set of `a`) is `1`")
+        // count(comprehension) == 0 / > 0 uses the existing emptiness wording; any other comparison keeps "the number of".
+        val count = Operand.BuiltinCall("count", listOf(set))
+        assertThat(cmp(count, Operator.EQ, "0")).isEqualTo("(the set of `a` such that `a ▸ role` is `\"m\"`) is empty")
+        assertThat(cmp(count, Operator.GT, "0")).isEqualTo("(the set of `a` such that `a ▸ role` is `\"m\"`) is not empty")
+        assertThat(cmp(count, Operator.GT, "2")).isEqualTo("the number of (the set of `a` such that `a ▸ role` is `\"m\"`) is greater than `2`")
+    }
+
+    @Test
     @DisplayName("fixed-arity string/number/collection operand builtins render their opa-verified phrases, nested and with a wildcard")
     fun multiArgOperandBuiltinsRenderTheirPhrases() {
         fun path(vararg f: String) = Operand.Path((listOf("input") + f).map { PathSegment.Field(it) })

@@ -93,25 +93,27 @@ class RealisticExpressionAssignmentsAcceptanceIT {
     }
 
     @Nested
-    @DisplayName("C — missing := required - provided, with `provided` itself a comprehension")
+    @DisplayName("C — missing := required - provided, with `provided` itself a comprehension (now rendered, so both assignments substitute)")
     inner class SetDifference {
         @Test
-        fun onlyTheUnmappableAssignmentStaysAFallback() {
+        fun neitherAssignmentIsAFallbackAnyMore() {
+            // Was: `provided := {x | ...}` stayed a visible helper-assignment fallback. Comprehensions are
+            // rendered, so the assignment substitutes like any other fully rendered expression.
             val c = card("deny")
-            val source = fenced(c)
-            assertThat(source).contains("provided := ").doesNotContain("missing :=")
+            assertThat(fenced(c)).isEmpty()
+            assertNoFallback(c)
         }
 
         @Test
-        fun theCheckShowsTheSubstitutedExpression() {
+        fun theCheckShowsTheSubstitutedExpressionIncludingTheComprehension() {
             val c = card("deny")
             val bullet = bullets(c).single { it.contains("is not empty") }
-            assertThat(bullet).contains("[`required`](#exprs-required)").contains("minus")
+            assertThat(bullet).contains("[`required`](#exprs-required)").contains("minus").contains("(the set of `provided ▸ [each x]` such that for some x in `provided`)")
         }
 
         @Test
-        fun footerCountsOneHelperAssignmentAndTwoConditions() {
-            assertThat(footer(card("deny"))).contains("including 1 helper assignment").contains("of 2 conditions")
+        fun footerCountsOneConditionAndNoHelperAssignment() {
+            assertThat(footer(card("deny"))).contains("1 of 1 conditions").doesNotContain("helper assignment")
         }
     }
 

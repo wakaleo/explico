@@ -4,6 +4,6 @@ import rego.v1
 
 deny contains msg if {
 	input.deployment.environment == "production"
-	count({a | some a in input.change.approvals; a.role == "release-manager"}) == 0
-	msg := "no release manager approval is recorded"
+	every a in input.change.approvals { a.role == "release-manager" }
+	msg := "every approval is by a release manager"
 }
