@@ -4284,4 +4284,272 @@ class AstMapperTest {
             assertThat(right.collection).isNull()
         }
     }
+    @Nested
+    inner class PerRuleFailureIsolation {
+        // Real-world benchmark finding: one mapper exception on one rule used to abort the WHOLE
+        // render. The trigger below is deliberately malformed AST (a `var` term whose value is an
+        // array) that opa never emits -- a stable stand-in for "opa output the mapper does not
+        // understand", which will not stop crashing when specific real-world sites are later fixed.
+
+        private val brokenTerm = """{"type":"var","value":[]}"""
+
+        private fun module(): OpaModule = moduleOf(
+            """
+            {
+              "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+              "rules": [
+                {
+                  "head": {"name": "good", "ref": [{"type":"var","value":"good"}]},
+                  "location": {"row": 3, "text": "${b64("good if input.ok")}"},
+                  "body": [{"index":0,"location":{"row":3,"text":"${b64("input.ok")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"ok"}]}}]
+                },
+                {
+                  "head": {"name": "broken", "ref": [{"type":"var","value":"broken"}]},
+                  "location": {"row": 7, "text": "${b64("broken if weird == 1")}"},
+                  "body": [{"index":0,"location":{"row":7,"text":"${b64("weird == 1")}"},"terms":[{"type":"ref","value":[{"type":"var","value":"equal"}]},$brokenTerm,{"type":"number","value":1}]}]
+                }
+              ]
+            }
+            """.trimIndent()
+        )
+
+        private fun mapCapturingStderr(): Pair<PolicySet, String> {
+            val original = System.err
+            val buffer = java.io.ByteArrayOutputStream()
+            System.setErr(java.io.PrintStream(buffer, true, Charsets.UTF_8))
+            try {
+                return AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module()))) to buffer.toString(Charsets.UTF_8)
+            } finally {
+                System.setErr(original)
+            }
+        }
+
+        @Test
+        @DisplayName("a rule whose mapping throws becomes a verbatim-source fallback body; the mapper does not abort")
+        fun failingRuleFallsBackToItsVerbatimSource() {
+            val (policySet, _) = mapCapturingStderr()
+            val broken = policySet.packages.single().rules.single { it.name == "broken" }
+            val fallback = broken.bodies.single().conditions.single() as Condition.Unrendered
+            assertThat(fallback.reason).isEqualTo("mapping-error")
+            assertThat(fallback.sourceText).isEqualTo("broken if weird == 1")
+            assertThat(broken.bodies.single().sourceText).isEqualTo("broken if weird == 1")
+            assertThat(broken.bodies.single().sourceLocation.row).isEqualTo(7)
+        }
+
+        @Test
+        @DisplayName("a sibling rule in the same file is unaffected by the failing one")
+        fun siblingRuleStillMapsNormally() {
+            val (policySet, _) = mapCapturingStderr()
+            val good = policySet.packages.single().rules.single { it.name == "good" }
+            assertThat(good.bodies.single().conditions.single()).isInstanceOf(Condition.Truthy::class.java)
+        }
+
+        @Test
+        @DisplayName("the failure is never swallowed silently: a stderr warning names the rule, file, row and exception")
+        fun failureIsReportedOnStderr() {
+            val (_, stderr) = mapCapturingStderr()
+            assertThat(stderr).contains("warning").contains("broken").contains("scratch.rego").contains("7").contains("IllegalArgumentException")
+            assertThat(stderr).doesNotContain("good")
+            // The throwing mapper method is named, so a user's bug report points straight at the construct.
+            assertThat(stderr).contains("in stringValueOf")
+        }
+    }
+
+    @Nested
+    inner class RefChainsWithCompositeTerms {
+        // Real-world benchmark finding (Regal/Trivy/Gatekeeper corpora): a ref chain's HEAD is not
+        // always a plain variable -- `util.any_set_item(x).lines[row]` heads on a call, `[a, b][i]`
+        // on an array -- and a dotted path can carry a composite SEGMENT. Both used to throw
+        // (stringValueOf on a non-primitive) and, before failure isolation, abort the whole render.
+        // The honest answer is the same fallback every unrecognised operand gets: its verbatim source.
+
+        private fun comparisonWith(refTerm: String): Operand {
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "r", "ref": [{"type":"var","value":"r"}]},
+                      "body": [{"index":0,"location":{"row":1,"text":"${b64("cmp")}"},"terms":[
+                        {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                        $refTerm,
+                        {"type":"number","value":1}
+                      ]}]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            return (body.conditions.single() as Condition.Comparison).left
+        }
+
+        @Test
+        @DisplayName("a call-headed chain (`f(x).lines[0]`) falls back to its verbatim source, no exception")
+        fun callHeadedChainFallsBack() {
+            val chain = """{"type":"ref","location":{"text":"${b64("f(input.x).lines")}"},"value":[
+                {"type":"call","value":[{"type":"ref","value":[{"type":"var","value":"f"}]},{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"x"}]}]},
+                {"type":"string","value":"lines"}
+            ]}"""
+            assertThat((comparisonWith(chain) as Operand.Unrendered).sourceText).isEqualTo("f(input.x).lines")
+        }
+
+        @Test
+        @DisplayName("an array-headed chain (`[a, b][0]`) falls back to its verbatim source")
+        fun arrayHeadedChainFallsBack() {
+            val chain = """{"type":"ref","location":{"text":"${b64("[1, 2][0]")}"},"value":[
+                {"type":"array","value":[{"type":"number","value":1},{"type":"number","value":2}]},
+                {"type":"number","value":0}
+            ]}"""
+            assertThat((comparisonWith(chain) as Operand.Unrendered).sourceText).isEqualTo("[1, 2][0]")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: an UNBOUND variable head followed by a composite segment (`x[input.k]`) falls back instead of throwing")
+        fun unboundHeadWithCompositeSegmentFallsBack() {
+            val chain = """{"type":"ref","location":{"text":"${b64("x[input.k]")}"},"value":[
+                {"type":"var","value":"x"},
+                {"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"k"}]}
+            ]}"""
+            assertThat((comparisonWith(chain) as Operand.Unrendered).sourceText).isEqualTo("x[input.k]")
+        }
+    }
+
+    @Nested
+    inner class RegistriesAndMetadataTolerateNonPlainTerms {
+        // Real-world benchmark finding: two whole-load crashes OUTSIDE the per-rule isolation
+        // boundary -- the function registry (and a function card's Parameters line) read every
+        // declared parameter as a plain name, but Rego allows PATTERN parameters (`f([a, b])`); and
+        // the METADATA index read every element of an annotation's path as a plain name, but a
+        // ref-headed rule's path can carry other terms.
+
+        private fun patternParameterFunction() = moduleOf(
+            """
+            {
+              "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+              "rules": [
+                {
+                  "head": {"name": "pair_ok", "ref": [{"type":"var","value":"pair_ok"}],
+                           "args": [{"type":"array","location":{"text":"${b64("[a, b]")}"},"value":[{"type":"var","value":"a"},{"type":"var","value":"b"}]}]},
+                  "location": {"row": 3, "text": "${b64("pair_ok([a, b]) if a == b")}"},
+                  "body": [{"index":0,"location":{"row":3,"text":"${b64("a == b")}"},"terms":[
+                    {"type":"ref","value":[{"type":"var","value":"equal"}]},{"type":"var","value":"a","location":{"text":"${b64("a")}"}},{"type":"var","value":"b","location":{"text":"${b64("b")}"}}]}]
+                },
+                {
+                  "head": {"name": "r", "ref": [{"type":"var","value":"r"}]},
+                  "location": {"row": 6, "text": "${b64("r if pair_ok(input.p)")}"},
+                  "body": [{"index":0,"location":{"row":6,"text":"${b64("pair_ok(input.p)")}"},"terms":[
+                    {"type":"ref","value":[{"type":"var","value":"pair_ok"}]},{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"p"}]}]}]
+                }
+              ]
+            }
+            """.trimIndent()
+        )
+
+        @Test
+        @DisplayName("a function with a PATTERN parameter loads; its Parameters line shows the pattern's verbatim source")
+        fun patternParameterIsShownVerbatim() {
+            val rules = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", patternParameterFunction()))).packages[0].rules
+            assertThat(rules.single { it.name == "pair_ok" }.parameters).containsExactly("[a, b]")
+        }
+
+        @Test
+        @DisplayName("the pattern-parameter function is still a registered function: a one-argument call to it resolves")
+        fun patternParameterFunctionStillResolvesCalls() {
+            val rules = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", patternParameterFunction()))).packages[0].rules
+            assertThat(rules.single { it.name == "r" }.bodies.single().conditions.single()).isInstanceOf(Condition.FunctionCall::class.java)
+        }
+
+        @Test
+        @DisplayName("an annotation entry whose path carries a non-name element is skipped, not fatal")
+        fun annotationPathWithNonNameElementIsSkipped() {
+            val inspect = opaJson.decodeFromString(
+                OpaInspectResult.serializer(),
+                """
+                {"annotations":[
+                  {"annotations":{"title":"T","scope":"rule"},"location":{"file":"scratch.rego","row":3},
+                   "path":[{"type":"var","value":"data"},{"type":"string","value":"scratch"},{"type":"call","value":[]}]}
+                ]}
+                """.trimIndent(),
+            )
+            val policySet = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", patternParameterFunction())), inspect)
+            assertThat(policySet.packages[0].rules.map { it.name }).contains("pair_ok", "r")
+            assertThat(policySet.packages[0].rules.all { it.metadata == null }).isTrue()
+        }
+    }
+
+    @Nested
+    inner class SprintfFormatVerbAlignment {
+        // Real-world benchmark finding (Gatekeeper corpus): a sprintf format with MORE placeholders than
+        // arguments crashed the mapper (index out of bounds). Fixing it exposed a quieter faithfulness
+        // bug in the same loop: only `%v`/`%s` consumed an argument, so any other verb (`%d`, `%q`)
+        // was copied as text WITHOUT consuming one, and every later `%v` took the WRONG argument --
+        // the card showed "%d of [total]" for a message that really reads "5 of x". The rule now:
+        // produce a display message only when every verb is `%v`/`%s`/`%%` and verbs and arguments
+        // line up exactly; otherwise producesValue is null (no Produces line), never a misaligned one.
+
+        private fun producesValueOf(format: String, vararg argPaths: String): String? {
+            val args = argPaths.joinToString(",") { """{"type":"ref","location":{"text":"${b64("input.$it")}"},"value":[{"type":"var","value":"input"},{"type":"string","value":"$it"}]}""" }
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [{
+                    "head": {"name": "deny", "key": {"type":"var","value":"msg"}, "ref": [{"type":"var","value":"deny"}]},
+                    "body": [{"index":0,"location":{"row":1,"text":"${b64("msg := sprintf(...)")}"},"terms":[
+                      {"type":"ref","value":[{"type":"var","value":"assign"}]},
+                      {"type":"var","value":"msg"},
+                      {"type":"call","value":[
+                        {"type":"ref","value":[{"type":"var","value":"sprintf"}]},
+                        {"type":"string","value":${opaJson.encodeToString(kotlinx.serialization.serializer<String>(), format)}},
+                        {"type":"array","value":[$args]}
+                      ]}
+                    ]}]
+                  }]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules[0].bodies[0]
+            // A null message must come from the format logic, never from failure isolation swallowing a crash.
+            assertThat(body.conditions.filterIsInstance<Condition.Unrendered>().map { it.reason }).doesNotContain("mapping-error")
+            return body.producesValue
+        }
+
+        @Test
+        fun aMatchingFormatStillProducesTheDisplayMessage() {
+            assertThat(producesValueOf("%v of %s", "total", "name")).isEqualTo("[total] of [name]")
+        }
+
+        @Test
+        @DisplayName("a literal %% is one percent sign and consumes no argument")
+        fun doublePercentIsALiteralPercent() {
+            assertThat(producesValueOf("%v%% done", "pct")).isEqualTo("[pct]% done")
+        }
+
+        @Test
+        @DisplayName("more placeholders than arguments no longer crashes: no display message")
+        fun tooFewArgumentsYieldsNoDisplayMessage() {
+            assertThat(producesValueOf("%v and %v", "only")).isNull()
+        }
+
+        @Test
+        @DisplayName("more arguments than placeholders: no display message (Go would print %!(EXTRA ...))")
+        fun tooManyArgumentsYieldsNoDisplayMessage() {
+            assertThat(producesValueOf("just %v", "a", "b")).isNull()
+        }
+
+        @Test
+        @DisplayName("a verb other than %v/%s (here %d) yields no display message instead of misaligning later arguments")
+        fun otherVerbYieldsNoDisplayMessage() {
+            assertThat(producesValueOf("%d of %v", "total", "name")).isNull()
+        }
+
+        @Test
+        @DisplayName("CHALLENGE edge case: a trailing lone % yields no display message")
+        fun trailingPercentYieldsNoDisplayMessage() {
+            assertThat(producesValueOf("100%", "x")).isNull()
+        }
+    }
+
 }

@@ -1299,3 +1299,21 @@ was proposed in, not deferred to a separate increment.
   differently; confirmed reformatting/comments around an unchanged literal still hash the same).
 - Zero acceptance-pack impact: the pack's one collection literal is the membership case, unchanged
   by construction. Goldens and `docs/sample-output` unchanged.
+
+## Real-world corpus benchmark and failure isolation
+
+- `scripts/corpus-benchmark/` (outside the Gradle build; see its README) runs the public API over a
+  directory one file at a time. Run over Gatekeeper, Trivy, Regal and conftest (964 files): 86% -> 97%
+  of files render; the 30 left are all OPA-side (16 Rego v0 syntax, 14 cross-file artifacts).
+- `AstMapper.mapBodyIsolated`: a body whose mapping throws becomes a verbatim-source fallback
+  (reason `mapping-error`) plus a stderr warning -- never silent, never aborts siblings. Its test
+  uses deliberately malformed AST (a `var` term holding an array) as a stable crash trigger; do not
+  "harden" `stringValueOf` globally or that test stops testing anything.
+- Lenient reads: `OpaCustomAnnotation` ignores a wrongly-shaped `control-id`/`frameworks`. A ref chain
+  with a non-name head falls back. Pattern parameters display their verbatim source.
+- `renderProducesValue` is strict: only `%v`/`%s`/`%%`, verbs == arguments, else null. Found because a
+  `%d` was silently misaligning later arguments (prose that was wrong, not a crash).
+- Real-world coverage is 47-61% of conditions, vs ~90% on our own fixtures: that gap is the true
+  frontier. **Rego v0 syntax is unsupported** (OPA 1.x rejects it) -- a product decision, see
+  `docs/rego-coverage.md`.
+

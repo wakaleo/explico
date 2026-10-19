@@ -232,6 +232,9 @@ internal object AstMapper {
         val index = mutableMapOf<Pair<String, Int>, RuleMetadata>()
         for (entry in (inspectResult?.annotations ?: emptyList())) {
             if (entry.annotations.scope == "package") continue
+            // A path element that is not a plain name (a ref-headed rule can carry other terms)
+            // cannot identify a rule by name -- the entry is skipped (no metadata attaches), never fatal.
+            if (entry.path.drop(1).any { it.type != "var" && it.type != "string" }) continue
             val segments = entry.path.drop(1).map { stringValueOf(it) }
             if (segments.size < 2) continue
             val entryPackage = segments.dropLast(1).joinToString(".")
@@ -355,7 +358,7 @@ internal object AstMapper {
                     for (rule in module.rules) {
                         val name = rule.head.name ?: continue
                         val args = rule.head.args ?: continue
-                        byName.putIfAbsent(name, args.map { stringValueOf(it) })
+                        byName.putIfAbsent(name, args.map { parameterNameOf(it) })
                     }
                 }
                 byName
@@ -411,11 +414,11 @@ internal object AstMapper {
                     name = name,
                     metadata = metadata,
                     default = null,
-                    bodies = if (constant != null) emptyList() else orderedRules.map { mapBody(it, ctx) },
+                    bodies = if (constant != null) emptyList() else orderedRules.map { mapBodyIsolated(it, name, ctx) },
                     // review item 8: a function's own declared parameters, for its card's own
                     // "Parameters" line. `head.args` is consistent across a function's overloaded
                     // bodies (same arity/names), so the first is as good as any.
-                    parameters = orderedRules.first().head.args?.map { stringValueOf(it) } ?: emptyList(),
+                    parameters = orderedRules.first().head.args?.map { parameterNameOf(it) } ?: emptyList(),
                     constantValue = constant,
                 )
             }
@@ -489,6 +492,40 @@ internal object AstMapper {
         if (sourceText(onlyExpr.location) != sourceText(value.location)) return null
         return ConstantValue(sourceText(value.location), SourceRef(ctx.sourceFile, rule.location?.row ?: 0))
     }
+
+    /**
+     * A function parameter's display name. Usually a plain variable, but Rego allows PATTERN
+     * parameters (`f([a, b])`, `f("literal")`) -- found by benchmarking real-world corpora, where
+     * `stringValueOf` on one aborted the whole load. A non-variable parameter is shown as its own
+     * verbatim source, never guessed; only its position (arity) matters for call resolution.
+     */
+    private fun parameterNameOf(arg: OpaTerm): String =
+        if (arg.type == "var") stringValueOf(arg) else sourceText(arg.location)
+
+    /**
+     * Failure isolation boundary for ONE rule body (found by benchmarking against real-world Rego
+     * corpora: a single mapper exception on a single rule used to abort the render of every file).
+     * The mapper cannot be proven total against all the opa output real policies produce, so a body
+     * whose mapping throws degrades to the project's own honest fallback -- the rule's verbatim
+     * source, reason `mapping-error`, never a guessed rendering -- while its sibling bodies and every
+     * other rule still render. The failure is NEVER swallowed: a one-line warning naming the rule,
+     * file, row and exception goes to stderr (the project's only logging channel).
+     */
+    private fun mapBodyIsolated(rule: OpaRule, ruleName: String, ctx: MappingContext): RuleBody =
+        try {
+            mapBody(rule, ctx)
+        } catch (e: Exception) {
+            val row = rule.location?.row ?: 0
+            val thrownIn = e.stackTrace.filter { it.className.startsWith("io.explico") }.take(2).joinToString(" <- ") { it.methodName }.ifEmpty { "?" }
+            System.err.println("explico: warning: could not map rule '$ruleName' (${ctx.sourceFile}:$row): ${e.javaClass.simpleName} in $thrownIn: ${e.message?.lineSequence()?.firstOrNull()}; shown as source")
+            RuleBody(
+                conditions = listOf(Condition.Unrendered(sourceText(rule.location), "mapping-error")),
+                producesValue = null,
+                messageTemplate = null,
+                sourceLocation = SourceRef(ctx.sourceFile, row),
+                sourceText = sourceText(rule.location),
+            )
+        }
 
     private fun mapBody(rule: OpaRule, ctx: MappingContext): RuleBody {
         // An else-chain (spec §14 finding): opa's own top-level `rule.location` already spans the
@@ -961,6 +998,11 @@ internal object AstMapper {
     private fun mapRefChain(chain: List<OpaTerm>, symbolTable: Map<String, VarBinding>, ctx: MappingContext, wholeRefLocation: io.explico.opa.OpaLocation?): ConstructResult {
         if (chain.isEmpty()) return ConstructResult.Ok(Operand.Unrendered(""))
         val root = chain.first()
+        // A chain's HEAD is not always a plain name: `util.f(x).lines[0]` heads on a call, `[a, b][0]`
+        // on an array literal, `{...}[k]` on a comprehension (found by benchmarking real-world Rego
+        // corpora; stringValueOf threw on each). None has a rendering, so it is the ordinary
+        // operand fallback -- the chain's own verbatim source -- never a guess.
+        if (root.type != "var" && root.type != "string") return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
         val rootName = stringValueOf(root)
         val remaining = chain.drop(1)
         // Review item 10: a full `data.<package>.<rule>` path to a COMPLETE rule's value is a
@@ -992,8 +1034,10 @@ internal object AstMapper {
             ruleValueReferenceIfKnown(aliasedPackage, ruleName, ctx)?.let { return ConstructResult.Ok(it) }
         }
         if (symbolTable[rootName] == null) {
-            val dottedPath = chain.joinToString(".") { stringValueOf(it) }
-            if (ctx.refHeadRegistry[ctx.currentPackage]?.contains(dottedPath) == true) {
+            // Only a chain whose tail is entirely plain names can name a ref-headed rule; a composite
+            // segment (`x[input.k]`) cannot, and stringValueOf would throw on it.
+            val dottedPath = if (allPlainStringSegments(remaining)) chain.joinToString(".") { stringValueOf(it) } else null
+            if (dottedPath != null && ctx.refHeadRegistry[ctx.currentPackage]?.contains(dottedPath) == true) {
                 val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
                 return ConstructResult.Ok(Operand.Path(listOf(PathSegment.Field(rootName)) + segments))
             }
@@ -1225,19 +1269,30 @@ internal object AstMapper {
         val format = args[0].takeIf { it.type == "string" }?.let { stringValueOf(it) } ?: return null
         val placeholderArgs = decodeTermList(args[1].value)
         val placeholders = placeholderArgs.map { renderPlaceholder(it, symbolTable) ?: return null }
+        // The display message is produced ONLY when every verb is understood and verbs line up
+        // with arguments exactly. Found by benchmarking real-world Rego: a verb other than %v/%s
+        // (`%d`, `%q`) used to be copied as text WITHOUT consuming an argument, so every later %v
+        // took the WRONG argument (the card read "%d of [total]" for a message that really reads
+        // "5 of x"), and a format with more verbs than arguments crashed. Anything not understood
+        // is null -- no Produces line -- never a misaligned one.
         var index = 0
         val result = StringBuilder()
         var i = 0
         while (i < format.length) {
             val c = format[i]
-            if (c == '%' && i + 1 < format.length && (format[i + 1] == 'v' || format[i + 1] == 's')) {
-                result.append(placeholders[index++])
-                i += 2
-            } else {
+            if (c != '%') {
                 result.append(c)
                 i += 1
+                continue
             }
+            when (format.getOrNull(i + 1)) {
+                'v', 's' -> result.append(placeholders.getOrNull(index++) ?: return null)
+                '%' -> result.append('%')
+                else -> return null
+            }
+            i += 2
         }
+        if (index != placeholders.size) return null
         return result.toString()
     }
 

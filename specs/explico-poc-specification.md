@@ -1568,3 +1568,21 @@ Rationale in `docs/rego-coverage.md`.
   of the same elements are different Rego values and must hash differently.
 
 Rationale in `docs/rego-coverage.md`.
+
+### 14.29 Real-world corpus benchmark: failure isolation and robustness fixes
+
+- **§5/§6 amendment (failure isolation).** `AstMapper` maps each rule body inside an isolation
+  boundary: a body whose mapping throws becomes a `Condition.Unrendered` carrying the rule's verbatim
+  source with reason `mapping-error`, and a one-line warning (rule, file, row, exception, innermost
+  mapper methods) goes to stderr. Sibling bodies and other rules are unaffected; the failure is never
+  swallowed silently. This is a safety net, not a substitute for fixing the construct.
+- **§3 amendment (METADATA).** `custom.control-id` and `custom.frameworks` are read leniently: a
+  wrongly-shaped value is ignored exactly like an unrecognised key; a `frameworks` list keeps only its
+  string entries.
+- **§6.4 amendment.** A ref chain whose head is not a plain name falls back to its verbatim source. A
+  function's pattern parameter is displayed as its verbatim source.
+- **§5 amendment (`producesValue`).** The display message of a `sprintf` is produced only when every
+  verb is `%v`, `%s` or `%%` and verbs match arguments exactly; otherwise it is null.
+- **Disclosed, not addressed:** Rego v0 syntax is rejected by OPA 1.x and therefore not rendered.
+
+Rationale and measurements in `docs/rego-coverage.md`.

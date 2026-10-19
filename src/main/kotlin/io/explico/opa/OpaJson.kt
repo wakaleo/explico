@@ -19,7 +19,9 @@ package io.explico.opa
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 
 internal val opaJson = Json { ignoreUnknownKeys = true }
 
@@ -58,11 +60,24 @@ internal data class OpaExpr(
     val with: JsonElement? = null,
 )
 
+/**
+ * The two `custom:` fields explico READS. `custom` is free-form in OPA, so either can arrive in a
+ * shape explico does not model (found by benchmarking real-world Rego: Trivy's checks declare
+ * `frameworks` as an OBJECT of framework -> control ids, which strict list decoding turned into a
+ * whole-load abort for 47 files). Held raw and interpreted leniently: a wrongly-shaped field is
+ * treated exactly like an unrecognised key (ignored), never fatal; a list keeps only its string
+ * entries, which are exactly what it declares.
+ */
 @Serializable
 internal data class OpaCustomAnnotation(
-    @SerialName("control-id") val controlId: String? = null,
-    val frameworks: List<String> = emptyList(),
-)
+    @SerialName("control-id") private val controlIdRaw: JsonElement? = null,
+    @SerialName("frameworks") private val frameworksRaw: JsonElement? = null,
+) {
+    val controlId: String? get() = (controlIdRaw as? JsonPrimitive)?.takeIf { it.isString }?.content
+
+    val frameworks: List<String>
+        get() = (frameworksRaw as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content } ?: emptyList()
+}
 
 /** A METADATA annotation body. Used both for `opa parse`'s package/rule annotations and nested inside [OpaInspectAnnotationEntry]. */
 @Serializable

@@ -915,6 +915,49 @@ unchanged set literal still hashes identically (confirmed with a third fixture).
 Zero acceptance-pack impact: the pack's one collection literal is the membership case, which is
 unchanged by construction. `generateSampleDocs` and all Tier-2 goldens are byte-identical.
 
+## Real-world corpus benchmark and per-rule failure isolation
+
+Every fixture so far was shaped by constructs we had already thought of. To find what we had not, the
+whole tool was run over four public corpora it was not written around (`scripts/corpus-benchmark/`,
+one file at a time through the public `Explico` API): the Gatekeeper library (91 files), Trivy's checks
+(592), Regal's own rules (211) and conftest's examples (70) -- 964 files.
+
+| | Files rendering (before) | Files rendering (after) |
+|---|---|---|
+| conftest | 68 / 70 | 68 / 70 |
+| Trivy checks | 523 / 592 | 587 / 592 |
+| Regal | 157 / 211 | 188 / 211 |
+| Gatekeeper (v0 mode, see below) | 81 / 91 | 91 / 91 |
+| **Total** | **829 / 964 (86%)** | **934 / 964 (97%)** |
+
+Of the 30 files still not rendering, every one is OPA rejecting the file itself: 16 are Rego **v0 syntax**
+and 14 call a function defined in a sibling file (an artifact of loading one file at a time). None is an
+explico crash.
+
+**Bugs found, each fixed with a test (spec §14.29):**
+
+| Finding | Effect | Fix |
+|---|---|---|
+| One mapper exception on one rule aborted the render of every file. | 11% of files lost to crashes. | **Per-body failure isolation** (`mapBodyIsolated`): a body whose mapping throws becomes the ordinary fallback -- verbatim source, reason `mapping-error` -- while its siblings and every other rule still render. Never silent: a stderr warning names the rule, file, row, exception and the two innermost mapper methods. |
+| Trivy declares `custom.frameworks` as an **object**; we decoded a list. | 47 files aborted at load. | `control-id` / `frameworks` are read leniently: a wrongly-shaped field is ignored like an unrecognised key (a list keeps only its string entries). Nothing is invented from the object. |
+| A ref chain's **head** is not always a name: `util.f(x).lines[0]`, `[a, b][i]`. Also `x[input.k]` with an unbound `x`. | `stringValueOf` threw (~60 rule bodies). | The chain falls back to its own verbatim source (`Operand.Unrendered`), counted in the footer like any unrendered operand. |
+| **Pattern parameters** (`f([a, b])`) and annotation paths with non-name terms. | Aborted the load outside the isolation boundary (5 files). | The Parameters line shows the pattern's verbatim source; the function stays callable by arity. A non-name annotation path is skipped (no metadata attaches). Variables bound *inside* a pattern stay raw, counted operands. |
+| **`sprintf` verbs that do not line up with arguments.** | A format with more verbs than arguments crashed; worse, any verb other than `%v`/`%s` (`%d`, `%q`) was copied as text *without consuming an argument*, so later `%v`s took the **wrong argument** -- the card read `"%d of [total]"` for a message that really reads "5 of x" (confirmed with `opa eval`). | A display message is produced only when every verb is `%v`/`%s`/`%%` and verbs and arguments match exactly; otherwise there is no Produces line, never a misaligned one. |
+
+The `%d` item is the instructive one: it was not a crash, it was prose that was quietly wrong -- the
+project's cardinal sin -- and only surfaced because the crash fix forced a closer look at the same loop.
+
+**Coverage on real code is 47-61% of conditions**, against 91% on the acceptance pack and ~90% on our
+own realistic corpus. That gap, not the crashes, is the real measure of how far the tool is from
+covering real policies; `fallbacks.txt` from the benchmark ranks what to promote next.
+
+**Not fixed, needs a product decision: Rego v0 syntax.** OPA 1.x rejects v0 (`violation[...] { ... }`
+with no `if`, `import future.keywords`) unless `--v0-compatible` is passed, so explico renders nothing
+for it -- including the whole Gatekeeper library, the largest public Rego corpus. The mapper already
+copes with the v0 AST (the Gatekeeper run above used `OPA_BIN` pointed at a wrapper adding the flag).
+Supporting it is an interface decision (a `--rego-version` option, or detection per file), not a mapper
+change, and the README currently promises OPA 1.x only.
+
 ## Review pass: link anchors that resolve (item 18)
 
 Found by the new corpus-wide invariant tier (`RealisticCorpusInvariantsAcceptanceIT`: no crash,
@@ -932,6 +975,18 @@ already resolved links), and a split-default entry can never steal a sibling's i
 REMOVED/ADDED/LOGIC_CHANGED cards. Disclosed, not fixed: a link inside a diff card to a rule that
 is not itself in the diff (unchanged) has no target in that document. Goldens changed by exactly
 the added anchor+blank lines (10 anchors; reviewed line-by-line before regenerating).
+
+## Evaluated and deliberately not promoted: the rare leftovers
+
+The three small, unranked constructs left after the ranked backlog emptied were each probed through
+the real pipeline and against real `opa eval`. None is a mechanical promotion; each stays a
+fallback on purpose. Behaviour is unchanged.
+
+| Construct | What a real run shows | Why it stays a fallback |
+|---|---|---|
+| Bare `count(input.items)` as a whole condition | Falls back to the verbatim expression. `opa eval` with `{"items": []}` still fires the rule: only `false`/undefined fail an expression, and `0` is truthy. | The only faithful phrase would be "the number of `items` is present and not false" -- true, but it presents a near-certain authoring bug (the author meant `> 0`) as intentional logic. The raw source shows the author what is actually there. |
+| Declare-only `some key` followed by `input.tags[key]` | A fallback block for `some key`, plus the later bracket-index operand left raw and counted as an unrendered value. `opa eval` confirms the existential reading (rule fires when any key's value matches). | Rendering it needs a decision the mapper cannot take mechanically: the declaration names no collection, so the quantifier must be rebuilt from first use (an `any of:`-style prefix, like `[_]`), and a variable reused across two paths is a join, not two independent iterations. Needs its own design pass. |
+| `$"..."` string interpolation | Parses on opa 1.19; falls back to verbatim source. | New syntax with no established phrasing for an embedded expression; no policy in any corpus uses it. |
 
 ## Disclosed, unchanged conventions (reviewed this session, deliberately not changed)
 
