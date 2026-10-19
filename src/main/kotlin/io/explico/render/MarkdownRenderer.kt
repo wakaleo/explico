@@ -466,6 +466,8 @@ internal object MarkdownRenderer {
         examplesByPackage: Map<String, Map<String, List<WorkedExample>>> = emptyMap(),
         /** The full policy digest (spec §14.40), if the caller computed one; null prints no digest line at all. */
         policyDigest: String? = null,
+        /** The requirements the organisation must evidence (spec §14.46); empty adds nothing to the index. */
+        requirements: List<String> = emptyList(),
     ): String {
         data class Row(
             val controlId: String?, val title: String, val packagePath: String, val ruleName: String,
@@ -541,6 +543,7 @@ internal object MarkdownRenderer {
         }
 
         appendFrameworkMatrix(sb, rows.map { FrameworkRow(it.controlId, it.ruleName, it.packagePath, it.anchorId, it.frameworks) })
+        appendRequirementsCoverage(sb, Quality.normalise(requirements).takeIf { it.isNotEmpty() }?.let { Quality.coverageOf(policySet, it) })
 
         val overall = CoverageSummary(rows.sumOf { it.coverage.rendered }, rows.sumOf { it.coverage.total })
         sb.appendLine("*Overall rendering coverage: ${overall.rendered} of ${overall.total} conditions (${overall.percent}%)*")
@@ -563,6 +566,8 @@ internal object MarkdownRenderer {
                     "each shows the constructs it could not render as source on its own card.*",
             )
         }
+
+        appendQualityFindings(sb, Quality.findingsOf(policySet))
 
         // Compliance quick win: a closing legend, so "Rendered" is never mistaken for a statement about the
         // control itself -- it measures how much of the rule's logic explico could turn into prose, nothing more.
@@ -651,6 +656,46 @@ internal object MarkdownRenderer {
             sb.appendLine("| $framework | ${links.joinToString(", ")} |")
         }
         sb.appendLine()
+    }
+
+    /**
+     * Spec §14.46: which listed requirements have a control, in the LIST's order, with `**No control**` for a gap, and the framework
+     * strings no listed requirement matches (a typo catcher). Nothing at all when [coverage] is null (no requirements supplied).
+     */
+    private fun appendRequirementsCoverage(sb: StringBuilder, coverage: Quality.RequirementsCoverage?) {
+        if (coverage == null) return
+        sb.appendLine("## Requirements coverage")
+        sb.appendLine()
+        sb.appendLine("*${coverage.covered} of ${coverage.total} requirements have at least one control.*")
+        sb.appendLine()
+        sb.appendLine("| Requirement | Controls |")
+        sb.appendLine("|---|---|")
+        for (item in coverage.items) {
+            sb.appendLine("| ${item.requirement} | ${if (item.controls.isEmpty()) "**No control**" else item.controls.joinToString(", ") { it.link() }} |")
+        }
+        sb.appendLine()
+        if (coverage.unlisted.isNotEmpty()) {
+            sb.appendLine("*Framework strings not in the requirements list: ${coverage.unlisted.joinToString(", ")}.*")
+            sb.appendLine()
+        }
+    }
+
+    /** Spec §14.46: controls with no description, no framework, or a shared title. Nothing at all when there is nothing to report. */
+    private fun appendQualityFindings(sb: StringBuilder, findings: Quality.Findings) {
+        if (findings.isEmpty()) return
+        // Blank line BEFORE (the heading follows the overall/below-100% line); none after -- the legend supplies its own.
+        sb.appendLine()
+        sb.appendLine("## Documentation quality")
+        sb.appendLine()
+        if (findings.missingDescription.isNotEmpty()) {
+            sb.appendLine("- **Missing description (${findings.missingDescription.size}):** ${findings.missingDescription.joinToString(", ") { it.link() }}")
+        }
+        if (findings.noFramework.isNotEmpty()) {
+            sb.appendLine("- **No framework (${findings.noFramework.size}):** ${findings.noFramework.joinToString(", ") { it.link() }}")
+        }
+        for ((title, controls) in findings.duplicateTitles) {
+            sb.appendLine("- **Duplicate title (${controls.size}):** ${controls.joinToString(", ") { it.link() }} -- \"$title\"")
+        }
     }
 
     /** The id [anchorForTarget] links to for [rule]: its control id if it has one, else `package-rulename`, slugged. */

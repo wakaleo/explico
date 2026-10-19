@@ -1480,3 +1480,12 @@ candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFI
 - Opt-in (`json = false` default): with it off nothing changes, which is why no golden moved. `RealisticJsonExportAcceptanceIT` asserts that every rendered
   condition `text` is a bullet of its package document -- keep that true.
 - Pretty printing is `JsonExport.prettyJson` (2-space, trailing newline), shared with the diff export.
+
+## Documentation quality and requirements (spec §14.46)
+
+- `render/Quality.kt` computes findings (controls only) and requirement coverage from the model; `MarkdownRenderer.appendQualityFindings`/`appendRequirementsCoverage`
+  and `JsonExport` only present it. Exact string matching against `frameworks` is deliberate: never normalise case or punctuation, the `unlisted` line is how typos surface.
+- Quality section: blank line before, none after (the legend supplies its own). `IndexLayoutTest` pins the spacing -- acceptance tests do not pin whitespace, so a
+  spacing bug passed them (found by reading real output, not by a failing test).
+- `cli/parseRequirements` is the file format; the library re-normalises, so the two cannot disagree.
+

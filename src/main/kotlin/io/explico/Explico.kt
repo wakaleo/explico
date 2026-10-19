@@ -123,6 +123,8 @@ public object Explico {
         generateExamples: Boolean = false,
         /** When true, `files` also contains `explico.json` (schema `explico/render/1`, spec §14.45). Off by default. */
         json: Boolean = false,
+        /** The requirements (framework strings) the organisation must evidence, for the index's requirements coverage (spec §14.46). */
+        requirements: List<String> = emptyList(),
     ): RenderedDocs {
         val examplesByPackage = evaluateWorkedExamples(policySet, policyDir, examples, dataDir)
         val generated = if (generateExamples) generateWorkedExamples(policySet, policyDir, dataDir, examplesByPackage) else null
@@ -142,8 +144,8 @@ public object Explico {
                 policyDigest,
                 dataValues,
             )
-        } + ("index.md" to MarkdownRenderer.renderIndex(policySet, examplesByPackage, policyDigest)) +
-            (if (json) mapOf("explico.json" to JsonExport.render(policySet, policyDigest, examplesByPackage, generated?.byPackage ?: emptyMap(), dataValues)) else emptyMap())
+        } + ("index.md" to MarkdownRenderer.renderIndex(policySet, examplesByPackage, policyDigest, requirements)) +
+            (if (json) mapOf("explico.json" to JsonExport.render(policySet, policyDigest, examplesByPackage, generated?.byPackage ?: emptyMap(), dataValues, requirements)) else emptyMap())
 
         val packageCoverages = policySet.packages.map { Coverage.of(it) }
         val overallCoverage = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })

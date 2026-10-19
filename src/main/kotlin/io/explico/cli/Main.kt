@@ -40,6 +40,10 @@ private class ExplicoCommand : NoOpCliktCommand(name = "explico") {
         "Turn Rego policies into documentation a reviewer can read -- every statement derived mechanically, never guessed"
 }
 
+/** One requirement per line; blank lines and lines starting with `#` (after leading spaces) are ignored, each line is trimmed, duplicates collapse keeping the first (spec §14.46). */
+internal fun parseRequirements(text: String): List<String> =
+    text.lines().map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }.distinct()
+
 private fun parseRegoVersion(name: String): RegoVersion = if (name == "v0") RegoVersion.V0 else RegoVersion.V1
 
 private class RenderCommand : CliktCommand(name = "render") {
@@ -59,13 +63,17 @@ private class RenderCommand : CliktCommand(name = "render") {
         help = "Also derive worked examples from each rule's conditions where --examples leaves a gap (each verified by opa eval; runs the policy)",
     ).flag()
     private val json by option("--json", help = "Also write explico.json, the machine-readable result (see docs/json-output.md)").flag()
+    private val requirementsFile by option(
+        "--requirements",
+        help = "Text file listing the requirements to evidence, one per line (# comments allowed); adds a requirements-coverage table to index.md",
+    ).path(mustExist = true, canBeDir = false)
 
     override fun run() {
         requireOpaOrExit()
         try {
             val policySet = Explico.load(policyDir, parseRegoVersion(regoVersion))
             val examples = examplesDir?.let { Explico.loadExamples(it) }
-            val rendered = Explico.render(policySet, policyDir, examples, dataDir, generateExamples, json)
+            val rendered = Explico.render(policySet, policyDir, examples, dataDir, generateExamples, json, requirementsFile?.let { parseRequirements(Files.readString(it)) } ?: emptyList())
             replaceOutputDirectory(out, rendered.files)
             echo("Rendering coverage: ${rendered.coverage.rendered} of ${rendered.coverage.total} conditions (${rendered.coverage.percent}%)")
             rendered.generatedExamples?.let { echo("Generated examples for ${it.rulesWithExamples} of ${it.rulesConsidered} rules") }

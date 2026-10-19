@@ -30,6 +30,8 @@ Library: `Explico.render(policySet, policyDir, examples, dataDir, generateExampl
 | `schema` | string | `"explico/render/1"` |
 | `policyDigest` | string | SHA-256 (64 hex) over the `.rego` files; the value shown on `index.md` |
 | `coverage` | object | `{rendered, total, percent}` over every condition |
+| `quality` | object | Documentation-quality findings over controls: `missingDescription` and `noFramework` (arrays of control ids) and `duplicateTitles` (`[{title, controls}]`). Always present; empty arrays when clean |
+| `requirements` | object or null | Null unless a requirements list was supplied. Otherwise `total`, `covered`, `items` (`[{requirement, controls}]` in the list's order; `controls` are control ids, or the rule name for a rule with no control id) and `unlisted` (framework strings used by the policy that are not on the list) |
 | `packages` | array | One entry per package document, sorted by `path` |
 
 **Package:** `path`, `file` (its Markdown document), `title`, `description` (package METADATA, or `null`), `authors`, `relatedResources`,

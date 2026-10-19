@@ -41,6 +41,7 @@ internal object JsonExport {
         examplesByPackage: Map<String, Map<String, List<WorkedExample>>>,
         generatedByPackage: Map<String, Map<Int, GeneratedExamples>>,
         dataValues: Map<Operand.Path, JsonElement?>?,
+        requirements: List<String> = emptyList(),
     ): String {
         val packageCoverages = policySet.packages.map { Coverage.of(it) }
         val overall = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })
@@ -48,11 +49,34 @@ internal object JsonExport {
             put("schema", SCHEMA)
             put("policyDigest", policyDigest)
             put("coverage", coverage(overall))
+            put("quality", qualityObject(Quality.findingsOf(policySet)))
+            put("requirements", Quality.normalise(requirements).takeIf { it.isNotEmpty() }?.let { requirementsObject(Quality.coverageOf(policySet, it)) } ?: JsonNull)
             put("packages", buildJsonArray {
                 for (pkg in policySet.packages) add(packageObject(pkg, policySet, examplesByPackage[pkg.path] ?: emptyMap(), generatedByPackage[pkg.path] ?: emptyMap(), dataValues))
             })
         }
         return prettyJson(document)
+    }
+
+    private fun qualityObject(f: Quality.Findings) = buildJsonObject {
+        put("missingDescription", buildJsonArray { f.missingDescription.forEach { add(JsonPrimitive(it.label)) } })
+        put("noFramework", buildJsonArray { f.noFramework.forEach { add(JsonPrimitive(it.label)) } })
+        put("duplicateTitles", buildJsonArray {
+            f.duplicateTitles.forEach { (title, controls) ->
+                add(buildJsonObject { put("title", title); put("controls", buildJsonArray { controls.forEach { add(JsonPrimitive(it.label)) } }) })
+            }
+        })
+    }
+
+    private fun requirementsObject(c: Quality.RequirementsCoverage) = buildJsonObject {
+        put("total", c.total)
+        put("covered", c.covered)
+        put("items", buildJsonArray {
+            c.items.forEach { item ->
+                add(buildJsonObject { put("requirement", item.requirement); put("controls", buildJsonArray { item.controls.forEach { add(JsonPrimitive(it.label)) } }) })
+            }
+        })
+        put("unlisted", buildJsonArray { c.unlisted.forEach { add(JsonPrimitive(it)) } })
     }
 
     private fun coverage(c: CoverageSummary) = buildJsonObject {

@@ -1,0 +1,8 @@
+# Requirements this organisation must evidence
+SOC 2 CC8.1
+ISO 27001 A.8.32
+DORA Art. 9
+SLSA v1.0 L2
+NIST 800-53 CM-3
+
+SOC 2 CC8.1

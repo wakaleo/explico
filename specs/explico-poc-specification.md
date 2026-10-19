@@ -106,7 +106,7 @@ explico/
 │   │   ├── render/                PathHumanizer.kt, ExpressionRenderer.kt, MarkdownRenderer.kt,
 │   │   │                          Coverage.kt, Examples.kt (worked examples, §6.7),
 │   │   │                          ReferenceData.kt (§14.41), PolicyDigest.kt (§14.40),
-│   │   │                          JsonExport.kt (§14.45)
+│   │   │                          JsonExport.kt (§14.45), Quality.kt (§14.46)
 │   │   ├── generate/              InputSynthesizer.kt, ExampleGenerator.kt (§14.39)
 │   │   ├── diff/                  Canonicalizer.kt, PolicyDiff.kt, LineDiffer.kt, DiffRenderer.kt,
 │   │   │                          ChangeSummary.kt (§14.42), DiffJson.kt (§14.45)
@@ -584,7 +584,7 @@ object Explico {
     fun loadExamples(dir: Path): ExampleSet
     fun render(policySet: PolicySet, policyDir: Path, examples: ExampleSet? = null,
                dataDir: Path? = null, generateExamples: Boolean = false,                    // §14.39
-               json: Boolean = false): RenderedDocs                                         // §14.45
+               json: Boolean = false, requirements: List<String> = emptyList()): RenderedDocs   // §14.45, §14.46
     fun diff(old: PolicySet, new: PolicySet): DiffReport  // model + markdown + json
 }
 data class RenderedDocs(val files: Map<String, String>, val coverage: CoverageSummary,
@@ -599,7 +599,7 @@ Everything else is `internal`. KDoc on every public declaration.
 
 ```
 explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>]
-               [--rego-version v1|v0] [--generate-examples] [--json]
+               [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>]
 explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--rego-version v1|v0]
 explico version
 explico demo [--fetch-opa]                  # §13.2
@@ -1830,4 +1830,22 @@ Schemas and every field are documented in `docs/json-output.md`.
   indent and one trailing newline; sorted packages/custom keys; no clock, no HashMap iteration. `schema` is versioned (`explico/render/1`).
 - **API compatibility:** `render` gains a trailing `json` parameter (its older overloads remain, `@JvmOverloads`); `DiffReport` gains `json` with a default
   and a `@JvmOverloads` constructor, so the 2-argument form still links (`JsonApiJavaInteropTest`).
+
+### 14.46 Documentation quality and requirement gap analysis
+
+A compliance owner asks "is the documentation complete?" and "which requirements have no control?". Both are answered from the domain model alone (`render/Quality.kt`).
+- **Quality findings (always computed).** Over CONTROLS only (a rule with a control id, excluding split-default entries): `missing description` (null or blank),
+  `no framework` (empty list), `duplicate title` (two or more controls with the same non-null title, exact and case-sensitive). `index.md` gets
+  `## Documentation quality` after the *Below 100%* note and before the legend, ONLY when something is found (so a clean set is byte-identical to before), one bullet
+  per non-empty category in that order, controls linked like the framework matrix, in control-id order; a duplicated title is one bullet per title, sorted by title,
+  ending ` -- "Title"`. JSON `quality` is always present (empty arrays when clean).
+- **Requirements (opt-in).** `render(..., requirements = [...])` / `render --requirements <file>` (UTF-8, one per line; blank lines and `#` comments ignored, trimmed,
+  duplicates collapsed keeping the first; a missing file is a usage error, exit 1). The library normalises the list the same way. Matching is EXACT string equality
+  with METADATA `frameworks`. `index.md` gets `## Requirements coverage` right after the framework matrix (before the overall line when there is no matrix):
+  `*N of M requirements have at least one control.*`, a table in the LIST's order of linked controls (control-id order) or `**No control**`, and -- when any rule names a
+  framework string that is not on the list -- `*Framework strings not in the requirements list: A, B.*` (sorted case-insensitively then by text), which is what exposes a
+  typo on either side. A rule with no control id that names a framework counts and is labelled by rule name, as in the matrix. JSON `requirements` is null when none was
+  given, else `{total, covered, items:[{requirement, controls}], unlisted}`.
+- **Layout.** Each optional section sits between blank lines with no double blank line, in any combination (`IndexLayoutTest` pins whitespace; the acceptance tests do not).
+- **Compatibility.** `render` gains a trailing `requirements` parameter (`@JvmOverloads`: every shorter overload still links -- `RequirementsApiJavaInteropTest`).
 

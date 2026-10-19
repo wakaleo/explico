@@ -166,6 +166,31 @@ with logic is the policy author's job, not something explico's honesty
 guarantee extends to — that guarantee is specifically about the *logic*,
 never about auditing the prose a human attached to it.
 
+## Keeping your documentation complete
+
+explico checks the documentation it can see, and tells you what is missing — it never invents anything to fill a gap.
+
+**Documentation quality** (always on). When a *control* (a rule with a `control-id`) has no `description`, names no `frameworks`,
+or shares its `title` with another control, `index.md` gains a **Documentation quality** section listing them, each linked to its
+card; the same findings are in `explico.json` (`quality`). There is no section when there is nothing to report. Rules without a
+control id are not checked — give a rule a control id to make it a control.
+
+**Requirement gap analysis** (`--requirements <file>`). The index can tell you which controls claim a requirement; to find
+requirements *no* control claims, give explico the list. A plain text file, one requirement per line:
+
+```
+# Requirements we must evidence this audit
+SOC 2 CC8.1
+ISO 27001 A.8.32
+NIST 800-53 CM-3
+```
+
+`index.md` then gains **Requirements coverage**: each requirement in your order with the controls that name it, or
+**No control**. Matching is *exact* string equality with the `frameworks` strings in your METADATA — so a control that says
+`DORA Art 9` does not satisfy a requirement written `DORA Art. 9`. That is deliberate, and explico tells you when it happens:
+a closing line lists *framework strings not in the requirements list*, which is how a typo shows up on both sides. The same
+data is in `explico.json` (`requirements`: total, covered, items, unlisted).
+
 ## What `--data` adds to a card
 
 If you pass `--data`, a card whose rule reads a plain `data.*` document (an exemption list, a threshold table, a freeze

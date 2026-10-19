@@ -70,7 +70,9 @@ and tested. What it produces:
   METADATA (title, description, control id, frameworks, authors, related resources, other custom
   keys), what a match means by the `deny`/`allow` naming convention, every condition in plain
   words, and a per-card and per-package **rendering coverage** figure. A framework → controls
-  matrix, per-title links, and a policy digest tie the set together.
+  matrix, per-title links, and a policy digest tie the set together. A *Documentation quality* section
+  flags controls with no description, no framework or a shared title, and `--requirements` shows which
+  of your listed requirements have **no control** at all.
 - **Worked examples**: your fixtures evaluated by real `opa eval` (never predicted), plus
   optional `--generate-examples` that derive and verify extra ones.
 - **Reference data**: with `--data`, the values of the `data.*` documents a rule reads.
@@ -183,7 +185,7 @@ project's own `kotlin("jvm")` plugin version.
 ## CLI usage
 
 ```
-explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json]
+explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>]
 explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--rego-version v1|v0]
 explico version
 explico demo [--fetch-opa]
