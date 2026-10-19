@@ -533,17 +533,13 @@ points for day-to-day work in this repo:
   `gradle/actions/setup-gradle@v6`, `open-policy-agent/setup-opa@v2`), not
   assumed from training-data memory of older conventions (e.g. `checkout@v4`
   is what most existing tutorials still show, but v7 is current).
-- **Disclosed limitation: neither workflow has actually run in real GitHub
-  Actions.** This repo has no configured git remote (confirmed via `git
-  remote -v`), so there is nothing to push a tag or PR to yet. Verified
-  instead: YAML syntax (`python3 -c "import yaml; yaml.safe_load(...)"` on
-  both files) and that every action reference is a real, current tag on its
-  real repository. The actual job logic (`check acceptanceTest`,
-  `publishToMavenLocal`, the consumer smoke test, the secret-presence check)
-  is the same sequence already proven locally in this session, command by
-  command -- but "proven to parse and reference real actions" is not the
-  same claim as "proven to run green in Actions." Confirm this once the repo
-  has a real remote and a first real PR/tag push.
+- **Status (updated):** the repo now has a GitHub remote (`wakaleo/explico`) and `ci.yml` has run green
+  on it. It is a matrix: ubuntu, macOS and Windows on the pinned opa 1.19.0, plus ubuntu on the latest
+  opa as a non-blocking canary (only the primary row does the publish smoke test and the drift checks).
+  `.gitattributes` forces LF so the byte-exact goldens survive a Windows checkout. **`release.yml` has
+  not yet run for real**: its first run (a `v*` tag) is also the first live test of the Maven Central
+  token and the signing key, which is safe because `publishToMavenCentral(automaticRelease = false)`
+  only stages the deployment until someone clicks Publish in the Central Portal.
 
 ## §12 acceptance criteria audit (session 7)
 
@@ -596,9 +592,8 @@ things rather than trusting existing test coverage:
   once via a real `opa fmt -w` run, not hand-edited) backing both
   `CanonicalizerTest` and `PolicyDiffTest` -- closing a gap where the
   existing "reformatted" fixture was hand-edited, not `opa`'s own output.
-- **Disclosed, not fixed: the CI/release workflows themselves still
-  haven't run in real GitHub Actions** (§10.2) -- this repo has no git
-  remote yet. Everything checkable without one was checked.
+- **Historical note:** when this audit ran, the CI/release workflows had not
+  yet run in GitHub Actions (no remote existed). See the §10.2 status above.
 
 ## §13.1 Shadow-jar distribution (session 8)
 
