@@ -576,12 +576,15 @@ policy became stricter or more permissive."*
 
 ```kotlin
 object Explico {
-    fun load(policyDir: Path): PolicySet
+    fun load(policyDir: Path, regoVersion: RegoVersion = RegoVersion.V1): PolicySet           // §14.35
     fun loadExamples(dir: Path): ExampleSet
-    fun render(policySet: PolicySet, examples: ExampleSet? = null, dataDir: Path? = null): RenderedDocs
+    fun render(policySet: PolicySet, policyDir: Path, examples: ExampleSet? = null,
+               dataDir: Path? = null, generateExamples: Boolean = false): RenderedDocs      // §14.39
     fun diff(old: PolicySet, new: PolicySet): DiffReport  // model + markdown
 }
-data class RenderedDocs(val files: Map<String, String>, val coverage: CoverageSummary)
+data class RenderedDocs(val files: Map<String, String>, val coverage: CoverageSummary,
+                        val generatedExamples: GeneratedExamplesSummary? = null)
+data class GeneratedExamplesSummary(val rulesWithExamples: Int, val rulesConsidered: Int)
 data class DiffReport(val entries: List<DiffEntry>, val markdown: String)
 ```
 
@@ -1677,3 +1680,18 @@ compile-scope (`api`) dependency because the public `Fixture.input` exposes its 
 (API surface checked at compile time; the runnable jar is smoke-tested on JDK 17 in CI). `LibraryJarShapeTest` guards the
 jar's shape. `release.yml` is gated on the full CI matrix, verifies tag == version, signs and verifies signatures and the
 public key before any upload, and supports a no-upload dry run. See `CHANGELOG.md` for the user-facing summary.
+
+### 14.39 Generated worked examples (`--generate-examples`)
+
+Opt-in (`generateExamples: Boolean = false`, last parameter of `Explico.render`; CLI `--generate-examples`; `RenderedDocs.generatedExamples`
+carries `N of M rules`). For each rule card with a body (not a function, not a split default) whose author examples leave a gap (no matching
+author outcome, or no non-matching one), `InputSynthesizer` derives candidate inputs from the body's conditions -- one satisfying all of them per
+body (at most 3), and near-misses violating exactly one (at most 2) -- over the constructs the renderer classifies: comparisons (all operators,
+`negated`), truthiness, membership, `startswith`/`endswith`/`contains`, `is_string`/`is_number`/`is_boolean`, `some x in <path>`, `[_]`. Anything
+else, contradictory constraints, or a `data.*` path is NotSolvable and yields nothing. `RuleBody.messageArguments` (plain `sprintf` argument paths)
+are defined with a placeholder so the body still produces its message. Every candidate is evaluated per package by the existing
+`WorkedExamples.evaluatePackage` and scoped with `forGroup`; it is kept only if the rule's verdict agrees (matching => matched, near-miss => not
+matched), after de-duplication. A candidate whose evaluation fails is discarded with a stderr warning. Rendered after the author section as
+`**Generated examples**` with mechanical names and a provenance footer; nothing is rendered for a rule with none. The sprintf argument paths are
+part of the canonical logic hash. Prototype measurements: sample pack 5/11 bodies, showcase 8/21, Gatekeeper ~4% -- bounded by what the renderer can
+classify.

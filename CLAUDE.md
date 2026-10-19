@@ -1388,3 +1388,15 @@ build-plugin coordinates against OSV (`https://api.osv.dev/v1/querybatch`, ecosy
 Shipped runtime dependencies were clean. Fixed: AssertJ 3.27.7 (CVE-2026-24400, test-only) and Kotlin 2.4.21 (CVE-2026-53914,
 build-only; consumer floor stays Kotlin 2.3.0, proven by `consumer-smoke-test`, which deliberately stays on 2.3.0). Dependabot
 alerts were disabled on the GitHub repo; enabling them is a repo-settings action.
+
+## Generated worked examples (spec §14.39)
+
+`--generate-examples` / `Explico.render(..., generateExamples = true)`: `io.explico.generate.InputSynthesizer` (pure: a body's conditions -> a
+candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFIED through the existing `WorkedExamples.evaluatePackage` /
+`forGroup` path, so verdicts/messages are OPA's; gap filling; caps 3 matching + 2 near-misses; dedupe). Rendered by
+`MarkdownRenderer.appendGeneratedExamples` in a separate `**Generated examples**` section with a provenance footer. Rules:
+- NEVER show a candidate OPA did not confirm; NEVER invent a semantic name (names are `satisfies every condition [of Situation N]` /
+  `breaks only: <phrase>`); NEVER widen what the solver models without a test and a real-`opa` acceptance case.
+- Off by default and byte-identical when off (goldens/docs unchanged). `RuleBody.messageArguments` exists only for this feature
+  (and the logic hash); a body whose message arguments are undefined produces no message.
+- Index "Example coverage" counts only AUTHOR fixtures. Generation runs `opa eval` (see SECURITY.md).

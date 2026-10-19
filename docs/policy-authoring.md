@@ -305,6 +305,23 @@ The test is: could someone deciding "is my situation covered by an existing
 example?" answer just by reading the list of `name`s, without opening a
 single fixture file? If not, the name is describing data, not a scenario.
 
+## Generated examples: what explico can derive for you
+
+With `--generate-examples`, explico fills gaps your fixtures leave (see the user guide). It helps to know what it can reason about, because
+that is also a hint for how to write policies that document well:
+
+- It reasons over exactly the conditions explico already renders as structured text: field-vs-literal and field-vs-field comparisons,
+  presence checks, membership, `startswith`/`endswith`/`contains`, simple type checks, and iteration over a field. A body built from
+  those is derivable. A body that calls your own function, follows a reference to another rule, uses `count(...)`, a comprehension or
+  `data.*`, is not -- it gets no generated example, and that is the correct, honest outcome.
+- A generated input is **minimal**, not realistic: placeholder strings such as `sample`, the smallest number that satisfies a bound. It
+  shows *that* the rule fires and which single condition matters, not a scenario a stakeholder would recognise.
+- The message of a body depends on the fields its `sprintf` reads, so explico defines those too (with a placeholder) -- otherwise the
+  body would produce no message at all.
+- **Your own fixtures always win.** Generated examples only fill a missing "matching" or "non-matching" case, appear in their own
+  labelled section, and never replace or reorder yours. Keep writing the scenario fixtures that carry meaning; treat generated ones as a
+  free sanity check that each condition does what the card says.
+
 ## Where examples come from
 
 ### The invariants

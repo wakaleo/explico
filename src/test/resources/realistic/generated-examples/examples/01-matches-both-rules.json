@@ -1,0 +1,2 @@
+{ "name": "flag set, high level in the EU", "description": "Matches fully_covered and only_matching_authored.",
+  "input": { "flag": true, "level": "high", "region": "eu" } }

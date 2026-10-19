@@ -4,6 +4,8 @@
  */
 package io.explico.render
 
+import io.explico.generate.GeneratedExample
+import io.explico.generate.GeneratedExamples
 import io.explico.model.Condition
 import io.explico.model.Operand
 import io.explico.model.PolicyPackage
@@ -14,7 +16,13 @@ import io.explico.model.RuleGroup
 internal object MarkdownRenderer {
 
     /** One `<package-path>.md` document: header, source files, then every rule's card (spec §6.1). */
-    fun renderPackage(pkg: PolicyPackage, policySet: PolicySet, examplesByRule: Map<String, List<WorkedExample>> = emptyMap()): String {
+    fun renderPackage(
+        pkg: PolicyPackage,
+        policySet: PolicySet,
+        examplesByRule: Map<String, List<WorkedExample>> = emptyMap(),
+        /** Generated worked examples (spec §14.39), by index into [pkg]'s rules; empty unless `--generate-examples`. */
+        generatedByRuleIndex: Map<Int, GeneratedExamples> = emptyMap(),
+    ): String {
         val sb = StringBuilder()
         sb.appendLine("# Package `${pkg.path}`")
         sb.appendLine()
@@ -36,7 +44,14 @@ internal object MarkdownRenderer {
 
         val anchorIds = cardAnchorIds(pkg)
         for ((index, rule) in pkg.rules.withIndex()) {
-            sb.append(renderCard(rule, pkg, policySet, WorkedExamples.forGroup(rule, pkg, examplesByRule[rule.name] ?: emptyList()), anchorIds[index]))
+            sb.append(
+                renderCard(
+                    rule, pkg, policySet,
+                    WorkedExamples.forGroup(rule, pkg, examplesByRule[rule.name] ?: emptyList()),
+                    anchorIds[index],
+                    generatedExamples = generatedByRuleIndex[index],
+                ),
+            )
             sb.appendLine()
             sb.appendLine("---")
             sb.appendLine()
@@ -60,6 +75,8 @@ internal object MarkdownRenderer {
         workedExamples: List<WorkedExample> = emptyList(),
         anchorId: String? = null,
         isLinkable: (packagePath: String, ruleName: String) -> Boolean = { _, _ -> true },
+        /** Verified generated examples for this card (spec §14.39); null or empty renders nothing. */
+        generatedExamples: GeneratedExamples? = null,
     ): String {
         val sb = StringBuilder()
         // Review item 18: an explicit anchor, because links target the control-id / package-rulename
@@ -87,6 +104,7 @@ internal object MarkdownRenderer {
         }
 
         appendWorkedExamples(sb, rule, workedExamples)
+        if (generatedExamples != null) appendGeneratedExamples(sb, rule, generatedExamples, anchorFor, functionAnchorFor, ruleValueAnchorFor)
         appendCoverageFooter(sb, rule)
         return sb.toString()
     }
@@ -198,34 +216,76 @@ internal object MarkdownRenderer {
         sb.appendLine("**Worked examples**")
         sb.appendLine()
         val referencedPaths = WorkedExamples.referencedPaths(rule)
-        for (outcome in selected) {
-            val outcomeWord = WorkedExamples.outcomeWord(rule.name, outcome.matched)
-            // A single message's situation label goes on the summary line, matching spec's own
-            // example. Multiple messages (a fixture matching more than one body at once) each get
-            // their own label instead -- there's no single "the" situation to put on the summary
-            // line in that case. Not spec-pinned; no pack fixture exercises single-message
-            // multi-body attribution differently than this.
-            val summaryLabel = if (outcome.messages.size == 1) outcome.situationLabels.single()?.let { " *(Situation $it)*" } ?: "" else ""
-            sb.appendLine("- **${outcome.fixture.name}** — $outcomeWord$summaryLabel")
-            if (outcome.messages.size == 1) {
-                sb.appendLine("  *\"${outcome.messages.single()}\"*")
-            } else if (outcome.messages.size > 1) {
-                outcome.messages.zip(outcome.situationLabels).forEach { (message, label) ->
-                    val label2 = label?.let { " *(Situation $it)*" } ?: ""
-                    sb.appendLine("  *\"$message\"*$label2")
-                }
-            }
-            for (path in referencedPaths) {
-                val breadcrumb = PathHumanizer.humanize(path.segments).rendered
-                val value = WorkedExamples.resolvePathValue(path, outcome.fixture.input)
-                sb.appendLine("  - $breadcrumb: ${value?.let { "`$it`" } ?: "absent"}")
-            }
-        }
+        for (outcome in selected) appendExampleEntry(sb, rule, outcome.fixture.name, outcome, referencedPaths)
         sb.appendLine()
         // Provenance footer (spec §13.6): a muted, explicit restatement, directly in the rendered
         // artefact, of spec §6.7's own invariant that worked examples are never predicted -- always
         // freshly evaluated by opa against whatever policy version is being rendered right now.
         sb.appendLine("*Examples are evaluated against this policy version by OPA at generation time.*")
+        sb.appendLine()
+    }
+
+    /**
+     * One worked-example entry: the name line with its verdict word, the produced message(s), then the values of the input
+     * paths the rule reads. Shared by the author's examples and generated ones, so both read identically.
+     */
+    private fun appendExampleEntry(sb: StringBuilder, rule: RuleGroup, name: String, outcome: WorkedExample, referencedPaths: List<Operand.Path>) {
+        val outcomeWord = WorkedExamples.outcomeWord(rule.name, outcome.matched)
+        // A single message's situation label goes on the summary line, matching spec's own
+        // example. Multiple messages (a fixture matching more than one body at once) each get
+        // their own label instead -- there's no single "the" situation to put on the summary
+        // line in that case. Not spec-pinned; no pack fixture exercises single-message
+        // multi-body attribution differently than this.
+        val summaryLabel = if (outcome.messages.size == 1) outcome.situationLabels.single()?.let { " *(Situation $it)*" } ?: "" else ""
+        sb.appendLine("- **$name** — $outcomeWord$summaryLabel")
+        if (outcome.messages.size == 1) {
+            sb.appendLine("  *\"${outcome.messages.single()}\"*")
+        } else if (outcome.messages.size > 1) {
+            outcome.messages.zip(outcome.situationLabels).forEach { (message, label) ->
+                val label2 = label?.let { " *(Situation $it)*" } ?: ""
+                sb.appendLine("  *\"$message\"*$label2")
+            }
+        }
+        for (path in referencedPaths) {
+            val breadcrumb = PathHumanizer.humanize(path.segments).rendered
+            val value = WorkedExamples.resolvePathValue(path, outcome.fixture.input)
+            sb.appendLine("  - $breadcrumb: ${value?.let { "`$it`" } ?: "absent"}")
+        }
+    }
+
+    /**
+     * Generated worked examples (spec §14.39), after the author's own section. Names are MECHANICAL -- what the input satisfies
+     * or the one condition it breaks, rendered with the ordinary condition phrasing -- never a scenario the tool invented.
+     * Renders nothing at all (no heading, no footer) when the rule received none.
+     */
+    private fun appendGeneratedExamples(
+        sb: StringBuilder,
+        rule: RuleGroup,
+        generated: GeneratedExamples,
+        anchorFor: (Condition.RuleReference) -> String?,
+        functionAnchorFor: (Condition.FunctionCall) -> String?,
+        ruleValueAnchorFor: (Operand.RuleValueReference) -> String?,
+    ) {
+        val entries = generated.matching + generated.nearMisses
+        if (entries.isEmpty()) return
+        sb.appendLine("**Generated examples**")
+        sb.appendLine()
+        val referencedPaths = WorkedExamples.referencedPaths(rule)
+        val multiBody = rule.bodies.size > 1
+        for (entry in entries) {
+            val name = when (entry.kind) {
+                GeneratedExample.Kind.MATCHING ->
+                    if (multiBody) "satisfies every condition of Situation ${entry.bodyIndex + 1}" else "satisfies every condition"
+                GeneratedExample.Kind.NEAR_MISS -> {
+                    val broken = rule.bodies[entry.bodyIndex].conditions[entry.brokenConditionIndex!!]
+                    val phrase = ExpressionRenderer.render(broken, anchorFor, functionAnchorFor, ruleValueAnchorFor)
+                    if (multiBody) "breaks only: $phrase in Situation ${entry.bodyIndex + 1}" else "breaks only: $phrase"
+                }
+            }
+            appendExampleEntry(sb, rule, name, entry.outcome, referencedPaths)
+        }
+        sb.appendLine()
+        sb.appendLine("*Generated examples are derived mechanically from this rule's conditions and evaluated by OPA at generation time; they illustrate the rule, they are not scenarios chosen by its author.*")
         sb.appendLine()
     }
 

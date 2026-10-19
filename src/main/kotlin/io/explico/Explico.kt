@@ -4,6 +4,8 @@ package io.explico
 import io.explico.diff.DiffEntry
 import io.explico.diff.DiffRenderer
 import io.explico.diff.PolicyDiff
+import io.explico.generate.ExampleGenerator
+import io.explico.generate.GenerationResult
 import io.explico.model.PolicySet
 import io.explico.model.RegoVersion
 import io.explico.opa.OpaRunner
@@ -19,8 +21,21 @@ import io.explico.render.parseExampleSet
 import java.nio.file.Files
 import java.nio.file.Path
 
-/** The rendered Markdown documents for a policy set, keyed by output filename, plus overall coverage. */
-public data class RenderedDocs(val files: Map<String, String>, val coverage: CoverageSummary)
+/**
+ * The rendered Markdown documents for a policy set, keyed by output filename, plus overall coverage.
+ * [generatedExamples] is null unless generation was requested (`generateExamples = true`).
+ */
+public data class RenderedDocs @JvmOverloads constructor(
+    val files: Map<String, String>,
+    val coverage: CoverageSummary,
+    val generatedExamples: GeneratedExamplesSummary? = null,
+)
+
+/**
+ * What `--generate-examples` achieved: [rulesWithExamples] of the [rulesConsidered] rules (cards with a body, not functions
+ * or split defaults) received at least one verified generated example.
+ */
+public data class GeneratedExamplesSummary(val rulesWithExamples: Int, val rulesConsidered: Int)
 
 /** The classified change entries between two policy versions, plus the rendered change report (spec §7). */
 public data class DiffReport(val entries: List<DiffEntry>, val markdown: String)
@@ -73,19 +88,40 @@ public object Explico {
      * `opa eval` against the actual `.rego` files, which the domain model alone can't locate. If
      * [examples] is supplied, control cards gain a worked-examples section evaluated via `opa
      * eval` against [dataDir]; a fixture whose evaluation fails is skipped with a stderr warning.
+     *
+     * With [generateExamples], rules whose author examples leave a gap (no matching case, or no non-matching case) also get a
+     * separately labelled **Generated examples** section: inputs derived mechanically from the rule's conditions, each
+     * VERIFIED by `opa eval` before it is shown (spec §14.39). Off by default; the output is then byte-identical to a render
+     * that never mentions the option. Like author examples, generation executes the policy via `opa eval` -- see SECURITY.md.
      */
     @JvmStatic
     @JvmOverloads
-    public fun render(policySet: PolicySet, policyDir: Path, examples: ExampleSet? = null, dataDir: Path? = null): RenderedDocs {
+    public fun render(
+        policySet: PolicySet,
+        policyDir: Path,
+        examples: ExampleSet? = null,
+        dataDir: Path? = null,
+        generateExamples: Boolean = false,
+    ): RenderedDocs {
         val examplesByPackage = evaluateWorkedExamples(policySet, policyDir, examples, dataDir)
+        val generated = if (generateExamples) generateWorkedExamples(policySet, policyDir, dataDir, examplesByPackage) else null
 
         val files = policySet.packages.associate { pkg ->
-            "${pkg.path.replace('.', '-')}.md" to MarkdownRenderer.renderPackage(pkg, policySet, examplesByPackage[pkg.path] ?: emptyMap())
+            "${pkg.path.replace('.', '-')}.md" to MarkdownRenderer.renderPackage(
+                pkg,
+                policySet,
+                examplesByPackage[pkg.path] ?: emptyMap(),
+                generated?.byPackage?.get(pkg.path) ?: emptyMap(),
+            )
         } + ("index.md" to MarkdownRenderer.renderIndex(policySet, examplesByPackage))
 
         val packageCoverages = policySet.packages.map { Coverage.of(it) }
         val overallCoverage = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })
-        return RenderedDocs(files = files, coverage = overallCoverage)
+        return RenderedDocs(
+            files = files,
+            coverage = overallCoverage,
+            generatedExamples = generated?.let { GeneratedExamplesSummary(it.rulesWithExamples, it.rulesConsidered) },
+        )
     }
 
     /**
@@ -97,6 +133,25 @@ public object Explico {
     public fun diff(old: PolicySet, new: PolicySet): DiffReport {
         val entries = PolicyDiff.diff(old, new)
         return DiffReport(entries, DiffRenderer.render(entries, old, new))
+    }
+
+    /** Derives and verifies generated examples; each candidate is evaluated through a short-lived temp input file. */
+    private fun generateWorkedExamples(
+        policySet: PolicySet,
+        policyDir: Path,
+        dataDir: Path?,
+        authorOutcomes: Map<String, Map<String, List<WorkedExample>>>,
+    ): GenerationResult {
+        val dataDirs = listOfNotNull(policyDir, dataDir)
+        return ExampleGenerator.generate(policySet, authorOutcomes) { packagePath, fixture ->
+            val inputFile = Files.createTempFile("explico-generated-", ".json")
+            try {
+                Files.writeString(inputFile, fixture.input.toString())
+                OpaRunner.eval(inputFile, dataDirs, "data.$packagePath", policySet.regoVersion)
+            } finally {
+                Files.deleteIfExists(inputFile)
+            }
+        }
     }
 
     private fun evaluateWorkedExamples(

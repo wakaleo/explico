@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **Added:** `--generate-examples` (library: `Explico.render(..., generateExamples = true)`). explico derives worked examples itself from
+  each rule's conditions where the author's own fixtures leave a gap: inputs that satisfy a rule body and "near-misses" that break exactly one
+  condition, each **verified by `opa eval`** and shown in a separate, labelled *Generated examples* section with mechanical names. Off by
+  default (output is byte-identical without it). Bodies it cannot model get none.
+- **Added:** `RuleBody.messageArguments` (the plain input paths a message's `sprintf` reads) and `RenderedDocs.generatedExamples`.
+- **Changed:** a different `sprintf` argument path now changes a rule's logic hash for `explico diff` (it changes the produced message).
+
 ## 0.1.1
 
 Packaging corrections to 0.1.0. No rendering behaviour changes. **Use 0.1.1 instead of 0.1.0.**

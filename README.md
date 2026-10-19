@@ -168,7 +168,7 @@ project's own `kotlin("jvm")` plugin version.
 ## CLI usage
 
 ```
-explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0]
+explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples]
 explico diff <oldDir> <newDir> --out <reportFile> [--rego-version v1|v0]
 explico version
 explico demo [--fetch-opa]
@@ -296,6 +296,8 @@ change report: a summary table of how many controls were added, removed,
 had their logic change, had only docs change, or were unchanged, followed by
 one section per changed control (a control-id-preserving rename is correctly
 classified `UNCHANGED`/`LOGIC_CHANGED`, never a spurious remove-and-add pair).
+
+`--generate-examples` additionally derives worked examples from each rule's conditions where your fixtures leave a gap: every one is verified by `opa eval` and labelled as generated (details in the [user guide](docs/user-guide.md#generated-examples---generate-examples)).
 
 ## Library usage
 

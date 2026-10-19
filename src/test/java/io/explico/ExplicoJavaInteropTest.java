@@ -46,6 +46,22 @@ class ExplicoJavaInteropTest {
     }
 
     @Test
+    void generateExamplesIsAnOverloadAndTheSummaryIsNullWhenOff() {
+        // The new last parameter works positionally from Java (no Kotlin named arguments), and RenderedDocs keeps its
+        // two-argument constructor via @JvmOverloads.
+        PolicySet policySet = Explico.load(policiesDir);
+        RenderedDocs off = Explico.render(policySet, policiesDir, null, null, false);
+        assertThat(off.getGeneratedExamples()).isNull();
+
+        RenderedDocs on = Explico.render(policySet, policiesDir, null, null, true);
+        assertThat(on.getGeneratedExamples()).isNotNull();
+        assertThat(on.getGeneratedExamples().getRulesConsidered()).isGreaterThan(0);
+
+        RenderedDocs constructed = new RenderedDocs(off.getFiles(), off.getCoverage());
+        assertThat(constructed.getGeneratedExamples()).isNull();
+    }
+
+    @Test
     void diffIsAlsoStaticNotInstanceQualified() {
         PolicySet policySet = Explico.load(policiesDir);
         DiffReport report = Explico.diff(policySet, policySet);

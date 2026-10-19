@@ -46,15 +46,20 @@ private class RenderCommand : CliktCommand(name = "render") {
         .path(mustExist = true)
     private val regoVersion by option("--rego-version", help = "Rego syntax of the policies: v1 (default) or v0 (legacy, e.g. the Gatekeeper library)")
         .choice("v1", "v0").default("v1")
+    private val generateExamples by option(
+        "--generate-examples",
+        help = "Also derive worked examples from each rule's conditions where --examples leaves a gap (each verified by opa eval; runs the policy)",
+    ).flag()
 
     override fun run() {
         requireOpaOrExit()
         try {
             val policySet = Explico.load(policyDir, parseRegoVersion(regoVersion))
             val examples = examplesDir?.let { Explico.loadExamples(it) }
-            val rendered = Explico.render(policySet, policyDir, examples, dataDir)
+            val rendered = Explico.render(policySet, policyDir, examples, dataDir, generateExamples)
             replaceOutputDirectory(out, rendered.files)
             echo("Rendering coverage: ${rendered.coverage.rendered} of ${rendered.coverage.total} conditions (${rendered.coverage.percent}%)")
+            rendered.generatedExamples?.let { echo("Generated examples for ${it.rulesWithExamples} of ${it.rulesConsidered} rules") }
         } catch (e: OpaInvocationException) {
             failWith(2, e.stderr)
         } catch (e: DuplicateFixtureNameException) {

@@ -12,7 +12,7 @@ Four subcommands: `render`, `diff`, `version`, `demo`.
 ### `explico render`
 
 ```
-explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0]
+explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples]
 ```
 
 | Argument/flag | Required | Meaning |
@@ -21,6 +21,7 @@ explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--r
 | `--out <outDir>` | yes | Output directory for the rendered Markdown. **Fully replaced on every run** — the whole directory is deleted and rewritten, so don't point it at a directory with other content in it. |
 | `--examples <dir>` | no | Directory of worked-example fixtures (`*.json`, spec §6.7's format — see `policy-authoring.md`). When supplied, control cards gain a **Worked examples** section and `index.md` gains an example-coverage column. |
 | `--data <dir>` | no | A data document (or directory) made available to `opa eval` alongside `--examples`, for policies that reference `data.*` paths beyond the fixture's own `input`. |
+| `--generate-examples` | no | Also derive worked examples from each rule's conditions where `--examples` leaves a gap (each verified by `opa eval`; labelled as generated; runs the policy). See *Generated examples* below. |
 | `--rego-version v1\|v0` | no | The Rego syntax of the policies: `v1` (default) or `v0` (legacy: `deny[msg] { ... }` with no `if`/`contains`, as in the Gatekeeper library). Passed to every `opa` call as `--v0-compatible`. Never auto-detected; v0 mode applies to the whole directory (v1 files that `import rego.v1` still parse). The `opa` binary must be 1.x either way. `diff` applies it to both directories. |
 
 Writes one `<package-path>.md` file per Rego package plus `index.md`, and
@@ -29,6 +30,33 @@ prints a one-line coverage summary to stdout, e.g.:
 ```
 Rendering coverage: 22 of 23 conditions (95%)
 ```
+
+### Generated examples (`--generate-examples`)
+
+`--generate-examples` (library: `generateExamples = true`) asks explico to **derive worked examples itself** for rules your own
+`--examples` fixtures leave a gap for. It is off by default; without it the output is byte-identical to before.
+
+- **How:** for each rule body, explico builds an `input` that satisfies the body's conditions, and "near-misses" that satisfy all but
+  one. Every candidate is run through `opa eval`, and is kept **only if OPA agrees** (a "satisfies" input must make the rule match, a
+  near-miss must not). The verdict and message you see are OPA's, never predicted. A body explico cannot model simply gets none.
+- **Where:** a separate **Generated examples** section on the rule's card, after your own **Worked examples**, followed by a one-line
+  note that these are derived mechanically and are not scenarios chosen by the author.
+- **Names are mechanical, not semantic:** `satisfies every condition` (or `... of Situation N` for a multi-body rule), and
+  `breaks only: <the condition it breaks>`. Only an author can name a real scenario ("hotfix without change ticket"); explico will not.
+- **Gap filling only; your fixtures win:** a rule that already has a matching *and* a non-matching author example gets nothing; with only
+  a matching one it gets near-misses only; with only a non-matching one it gets a matching example only; with none, both. At most 3
+  matching (one per situation) and 2 near-misses per rule.
+- **What it can model:** comparisons of an input field with a literal or another field, field presence/absence, set membership,
+  `startswith`/`endswith`/`contains`, `is_string`/`is_number`/`is_boolean`, and `some x in <field>` / `[_]` iteration. It cannot model
+  references to other rules, calls to your own functions, `data.*` lookups, `count(...)` comparisons, comprehensions and anything else
+  shown as source. Policies written in a defensive, helper-heavy style get few generated examples (2 of 43 rules across 30
+  Gatekeeper templates, about 5%; about 40-45% of the rule bodies in the sample pack and the showcase).
+- **It runs the policy:** like your own examples, generation executes `opa eval` on the policy. Don't use it on a policy you don't trust
+  (see [Security considerations](#security-considerations)).
+- **Cost:** each distinct candidate input is one `opa eval` of the package, so generation time grows with the number of rules and conditions.
+  It is fine for typical policy sets, but expect it to take noticeably longer than a plain render on a very large package.
+- The CLI prints `Generated examples for N of M rules` after the coverage line. The index's *Example coverage* column still reflects
+  **only your** fixtures: generated examples are illustrations, not evidence that the author considered the case.
 
 ### `explico diff`
 
@@ -115,10 +143,12 @@ object Explico {
 - **`loadExamples(dir)`** — loads `*.json` fixtures from `dir`, in filename
   order. Throws `io.explico.render.DuplicateFixtureNameException` (public)
   if two fixtures share a `name`.
-- **`render(policySet, policyDir, examples, dataDir)`** — returns
-  `RenderedDocs(files: Map<String, String>, coverage: CoverageSummary)`, the
-  rendered Markdown keyed by output filename plus overall coverage
-  (`coverage.rendered`, `coverage.total`, `coverage.percent`).
+- **`render(policySet, policyDir, examples, dataDir, generateExamples = false)`** — returns
+  `RenderedDocs(files: Map<String, String>, coverage: CoverageSummary,
+  generatedExamples: GeneratedExamplesSummary?)`, the rendered Markdown keyed by
+  output filename plus overall coverage (`coverage.rendered`, `coverage.total`,
+  `coverage.percent`). `generatedExamples` is null unless `generateExamples = true`,
+  then `rulesWithExamples` of `rulesConsidered`.
 - **`diff(old, new)`** — returns `DiffReport(entries: List<DiffEntry>,
   markdown: String)`. Each `DiffEntry` carries its `category`
   (`DiffCategory`: `ADDED`/`REMOVED`/`LOGIC_CHANGED`/`DOCS_CHANGED`/`UNCHANGED`),
