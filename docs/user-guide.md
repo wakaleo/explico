@@ -27,7 +27,7 @@ Writes one `<package-path>.md` file per Rego package plus `index.md`, and
 prints a one-line coverage summary to stdout, e.g.:
 
 ```
-Rendering coverage: 21 of 23 conditions (91%)
+Rendering coverage: 22 of 23 conditions (95%)
 ```
 
 ### `explico diff`

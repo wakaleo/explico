@@ -179,9 +179,13 @@ recognises its shape:
 - **References to another rule** in the same or an imported package —
   rendered as a link to that rule's own card.
 
-Anything else — comprehensions, `every`, user-defined functions with
-parameters, `with` statements, `else` chains, an operand-position builtin
-call like `count(some_comprehension)` — becomes a clearly marked, verbatim
+- **Comprehensions** (`{a | ...}`, `[x | ...]`, `{k: v | ...}`) — rendered as a
+  parenthesised phrase such as "(the set of `x` such that ...)", but only when the
+  WHOLE body renders. One condition inside that explico cannot render keeps the
+  entire comprehension as source: it never shows half of one.
+
+Anything else — `every`, `with` statements, `else` chains, an operand-position
+builtin call explico has no phrase for — becomes a clearly marked, verbatim
 source block instead of a guess. This is deliberate (see "Fallback and
 coverage" below), not a gap to work around by restructuring your policy
 around explico's limitations. Write Rego the way it should be written;
@@ -235,8 +239,7 @@ and corpus-wide summaries, tell you what fraction of a rule's logic became
 readable prose. **A number under 100% is not a bug in explico, and not
 necessarily a problem with the policy either** — it means "here is a
 condition you should read as source, because explico won't paraphrase
-something it can't verify it understood correctly." A `count()` over a
-comprehension, an `every` block, a `with`-mocked test helper: these are all
+something it can't verify it understood correctly." An `every` block, a comprehension containing a condition explico has no phrase for, a `with`-mocked test helper: these are all
 completely legitimate Rego, and they render as a fenced `rego` block with a
 short machine-readable reason (e.g. `comprehension`, `every`,
 `function-call`) instead of invented English. Treat a fallback block as

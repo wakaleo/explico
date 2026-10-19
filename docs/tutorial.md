@@ -14,7 +14,7 @@ explico render samples/policies --out docs \
 ```
 
 ```
-Rendering coverage: 21 of 23 conditions (91%)
+Rendering coverage: 22 of 23 conditions (95%)
 ```
 
 This writes one Markdown file per Rego package, plus `index.md`. Open
@@ -28,7 +28,7 @@ This writes one Markdown file per Rego package, plus `index.md`. Open
 | REL-001 | Production change approval | `release.approvals` | `deny` | 100% | ✓ / ✓ | `approvals/change_approval.rego` |
 | REL-002 | Pipeline evidence | `release.evidence` | `deny` | 100% | ✓ / ✓ | `evidence/pipeline_evidence.rego` |
 | REL-003 | Artifact provenance | `release.provenance` | `deny` | 100% | ✓ / ✓ | `provenance/artifact_provenance.rego` |
-| REL-004 | Release governance evidence | `release.governance` | `deny` | 87% | ✓ / ✓ | `governance/release_governance.rego` |
+| REL-004 | Release governance evidence | `release.governance` | `deny` | 100% | ✓ / ✓ | `governance/release_governance.rego` |
 
 ## Rules without a control id
 
@@ -38,7 +38,7 @@ This writes one Markdown file per Rego package, plus `index.md`. Open
 | — | exempt_service | `release.exemptions` | `exempt_service` | 100% | ✓ / ✓ | `exemptions/exemptions.rego` |
 | — | Mandatory check completeness | `release.governance` | `all_checks_passed` | 0% | ✓ / – | `governance/release_governance.rego` |
 
-*Overall rendering coverage: 21 of 23 conditions (91%)*
+*Overall rendering coverage: 22 of 23 conditions (95%)*
 ```
 
 Seven rows for five files, in two tables: `deny` rules get a `control-id`
@@ -98,39 +98,42 @@ would do.
 
 ## 3. Inspect the fallback mechanism and coverage
 
-Open `release-governance.md` — REL-004 is the one control below 100%
-coverage, and it's below 100% for an honest, visible reason, not a bug:
+Open `release-governance.md`. REL-004's first situation counts approvals with a
+comprehension, and explico renders it, because everything inside it is
+something explico can render:
 
 ```markdown
-### Situation 1 — all of the following are true
+- (the set of `change ▸ approvals ▸ [each a]` such that for some a in `change ▸ approvals`; `change ▸ approvals ▸ [each a] ▸ role` is `"release-manager"`) is empty
+```
 
-- `deployment ▸ environment` is `"production"`
+The one thing in this package it will *not* paraphrase is the helper rule
+`all_checks_passed`, which uses an `every` block. It sits below 100%
+coverage for an honest, visible reason, not a bug:
+
+```markdown
+## release.governance.all_checks_passed
+
 - ⚠ **not rendered — shown as source:**
 
   ```rego
-  count({a | some a in input.change.approvals; a.role == "release-manager"}) == 0
+  every check in input.pipeline.checks {
+  		check.status == "passed"
+  	}
   ```
 
-*Produces:* "no release manager approval is recorded"
+*Rendering coverage: 0 of 1 conditions*
 ```
 
-`count({a | ...})` is a `count()` call over a set comprehension —
-comprehensions are an explicit, permanent non-goal (spec §1.2), so this
-condition renders as clearly marked verbatim source instead of guessed
-prose. The card's own footer says exactly how much of it this affected:
+and the package footer says how much of the whole package that affected:
 
 ```markdown
-*Rendering coverage: 7 of 8 conditions*
-
----
-
-*Package rendering coverage: 7 of 9 conditions (77%)*
+*Package rendering coverage: 8 of 9 conditions (88%)*
 ```
 
-One condition out of eight, in one control, in a five-policy package. See
+One condition out of nine, in one helper, in a five-policy package. See
 [`policy-authoring.md`](policy-authoring.md#fallback-and-coverage-design-not-defect)
 for why this is the intended, honest behavior — not something to "fix" by
-avoiding comprehensions in your own policies.
+avoiding `every` in your own policies.
 
 ## 4. Diff two versions
 
