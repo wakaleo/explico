@@ -1612,3 +1612,11 @@ match a loaded function of exactly that arity; otherwise the call stays `Unrende
 `Condition.FunctionCall`/`Operand.FunctionCall.packagePath` is the DEFINING package (already hashed by the
 `Canonicalizer`, so renaming an import alias does not change a logic hash but retargeting a call does).
 `OpaImport` gained `alias`; `import ... as` was previously ignored. Benchmarked: Trivy Kubernetes checks 49% -> 63%.
+
+### 14.33 Iteration over a partial rule's value
+
+`AstMapper.partialRuleRootedPath` maps `<alias>.<partialRule>[tail]` and `<partialRule>[tail]` (current package) to
+`Operand.Path(data, <package segments>, <rule>, tail)`; `mapSomeIn` additionally accepts the bare rule as the
+collection of a `some x in`. `x := <that>[_]` then promotes to `Condition.SomeIn` + `VarBinding.Iteration` through the
+existing trailing-wildcard rule. No model change. Only partial rules; local bindings shadow; an unmappable tail keeps the
+whole-chain fallback. Canonical hashes use the resolved package, so renaming an import alias does not change a hash.

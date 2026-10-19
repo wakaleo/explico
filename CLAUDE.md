@@ -1338,3 +1338,9 @@ evaluated once (it was once per card, which also repeated the example list). A s
 operand-position calls: bare name (this package), import alias (`as` honoured), or `data.<pkg>.<fn>`; target must be
 a loaded function of that arity. `FunctionCall.packagePath` is the defining package. Remaining call fallbacks on
 real code are mostly custom/external builtins -- correct as fallbacks. Use `Bench.java ... all` to measure.
+
+## Iteration over a partial rule's value (spec §14.33)
+
+`partialRuleRootedPath` (called from `mapRefChain`, and from `mapSomeIn` with `allowBareRule`) renders `<alias>.<partialRule>[...]`
+as the rule's document path `data ▸ pkg ▸ rule ▸ ...`. Partial rules only; the exact bare reference in ordinary operand
+position is unchanged (still a fallback), deliberately.

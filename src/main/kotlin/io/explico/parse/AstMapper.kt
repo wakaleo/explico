@@ -854,7 +854,16 @@ internal object AstMapper {
                 Triple(stringValueOf(args[0]), stringValueOf(args[1]), args[2])
             else -> return Condition.Unrendered(sourceText(expr.location), "unclassified")
         }
-        val collection = mapOperand(collectionTerm, symbolTable, ctx)
+        // `some x in workloads.containers` / `some x in local_items`: the collection IS a partial rule's
+        // value, so the bare rule reference (which an operand position refuses) is exactly right here.
+        val ruleCollection = if (collectionTerm.type == "var" || collectionTerm.type == "ref") {
+            val chain = if (collectionTerm.type == "var") listOf(collectionTerm) else decodeTermList(collectionTerm.value)
+            val root = chain.first()
+            if ((root.type == "var" || root.type == "string") && symbolTable[stringValueOf(root)] == null) {
+                partialRuleRootedPath(stringValueOf(root), chain.drop(1), symbolTable, ctx, allowBareRule = true)
+            } else null
+        } else null
+        val collection = if (ruleCollection != null) ConstructResult.Ok(ruleCollection) else mapOperand(collectionTerm, symbolTable, ctx)
         val collectionPath = (collection as? ConstructResult.Ok)?.operand as? Operand.Path
             ?: return Condition.Unrendered(sourceText(expr.location), (collection as? ConstructResult.Unsupported)?.reason ?: "unclassified")
         if (key != null) symbolTable[key] = VarBinding.Iteration(collectionPath)
@@ -1044,6 +1053,14 @@ internal object AstMapper {
             val ruleName = remaining.joinToString(".") { stringValueOf(it) }
             ruleValueReferenceIfKnown(aliasedPackage, ruleName, ctx)?.let { return ConstructResult.Ok(it) }
         }
+        // Iterating or indexing into a PARTIAL rule's value: `workloads.containers[_]` (import alias) or
+        // `local_items[_]` (this package). The exact reference (nothing after the rule name) keeps its
+        // existing treatment above; with a tail it is the rule's real document path, rendered like a
+        // full `data.` path to a partial rule (found by the corpus benchmark: the single largest
+        // assignment fallback, and it cascaded into every later use of the bound variable).
+        if (symbolTable[rootName] == null) {
+            partialRuleRootedPath(rootName, remaining, symbolTable, ctx)?.let { return ConstructResult.Ok(it) }
+        }
         if (symbolTable[rootName] == null) {
             // Only a chain whose tail is entirely plain names can name a ref-headed rule; a composite
             // segment (`x[input.k]`) cannot, and stringValueOf would throw on it.
@@ -1076,6 +1093,33 @@ internal object AstMapper {
             }
             VarBinding.NonPath, is VarBinding.Expression, null -> ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
         }
+    }
+
+    /**
+     * `<alias>.<partialRule>[...]` or `<partialRule>[...]` (a rule of the current package) with at least
+     * one segment after the rule name (none needed when [allowBareRule]: the collection of a `some x in`), as the rule's own document path: `data`, its package, the rule
+     * name, then the tail. Null when the root names no such partial rule, the tail is empty, or the tail
+     * cannot be mapped (the caller then keeps the whole-chain fallback).
+     */
+    private fun partialRuleRootedPath(
+        rootName: String,
+        remaining: List<OpaTerm>,
+        symbolTable: Map<String, VarBinding>,
+        ctx: MappingContext,
+        allowBareRule: Boolean = false,
+    ): Operand.Path? {
+        val minTail = if (allowBareRule) 0 else 1
+        val aliasedPackage = ctx.importAliases[rootName]
+        val (packagePath, ruleName, tail) = when {
+            aliasedPackage != null && remaining.size > minTail && remaining.first().type == "string" ->
+                Triple(aliasedPackage, stringValueOf(remaining.first()), remaining.drop(1))
+            aliasedPackage == null && remaining.size >= minTail -> Triple(ctx.currentPackage, rootName, remaining)
+            else -> return null
+        }
+        if (ctx.partialRegistry[packagePath]?.contains(ruleName) != true) return null
+        val tailSegments = mapPathSegments(tail, symbolTable, ctx) ?: return null
+        val rulePath = (packagePath.split('.') + ruleName).map { PathSegment.Field(it) }
+        return Operand.Path(listOf<PathSegment>(PathSegment.Field("data")) + rulePath + tailSegments)
     }
 
     /**

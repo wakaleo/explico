@@ -2767,6 +2767,95 @@ class AstMapperTest {
     }
 
     @Nested
+    inner class PartialRuleIteration {
+        // Corpus-benchmark follow-up: `x := kube.containers[_]` over a PARTIAL rule's value.
+
+        private fun seg(vararg names: String) = names.joinToString(",") { """{"type":"string","value":"$it"}""" }
+        private val wildcard = """{"type":"var","value":"${'$'}0","location":{"text":"${b64("_")}"}}"""
+
+        private fun libRule(name: String, partial: Boolean) =
+            if (partial) """{"head": {"name": "$name", "key": {"type":"var","value":"c"}, "ref": [{"type":"var","value":"$name"}]}, "body": []}"""
+            else """{"head": {"name": "$name", "ref": [{"type":"var","value":"$name"}]}, "body": []}"""
+
+        /** `lib.kube` defines [ruleName] (partial or complete); `caller` imports it and runs [bodyExprs]. */
+        private fun callerBody(ruleName: String, partial: Boolean, vararg bodyExprs: String): List<Condition> {
+            val lib = moduleOf("""{"package": {"path": [{"type":"var","value":"data"},${seg("lib", "kube")}]}, "rules": [${libRule(ruleName, partial)}]}""")
+            val caller = moduleOf(
+                """
+                {"package": {"path": [{"type":"var","value":"data"},${seg("caller")}]},
+                 "imports": [{"path": {"type":"ref","value":[{"type":"var","value":"data"},${seg("lib", "kube")}]}}],
+                 "rules": [{"head": {"name": "deny", "ref": [{"type":"var","value":"deny"}]}, "body": [${bodyExprs.joinToString(",")}]}]}
+                """.trimIndent()
+            )
+            val set = AstMapper.mapPolicySet(listOf(ParsedFile("lib.rego", lib), ParsedFile("caller.rego", caller)))
+            return set.packages.single { it.path == "caller" }.rules.single().bodies.single().conditions
+        }
+
+        private fun assign(text: String, valueTermsJson: String) = """
+            {"index": 0, "location": {"row":1,"text":"${b64(text)}"}, "terms": [
+              {"type":"ref","value":[{"type":"var","value":"assign"}]}, {"type":"var","value":"x"}, $valueTermsJson]}"""
+
+        private fun ruleDocument(vararg tail: PathSegment) =
+            listOf(PathSegment.Field("data"), PathSegment.Field("lib"), PathSegment.Field("kube"), PathSegment.Field("containers")) + tail
+
+        @Test
+        fun anAliasedPartialRuleWithAWildcardBecomesASomeInOverTheRulesDocumentPath() {
+            val conditions = callerBody(
+                "containers", true,
+                assign("x := kube.containers[_]", """{"type":"ref","value":[{"type":"var","value":"kube"},${seg("containers")},$wildcard]}"""),
+            )
+            val someIn = conditions.single() as Condition.SomeIn
+            assertThat(someIn.variable).isEqualTo("x")
+            assertThat((someIn.collection as Operand.Path).segments).isEqualTo(ruleDocument())
+        }
+
+        @Test
+        fun laterUsesOfTheBoundVariableExtendThatPath() {
+            val conditions = callerBody(
+                "containers", true,
+                assign("x := kube.containers[_]", """{"type":"ref","value":[{"type":"var","value":"kube"},${seg("containers")},$wildcard]}"""),
+                """{"index": 1, "location": {"row":2,"text":"${b64("x.image == \"a\"")}"}, "terms": [
+                    {"type":"ref","value":[{"type":"var","value":"equal"}]},
+                    {"type":"ref","value":[{"type":"var","value":"x"},${seg("image")}]}, {"type":"string","value":"a"}]}""",
+            )
+            val comparison = conditions[1] as Condition.Comparison
+            assertThat((comparison.left as Operand.Path).segments).isEqualTo(ruleDocument(PathSegment.VarIndex("x"), PathSegment.Field("image")))
+        }
+
+        @Test
+        fun aCompleteRuleWithATailIsNotTreatedAsAPartialRuleDocument() {
+            val conditions = callerBody(
+                "containers", false,
+                assign("x := kube.containers[_]", """{"type":"ref","value":[{"type":"var","value":"kube"},${seg("containers")},$wildcard]}"""),
+            )
+            assertThat(conditions.single()).isInstanceOf(Condition.Unrendered::class.java)
+        }
+
+        @Test
+        fun anUnboundDynamicIndexAfterTheRuleKeepsTheWholeAssignmentAsAFallback() {
+            val conditions = callerBody(
+                "containers", true,
+                assign("x := kube.containers[i].name", """{"type":"ref","value":[{"type":"var","value":"kube"},${seg("containers")},{"type":"var","value":"i"},${seg("name")}]}"""),
+            )
+            assertThat((conditions.single() as Condition.Unrendered).reason).isEqualTo("helper-assignment")
+        }
+
+        @Test
+        fun aLocalVariableNamedLikeTheAliasTakesPriority() {
+            // `kube := input.k; x := kube.containers[_]` -- the local wins, so this is plain substitution, not the rule.
+            val conditions = callerBody(
+                "containers", true,
+                """{"index": 0, "location": {"row":1,"text":"${b64("kube := input.k")}"}, "terms": [
+                    {"type":"ref","value":[{"type":"var","value":"assign"}]}, {"type":"var","value":"kube"},
+                    {"type":"ref","value":[{"type":"var","value":"input"},${seg("k")}]}]}""",
+                assign("x := kube.containers[_]", """{"type":"ref","value":[{"type":"var","value":"kube"},${seg("containers")},$wildcard]}"""),
+            )
+            val someIn = conditions.single() as Condition.SomeIn
+            assertThat((someIn.collection as Operand.Path).segments).containsExactly(PathSegment.Field("input"), PathSegment.Field("k"), PathSegment.Field("containers"))
+        }
+    }
+
+    @Nested
     inner class FunctionCallsAndMessagePlaceholders {
         // Review items 8-9.
 

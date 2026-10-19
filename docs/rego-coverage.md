@@ -1081,3 +1081,17 @@ rule references through an aliased import. Fixed in the same change.
 Measured by the corpus benchmark (`scripts/corpus-benchmark`, `all` mode): Trivy's Kubernetes checks with their
 library loaded, condition coverage 49% -> 63%. Calls that remain fallbacks are mostly unresolvable by design: Trivy's
 `isManaged`/`result.new` are Go-side custom builtins, and Gatekeeper's `is_exempt` comes from lib templates concatenated at deploy time.
+
+## Iteration over a partial rule's value
+
+`container := workloads.containers[_]` (or `some c in workloads.containers`, or a same-package `local_items[_]`) where the
+rule is a PARTIAL set/object rule used to be a whole-assignment fallback, and every later `container.field` use cascaded
+into a second fallback. The collection is now the rule's real document path -- `data ▸ lib ▸ workloads ▸ containers` -- so
+the bullets read "for some container in `data ▸ lib ▸ workloads ▸ containers`" and
+"`data ▸ lib ▸ workloads ▸ containers ▸ [each container] ▸ image` is ...", the same rendering a full `data.` path to a
+partial rule already had. Only a partial rule qualifies; a complete rule with a tail, an unbound dynamic index, and a
+local variable that shadows the alias or rule name all keep their previous behaviour. The bare reference outside an
+iteration (`x == workloads.containers`) stays as before.
+
+Measured by the corpus benchmark (Trivy Kubernetes checks with their library loaded, `all` mode): condition coverage
+63% -> 75%, fallbacks 352 -> 271 (49% / 509 before cross-package calls).
