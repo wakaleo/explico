@@ -63,7 +63,7 @@ internal object OpaRunner {
     fun eval(inputFile: Path, dataDirs: List<Path>, query: String, regoVersion: RegoVersion = RegoVersion.V1): JsonElement {
         val args = buildList {
             add("eval"); add("--format"); add("json"); add("--input"); add(inputFile.toString())
-            dataDirs.forEach { add("--data"); add(it.toString()) }
+            dataDirs.forEach { add("--data"); add(dataArgument(it)) }
             add(query)
         }
         val stdout = run(*withVersion(regoVersion, *args.toTypedArray()))
@@ -74,6 +74,16 @@ internal object OpaRunner {
     /** Appends `--v0-compatible` for [RegoVersion.V0]; the flag is accepted by `parse`, `inspect` and `eval` alike. */
     private fun withVersion(regoVersion: RegoVersion, vararg args: String): Array<String> =
         if (regoVersion == RegoVersion.V0) arrayOf(*args, "--v0-compatible") else arrayOf(*args)
+
+    /**
+     * The value for `opa eval --data`. opa treats everything before the first ':' as a document PREFIX (`prefix:path`), so a
+     * path containing a colon -- every Windows path with a drive letter (`D:\a\x` is read as prefix `D`, path `\a\x`), or a
+     * POSIX directory with a colon in its name -- is mis-read. A `file://` URL is passed through opa's splitter unchanged (its
+     * first ':' is the one in `://`) and opa converts it back to a native path, so such a path is given as one. A path with no
+     * colon is passed exactly as before.
+     */
+    internal fun dataArgument(path: Path): String =
+        if (path.toString().contains(':')) path.toAbsolutePath().toUri().toString() else path.toString()
 
     private fun detectedMajorVersion(): Int? {
         val output = try {
