@@ -1,16 +1,37 @@
 name: Release
 
+# Runs on a `v*` tag push (the real release), or by hand as a DRY RUN: everything up to and including signing and
+# signature verification happens, but nothing is uploaded to Maven Central and no GitHub Release is created. Use the
+# dry run to rehearse a release (publishes are rationed by the Central Portal) -- Actions > Release > Run workflow.
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run: sign and verify, but do not upload to Maven Central or create a GitHub Release'
+        type: boolean
+        default: true
 
 permissions:
   contents: write  # needed to create the GitHub Release and attach the shadow jar to it (spec §13.1)
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
+  # The release only proceeds if the WHOLE CI matrix (Linux, macOS, Windows, latest-opa canary, JDK 17 smoke test,
+  # drift checks) passes on this exact commit, instead of re-running a smaller Linux-only subset here.
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   release:
+    needs: ci
     runs-on: ubuntu-latest
+    env:
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -24,15 +45,9 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Install opa 1.19.0
-        uses: open-policy-agent/setup-opa@v2
-        with:
-          version: 1.19.0
-
-      # Fail immediately, before spending any CI time on tests, rather than discovering a missing
-      # secret only when the publish step itself fails partway through -- and definitely rather
-      # than build.gradle.kts silently skipping signAllPublications() and publishing unsigned
-      # (spec §10.1: that conditional exists for local/CI smoke testing, never for a real release).
+      # Fail immediately rather than discovering a missing secret only when the publish step fails partway
+      # through -- and definitely rather than build.gradle.kts silently skipping signAllPublications() and
+      # publishing unsigned (spec §10.1: that conditional exists for local/CI smoke testing, never a real release).
       - name: Verify required release secrets are present
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
@@ -51,19 +66,52 @@ jobs:
           fi
           echo "All required release secrets are present."
 
-      - name: Unit tests + Tier-1/Tier-2 acceptance tests
-        run: ./gradlew check acceptanceTest --console=plain
+      # A tag that disagrees with build.gradle.kts would publish the wrong version (versions are permanent).
+      - name: Verify the tag matches the build version
+        if: github.ref_type == 'tag'
+        run: |
+          VERSION=$(grep '^version = ' build.gradle.kts | cut -d'"' -f2)
+          if [ "$GITHUB_REF_NAME" != "v$VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match build.gradle.kts version $VERSION. Refusing to publish."
+            exit 1
+          fi
+          echo "Tag $GITHUB_REF_NAME matches version $VERSION."
 
-      - name: Publish to Maven Local (for the consumer smoke test)
-        run: ./gradlew publishToMavenLocal --console=plain
-
-      - name: Consumer smoke test
-        run: ./gradlew -p consumer-smoke-test run --console=plain
+      # Signs every artifact with the REAL release key into the local Maven repository (nothing leaves the runner),
+      # then checks, in a clean keyring, that each signature verifies and that the key is usable and published --
+      # exactly what the Central Portal will check after upload.
+      - name: Sign locally and verify the signatures and the key (nothing is uploaded)
+        env:
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+        run: |
+          VERSION=$(grep '^version = ' build.gradle.kts | cut -d'"' -f2)
+          ./gradlew publishToMavenLocal --console=plain
+          export GNUPGHOME="$(mktemp -d)"; chmod 700 "$GNUPGHOME"
+          echo "$SIGNING_KEY" | gpg --batch --import
+          FPR=$(gpg --list-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')
+          STATE=$(gpg --list-keys --with-colons | awk -F: '/^pub/{print $2; exit}')
+          echo "Signing key fingerprint: $FPR (validity field: '$STATE')"
+          case "$STATE" in e|r) echo "::error::The signing key is expired or revoked."; exit 1;; esac
+          DIR="$HOME/.m2/repository/io/github/wakaleo/explico/$VERSION"
+          count=0
+          for f in "$DIR"/explico-"$VERSION".jar "$DIR"/explico-"$VERSION"-sources.jar "$DIR"/explico-"$VERSION"-javadoc.jar "$DIR"/explico-"$VERSION".pom "$DIR"/explico-"$VERSION".module; do
+            gpg --batch --verify "$f.asc" "$f" || { echo "::error::Signature does not verify for $f"; exit 1; }
+            count=$((count+1))
+          done
+          echo "$count artifacts signed and verified."
+          # Central fetches the PUBLIC key from a keyserver to validate signatures after upload.
+          curl -sf --retry 3 --max-time 30 "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x$FPR" | grep -q "BEGIN PGP PUBLIC KEY BLOCK" \
+            || { echo "::error::Signing key $FPR is not retrievable from keyserver.ubuntu.com; Central would reject the signatures."; exit 1; }
+          echo "Public key is retrievable from keyserver.ubuntu.com."
 
       # ORG_GRADLE_PROJECT_<name> is Gradle's own env-var-to-project-property mapping (not
       # plugin-specific) -- these exact property names are what com.vanniktech.maven.publish
-      # (via Gradle's signing plugin) reads. See spec §10.1.
-      - name: Publish to Maven Central
+      # (via Gradle's signing plugin) reads. See spec §10.1. Stages the deployment in the Central Portal;
+      # nothing goes live until someone clicks Publish there (automaticRelease = false).
+      - name: Publish to Maven Central (stages it; a human clicks Publish in the Portal)
+        if: env.DRY_RUN != 'true'
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
@@ -71,13 +119,19 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
         run: ./gradlew publishToMavenCentral --console=plain
 
-      # Single runnable jar (spec §13.1) attached to the GitHub Release last, only once the Central
-      # publish itself has succeeded -- so a release only appears "done" (jar attached) once it
-      # actually is. gh is preinstalled on GitHub-hosted runners; no extra action needed.
+      # Single runnable jar (spec §13.1) attached to the GitHub Release last, only once the Central publish
+      # itself has succeeded, so a release only appears "done" once it actually is. gh is preinstalled on
+      # GitHub-hosted runners. Only the runnable -all jar is attached: the library jars live on Maven Central.
       - name: Build the shadow jar
         run: ./gradlew shadowJar --console=plain
 
       - name: Attach the shadow jar to the GitHub Release
+        if: env.DRY_RUN != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "${{ github.ref_name }}" build/libs/explico-*.jar --generate-notes
+        run: gh release create "${{ github.ref_name }}" build/libs/explico-*-all.jar --generate-notes
+
+      - name: Dry run summary
+        if: env.DRY_RUN == 'true'
+        run: |
+          echo "Dry run complete: signed and verified everything; nothing was uploaded and no GitHub Release was created."

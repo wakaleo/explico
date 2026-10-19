@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Called by release.yml, so a release only proceeds once this whole matrix is green on the tagged commit.
+  workflow_call:
 
 jobs:
   build:
@@ -78,3 +80,19 @@ jobs:
         run: |
           ./gradlew generateShowcase --console=plain
           git diff --exit-code -- docs/showcase
+
+      # The jars are Java 17 bytecode (build.gradle.kts), so run the real runnable jar on the oldest JDK we
+      # claim to support. The compiler already checks API use against JDK 17; this proves it actually runs.
+      - name: Smoke test the runnable jar on JDK 17
+        if: matrix.primary
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Run explico demo on JDK 17
+        if: matrix.primary
+        run: |
+          java -version
+          mkdir -p "$RUNNER_TEMP/demo17" && cd "$RUNNER_TEMP/demo17"
+          java -jar "$GITHUB_WORKSPACE"/build/libs/explico-*-all.jar demo
