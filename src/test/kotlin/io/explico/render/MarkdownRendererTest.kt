@@ -399,7 +399,10 @@ class MarkdownRendererTest {
         fun noIdLessRulesMeansNoHeadingAndOneTable() {
             val pkg = PolicyPackage("p", listOf(ruleGroup("deny", "C-1")), listOf("f.rego"))
             val markdown = MarkdownRenderer.renderIndex(PolicySet(listOf(pkg)))
-            assertThat(markdown).doesNotContain("## ")
+            // Repinned deliberately (not Tier-1): narrowed from doesNotContain("## ") to the specific
+            // heading this test is actually about, now that the always-present "## How to read this
+            // index" legend is a second, unrelated "## " heading every index carries.
+            assertThat(markdown).doesNotContain("## Rules without a control id")
             assertThat(markdown.lines().count { it.startsWith("|---") }).isEqualTo(1)
         }
 
@@ -532,6 +535,28 @@ class MarkdownRendererTest {
             assertThat(markdown).contains("# Package `release.emptypkg`")
             assertThat(markdown).contains("*Package rendering coverage: 0 of 0 conditions (100%)*")
         }
+
+        @Test
+        @DisplayName("compliance quick win: a supplied policy digest ends the document as its first-12-hex short form")
+        fun policyDigestIsTheLastLineAsItsShortForm() {
+            val rule = RuleGroup("deny", metadata = null, default = null, bodies = listOf(body(listOf(envIsProd))))
+            val pkg = PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))
+            val fullDigest = "0123456789abcdef".repeat(4)
+
+            val markdown = MarkdownRenderer.renderPackage(pkg, PolicySet(listOf(pkg)), policyDigest = fullDigest)
+
+            assertThat(markdown.trimEnd().lines().last()).isEqualTo("*Policy digest: `sha256:0123456789ab…` (full value in index.md)*")
+        }
+
+        @Test
+        fun noDigestLineWhenNoneIsSupplied() {
+            val rule = RuleGroup("deny", metadata = null, default = null, bodies = listOf(body(listOf(envIsProd))))
+            val pkg = PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))
+
+            val markdown = MarkdownRenderer.renderPackage(pkg, PolicySet(listOf(pkg)))
+
+            assertThat(markdown).doesNotContain("Policy digest")
+        }
     }
 
     @Nested
@@ -571,7 +596,9 @@ class MarkdownRendererTest {
         fun emptyPolicySetRendersAnEmptyTableWithoutCrashing() {
             val markdown = MarkdownRenderer.renderIndex(PolicySet(emptyList()))
 
-            assertThat(markdown).contains("| Control ID | Title | Package | Rule | Coverage | Source file |")
+            // Repinned deliberately (not Tier-1): the column is now "Rendered", not "Coverage" -- see
+            // coverageColumnRenamedToRendered below for why.
+            assertThat(markdown).contains("| Control ID | Title | Package | Rule | Rendered | Source file |")
             assertThat(markdown).contains("Overall rendering coverage: 0 of 0 conditions (100%)")
         }
 
@@ -628,6 +655,206 @@ class MarkdownRendererTest {
 
             assertThat(markdown).contains("– / ✓")
             assertThat(markdown).contains("*1 controls have no fixture demonstrating them — the corpus has gaps.*")
+        }
+
+        @Test
+        @DisplayName("compliance quick win: a control's title links to its own card")
+        fun titleLinksToItsOwnCardAnchor() {
+            val rel001 = RuleGroup("deny", metadata = RuleMetadata("Production change approval", "d", "REL-001", emptyList()), default = null, bodies = listOf(body(listOf(envIsProd))))
+            val pkg = PolicyPackage("release.approvals", listOf(rel001), listOf("approvals/change_approval.rego"))
+            val markdown = MarkdownRenderer.renderIndex(PolicySet(listOf(pkg)))
+
+            assertThat(markdown).contains("[Production change approval](release-approvals.md#rel-001)")
+            assertThat(markdown.lines().single { it.startsWith("| REL-001") }).startsWith("| REL-001 |")
+        }
+
+        @Test
+        @DisplayName("compliance quick win: an id-less rule links to its package-rule anchor")
+        fun idLessRuleTitleLinksToo() {
+            val noId = RuleGroup("exempt_service", metadata = null, default = null, bodies = listOf(body(listOf(envIsProd), file = "exemptions/exemptions.rego")))
+            val pkg = PolicyPackage("release.exemptions", listOf(noId), listOf("exemptions/exemptions.rego"))
+            val markdown = MarkdownRenderer.renderIndex(PolicySet(listOf(pkg)))
+
+            assertThat(markdown).contains("[exempt_service](release-exemptions.md#release-exemptions-exempt-service)")
+        }
+
+        @Test
+        @DisplayName("compliance quick win: a rule whose card claimed no anchor (a duplicate) keeps a plain title")
+        fun aDuplicateClaimKeepsAPlainTitle() {
+            // Two same-named, id-less rules in one package: cardAnchorIds gives the first the slug and the
+            // second null (same precedent renderCard already follows) -- the index must not link to a
+            // nonexistent anchor.
+            val first = RuleGroup("deny", metadata = null, default = null, bodies = listOf(body(listOf(envIsProd))))
+            val second = RuleGroup("deny", metadata = null, default = null, bodies = listOf(body(listOf(envIsProd))))
+            val pkg = PolicyPackage("scratch", listOf(first, second), listOf("scratch.rego"))
+            val markdown = MarkdownRenderer.renderIndex(PolicySet(listOf(pkg)))
+
+            val rows = markdown.lines().filter { it.startsWith("| —") }
+            assertThat(rows).hasSize(2)
+            assertThat(rows.count { it.contains("[deny]") }).isEqualTo(1)
+            assertThat(rows.count { it.contains("| deny |") }).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("compliance quick win: the 'Coverage' column is renamed to 'Rendered', with and without examples")
+        fun coverageColumnRenamedToRendered() {
+            val rule = RuleGroup("deny", metadata = RuleMetadata("Title", "d", "REL-001", emptyList()), default = null, bodies = listOf(body(listOf(envIsProd))))
+            val policySet = PolicySet(listOf(PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))))
+
+            val withoutExamples = MarkdownRenderer.renderIndex(policySet)
+            assertThat(withoutExamples).contains("| Control ID | Title | Package | Rule | Rendered | Source file |")
+            assertThat(withoutExamples).doesNotContain("| Coverage |")
+
+            val matched = WorkedExample(Fixture("f", null, buildJsonObject { }), matched = true, messages = listOf("x"), situationLabels = listOf(null))
+            val withExamples = MarkdownRenderer.renderIndex(policySet, mapOf("release.approvals" to mapOf("deny" to listOf(matched))))
+            assertThat(withExamples).contains("| Control ID | Title | Package | Rule | Rendered | Example coverage | Source file |")
+            assertThat(withExamples).doesNotContain("| Coverage |")
+        }
+
+        @Test
+        @DisplayName("compliance quick win: a closing legend explains Rendered, and disclaims effectiveness")
+        fun legendExplainsRenderedAndDisclaimsEffectiveness() {
+            val rule = RuleGroup("deny", metadata = RuleMetadata("Title", "d", "REL-001", emptyList()), default = null, bodies = listOf(body(listOf(envIsProd))))
+            val policySet = PolicySet(listOf(PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))))
+
+            val markdown = MarkdownRenderer.renderIndex(policySet)
+
+            assertThat(markdown).contains("## How to read this index")
+            assertThat(markdown).contains("**Rendered**")
+            assertThat(markdown).contains("effective or complete")
+            assertThat(markdown.indexOf("## How to read this index")).isGreaterThan(markdown.indexOf("Overall rendering coverage"))
+        }
+
+        @Test
+        @DisplayName("compliance quick win: the legend's Example-coverage bullet appears only when examples were supplied")
+        fun legendExampleCoverageBulletOnlyWithExamples() {
+            val rule = RuleGroup("deny", metadata = RuleMetadata("Title", "d", "REL-001", emptyList()), default = null, bodies = listOf(body(listOf(envIsProd))))
+            val policySet = PolicySet(listOf(PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))))
+
+            val withoutExamples = MarkdownRenderer.renderIndex(policySet)
+            assertThat(withoutExamples.substringAfter("## How to read this index")).doesNotContain("**Example coverage**")
+
+            val matched = WorkedExample(Fixture("f", null, buildJsonObject { }), matched = true, messages = listOf("x"), situationLabels = listOf(null))
+            val withExamples = MarkdownRenderer.renderIndex(policySet, mapOf("release.approvals" to mapOf("deny" to listOf(matched))))
+            assertThat(withExamples.substringAfter("## How to read this index")).contains("**Example coverage**")
+        }
+
+        @Test
+        @DisplayName("compliance quick win: a framework-requirement matrix lists the controls naming each framework, sorted")
+        fun frameworkMatrixListsControlsSorted() {
+            val rel001 = RuleGroup("deny", metadata = RuleMetadata("A", "d", "REL-001", listOf("SOC 2 CC8.1", "ISO 27001 A.8.32")), default = null, bodies = listOf(body(listOf(envIsProd))))
+            val rel002 = RuleGroup("deny", metadata = RuleMetadata("B", "d", "REL-002", listOf("SOC 2 CC8.1")), default = null, bodies = listOf(body(listOf(envIsProd), file = "evidence/pipeline_evidence.rego")))
+            val policySet = PolicySet(
+                listOf(
+                    PolicyPackage("release.approvals", listOf(rel001), listOf("approvals/change_approval.rego")),
+                    PolicyPackage("release.evidence", listOf(rel002), listOf("evidence/pipeline_evidence.rego")),
+                ),
+            )
+            val markdown = MarkdownRenderer.renderIndex(policySet)
+
+            assertThat(markdown).contains("## Controls by framework")
+            assertThat(markdown).contains("| Framework requirement | Controls |")
+            val socRow = markdown.lines().single { it.startsWith("| SOC 2 CC8.1 |") }
+            assertThat(socRow).contains("[REL-001](release-approvals.md#rel-001)").contains("[REL-002](release-evidence.md#rel-002)")
+            assertThat(socRow.indexOf("REL-001")).isLessThan(socRow.indexOf("REL-002"))
+            val isoRow = markdown.lines().single { it.startsWith("| ISO 27001 A.8.32 |") }
+            assertThat(isoRow).contains("[REL-001]").doesNotContain("REL-002")
+            // Sorted case-insensitively: "ISO..." before "SOC..." alphabetically.
+            assertThat(markdown.indexOf("| ISO 27001 A.8.32 |")).isLessThan(markdown.indexOf("| SOC 2 CC8.1 |"))
+            assertThat(markdown.indexOf("## Controls by framework")).isLessThan(markdown.indexOf("Overall rendering coverage"))
+        }
+
+        @Test
+        @DisplayName("compliance quick win: no framework matrix at all when no rule names a framework")
+        fun noFrameworkMatrixWhenNoneDeclared() {
+            val rule = RuleGroup("deny", metadata = RuleMetadata("Title", "d", "REL-001", emptyList()), default = null, bodies = listOf(body(listOf(envIsProd))))
+            val policySet = PolicySet(listOf(PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))))
+
+            val markdown = MarkdownRenderer.renderIndex(policySet)
+
+            assertThat(markdown).doesNotContain("Controls by framework").doesNotContain("Framework requirement")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE: a framework listed twice in one rule's own METADATA does not duplicate that rule in its row")
+        fun aFrameworkRepeatedWithinOneRulesMetadataIsNotDuplicated() {
+            val rule = RuleGroup("deny", metadata = RuleMetadata("A", "d", "REL-001", listOf("SOC 2 CC8.1", "SOC 2 CC8.1")), default = null, bodies = listOf(body(listOf(envIsProd))))
+            val policySet = PolicySet(listOf(PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))))
+
+            val markdown = MarkdownRenderer.renderIndex(policySet)
+
+            val row = markdown.lines().single { it.startsWith("| SOC 2 CC8.1 |") }
+            assertThat(row.split("REL-001")).hasSize(2) // appears exactly once, not twice
+        }
+
+        @Test
+        @DisplayName("CHALLENGE: two rules naming the framework with different case are DISTINCT rows (exactly as METADATA wrote them)")
+        fun differentlyCasedFrameworkStringsAreDistinctRows() {
+            val upper = RuleGroup("deny", metadata = RuleMetadata("A", "d", "REL-001", listOf("SOC 2 CC8.1")), default = null, bodies = listOf(body(listOf(envIsProd))))
+            val lower = RuleGroup("deny", metadata = RuleMetadata("B", "d", "REL-002", listOf("soc 2 cc8.1")), default = null, bodies = listOf(body(listOf(envIsProd), file = "evidence/pipeline_evidence.rego")))
+            val policySet = PolicySet(
+                listOf(
+                    PolicyPackage("release.approvals", listOf(upper), listOf("approvals/change_approval.rego")),
+                    PolicyPackage("release.evidence", listOf(lower), listOf("evidence/pipeline_evidence.rego")),
+                ),
+            )
+
+            val markdown = MarkdownRenderer.renderIndex(policySet)
+
+            assertThat(markdown.lines().filter { it.startsWith("| SOC 2 CC8.1 |") || it.startsWith("| soc 2 cc8.1 |") }).hasSize(2)
+            // Sorted case-insensitively, so same relative order is stable regardless of which happened to be typed first.
+            assertThat(markdown.indexOf("| SOC 2 CC8.1 |")).isLessThan(markdown.indexOf("| soc 2 cc8.1 |"))
+        }
+
+        @Test
+        @DisplayName("CHALLENGE: an id-less rule naming a framework is listed by its rule name, linked")
+        fun idLessRuleInFrameworkMatrixIsLabelledByRuleName() {
+            val rule = RuleGroup("exempt_service", metadata = RuleMetadata(null, null, null, listOf("SOC 2 CC8.1")), default = null, bodies = listOf(body(listOf(envIsProd), file = "exemptions/exemptions.rego")))
+            val policySet = PolicySet(listOf(PolicyPackage("release.exemptions", listOf(rule), listOf("exemptions/exemptions.rego"))))
+
+            val markdown = MarkdownRenderer.renderIndex(policySet)
+
+            assertThat(markdown).contains("| SOC 2 CC8.1 | [exempt_service](release-exemptions.md#release-exemptions-exempt-service) |")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE: a rule whose card claimed no anchor (a duplicate) is listed unlinked in the matrix too, never a dead link")
+        fun aDuplicateClaimStaysUnlinkedInTheMatrixToo() {
+            val first = RuleGroup("deny", metadata = RuleMetadata(null, null, null, listOf("SOC 2 CC8.1")), default = null, bodies = listOf(body(listOf(envIsProd))))
+            val second = RuleGroup("deny", metadata = RuleMetadata(null, null, null, listOf("SOC 2 CC8.1")), default = null, bodies = listOf(body(listOf(envIsProd))))
+            val policySet = PolicySet(listOf(PolicyPackage("scratch", listOf(first, second), listOf("scratch.rego"))))
+
+            val markdown = MarkdownRenderer.renderIndex(policySet)
+
+            val row = markdown.lines().single { it.startsWith("| SOC 2 CC8.1 |") }
+            // The first "deny" claimed the anchor and links; the second lost the claim (same precedent as the
+            // title-link test above) and stays a plain, unlinked name -- never a link to a nonexistent anchor.
+            assertThat(row).isEqualTo("| SOC 2 CC8.1 | [deny](scratch.md#scratch-deny), deny |")
+        }
+
+        @Test
+        @DisplayName("compliance quick win: a supplied policy digest appears as a full SHA-256 under the title")
+        fun policyDigestLineUnderTitle() {
+            val rule = RuleGroup("deny", metadata = null, default = null, bodies = listOf(body(listOf(envIsProd))))
+            val policySet = PolicySet(listOf(PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))))
+
+            val digest = "a".repeat(64)
+            val markdown = MarkdownRenderer.renderIndex(policySet, policyDigest = digest)
+
+            val lines = markdown.lines()
+            assertThat(lines[0]).isEqualTo("# Control index")
+            assertThat(lines[2]).isEqualTo("*Policy digest: `sha256:$digest`*")
+        }
+
+        @Test
+        @DisplayName("no digest line at all when none is supplied (default), so existing direct callers are unaffected")
+        fun noDigestLineWhenNotSupplied() {
+            val rule = RuleGroup("deny", metadata = null, default = null, bodies = listOf(body(listOf(envIsProd))))
+            val policySet = PolicySet(listOf(PolicyPackage("release.approvals", listOf(rule), listOf("approvals/change_approval.rego"))))
+
+            val markdown = MarkdownRenderer.renderIndex(policySet)
+
+            assertThat(markdown).doesNotContain("Policy digest")
         }
     }
 

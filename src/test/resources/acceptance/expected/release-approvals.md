@@ -60,3 +60,5 @@ and the change author must not approve their own change.
 ---
 
 *Package rendering coverage: 4 of 4 conditions (100%)*
+
+*Policy digest: `sha256:5f0bc88b6e15…` (full value in index.md)*

@@ -15,6 +15,7 @@ import io.explico.render.Coverage
 import io.explico.render.CoverageSummary
 import io.explico.render.ExampleSet
 import io.explico.render.MarkdownRenderer
+import io.explico.render.PolicyDigest
 import io.explico.render.WorkedExample
 import io.explico.render.WorkedExamples
 import io.explico.render.parseExampleSet
@@ -93,6 +94,10 @@ public object Explico {
      * separately labelled **Generated examples** section: inputs derived mechanically from the rule's conditions, each
      * VERIFIED by `opa eval` before it is shown (spec §14.39). Off by default; the output is then byte-identical to a render
      * that never mentions the option. Like author examples, generation executes the policy via `opa eval` -- see SECURITY.md.
+     *
+     * Every render also computes a SHA-256 over [policyDir]'s `.rego` files (spec §14.40) and shows it on `index.md` and
+     * every package document, so a reader can confirm which exact policy version the documentation describes. It depends
+     * only on the policy source -- never [examples], [dataDir], or explico's own version.
      */
     @JvmStatic
     @JvmOverloads
@@ -105,6 +110,9 @@ public object Explico {
     ): RenderedDocs {
         val examplesByPackage = evaluateWorkedExamples(policySet, policyDir, examples, dataDir)
         val generated = if (generateExamples) generateWorkedExamples(policySet, policyDir, dataDir, examplesByPackage) else null
+        // Spec §14.40: ties every document to an exact policy version. Computed from policyDir alone -- never
+        // examples, data, or explico's own version -- so it is independent of how render() was called.
+        val policyDigest = PolicyDigest.of(policyDir)
 
         val files = policySet.packages.associate { pkg ->
             "${pkg.path.replace('.', '-')}.md" to MarkdownRenderer.renderPackage(
@@ -112,8 +120,9 @@ public object Explico {
                 policySet,
                 examplesByPackage[pkg.path] ?: emptyMap(),
                 generated?.byPackage?.get(pkg.path) ?: emptyMap(),
+                policyDigest,
             )
-        } + ("index.md" to MarkdownRenderer.renderIndex(policySet, examplesByPackage))
+        } + ("index.md" to MarkdownRenderer.renderIndex(policySet, examplesByPackage, policyDigest))
 
         val packageCoverages = policySet.packages.map { Coverage.of(it) }
         val overallCoverage = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })

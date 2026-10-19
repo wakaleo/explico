@@ -1400,3 +1400,15 @@ candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFI
 - Off by default and byte-identical when off (goldens/docs unchanged). `RuleBody.messageArguments` exists only for this feature
   (and the logic hash); a body whose message arguments are undefined produces no message.
 - Index "Example coverage" counts only AUTHOR fixtures. Generation runs `opa eval` (see SECURITY.md).
+
+## Index usability and policy digest (spec §14.40)
+
+- `renderIndex`: title links, `Rendered` column + closing legend, `Controls by framework`; digest under the title. `renderPackage` ends with the short digest.
+  Both digest parameters default to null (nothing printed) so direct unit-test callers are unaffected; `Explico.render` always passes it.
+- `PolicyDigest` hashes raw bytes (CRLF->LF only) -- never `Files.readString`, which would abort the whole render on a non-UTF-8 file. Inputs: `.rego`
+  files only. Do not add examples, data or the tool version to it (output would churn per release).
+- Repinned, not weakened (all non-Tier-1): `MarkdownRendererTest` header and `IndexSplit` heading checks, `RealisticPresentationAcceptanceIT.structure`
+  (the legend adds an always-present `## ` heading after the overall line). Six Tier-2 goldens, `docs/sample-output`, `docs/showcase`, `docs/tutorial.md`
+  regenerated after line-by-line review; `diff-all-categories` unchanged.
+- CHALLENGE found: a framework listed twice in one rule's METADATA duplicated its link (fixed with `distinct()`).
+

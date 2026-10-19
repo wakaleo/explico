@@ -56,3 +56,5 @@ a sign-off label identifying who approved the build.
 ---
 
 *Package rendering coverage: 4 of 4 conditions (100%)*
+
+*Policy digest: `sha256:5f0bc88b6e15…` (full value in index.md)*

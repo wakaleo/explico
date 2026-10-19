@@ -271,9 +271,13 @@ class RealisticPresentationAcceptanceIT {
         private fun dataRows(range: List<String>) = range.filter { it.startsWith("|") && it.contains("`") }
 
         @Test
-        @DisplayName("exactly one `## ` heading, mentioning without/helper, and exactly two table separators")
+        @DisplayName("exactly one `## ` heading before the overall coverage line, mentioning without/helper, and exactly two table separators")
         fun structure() {
-            assertThat(lines.filter { it.startsWith("## ") }).hasSize(1)
+            // Repinned deliberately (not Tier-1): the compliance-owner "How to read this index" legend adds its
+            // own always-present "## " heading AFTER the overall coverage line, so this is narrowed to "exactly
+            // one heading before it" -- the real invariant this test is about (one, for the id-less table).
+            val beforeOverall = lines.take(lines.indexOfFirst { it.startsWith("*Overall rendering coverage:") })
+            assertThat(beforeOverall.filter { it.startsWith("## ") }).hasSize(1)
             assertThat(lines[headingAt].lowercase()).containsAnyOf("without", "helper")
             assertThat(lines.count { it.startsWith("|---") }).isEqualTo(2)
         }

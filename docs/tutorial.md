@@ -23,22 +23,38 @@ This writes one Markdown file per Rego package, plus `index.md`. Open
 ```markdown
 # Control index
 
-| Control ID | Title | Package | Rule | Coverage | Example coverage | Source file |
+*Policy digest: `sha256:5f0bc88b6e15c3e7855a524b2e86bceeec63c4ab152185fccc9afbf9a1b71983`*
+
+| Control ID | Title | Package | Rule | Rendered | Example coverage | Source file |
 |---|---|---|---|---|---|---|
-| REL-001 | Production change approval | `release.approvals` | `deny` | 100% | ✓ / ✓ | `approvals/change_approval.rego` |
-| REL-002 | Pipeline evidence | `release.evidence` | `deny` | 100% | ✓ / ✓ | `evidence/pipeline_evidence.rego` |
-| REL-003 | Artifact provenance | `release.provenance` | `deny` | 100% | ✓ / ✓ | `provenance/artifact_provenance.rego` |
-| REL-004 | Release governance evidence | `release.governance` | `deny` | 100% | ✓ / ✓ | `governance/release_governance.rego` |
+| REL-001 | [Production change approval](release-approvals.md#rel-001) | `release.approvals` | `deny` | 100% | ✓ / ✓ | `approvals/change_approval.rego` |
+| REL-002 | [Pipeline evidence](release-evidence.md#rel-002) | `release.evidence` | `deny` | 100% | ✓ / ✓ | `evidence/pipeline_evidence.rego` |
+| REL-003 | [Artifact provenance](release-provenance.md#rel-003) | `release.provenance` | `deny` | 100% | ✓ / ✓ | `provenance/artifact_provenance.rego` |
+| REL-004 | [Release governance evidence](release-governance.md#rel-004) | `release.governance` | `deny` | 100% | ✓ / ✓ | `governance/release_governance.rego` |
 
 ## Rules without a control id
 
-| Control ID | Title | Package | Rule | Coverage | Example coverage | Source file |
+| Control ID | Title | Package | Rule | Rendered | Example coverage | Source file |
 |---|---|---|---|---|---|---|
-| — | Release candidate environments | `release.evidence` | `is_release_candidate` | 100% | ✓ / – | `evidence/pipeline_evidence.rego` |
-| — | exempt_service | `release.exemptions` | `exempt_service` | 100% | ✓ / ✓ | `exemptions/exemptions.rego` |
-| — | Mandatory check completeness | `release.governance` | `all_checks_passed` | 0% | ✓ / – | `governance/release_governance.rego` |
+| — | [Release candidate environments](release-evidence.md#release-evidence-is-release-candidate) | `release.evidence` | `is_release_candidate` | 100% | ✓ / – | `evidence/pipeline_evidence.rego` |
+| — | [exempt_service](release-exemptions.md#release-exemptions-exempt-service) | `release.exemptions` | `exempt_service` | 100% | ✓ / ✓ | `exemptions/exemptions.rego` |
+| — | [Mandatory check completeness](release-governance.md#release-governance-all-checks-passed) | `release.governance` | `all_checks_passed` | 0% | ✓ / – | `governance/release_governance.rego` |
+
+## Controls by framework
+
+| Framework requirement | Controls |
+|---|---|
+| DORA Art. 9 | [REL-004](release-governance.md#rel-004) |
+| ISO 27001 A.8.32 | [REL-001](release-approvals.md#rel-001), [REL-003](release-provenance.md#rel-003) |
+| SLSA v1.0 L2 | [REL-003](release-provenance.md#rel-003) |
+| SOC 2 CC8.1 | [REL-001](release-approvals.md#rel-001), [REL-002](release-evidence.md#rel-002), [REL-004](release-governance.md#rel-004) |
 
 *Overall rendering coverage: 22 of 23 conditions (95%)*
+
+## How to read this index
+
+- **Rendered** — the share of a rule's conditions explico could render as readable text; the rest is shown as marked verbatim source on the rule's own card. It says nothing about whether a control is effective or complete.
+- **Example coverage** — `✓ / ✓` means at least one worked example where the rule matches and at least one where it does not; `–` means none.
 ```
 
 Seven rows for five files, in two tables: `deny` rules get a `control-id`
@@ -46,11 +62,28 @@ Seven rows for five files, in two tables: `deny` rules get a `control-id`
 those `deny` rules (`is_release_candidate`, `exempt_service`,
 `all_checks_passed`) are rendered too, without a control-id, in a second
 table under **Rules without a control id**. Both tables share the same
-columns.
+columns, and every title links straight to the control's own card.
 The **Example coverage** column (`✓ / ✓` = at least one matching and one
 non-matching fixture demonstrate this control; `✓ / –` = only one
 direction is demonstrated) is exactly the kind of gap-visibility spec §6.7
 is for — a thin fixture set shows up here, not as a false "100% covered."
+A closing **How to read this index** section spells out what "Rendered"
+and "Example coverage" actually mean, so neither is mistaken for a
+statement about the control itself.
+
+The **Policy digest** under the title is a SHA-256 over every `.rego` file
+in `samples/policies` — change one byte of policy and it changes; render
+the same policies twice (with or without examples) and it's identical.
+Every other document carries the same digest's first 12 characters, so a
+reader holding one page can confirm it came from the policy version the
+index describes. It depends only on the policy source, never on the
+examples, the data document, or explico's own version.
+
+Because REL-001 through REL-004 declare `frameworks:` in their METADATA,
+the index also builds a **Controls by framework** matrix — which controls
+satisfy SOC 2 CC8.1, which satisfy ISO 27001 A.8.32, and so on — straight
+from that METADATA, with no extra authoring. A policy set where no rule
+names a framework gets no such section at all.
 
 ## 2. Inspect a rule referencing another rule
 

@@ -88,3 +88,5 @@ inside a freeze window, and all mandatory checks must have passed.
 ---
 
 *Package rendering coverage: 8 of 9 conditions (88%)*
+
+*Policy digest: `sha256:5f0bc88b6e15…` (full value in index.md)*

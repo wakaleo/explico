@@ -22,6 +22,8 @@ internal object MarkdownRenderer {
         examplesByRule: Map<String, List<WorkedExample>> = emptyMap(),
         /** Generated worked examples (spec §14.39), by index into [pkg]'s rules; empty unless `--generate-examples`. */
         generatedByRuleIndex: Map<Int, GeneratedExamples> = emptyMap(),
+        /** The full policy digest (spec §14.40), if the caller computed one; null prints no digest line at all. */
+        policyDigest: String? = null,
     ): String {
         val sb = StringBuilder()
         sb.appendLine("# Package `${pkg.path}`")
@@ -58,6 +60,10 @@ internal object MarkdownRenderer {
         }
         val coverage = Coverage.of(pkg)
         sb.appendLine("*Package rendering coverage: ${coverage.rendered} of ${coverage.total} conditions (${coverage.percent}%)*")
+        if (policyDigest != null) {
+            sb.appendLine()
+            sb.appendLine("*Policy digest: `sha256:${policyDigest.take(12)}…` (full value in index.md)*")
+        }
         return sb.toString()
     }
 
@@ -363,16 +369,33 @@ internal object MarkdownRenderer {
      * `index.md`: a table of every control, sorted by control id (missing ids sort last by
      * package+name), plus the overall coverage line (spec §6.1). When [examplesByPackage] is
      * non-empty, gains an example-coverage column and a closing corpus-gaps line (spec §6.7).
+     *
+     * Compliance-owner quick wins (spec §14.40, not from a frozen spec table -- a policy-owner review of real
+     * output): every title links to its own card; the "Coverage" column is renamed "Rendered" and a closing
+     * legend explains both columns, so neither is mistaken for a statement about the control; a "Controls by
+     * framework" matrix appears whenever at least one rule's METADATA names one; and, when [policyDigest] is
+     * supplied, a SHA-256 over the policy's `.rego` files appears under the title.
      */
-    fun renderIndex(policySet: PolicySet, examplesByPackage: Map<String, Map<String, List<WorkedExample>>> = emptyMap()): String {
+    fun renderIndex(
+        policySet: PolicySet,
+        examplesByPackage: Map<String, Map<String, List<WorkedExample>>> = emptyMap(),
+        /** The full policy digest (spec §14.40), if the caller computed one; null prints no digest line at all. */
+        policyDigest: String? = null,
+    ): String {
         data class Row(
             val controlId: String?, val title: String, val packagePath: String, val ruleName: String,
             val coverage: CoverageSummary, val sourceFile: String, val hasMatching: Boolean, val hasNotMatching: Boolean,
+            // Compliance quick wins (a policy-owner review of the real output, not spec-pinned): the real anchor
+            // id this row's card claimed (null for a duplicate name that lost the claim -- see cardAnchorIds --
+            // so the title never links to a nonexistent anchor), and the frameworks its METADATA names, for the
+            // title link and the "Controls by framework" matrix below.
+            val anchorId: String?, val frameworks: List<String>,
         )
 
         val hasExamples = examplesByPackage.isNotEmpty()
         val rows = policySet.packages.flatMap { pkg ->
-            pkg.rules.map { rule ->
+            val anchorIds = cardAnchorIds(pkg)
+            pkg.rules.mapIndexed { index, rule ->
                 val outcomes = WorkedExamples.forGroup(rule, pkg, examplesByPackage[pkg.path]?.get(rule.name) ?: emptyList())
                 Row(
                     controlId = rule.metadata?.controlId,
@@ -383,6 +406,8 @@ internal object MarkdownRenderer {
                     sourceFile = (rule.bodies.firstOrNull()?.sourceLocation ?: rule.default?.sourceLocation ?: rule.constantValue?.sourceLocation)?.file ?: "?",
                     hasMatching = outcomes.any { it.matched },
                     hasNotMatching = outcomes.any { !it.matched },
+                    anchorId = anchorIds[index],
+                    frameworks = rule.metadata?.frameworks ?: emptyList(),
                 )
             }
         }.sortedWith(compareBy({ it.controlId == null }, { it.controlId }, { it.packagePath }, { it.ruleName }))
@@ -390,19 +415,29 @@ internal object MarkdownRenderer {
         val sb = StringBuilder()
         sb.appendLine("# Control index")
         sb.appendLine()
+        if (policyDigest != null) {
+            sb.appendLine("*Policy digest: `sha256:$policyDigest`*")
+            sb.appendLine()
+        }
         // Review item 17: controls (rows with a control id) first; rules without one -- helpers and
         // unannotated rules -- in their own table, so a reader scanning for controls isn't wading
         // through them. Same columns in both, including the example-coverage one.
+        //
+        // Compliance quick win: the header reads "Rendered", not "Coverage" -- a compliance reader reads
+        // "Coverage" as control coverage, which this column does not measure (see the closing legend).
         fun appendTable(tableRows: List<Row>) {
             if (hasExamples) {
-                sb.appendLine("| Control ID | Title | Package | Rule | Coverage | Example coverage | Source file |")
+                sb.appendLine("| Control ID | Title | Package | Rule | Rendered | Example coverage | Source file |")
                 sb.appendLine("|---|---|---|---|---|---|---|")
             } else {
-                sb.appendLine("| Control ID | Title | Package | Rule | Coverage | Source file |")
+                sb.appendLine("| Control ID | Title | Package | Rule | Rendered | Source file |")
                 sb.appendLine("|---|---|---|---|---|---|")
             }
             tableRows.forEach { row ->
-                val prefix = "| ${row.controlId ?: "—"} | ${row.title} | `${row.packagePath}` | `${row.ruleName}` | ${row.coverage.percent}%"
+                // Compliance quick win: the title links to the row's own card, the same anchor convention a
+                // RuleReference already uses -- a reader scanning the index can jump straight to a control.
+                val titleCell = row.anchorId?.let { "[${row.title}](${docFileName(row.packagePath)}#$it)" } ?: row.title
+                val prefix = "| ${row.controlId ?: "—"} | $titleCell | `${row.packagePath}` | `${row.ruleName}` | ${row.coverage.percent}%"
                 if (hasExamples) {
                     val exampleColumn = "${if (row.hasMatching) "✓" else "–"} / ${if (row.hasNotMatching) "✓" else "–"}"
                     sb.appendLine("$prefix | $exampleColumn | `${row.sourceFile}` |")
@@ -420,6 +455,8 @@ internal object MarkdownRenderer {
             appendTable(withoutId)
         }
 
+        appendFrameworkMatrix(sb, rows.map { FrameworkRow(it.controlId, it.ruleName, it.packagePath, it.anchorId, it.frameworks) })
+
         val overall = CoverageSummary(rows.sumOf { it.coverage.rendered }, rows.sumOf { it.coverage.total })
         sb.appendLine("*Overall rendering coverage: ${overall.rendered} of ${overall.total} conditions (${overall.percent}%)*")
 
@@ -429,6 +466,23 @@ internal object MarkdownRenderer {
                 sb.appendLine()
                 sb.appendLine("*$gapCount controls have no fixture demonstrating them — the corpus has gaps.*")
             }
+        }
+
+        // Compliance quick win: a closing legend, so "Rendered" is never mistaken for a statement about the
+        // control itself -- it measures how much of the rule's logic explico could turn into prose, nothing more.
+        sb.appendLine()
+        sb.appendLine("## How to read this index")
+        sb.appendLine()
+        sb.appendLine(
+            "- **Rendered** — the share of a rule's conditions explico could render as readable text; the rest " +
+                "is shown as marked verbatim source on the rule's own card. It says nothing about whether a " +
+                "control is effective or complete.",
+        )
+        if (hasExamples) {
+            sb.appendLine(
+                "- **Example coverage** — `✓ / ✓` means at least one worked example where the rule matches and " +
+                    "at least one where it does not; `–` means none.",
+            )
         }
         return sb.toString()
     }
@@ -462,7 +516,40 @@ internal object MarkdownRenderer {
         val candidates = targetPackage.rules.filter { it.name == targetName }
         val targetRule = candidates.firstOrNull { !it.isSplitDefaultEntry } ?: candidates.first()
         val anchorId = anchorIdOf(targetRule, targetPackagePath)
-        return if (targetPackagePath == currentPackagePath) "#$anchorId" else "${targetPackagePath.replace('.', '-')}.md#$anchorId"
+        return if (targetPackagePath == currentPackagePath) "#$anchorId" else "${docFileName(targetPackagePath)}#$anchorId"
+    }
+
+    /** The `<package-path>.md` file a package's own cards live in (spec §6.1's naming: dots become dashes). */
+    private fun docFileName(packagePath: String): String = "${packagePath.replace('.', '-')}.md"
+
+    /** One index row's identity, as the "Controls by framework" matrix needs it: nothing about coverage or title. */
+    private data class FrameworkRow(val controlId: String?, val ruleName: String, val packagePath: String, val anchorId: String?, val frameworks: List<String>)
+
+    /**
+     * Compliance quick win: a requirement-to-controls matrix, grouped by the exact framework strings METADATA
+     * names (spec §6.3's `custom.frameworks`) -- the most common compliance artefact ("which controls satisfy
+     * SOC 2 CC8.1?"), built from data every card already carries. Renders nothing at all when no rule in the
+     * document names a framework.
+     */
+    private fun appendFrameworkMatrix(sb: StringBuilder, rows: List<FrameworkRow>) {
+        // CHALLENGE edge case: a framework listed twice in one rule's own METADATA (YAML authoring slip) must not
+        // duplicate that rule's link in its row -- `.distinct()` per row, before any cross-row grouping.
+        val byFramework = rows.flatMap { row -> row.frameworks.distinct().map { it to row } }.groupBy({ it.first }, { it.second })
+        if (byFramework.isEmpty()) return
+        sb.appendLine("## Controls by framework")
+        sb.appendLine()
+        sb.appendLine("| Framework requirement | Controls |")
+        sb.appendLine("|---|---|")
+        byFramework.entries.sortedWith(compareBy({ it.key.lowercase() }, { it.key })).forEach { (framework, controlRows) ->
+            val links = controlRows
+                .sortedWith(compareBy({ it.controlId == null }, { it.controlId }, { it.ruleName }))
+                .map { row ->
+                    val label = row.controlId ?: row.ruleName
+                    row.anchorId?.let { "[$label](${docFileName(row.packagePath)}#$it)" } ?: label
+                }
+            sb.appendLine("| $framework | ${links.joinToString(", ")} |")
+        }
+        sb.appendLine()
     }
 
     /** The id [anchorForTarget] links to for [rule]: its control id if it has one, else `package-rulename`, slugged. */

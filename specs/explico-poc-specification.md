@@ -1695,3 +1695,24 @@ matched), after de-duplication. A candidate whose evaluation fails is discarded 
 `**Generated examples**` with mechanical names and a provenance footer; nothing is rendered for a rule with none. The sprintf argument paths are
 part of the canonical logic hash. Prototype measurements: sample pack 5/11 bodies, showcase 8/21, Gatekeeper ~4% -- bounded by what the renderer can
 classify.
+
+### 14.40 Index usability and policy digest (compliance-owner review)
+
+Added after a review of the real output from a compliance owner's seat; none of it is derivable from the frozen README, so the Tier-1
+`IndexAcceptanceIT` is untouched and `RealisticIndexAndProvenanceAcceptanceIT` pins it.
+- **Title links.** Each `index.md` row's *Title* is `[title](<package-path-with-dots-as-dashes>.md#<anchor>)`, the anchor being the card's real id
+  (`cardAnchorIds`); a card that lost the anchor claim (a duplicate name) keeps a plain title. The *Control ID* cell stays plain and first.
+- **`Coverage` -> `Rendered`.** The column is the share of a rule's conditions shown as readable text, not control coverage. A closing
+  `## How to read this index` explains it ("says nothing about whether a control is effective or complete") and, only when examples were
+  supplied, the *Example coverage* column (`✓ / ✓`, `–`).
+- **Controls by framework.** When any rule's METADATA lists `frameworks`, `## Controls by framework` (before the overall line) has one row per
+  distinct framework string exactly as written (case-sensitive distinctness, sorted case-insensitively then by text), listing the rules naming it as
+  links labelled by control id (else rule name), sorted by control id; a framework repeated within one rule lists that rule once. No section otherwise.
+- **Policy digest.** `Explico.render` hashes every `.rego` file under `policyDir` (SHA-256; files ordered by `/`-separated relative path; each
+  contributes length-prefixed path and content bytes; CRLF -> LF at byte level, no charset decoding, so a non-UTF-8 file cannot abort the render). It
+  is shown as `*Policy digest: `sha256:<64 hex>`*` under the index title and `*Policy digest: `sha256:<12 hex>…` (full value in index.md)*` as the
+  last line of each package document. Examples, data and explico's version are deliberately excluded so output does not change per release. The
+  diff report has no `policyDir` and is unaffected. `renderIndex`/`renderPackage` take the digest as an optional parameter (null prints nothing).
+- **Not done / disclosed.** No line numbers or source URLs in "defined in"; METADATA text (titles, framework strings) is still inserted into
+  Markdown unescaped, as everywhere else, so a `]` or `|` in a title breaks its link or table row.
+
