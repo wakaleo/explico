@@ -51,9 +51,11 @@ This writes one Markdown file per Rego package, plus `index.md`. Open
 
 *Overall rendering coverage: 22 of 23 conditions (95%)*
 
+*Below 100%: [Mandatory check completeness](release-governance.md#release-governance-all-checks-passed) -- each shows the constructs it could not render as source on its own card.*
+
 ## How to read this index
 
-- **Rendered** — the share of a rule's conditions explico could render as readable text; the rest is shown as marked verbatim source on the rule's own card. It says nothing about whether a control is effective or complete.
+- **Rendered** — the share of a rule's conditions explico could render as readable text; the rest is shown as marked verbatim source on the rule's own card. It says nothing about whether a control is effective or complete. A helper rule can show 0% because its only condition is a construct explico does not render (such as every); that says nothing about the rules that call it.
 - **Example coverage** — `✓ / ✓` means at least one worked example where the rule matches and at least one where it does not; `–` means none.
 ```
 
@@ -67,9 +69,11 @@ The **Example coverage** column (`✓ / ✓` = at least one matching and one
 non-matching fixture demonstrate this control; `✓ / –` = only one
 direction is demonstrated) is exactly the kind of gap-visibility spec §6.7
 is for — a thin fixture set shows up here, not as a false "100% covered."
-A closing **How to read this index** section spells out what "Rendered"
-and "Example coverage" actually mean, so neither is mistaken for a
-statement about the control itself.
+The **Below 100%** line names every rule that couldn't be fully rendered (here the
+`every` helper, which shows 0%) and links to its card, where the construct is shown as
+source. A closing **How to read this index** section spells out what "Rendered" and
+"Example coverage" actually mean, so neither is mistaken for a statement about the control
+itself.
 
 The **Policy digest** under the title is a SHA-256 over every `.rego` file
 in `samples/policies` — change one byte of policy and it changes; render

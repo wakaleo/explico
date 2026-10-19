@@ -12,6 +12,8 @@
 Every pipeline stage must have passed before a release candidate
 may be deployed, unless the service is explicitly exempt.
 
+**Effect of a match:** ❌ denied *(by the `deny` naming convention)*
+
 **All of the following are true:**
 
 - see rule [`is_release_candidate`](#release-evidence-is-release-candidate)

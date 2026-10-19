@@ -42,6 +42,8 @@
 Production releases require a release manager approval, must not fall
 inside a freeze window, and all mandatory checks must have passed.
 
+**Effect of a match:** ❌ denied *(by the `deny` naming convention)*
+
 **The rule matches when ANY of the following situations applies:**
 
 ### Situation 1 — all of the following are true

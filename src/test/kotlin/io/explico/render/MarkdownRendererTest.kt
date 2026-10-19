@@ -111,7 +111,10 @@ class MarkdownRendererTest {
             val markdown = MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
 
             assertThat(markdown).doesNotContain("Line two.\n\n\n")
-            assertThat(markdown).contains("Line two.\n\n**All of the following are true:**")
+            // Repinned deliberately (not Tier-1): this rule is named `deny`, so spec §14.44's "Effect of a match" line now sits between the
+            // description and the conditions. The invariant under test -- exactly one blank line after the description -- is unchanged.
+            assertThat(markdown).contains("Line two.\n\n**Effect of a match:**")
+            assertThat(markdown).contains("naming convention)*\n\n**All of the following are true:**")
         }
 
         @Test

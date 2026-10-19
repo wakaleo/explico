@@ -2,6 +2,7 @@
 package io.explico.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.NoOpCliktCommand
 import com.github.ajalt.clikt.core.ProgramResult
 import com.github.ajalt.clikt.core.main
@@ -29,14 +30,21 @@ import java.util.Comparator
 private const val PINNED_OPA_VERSION = "1.19.0"
 
 fun main(args: Array<String>) {
-    NoOpCliktCommand(name = "explico")
+    ExplicoCommand()
         .subcommands(RenderCommand(), DiffCommand(), VersionCommand(), DemoCommand())
         .main(args)
+}
+
+private class ExplicoCommand : NoOpCliktCommand(name = "explico") {
+    override fun help(context: Context): String =
+        "Turn Rego policies into documentation a reviewer can read -- every statement derived mechanically, never guessed"
 }
 
 private fun parseRegoVersion(name: String): RegoVersion = if (name == "v0") RegoVersion.V0 else RegoVersion.V1
 
 private class RenderCommand : CliktCommand(name = "render") {
+    override fun help(context: Context): String = "Render a directory of Rego policies into Markdown documentation"
+
     private val policyDir by argument(help = "Directory containing .rego policy files")
         .path(mustExist = true, canBeFile = false)
     private val out by option("--out", help = "Output directory for the rendered Markdown").path().required()
@@ -69,6 +77,8 @@ private class RenderCommand : CliktCommand(name = "render") {
 }
 
 private class DiffCommand : CliktCommand(name = "diff") {
+    override fun help(context: Context): String = "Compare two policy versions and write a change report"
+
     private val oldDir by argument(help = "Old policy directory").path(mustExist = true, canBeFile = false)
     private val newDir by argument(help = "New policy directory").path(mustExist = true, canBeFile = false)
     private val out by option("--out", help = "Output file for the change report").path().required()
@@ -94,12 +104,16 @@ private class DiffCommand : CliktCommand(name = "diff") {
 }
 
 private class VersionCommand : CliktCommand(name = "version") {
+    override fun help(context: Context): String = "Print explico's version"
+
     override fun run() {
         echo("explico ${explicoVersion()}")
     }
 }
 
 private class DemoCommand : CliktCommand(name = "demo") {
+    override fun help(context: Context): String = "Render the bundled sample policies into ./explico-demo to see what explico produces"
+
     private val fetchOpa by option(
         "--fetch-opa",
         help = "Download a pinned, checksum-verified opa $PINNED_OPA_VERSION binary if none is available",

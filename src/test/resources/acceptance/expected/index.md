@@ -28,7 +28,9 @@
 
 *Overall rendering coverage: 22 of 23 conditions (95%)*
 
+*Below 100%: [Mandatory check completeness](release-governance.md#release-governance-all-checks-passed) -- each shows the constructs it could not render as source on its own card.*
+
 ## How to read this index
 
-- **Rendered** — the share of a rule's conditions explico could render as readable text; the rest is shown as marked verbatim source on the rule's own card. It says nothing about whether a control is effective or complete.
+- **Rendered** — the share of a rule's conditions explico could render as readable text; the rest is shown as marked verbatim source on the rule's own card. It says nothing about whether a control is effective or complete. A helper rule can show 0% because its only condition is a construct explico does not render (such as every); that says nothing about the rules that call it.
 - **Example coverage** — `✓ / ✓` means at least one worked example where the rule matches and at least one where it does not; `–` means none.

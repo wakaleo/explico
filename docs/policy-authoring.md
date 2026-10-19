@@ -75,6 +75,7 @@ and the change author must not approve their own change.
 | `Production change approval` in the heading | `title` |
 | The paragraph below the metadata line | `description`, verbatim (a YAML block literal's own trailing newline is trimmed so it doesn't double up with the blank line after it) |
 | `*Frameworks: SOC 2 CC8.1, ISO 27001 A.8.32*` | `custom.frameworks`, comma-joined |
+| The `**Effect of a match:**` line | **Not METADATA either** — derived from the rule's *name* alone, by the same convention worked examples use: `deny`/`violation` → ❌ denied, `allow` → ✅ allowed, and the line says so (*by the `deny` naming convention*). Any other name, a function, or a rule with no body gets no line — explico never guesses an effect |
 | The `Rule ... in package ... — defined in ...` line | **Not METADATA at all** — the rule name, package path, and source filename are read directly from the parsed AST, structurally derived the same way the condition bullets are (see "METADATA is a human-attested layer" below for why this distinction matters) |
 
 ### `scope`: placement and semantics

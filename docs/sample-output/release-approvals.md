@@ -12,6 +12,8 @@
 Production deployments must reference an approved change ticket,
 and the change author must not approve their own change.
 
+**Effect of a match:** ❌ denied *(by the `deny` naming convention)*
+
 **The rule matches when ANY of the following situations applies:**
 
 ### Situation 1 — all of the following are true

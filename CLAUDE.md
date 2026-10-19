@@ -1453,3 +1453,13 @@ candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFI
 - Rule-level only; `PackageMetadata`, `organizations` and `schemas` are untouched (disclosed). Zero acceptance-pack impact: the new fixture is
   `realistic/metadata-passthrough/`; an `/accept` placement test of mine wrongly expected a blank line right after `*Authors:*` and was corrected.
 
+## Polish bundle (spec §14.44)
+
+- `effectOfMatchLine` (MarkdownRenderer) reuses `WorkedExamples.outcomeWord` so the card line and worked-example verdicts can never disagree on the
+  convention; exact names only, never for functions/split defaults/body-less rules.
+- The index "Below 100%" note reuses `titleLink` (also used by the table) and sits between the overall/gap lines and the legend.
+- Clikt 5 has no `help =` constructor parameter: override `help(context)`; the root is an `ExplicoCommand : NoOpCliktCommand`. `CliHelpProcessTest`
+  collapses whitespace because help wraps at terminal width.
+- Repinned (narrowly, not Tier-1): `MarkdownRendererTest.descriptionTrailingNewline...`. Regenerated after review: pack docs + index + diff goldens,
+  sample-output, showcase, README/tutorial excerpts.
+

@@ -144,6 +144,16 @@ internal object MarkdownRenderer {
         else -> author.name ?: author.email.orEmpty()
     }
 
+    /**
+     * Spec §14.44: what a match means, by the SAME name-based convention worked examples use ([WorkedExamples.outcomeWord],
+     * spec §6.7), with that basis stated in the line itself so it is true by construction. Exact, case-sensitive names only;
+     * no line for any other name, a function, a split default or a rule with no body -- an effect is never guessed.
+     */
+    private fun effectOfMatchLine(rule: RuleGroup): String? {
+        if (rule.name !in setOf("deny", "violation", "allow") || rule.parameters.isNotEmpty() || rule.isSplitDefaultEntry || rule.bodies.isEmpty()) return null
+        return "**Effect of a match:** ${WorkedExamples.outcomeWord(rule.name, matched = true)} *(by the `${rule.name}` naming convention)*"
+    }
+
     private fun appendMetadataLines(sb: StringBuilder, rule: RuleGroup, pkg: PolicyPackage) {
         val metadata = rule.metadata
         // "?" only for a default-only rule with zero bodies in this file (review item 3) -- should
@@ -175,6 +185,11 @@ internal object MarkdownRenderer {
         // which would otherwise double up with appendLine()'s own line break into an extra blank line.
         sb.appendLine(metadata?.description?.trimEnd() ?: "*No description provided in policy metadata.*")
         sb.appendLine()
+
+        effectOfMatchLine(rule)?.let { line ->
+            sb.appendLine(line)
+            sb.appendLine()
+        }
 
         if (rule.default != null) {
             sb.appendLine("**Default outcome:** ${rule.default.rendered}")
@@ -484,7 +499,7 @@ internal object MarkdownRenderer {
             tableRows.forEach { row ->
                 // Compliance quick win: the title links to the row's own card, the same anchor convention a
                 // RuleReference already uses -- a reader scanning the index can jump straight to a control.
-                val titleCell = row.anchorId?.let { "[${row.title}](${docFileName(row.packagePath)}#$it)" } ?: row.title
+                val titleCell = titleLink(row.title, row.packagePath, row.anchorId)
                 val prefix = "| ${row.controlId ?: "—"} | $titleCell | `${row.packagePath}` | `${row.ruleName}` | ${row.coverage.percent}%"
                 if (hasExamples) {
                     val exampleColumn = "${if (row.hasMatching) "✓" else "–"} / ${if (row.hasNotMatching) "✓" else "–"}"
@@ -516,6 +531,17 @@ internal object MarkdownRenderer {
             }
         }
 
+        // Spec §14.44: a rule showing 0% (a helper whose only condition is an `every` block) reads like a failure; name every
+        // rule below 100% -- table order, same title link as the table -- and say where its unrendered constructs are shown.
+        val belowFull = rows.filter { it.coverage.percent < 100 }
+        if (belowFull.isNotEmpty()) {
+            sb.appendLine()
+            sb.appendLine(
+                "*Below 100%: ${belowFull.joinToString(", ") { titleLink(it.title, it.packagePath, it.anchorId) }} -- " +
+                    "each shows the constructs it could not render as source on its own card.*",
+            )
+        }
+
         // Compliance quick win: a closing legend, so "Rendered" is never mistaken for a statement about the
         // control itself -- it measures how much of the rule's logic explico could turn into prose, nothing more.
         sb.appendLine()
@@ -524,7 +550,8 @@ internal object MarkdownRenderer {
         sb.appendLine(
             "- **Rendered** — the share of a rule's conditions explico could render as readable text; the rest " +
                 "is shown as marked verbatim source on the rule's own card. It says nothing about whether a " +
-                "control is effective or complete.",
+                "control is effective or complete. A helper rule can show 0% because its only condition is a construct explico does " +
+                "not render (such as every); that says nothing about the rules that call it.",
         )
         if (hasExamples) {
             sb.appendLine(
@@ -566,6 +593,10 @@ internal object MarkdownRenderer {
         val anchorId = anchorIdOf(targetRule, targetPackagePath)
         return if (targetPackagePath == currentPackagePath) "#$anchorId" else "${docFileName(targetPackagePath)}#$anchorId"
     }
+
+    /** `[title](file#anchor)`, or the plain title when the rule's card claimed no anchor (a duplicate name). */
+    private fun titleLink(title: String, packagePath: String, anchorId: String?): String =
+        anchorId?.let { "[$title](${docFileName(packagePath)}#$it)" } ?: title
 
     /** The `<package-path>.md` file a package's own cards live in (spec §6.1's naming: dots become dashes). */
     private fun docFileName(packagePath: String): String = "${packagePath.replace('.', '-')}.md"

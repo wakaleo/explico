@@ -1788,3 +1788,20 @@ non-empty: `*Authors: <a>, ...*` (`name <email>`, a bare name, or a bare email -
 - **Scope / disclosed:** rule-level METADATA only (as `frameworks`); package-level METADATA is unchanged (title and description). `organizations` and
   `schemas` stay unmodelled. The acceptance pack declares none of these, so every Tier-2 golden is unchanged.
 
+### 14.44 Polish: effect of a match, below-100% note, CLI descriptions
+
+- **Effect of a match.** A card gets one line after its description and before its conditions: `**Effect of a match:** ❌ denied *(by the `deny` naming
+  convention)*` for a rule named `deny` or `violation`, `✅ allowed` for `allow` -- the glyph text is `WorkedExamples.outcomeWord`, the same name-based
+  convention worked examples use (§6.7), and the line names its own basis, so it is true by construction. Exact, case-sensitive names; no line for any
+  other name (never a guessed effect), a function, a split-default entry, or a rule with no body. Diff-report cards reuse `renderCard` and carry it too.
+- **Below-100% note.** After the index's overall line (and gap note), when any rule is under 100% rendered:
+  `*Below 100%: [<title>](<file>#<anchor>), ... -- each shows the constructs it could not render as source on its own card.*` (the table's own title
+  links, table order). The legend's `Rendered` bullet adds that a helper can show 0% because its only condition is a construct explico does not render
+  (such as `every`), which says nothing about the rules that call it. A rule with zero conditions is not "below 100%".
+- **CLI descriptions.** `explico --help` shows a one-line description for the tool and for each of `render`, `diff`, `version`, `demo` (Clikt 5: an
+  overridden `help(context)`, since the constructor `help` parameter no longer exists).
+- **Impact.** Every deny/violation/allow card gained a line: the five pack Tier-2 goldens that contain one, the index golden, the diff report golden,
+  `docs/sample-output`, three showcase pages, and the hand-quoted card excerpts in the README and tutorial were regenerated after line-by-line review.
+  `MarkdownRendererTest.descriptionTrailingNewline...` was narrowly repinned (its rule is named `deny`); its invariant -- one blank line after the
+  description -- is unchanged. No Tier-1 assertion changed.
+

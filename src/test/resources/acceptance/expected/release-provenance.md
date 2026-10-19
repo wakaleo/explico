@@ -12,6 +12,8 @@
 Production artifacts must be built from a release branch and carry
 a sign-off label identifying who approved the build.
 
+**Effect of a match:** ❌ denied *(by the `deny` naming convention)*
+
 **The rule matches when ANY of the following situations applies:**
 
 ### Situation 1 — all of the following are true
