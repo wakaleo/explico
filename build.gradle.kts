@@ -264,6 +264,11 @@ val generateShowcase = tasks.register("generateShowcase") {
 
 tasks.test {
     useJUnitPlatform()
+    // Show WHY a test failed (the full assertion message) in the console/CI log, not just the exception class.
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
     filter {
         excludeTestsMatching("*IT")
         isFailOnNoMatchingTests = false
@@ -285,6 +290,11 @@ val acceptanceTest = tasks.register<Test>("acceptanceTest") {
     description = "Runs Tier-1 acceptance tests and Tier-2 golden tests (*IT classes)."
     group = "verification"
     useJUnitPlatform()
+    // Show WHY a test failed (the full assertion message) in the console/CI log, not just the exception class.
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
     filter {

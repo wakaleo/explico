@@ -33,7 +33,9 @@ class GenerateExamplesCliProcessTest {
         assertThat(result.stdout).contains("Rendering coverage:")
         assertThat(result.stdout + result.stderr).containsPattern("Generated examples for \\d+ of \\d+ rules")
         val doc = Files.readString(out.resolve("genex.md"))
-        assertThat(doc).contains("**Generated examples**").contains("**satisfies every condition**")
+        assertThat(doc)
+            .describedAs("child process output -- stdout: %s | stderr: %s", result.stdout, result.stderr)
+            .contains("**Generated examples**").contains("**satisfies every condition**")
     }
 
     @Test
