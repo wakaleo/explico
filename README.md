@@ -158,7 +158,8 @@ dependencies {
 To try an unreleased build instead, run `./gradlew publishToMavenLocal` and add
 `mavenLocal()` to the consuming project's `repositories { }`.
 
-The published artifact's compiled metadata targets **Kotlin 2.3.0** — a
+The published artifact is built with Kotlin 2.4 and needs **Kotlin 2.3.0 or
+newer** in the consuming project (verified against 2.3.0; 2.2.x is rejected) — a
 consumer on an older Kotlin Gradle plugin version will hit an opaque
 `Module was compiled with an incompatible version of Kotlin` error with no
 indication of the real cause. Match or exceed 2.3.0 in the consuming

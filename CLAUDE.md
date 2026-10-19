@@ -1380,3 +1380,11 @@ name as the library jar and `publishToMavenLocal`/`publishToMavenCentral` publis
   the real key and verifies the signatures in a clean keyring plus that the key is on keyserver.ubuntu.com, and only then
   publishes. A manual **dry run** (`workflow_dispatch`, default on) does everything except upload and the GitHub Release --
   use it before tagging, because Central rations publishes. Central versions are permanent: verify, then tag.
+
+## Dependency security scan (0.1.1)
+
+Scanned the resolved runtime and test dependency graphs (`./gradlew dependencies --configuration runtimeClasspath`) and the
+build-plugin coordinates against OSV (`https://api.osv.dev/v1/querybatch`, ecosystem Maven) -- no new dependency needed.
+Shipped runtime dependencies were clean. Fixed: AssertJ 3.27.7 (CVE-2026-24400, test-only) and Kotlin 2.4.21 (CVE-2026-53914,
+build-only; consumer floor stays Kotlin 2.3.0, proven by `consumer-smoke-test`, which deliberately stays on 2.3.0). Dependabot
+alerts were disabled on the GitHub repo; enabling them is a repo-settings action.

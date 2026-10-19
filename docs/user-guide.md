@@ -190,8 +190,9 @@ application {
 }
 ```
 
-- **Kotlin 2.3.0 or newer is required** — the published artifact's compiled
-  metadata targets Kotlin 2.3.0. An older `kotlin("jvm")` plugin version
+- **Kotlin 2.3.0 or newer is required** — the published artifact is built with
+  Kotlin 2.4, whose metadata a 2.3.x compiler can read (checked by the consumer
+  smoke test) but a 2.2.x compiler cannot. An older `kotlin("jvm")` plugin version
   fails with an opaque `Module was compiled with an incompatible version of
   Kotlin` error that gives no hint the fix is simply bumping the plugin
   version.

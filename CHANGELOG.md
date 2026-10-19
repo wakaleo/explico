@@ -15,6 +15,10 @@ Packaging corrections to 0.1.0. No rendering behaviour changes. **Use 0.1.1 inst
 - **Added:** the Apache `LICENSE` is included in the jars (`META-INF/LICENSE`).
 - **Added:** a build-time test (`LibraryJarShapeTest`) that fails if the published library jar ever bundles third-party
   classes, contains a `Main-Class`, or grows past 2 MB.
+- **Security (build and test tooling only; nothing that ships to users was affected):** AssertJ 3.27.3 -> 3.27.7
+  (CVE-2026-24400, XXE in `isXmlEqualTo`, which no test uses) and the Kotlin Gradle plugin 2.3.0 -> 2.4.21
+  (CVE-2026-53914, unsafe deserialization in the Kotlin build-cache metadata). All shipped runtime dependencies were scanned
+  against OSV and are clean. The library is now built with Kotlin 2.4; consumers need Kotlin 2.3.0 or newer (unchanged).
 - **Fixed (since 0.1.0 source, no separate release):** METADATA now attaches on Windows (opa reports backslash paths);
   CI runs on Linux, macOS and Windows.
 

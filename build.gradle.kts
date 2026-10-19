@@ -1,9 +1,9 @@
 plugins {
-    kotlin("jvm") version "2.3.0"
+    kotlin("jvm") version "2.4.21"
     // `api` configuration: Fixture.input (public) is a kotlinx.serialization JsonObject, so consumers need that
     // library at COMPILE time, not just runtime (0.1.0 published it runtime-only).
     `java-library`
-    kotlin("plugin.serialization") version "2.3.0"
+    kotlin("plugin.serialization") version "2.4.21"
     application
     id("com.vanniktech.maven.publish") version "0.37.0"
     // Build-only tooling (spec §2/§13.1), not a library runtime dependency. The actively
@@ -39,7 +39,7 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation("org.assertj:assertj-core:3.27.3")
+    testImplementation("org.assertj:assertj-core:3.27.7")
 }
 
 // docsSnippets (spec §13.8): every code snippet shown in README.md/docs/*.md lives here verbatim,
