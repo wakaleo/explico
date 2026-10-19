@@ -411,3 +411,15 @@ project's own history) to genuinely catch drift, not just pass trivially:
 deliberately introducing a difference in the generated output made this
 step fail with exit code `1`; regenerating and committing brought it back
 to exit code `0`.
+
+## Security considerations
+
+- **`render` without `--examples` only parses.** It runs `opa parse` and `opa inspect`, which read the Rego but never
+  evaluate it, so it is safe on untrusted policies.
+- **`render --examples` (and `Explico.render(..., examples)`) executes the policy.** Each fixture is run through
+  `opa eval`. Rego builtins can reach outside the process (`http.send`, `net.lookup_ip_addr`, `opa.runtime` exposing
+  environment variables). Only generate worked examples for policies you trust, in an environment where that is acceptable.
+- **The `opa` binary is yours to trust.** explico uses the `opa` on `PATH` (or `OPA_BIN`). `explico demo --fetch-opa`
+  downloads the official release and verifies its SHA-256 checksum.
+
+Reporting a vulnerability: see [`SECURITY.md`](../SECURITY.md).

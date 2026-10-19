@@ -364,6 +364,13 @@ against the coverage percentage reported on every card and package.
 - [`src/test/resources/acceptance/README.md`](src/test/resources/acceptance/README.md) — the acceptance pack: sample policies, fixtures, and the frozen Tier-1 assertions that drive the renderer's development.
 - `samples/` — the acceptance pack's policies/examples/data, for hands-on exploration (used in the worked example above).
 
+## Security
+
+Rendering **without** `--examples` only parses your Rego, so it is safe on untrusted policies. Rendering **with** worked
+examples runs `opa eval`, which *executes* the policy (and Rego can call out through builtins like `http.send`): don't
+generate examples for policies you don't trust. Details, and how to report a vulnerability, are in
+[`SECURITY.md`](SECURITY.md).
+
 ## Contributing
 
 **Adding a new recognised builtin's rendering** (spec §6.3) is the smallest,

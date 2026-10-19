@@ -12,6 +12,10 @@ Packaging corrections to 0.1.0. No rendering behaviour changes. **Use 0.1.1 inst
   `JsonObject`, but 0.1.0 declared it runtime-only, so a Gradle consumer could not compile against `Fixture`.
 - **Changed:** bytecode now targets **Java 17** (was 21), compiled against the JDK 17 API surface; CI runs the runnable jar
   on a real JDK 17. Building from source still uses a JDK 21 toolchain.
+- **Note:** because the library is now built with Kotlin 2.4, its POM declares `kotlin-stdlib:2.4.21`; a Gradle consumer on
+  Kotlin 2.3 therefore resolves that stdlib version transitively (verified to build and run with the 2.3.0 compiler).
+- **Added:** `SECURITY.md`, and a documented warning that rendering *with* worked examples executes the policy via
+  `opa eval` (rendering without examples only parses).
 - **Added:** the Apache `LICENSE` is included in the jars (`META-INF/LICENSE`).
 - **Added:** a build-time test (`LibraryJarShapeTest`) that fails if the published library jar ever bundles third-party
   classes, contains a `Main-Class`, or grows past 2 MB.
