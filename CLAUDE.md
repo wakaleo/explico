@@ -1442,3 +1442,14 @@ candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFI
   outcome, `every`-block-only, pure cross-body regrouping, frameworks-only docs). Goldens touched:
   `diff-all-categories/expected/diff-report.md` only (regenerated after review); `docs/tutorial.md`'s diff
   walkthrough re-run for real and updated to show the new section.
+
+## METADATA passthrough (spec §14.43)
+
+- `OpaCustomAnnotation` is a raw-JsonObject wrapper with its own `KSerializer` (so `OpaCustomAnnotation.serializer()` and `.controlId`/`.frameworks` still
+  work for `OpaCustomAnnotationTest`), plus `customFields`. A scalar or non-empty scalar-list value is shown; anything with structure, `null`, or an empty
+  list is skipped -- never guessed.
+- `RuleMetadata`'s new fields default empty. They are in `Canonicalizer.canonicalMetadata` (DOCS_CHANGED, not logic), named by `ChangeSummary`, and get
+  `DiffRenderer.appendDocsTable` rows ONLY when they differ -- an edit touching none of them keeps the original three-row table (goldens unchanged).
+- Rule-level only; `PackageMetadata`, `organizations` and `schemas` are untouched (disclosed). Zero acceptance-pack impact: the new fixture is
+  `realistic/metadata-passthrough/`; an `/accept` placement test of mine wrongly expected a blank line right after `*Authors:*` and was corrected.
+

@@ -31,8 +31,10 @@ OPA-compliant reader can see.
 | `description` | Yes | The paragraph under the heading |
 | `custom.control-id` | Yes | The control-id in the heading, the anchor, and the diff identity |
 | `custom.frameworks` | Yes | The `*Frameworks: ...*` line |
-| `organizations`, `authors`, `related_resources`, `schemas` | **No** | Valid, standard OPA fields — `opa parse` itself parses and preserves them — explico's own JSON decoding just doesn't model them, so they're silently unused, never an error |
-| Any other `custom.*` key besides `control-id`/`frameworks` | **No** | Same as above: OPA preserves it (`custom` is unstructured to OPA), explico's decoder ignores it |
+| `authors` | Yes | The `*Authors: ...*` line: `name <email>`, a bare name, or a bare email, exactly as declared (opa itself splits a `"Name <email>"` string) |
+| `related_resources` | Yes | The `*Related resources: ...*` line: each entry a link, labelled by its `description` (or by the `ref` itself when it has none) |
+| Any other `custom.*` key besides `control-id`/`frameworks` | Yes, if its value is a scalar or a list of scalars | The `*Custom: key: value, ...*` line, keys sorted alphabetically (a list is comma-joined). A key whose value has structure (an object, a list containing an object) is skipped entirely — explico never guesses at what it means |
+| `organizations`, `schemas` | **No** | Valid, standard OPA fields — `opa parse` itself parses and preserves them — explico's own JSON decoding just doesn't model them, so they're silently unused, never an error |
 
 ### REL-001: source to card, field by field
 
@@ -121,10 +123,10 @@ Verified against real `opa parse` output, not assumed:
   it — confirmed by inspecting `opa parse`'s own annotation output with
   such a key present: no error, and the key simply isn't there. This is
   OPA's own leniency, not an explico behavior.
-- **An unrecognised key nested under `custom:` survives in `opa`'s own
-  output** (`custom` is unstructured to OPA) but is silently dropped by
-  explico's own deserialization, same as the standard fields explico
-  doesn't model above. Also never an error.
+- **A key nested under `custom:` survives in `opa`'s own output**
+  (`custom` is unstructured to OPA). explico shows it on the card when its
+  value is a scalar or a list of scalars (the `*Custom:*` line above) and
+  silently skips it when the value has structure — never an error either way.
 
 ### `control-id` as diff identity
 

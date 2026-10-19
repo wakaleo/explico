@@ -44,6 +44,7 @@
 package io.explico.parse
 
 import io.explico.model.ComprehensionKind
+import io.explico.model.Author
 import io.explico.model.Condition
 import io.explico.model.ConstantValue
 import io.explico.model.DefaultValue
@@ -54,6 +55,7 @@ import io.explico.model.PackageMetadata
 import io.explico.model.PathSegment
 import io.explico.model.PolicyPackage
 import io.explico.model.PolicySet
+import io.explico.model.RelatedResource
 import io.explico.model.RuleBody
 import io.explico.model.RuleGroup
 import io.explico.model.RuleMetadata
@@ -270,6 +272,9 @@ internal object AstMapper {
                 description = entry.annotations.description,
                 controlId = entry.annotations.custom?.controlId,
                 frameworks = entry.annotations.custom?.frameworks ?: emptyList(),
+                authors = entry.annotations.authors.filter { it.name != null || it.email != null }.map { Author(it.name, it.email) },
+                relatedResources = entry.annotations.relatedResources.mapNotNull { r -> r.ref?.let { RelatedResource(it, r.description) } },
+                customFields = entry.annotations.custom?.customFields ?: emptyMap(),
             )
             val candidateFiles = (filesByPackage[entryPackage] ?: emptyList())
                 .filter { entryFile == null || entryFile.endsWith(it.sourceFile) }

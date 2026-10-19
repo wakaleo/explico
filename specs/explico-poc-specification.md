@@ -1768,3 +1768,23 @@ section order (REMOVED, ADDED, LOGIC_CHANGED, DOCS_CHANGED), then by control id,
 - **Unaffected:** the `**Source diff**`/cards (unchanged), the CLI's `diff` stdout (still the literal `## Summary`
   slice, which ends before this new section), and `DiffRendererTest`/`CliProcessTest` (neither pins whole-report
   text). `render`'s own documents are untouched -- this section lives only in the diff report.
+
+### 14.43 METADATA passthrough (`authors`, `related_resources`, extra `custom:` keys)
+
+opa already parses the standard `authors` / `related_resources` fields and preserves every `custom:` key (it is unstructured to opa);
+explico's own decoding dropped all three. Now a card shows them, after `*Frameworks: ...*` and before `*Parameters: ...*`, each line only when
+non-empty: `*Authors: <a>, ...*` (`name <email>`, a bare name, or a bare email -- opa has already split a `"Name <email>"` string), 
+`*Related resources: [<label>](<ref>), ...*` (label is the `description`, else the `ref` itself; always a link, so one shape), and
+`*Custom: <key>: <value>, ...*` (keys sorted alphabetically).
+- **Model:** `RuleMetadata` gains `authors: List<Author>`, `relatedResources: List<RelatedResource>`, `customFields: Map<String, String>`, all defaulted
+  empty so existing callers compile; `Author(name?, email?)` and `RelatedResource(ref, description?)` are public.
+- **Decoding:** `OpaCustomAnnotation` now holds the raw `custom` JsonObject (custom `KSerializer`; a non-object reads as empty) so no key is lost to
+  `ignoreUnknownKeys`; `controlId`/`frameworks` read from it as leniently as before. `customFields` carries every OTHER key whose value is a scalar
+  or a non-empty list of scalars (a list is comma-joined, no brackets) and silently skips objects, lists holding non-scalars, `null` and empty lists
+  -- never a guess at structure. An author with neither name nor email, and a related resource with no `ref`, are dropped.
+- **Diff:** the three fields are part of the metadata hash (`Canonicalizer.canonicalMetadata`), so an edit is DOCS_CHANGED and never alters the logic
+  hash; `ChangeSummary` names them (`authors`, `related resources`, `custom fields`) and the DOCS_CHANGED table adds a row for each ONLY when it
+  differs, so an edit touching none of them renders exactly the three rows it always did.
+- **Scope / disclosed:** rule-level METADATA only (as `frameworks`); package-level METADATA is unchanged (title and description). `organizations` and
+  `schemas` stay unmodelled. The acceptance pack declares none of these, so every Tier-2 golden is unchanged.
+

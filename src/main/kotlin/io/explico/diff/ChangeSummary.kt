@@ -91,6 +91,9 @@ internal object ChangeSummary {
         if (old?.title != new?.title) fields += "title"
         if (old?.description != new?.description) fields += "description"
         if (old?.frameworks != new?.frameworks) fields += "frameworks"
+        if ((old?.authors.orEmpty()) != (new?.authors.orEmpty())) fields += "authors"
+        if ((old?.relatedResources.orEmpty()) != (new?.relatedResources.orEmpty())) fields += "related resources"
+        if ((old?.customFields ?: emptyMap<String, String>()) != (new?.customFields ?: emptyMap<String, String>())) fields += "custom fields"
         return fields
     }
 

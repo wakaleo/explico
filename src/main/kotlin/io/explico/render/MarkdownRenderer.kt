@@ -138,6 +138,12 @@ internal object MarkdownRenderer {
         sb.appendLine()
     }
 
+    /** `name <email>`, a bare name, or a bare email -- exactly what the author declared, nothing inferred. */
+    private fun authorText(author: io.explico.model.Author): String = when {
+        author.name != null && author.email != null -> "${author.name} <${author.email}>"
+        else -> author.name ?: author.email.orEmpty()
+    }
+
     private fun appendMetadataLines(sb: StringBuilder, rule: RuleGroup, pkg: PolicyPackage) {
         val metadata = rule.metadata
         // "?" only for a default-only rule with zero bodies in this file (review item 3) -- should
@@ -147,6 +153,16 @@ internal object MarkdownRenderer {
         sb.appendLine("*Rule `${rule.name}` in package `${pkg.path}` — defined in `$sourceFile`*")
         if (!metadata?.frameworks.isNullOrEmpty()) {
             sb.appendLine("*Frameworks: ${metadata.frameworks.joinToString(", ")}*")
+        }
+        // Spec §14.43: standard `authors`/`related_resources` and any other scalar `custom:` key, one line each, only when non-empty.
+        if (!metadata?.authors.isNullOrEmpty()) {
+            sb.appendLine("*Authors: ${metadata.authors.joinToString(", ") { authorText(it) }}*")
+        }
+        if (!metadata?.relatedResources.isNullOrEmpty()) {
+            sb.appendLine("*Related resources: ${metadata.relatedResources.joinToString(", ") { "[${it.description ?: it.ref}](${it.ref})" }}*")
+        }
+        if (!metadata?.customFields.isNullOrEmpty()) {
+            sb.appendLine("*Custom: ${metadata.customFields.entries.joinToString(", ") { "${it.key}: ${it.value}" }}*")
         }
         // Review item 8: a user-defined function's own card declares its parameters, so a reader
         // landing here via a FunctionCall's link knows what the caller supplied them as.

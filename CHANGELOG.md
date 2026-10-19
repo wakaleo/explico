@@ -8,6 +8,8 @@ A new opt-in feature, and fixes for two defects found while building it. Recomme
   each rule's conditions where the author's own fixtures leave a gap: inputs that satisfy a rule body and "near-misses" that break exactly one
   condition, each **verified by `opa eval`** and shown in a separate, labelled *Generated examples* section with mechanical names. Off by
   default (output is byte-identical without it). Bodies it cannot model get none.
+- **Added:** a card now shows a rule's METADATA `authors`, `related_resources` and any other `custom:` key whose value is a scalar or a list of
+  scalars (previously dropped), as `*Authors:*`, `*Related resources:*` and `*Custom:*` lines. Edits to them are `DOCS_CHANGED` in `explico diff`.
 - **Added:** a `## What changed` section at the top of the diff report: one line per changed control --
   `removed`/`added`/`documentation changed: <fields>`/`logic changed`, the last with indented sub-bullets naming
   exactly which conditions, messages, body count, default outcome or fallback source changed -- so a reviewer

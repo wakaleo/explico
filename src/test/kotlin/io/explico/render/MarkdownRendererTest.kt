@@ -378,6 +378,64 @@ class MarkdownRendererTest {
     }
 
     @Nested
+    inner class MetadataPassthrough {
+
+        private fun card(metadata: RuleMetadata): String {
+            val rule = RuleGroup("deny", metadata, default = null, bodies = listOf(body(listOf(envIsProd), "msg")), parameters = emptyList())
+            val pkg = PolicyPackage("p", listOf(rule), listOf("approvals/change_approval.rego"))
+            return MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)))
+        }
+
+        private fun meta(
+            authors: List<io.explico.model.Author> = emptyList(),
+            related: List<io.explico.model.RelatedResource> = emptyList(),
+            custom: Map<String, String> = emptyMap(),
+            frameworks: List<String> = listOf("SOC 2"),
+        ) = RuleMetadata("T", "desc", "C-1", frameworks, authors, related, custom)
+
+        @Test
+        fun authorsRenderAsNameWithEmailInAngleBracketsOrBareNameOrBareEmail() {
+            val markdown = card(meta(authors = listOf(io.explico.model.Author("Ann", "a@x.io"), io.explico.model.Author("Bob", null), io.explico.model.Author(null, "c@x.io"))))
+            assertThat(markdown).contains("*Authors: Ann <a@x.io>, Bob, c@x.io*")
+        }
+
+        @Test
+        fun relatedResourcesAreLinksLabelledByDescriptionOrByTheRefItself() {
+            val markdown = card(meta(related = listOf(io.explico.model.RelatedResource("https://x.io/a", "Runbook"), io.explico.model.RelatedResource("https://x.io/b", null))))
+            assertThat(markdown).contains("*Related resources: [Runbook](https://x.io/a), [https://x.io/b](https://x.io/b)*")
+        }
+
+        @Test
+        fun customFieldsRenderInTheMapsOrderAsKeyColonValue() {
+            val markdown = card(meta(custom = linkedMapOf("owner" to "platform", "tags" to "a, b")))
+            assertThat(markdown).contains("*Custom: owner: platform, tags: a, b*")
+        }
+
+        @Test
+        fun theThreeLinesFollowFrameworksInOrderAndPrecedeTheDescription() {
+            val markdown = card(meta(authors = listOf(io.explico.model.Author("Ann", null)), related = listOf(io.explico.model.RelatedResource("r", null)), custom = mapOf("k" to "v")))
+            val lines = markdown.lines()
+            val at = lines.indexOfFirst { it.startsWith("*Frameworks:") }
+            assertThat(lines[at + 1]).startsWith("*Authors:")
+            assertThat(lines[at + 2]).startsWith("*Related resources:")
+            assertThat(lines[at + 3]).startsWith("*Custom:")
+            assertThat(lines[at + 4]).isEmpty()
+        }
+
+        @Test
+        fun nothingIsPrintedForAnEmptyField() {
+            val markdown = card(meta())
+            assertThat(markdown).doesNotContain("Authors:").doesNotContain("Related resources:").doesNotContain("Custom:")
+        }
+
+        @Test
+        fun authorsStillRenderWhenThereAreNoFrameworks() {
+            val markdown = card(meta(frameworks = emptyList(), authors = listOf(io.explico.model.Author("Ann", null))))
+            assertThat(markdown).contains("*Authors: Ann*").doesNotContain("Frameworks:")
+        }
+    }
+
+    @Nested
     inner class IndexSplit {
 
         private fun ruleGroup(name: String, controlId: String?) = RuleGroup(

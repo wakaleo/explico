@@ -157,7 +157,27 @@ internal object DiffRenderer {
         sb.appendLine("| Title | ${cellText(oldMeta?.title)} | ${cellText(newMeta?.title)} |")
         sb.appendLine("| Description | ${cellText(oldMeta?.description)} | ${cellText(newMeta?.description)} |")
         sb.appendLine("| Frameworks | ${frameworksText(oldMeta?.frameworks)} | ${frameworksText(newMeta?.frameworks)} |")
+        // Spec §14.43: rows for the passthrough fields only when they differ, so an edit that touches none of them renders
+        // exactly the three rows it always did.
+        val oldAuthors = oldMeta?.authors ?: emptyList()
+        val newAuthors = newMeta?.authors ?: emptyList()
+        if (oldAuthors != newAuthors) sb.appendLine("| Authors | ${authorsText(oldAuthors)} | ${authorsText(newAuthors)} |")
+        val oldResources = oldMeta?.relatedResources ?: emptyList()
+        val newResources = newMeta?.relatedResources ?: emptyList()
+        if (oldResources != newResources) sb.appendLine("| Related resources | ${resourcesText(oldResources)} | ${resourcesText(newResources)} |")
+        val oldCustom = oldMeta?.customFields ?: emptyMap()
+        val newCustom = newMeta?.customFields ?: emptyMap()
+        if (oldCustom != newCustom) sb.appendLine("| Custom fields | ${customText(oldCustom)} | ${customText(newCustom)} |")
     }
+
+    private fun authorsText(authors: List<io.explico.model.Author>): String =
+        authors.takeIf { it.isNotEmpty() }?.joinToString(", ") { a -> if (a.name != null && a.email != null) "${a.name} <${a.email}>" else a.name ?: a.email.orEmpty() } ?: "—"
+
+    private fun resourcesText(resources: List<io.explico.model.RelatedResource>): String =
+        resources.takeIf { it.isNotEmpty() }?.joinToString(", ") { r -> if (r.description != null) "${r.description} (${r.ref})" else r.ref } ?: "—"
+
+    private fun customText(fields: Map<String, String>): String =
+        fields.takeIf { it.isNotEmpty() }?.entries?.joinToString(", ") { "${it.key}: ${it.value}" } ?: "—"
 
     private fun cellText(text: String?): String = text?.trimEnd()?.replace("\n", "<br>") ?: "—"
 

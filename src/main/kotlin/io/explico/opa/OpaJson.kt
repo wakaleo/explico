@@ -16,8 +16,15 @@
  */
 package io.explico.opa
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -61,23 +68,52 @@ internal data class OpaExpr(
 )
 
 /**
- * The two `custom:` fields explico READS. `custom` is free-form in OPA, so either can arrive in a
- * shape explico does not model (found by benchmarking real-world Rego: Trivy's checks declare
- * `frameworks` as an OBJECT of framework -> control ids, which strict list decoding turned into a
- * whole-load abort for 47 files). Held raw and interpreted leniently: a wrongly-shaped field is
- * treated exactly like an unrecognised key (ignored), never fatal; a list keeps only its string
- * entries, which are exactly what it declares.
+ * A rule's `custom:` METADATA, held RAW so no key is lost to `ignoreUnknownKeys`. `custom` is free-form in OPA, so any
+ * field can arrive in a shape explico does not model (found by benchmarking real-world Rego: Trivy's checks declare
+ * `frameworks` as an OBJECT of framework -> control ids, which strict list decoding turned into a whole-load abort for
+ * 47 files). It is interpreted leniently: a wrongly-shaped field is treated exactly like an unrecognised key (ignored),
+ * never fatal; a list keeps only its string entries, which are exactly what it declares. A `custom` that is not an object
+ * at all reads as empty.
+ *
+ * Reads `control-id` and `frameworks`; [customFields] (spec §14.43) surfaces every OTHER key whose value is a scalar or a
+ * list of scalars, and silently skips anything with structure -- never a guess at what a nested object means.
  */
-@Serializable
-internal data class OpaCustomAnnotation(
-    @SerialName("control-id") private val controlIdRaw: JsonElement? = null,
-    @SerialName("frameworks") private val frameworksRaw: JsonElement? = null,
-) {
-    val controlId: String? get() = (controlIdRaw as? JsonPrimitive)?.takeIf { it.isString }?.content
+@Serializable(with = OpaCustomAnnotationSerializer::class)
+internal data class OpaCustomAnnotation(val raw: JsonObject = JsonObject(emptyMap())) {
+    val controlId: String? get() = (raw["control-id"] as? JsonPrimitive)?.takeIf { it.isString }?.content
 
     val frameworks: List<String>
-        get() = (frameworksRaw as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content } ?: emptyList()
+        get() = (raw["frameworks"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content } ?: emptyList()
+
+    /** Every other key with a scalar / scalar-list value, as display text (a list comma-joined), sorted by key. */
+    val customFields: Map<String, String>
+        get() = raw.entries
+            .filter { it.key != "control-id" && it.key != "frameworks" }
+            .mapNotNull { (key, value) -> scalarText(value)?.let { key to it } }
+            .sortedBy { it.first }
+            .toMap(LinkedHashMap())
+
+    private fun scalarText(value: JsonElement): String? = when (value) {
+        is JsonPrimitive -> if (value is JsonNull) null else value.content
+        is JsonArray -> if (value.isNotEmpty() && value.all { it is JsonPrimitive && it !is JsonNull }) value.joinToString(", ") { (it as JsonPrimitive).content } else null
+        else -> null
+    }
 }
+
+internal object OpaCustomAnnotationSerializer : KSerializer<OpaCustomAnnotation> {
+    override val descriptor: SerialDescriptor = JsonElement.serializer().descriptor
+    override fun deserialize(decoder: Decoder): OpaCustomAnnotation =
+        OpaCustomAnnotation((decoder as JsonDecoder).decodeJsonElement() as? JsonObject ?: JsonObject(emptyMap()))
+    override fun serialize(encoder: Encoder, value: OpaCustomAnnotation) = encoder.encodeSerializableValue(JsonObject.serializer(), value.raw)
+}
+
+/** One entry of a rule's `authors:`; opa itself parses a bare `"Name <email>"` string into both fields. */
+@Serializable
+internal data class OpaAuthor(val name: String? = null, val email: String? = null)
+
+/** One entry of a rule's `related_resources:`; a bare URL string arrives as `{ref}` with no description. */
+@Serializable
+internal data class OpaRelatedResource(val ref: String? = null, val description: String? = null)
 
 /** A METADATA annotation body. Used both for `opa parse`'s package/rule annotations and nested inside [OpaInspectAnnotationEntry]. */
 @Serializable
@@ -86,6 +122,8 @@ internal data class OpaAnnotationBody(
     val title: String? = null,
     val description: String? = null,
     val custom: OpaCustomAnnotation? = null,
+    val authors: List<OpaAuthor> = emptyList(),
+    @SerialName("related_resources") val relatedResources: List<OpaRelatedResource> = emptyList(),
     val location: OpaLocation? = null,
 )
 

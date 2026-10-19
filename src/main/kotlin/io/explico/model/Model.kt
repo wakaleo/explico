@@ -79,7 +79,22 @@ public data class RuleMetadata(
     val description: String?,
     val controlId: String?,
     val frameworks: List<String>,
+    /** The rule's `authors:` METADATA (spec §14.43), in declared order. */
+    val authors: List<Author> = emptyList(),
+    /** The rule's `related_resources:` METADATA (spec §14.43), in declared order. */
+    val relatedResources: List<RelatedResource> = emptyList(),
+    /**
+     * Every `custom:` key other than `control-id`/`frameworks` whose value is a scalar or a list of scalars, as display text
+     * (a list comma-joined), sorted by key (spec §14.43). A key holding anything with structure is not carried at all.
+     */
+    val customFields: Map<String, String> = emptyMap(),
 )
+
+/** One entry of `authors:` METADATA; opa parses a bare `"Name <email>"` string into both fields. */
+public data class Author(val name: String?, val email: String?)
+
+/** One entry of `related_resources:` METADATA: a [ref] (usually a URL) and an optional [description]. */
+public data class RelatedResource(val ref: String, val description: String?)
 
 /**
  * A rule's `default` declaration, e.g. `default allow := false`. [sourceLocation] is the

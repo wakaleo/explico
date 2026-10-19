@@ -196,6 +196,21 @@ internal object Canonicalizer {
             put("controlId", metadata.controlId?.let { JsonPrimitive(it) } ?: JsonNull)
             put("description", metadata.description?.let { JsonPrimitive(it) } ?: JsonNull)
             put("frameworks", buildJsonArray { metadata.frameworks.forEach { add(JsonPrimitive(it)) } })
+            // Spec §14.43: authors / related resources / custom fields are shown on the card, so they are documentation
+            // that can change (DOCS_CHANGED). Keys in alphabetical order, like every other object here.
+            put("authors", buildJsonArray {
+                metadata.authors.forEach { add(buildJsonObject {
+                    put("email", it.email?.let { e -> JsonPrimitive(e) } ?: JsonNull)
+                    put("name", it.name?.let { n -> JsonPrimitive(n) } ?: JsonNull)
+                }) }
+            })
+            put("customFields", buildJsonObject { metadata.customFields.entries.sortedBy { it.key }.forEach { put(it.key, JsonPrimitive(it.value)) } })
+            put("relatedResources", buildJsonArray {
+                metadata.relatedResources.forEach { add(buildJsonObject {
+                    put("description", it.description?.let { d -> JsonPrimitive(d) } ?: JsonNull)
+                    put("ref", JsonPrimitive(it.ref))
+                }) }
+            })
             put("title", metadata.title?.let { JsonPrimitive(it) } ?: JsonNull)
         }
     }
