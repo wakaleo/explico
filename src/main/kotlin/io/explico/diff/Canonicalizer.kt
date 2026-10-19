@@ -49,6 +49,7 @@ internal object Canonicalizer {
         val aliases = mutableMapOf<String, String>()
         return buildJsonObject {
             put("conditions", buildJsonArray { body.conditions.forEach { add(canonicalCondition(it, aliases)) } })
+            put("messageArguments", buildJsonArray { body.messageArguments.forEach { add(canonicalOperand(it, aliases)) } })
             put("messageTemplate", body.messageTemplate?.let { JsonPrimitive(it) } ?: JsonNull)
             // Follow-up to review item 10: the value a conditional rule's body yields is part of
             // its logic -- changing "high" to "medium" with identical conditions must be

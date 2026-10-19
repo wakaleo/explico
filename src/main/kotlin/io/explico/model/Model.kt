@@ -123,6 +123,13 @@ public data class RuleBody(
      * for a rule with NO body at all; this is for a rule whose body has real conditions.
      */
     val yieldsValue: Operand? = null,
+    /**
+     * The plain input paths passed as arguments to the head message's `sprintf` (e.g. `input.name` in
+     * `sprintf("bucket %v is not encrypted", [input.name])`), in order. An argument that is not a plain path is
+     * omitted, and a literal or non-`sprintf` message has none. Needed by generated worked examples: a body whose
+     * message arguments are undefined produces no message at all, so a derived input must define them.
+     */
+    val messageArguments: List<Operand.Path> = emptyList(),
 )
 
 /** A single leaf condition within a rule body. */

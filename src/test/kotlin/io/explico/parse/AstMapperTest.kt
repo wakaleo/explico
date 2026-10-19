@@ -10,6 +10,7 @@ import io.explico.model.Operand
 import io.explico.model.Operator
 import io.explico.model.PathSegment
 import io.explico.model.PolicySet
+import io.explico.model.RuleBody
 import io.explico.model.RuleGroup
 import io.explico.opa.OpaInspectResult
 import io.explico.opa.OpaModule
@@ -3081,6 +3082,84 @@ class AstMapperTest {
         fun aComprehensionMissingItsBodyFallsBackInsteadOfCrashing() {
             val conditions = conditionsFor("""{"type":"setcomprehension","value":{"term":{"type":"var","value":"a"}}}""")
             assertThat((conditions.single() as Condition.Unrendered).reason).isEqualTo("comprehension")
+        }
+    }
+
+    @Nested
+    inner class MessageArguments {
+        // The plain input paths passed to the head message's sprintf (`RuleBody.messageArguments`): a generated example
+        // must define them, or the body produces no message at all.
+
+        private fun inputRef(vararg fields: String): String {
+            val segments = fields.joinToString("") { """,{"type":"string","value":"$it"}""" }
+            return """{"type":"ref","value":[{"type":"var","value":"input"}$segments]}"""
+        }
+
+        private fun someIn(variable: String, vararg collection: String) = """
+            {"index": 0, "location": {"row":1,"text":"${b64("some $variable in input.${collection.joinToString(".")}")}"}, "terms": {"symbols": [{"type":"call","value":[
+              {"type":"ref","value":[{"type":"var","value":"internal"},{"type":"string","value":"member_2"}]},
+              {"type":"var","value":"$variable"}, ${inputRef(*collection)}]}]}}"""
+
+        /** `msg := <valueJson>` as the second expression of a `deny contains msg` body (after [preceding]). */
+        private fun bodyWith(valueJson: String, text: String, vararg preceding: String): RuleBody {
+            val module = moduleOf(
+                """
+                {"package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                 "rules": [{"head": {"name": "deny", "key": {"type":"var","value":"msg"}, "ref": [{"type":"var","value":"deny"}]},
+                   "body": [${preceding.joinToString("") { "$it," }}
+                     {"index": 1, "location": {"row":2,"text":"${b64(text)}"}, "terms": [
+                       {"type":"ref","value":[{"type":"var","value":"${if (text.contains(":=")) "assign" else "eq"}"}]},
+                       {"type":"var","value":"msg"}, $valueJson]}]}]}
+                """.trimIndent()
+            )
+            return AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages.single().rules.single().bodies.single()
+        }
+
+        private fun sprintf(format: String, vararg argsJson: String) =
+            """{"type":"call","value":[{"type":"ref","value":[{"type":"var","value":"sprintf"}]},{"type":"string","value":"$format"},{"type":"array","value":[${argsJson.joinToString(",")}]}]}"""
+
+        private fun path(vararg fields: String) = Operand.Path((listOf("input") + fields).map { PathSegment.Field(it) })
+
+        @Test
+        fun plainInputPathsPassedToSprintfAreCollectedInOrder() {
+            val body = bodyWith(sprintf("%v/%v", inputRef("a"), inputRef("b", "c")), "msg := sprintf(\"%v/%v\", [input.a, input.b.c])")
+            assertThat(body.messageArguments).containsExactly(path("a"), path("b", "c"))
+        }
+
+        @Test
+        fun aVariableRootedArgumentIsResolvedThroughTheSymbolTable() {
+            val element = """{"type":"ref","value":[{"type":"var","value":"c"},{"type":"string","value":"name"}]}"""
+            val body = bodyWith(sprintf("%v", element), "msg := sprintf(\"%v\", [c.name])", someIn("c", "containers"))
+            assertThat(body.messageArguments).containsExactly(
+                Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("containers"), PathSegment.VarIndex("c"), PathSegment.Field("name"))),
+            )
+        }
+
+        @Test
+        fun anArgumentThatIsNotAPlainPathIsOmittedNotGuessed() {
+            val body = bodyWith(sprintf("%v %v", inputRef("a"), """{"type":"number","value":1}"""), "msg := sprintf(\"%v %v\", [input.a, 1])")
+            assertThat(body.messageArguments).containsExactly(path("a"))
+        }
+
+        @Test
+        fun aLiteralMessageHasNoArguments() {
+            assertThat(bodyWith("""{"type":"string","value":"fixed"}""", "msg := \"fixed\"").messageArguments).isEmpty()
+        }
+
+        @Test
+        fun aV0StyleUnificationMessageIsRecognisedToo() {
+            val body = bodyWith(sprintf("%v", inputRef("n")), "msg = sprintf(\"%v\", [input.n])")
+            assertThat(body.messageArguments).containsExactly(path("n"))
+        }
+
+        @Test
+        fun aBodyWithoutAMessageHasNoArguments() {
+            val module = moduleOf(
+                """{"package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                   "rules": [{"head": {"name": "flag", "ref": [{"type":"var","value":"flag"}]}, "body": []}]}"""
+            )
+            val set = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module)))
+            assertThat(set.packages.single().rules.flatMap { it.bodies }).allSatisfy { assertThat(it.messageArguments).isEmpty() }
         }
     }
 

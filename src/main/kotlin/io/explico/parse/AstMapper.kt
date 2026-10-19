@@ -574,6 +574,7 @@ internal object AstMapper {
         val messageVar = messageVarOf(rule.head)
         var producesValue: String? = null
         var messageTemplate: String? = null
+        var messageArguments: List<Operand.Path> = emptyList()
         val conditions = mutableListOf<Condition>()
 
         for (expr in rule.body) {
@@ -584,6 +585,7 @@ internal object AstMapper {
                 if (assignedMessage != null) {
                     producesValue = renderProducesValue(assignedMessage, symbolTable)
                     messageTemplate = computeMessageTemplate(assignedMessage)
+                    messageArguments = messageArgumentPaths(assignedMessage, symbolTable, ctx)
                     continue
                 }
             }
@@ -600,6 +602,7 @@ internal object AstMapper {
             // already in `symbolTable` when `limit := n` itself is resolved (follow-up to review
             // item 10).
             yieldsValue = yieldsValueOrNull(rule, symbolTable, ctx),
+            messageArguments = messageArguments,
         )
     }
 
@@ -1433,6 +1436,19 @@ internal object AstMapper {
         val (name, args) = decodeCallShape(decodeTermList(valueTerm.value)) ?: return null
         if (name != "sprintf" || args.size != 2) return null
         return args[0].takeIf { it.type == "string" }?.let { stringValueOf(it) }
+    }
+
+    /**
+     * The `sprintf` arguments of a message that resolve to plain input paths (see [RuleBody.messageArguments]); anything
+     * else -- a literal, a non-sprintf call, an argument that is not a path -- contributes nothing.
+     */
+    private fun messageArgumentPaths(valueTerm: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): List<Operand.Path> {
+        if (valueTerm.type != "call") return emptyList()
+        val (name, args) = decodeCallShape(decodeTermList(valueTerm.value)) ?: return emptyList()
+        if (name != "sprintf" || args.size != 2 || args[1].type != "array") return emptyList()
+        return decodeTermList(args[1].value).mapNotNull { arg ->
+            ((mapOperand(arg, symbolTable, ctx) as? ConstructResult.Ok)?.operand as? Operand.Path)
+        }
     }
 
     private fun renderProducesValue(valueTerm: OpaTerm, symbolTable: Map<String, VarBinding>): String? {

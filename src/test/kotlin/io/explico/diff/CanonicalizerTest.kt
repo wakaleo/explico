@@ -208,6 +208,20 @@ class CanonicalizerTest {
     }
 
     @Test
+    @DisplayName("message arguments: renaming the iteration variable that appears in the sprintf arguments changes nothing")
+    fun renamingAVariableUsedInTheMessageArgumentsYieldsTheSameLogicHash() {
+        assertThat(Canonicalizer.logicHash(denyRule("message-args-renamed-var"))).isEqualTo(Canonicalizer.logicHash(denyRule("message-args-base")))
+    }
+
+    @Test
+    @DisplayName("message arguments: passing a different path to sprintf (same format string, same conditions) changes the logic hash")
+    fun changingAMessageArgumentPathYieldsADifferentLogicHash() {
+        // Same conditions and the same format string, but the produced message now reads a different field:
+        // that is a change of behaviour, and was invisible to the hash before RuleBody.messageArguments existed.
+        assertThat(Canonicalizer.logicHash(denyRule("message-args-changed"))).isNotEqualTo(Canonicalizer.logicHash(denyRule("message-args-base")))
+    }
+
+    @Test
     fun aRuleWithNoMetadataHashesDifferentlyFromOneWithMetadata() {
         // exempt_service (acceptance pack) has no METADATA annotation at all.
         val noMetadataPolicySet = Explico.load(Path.of("src/test/resources/acceptance/policies/exemptions"))
