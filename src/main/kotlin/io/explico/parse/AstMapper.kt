@@ -148,6 +148,14 @@ private sealed interface ConstructResult {
  */
 private sealed interface VarBinding {
     data class Iteration(val collection: Operand.Path) : VarBinding
+
+    /**
+     * The KEY (or array index) variable of `some k, v in c`: it ranges over [collection]'s keys, so it is NOT
+     * an element of it -- rendering a bare `k` as `c ▸ [each k]` would claim the value at `k` where the
+     * policy tests the key itself. A bare use renders as the plain variable [Operand.Variable]; as an index
+     * (`m[k]`) it still reads `m ▸ [each k]`, which is exact; as a ref root (`k.x`) it falls back.
+     */
+    data class IterationKey(val collection: Operand.Path) : VarBinding
     data class Substitution(val path: Operand.Path) : VarBinding
     object NonPath : VarBinding
     object Parameter : VarBinding
@@ -855,9 +863,9 @@ internal object AstMapper {
         val (name, args) = decodeCallShape(decodeTermList(callTerm.value)) ?: return Condition.Unrendered(sourceText(expr.location), "unclassified")
         // `some v in c` desugars to internal.member_2(v, c); the two-variable form
         // `some k, v in c` (spec §14 backlog rank #1) desugars to internal.member_3(k, v, c) --
-        // confirmed via real `opa parse` output. Both k and v bind as VarBinding.Iteration against
-        // the same collection: Rego doesn't distinguish how a key vs. value loop variable can later
-        // be used, so neither does this mapper.
+        // confirmed via real `opa parse` output. v binds as VarBinding.Iteration (an element of the
+        // collection); k binds as VarBinding.IterationKey (its key/index), which must NOT render as an
+        // element -- see its KDoc.
         val (key, variable, collectionTerm) = when {
             name == "internal.member_2" && args.size == 2 && args[0].type == "var" ->
                 Triple(null, stringValueOf(args[0]), args[1])
@@ -877,7 +885,7 @@ internal object AstMapper {
         val collection = if (ruleCollection != null) ConstructResult.Ok(ruleCollection) else mapOperand(collectionTerm, symbolTable, ctx)
         val collectionPath = (collection as? ConstructResult.Ok)?.operand as? Operand.Path
             ?: return Condition.Unrendered(sourceText(expr.location), (collection as? ConstructResult.Unsupported)?.reason ?: "unclassified")
-        if (key != null) symbolTable[key] = VarBinding.Iteration(collectionPath)
+        if (key != null) symbolTable[key] = VarBinding.IterationKey(collectionPath)
         symbolTable[variable] = VarBinding.Iteration(collectionPath)
         return Condition.SomeIn(variable, collectionPath, key)
     }
@@ -996,7 +1004,7 @@ internal object AstMapper {
         when (val binding = symbolTable[stringValueOf(term)]) {
             is VarBinding.Iteration -> ConstructResult.Ok(Operand.Path(binding.collection.segments + PathSegment.VarIndex(stringValueOf(term))))
             is VarBinding.Substitution -> ConstructResult.Ok(Operand.Path(binding.path.segments))
-            VarBinding.NonPath -> ConstructResult.Ok(Operand.Variable(stringValueOf(term)))
+            VarBinding.NonPath, is VarBinding.IterationKey -> ConstructResult.Ok(Operand.Variable(stringValueOf(term)))
             VarBinding.Parameter -> ConstructResult.Ok(Operand.Parameter(stringValueOf(term)))
             is VarBinding.Expression -> ConstructResult.Ok(binding.operand)
             null -> {
@@ -1102,7 +1110,7 @@ internal object AstMapper {
                 val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
                 ConstructResult.Ok(Operand.ParameterPath(rootName, segments))
             }
-            VarBinding.NonPath, is VarBinding.Expression, null -> ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+            VarBinding.NonPath, is VarBinding.Expression, is VarBinding.IterationKey, null -> ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
         }
     }
 
@@ -1173,7 +1181,7 @@ internal object AstMapper {
                     val name = stringValueOf(term)
                     segments += when {
                         sourceText(term.location) == "_" -> PathSegment.AnyIndex
-                        symbolTable[name] is VarBinding.Iteration -> PathSegment.VarIndex(name)
+                        symbolTable[name] is VarBinding.Iteration || symbolTable[name] is VarBinding.IterationKey -> PathSegment.VarIndex(name)
                         else -> return null
                     }
                 }

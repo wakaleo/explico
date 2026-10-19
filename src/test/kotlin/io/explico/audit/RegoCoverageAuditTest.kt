@@ -129,14 +129,15 @@ class RegoCoverageAuditTest {
     @Test
     fun someKeyValueInObjectNowRendersFaithfullyPromotedThisSession() {
         // Promoted (spec §14 backlog rank #1): `some k, v in obj` desugars to internal.member_3
-        // and now binds BOTH k and v as iteration variables against the same collection, exactly
-        // like the single-variable form already binds one -- so later bare uses of either extend
-        // the collection's own breadcrumb with "[each k]"/"[each v]", instead of rendering as a
-        // bare, untraced `Operand.Variable`.
+        // and binds v as an iteration variable over the collection, like the single-variable form --
+        // later bare uses of v extend the collection's breadcrumb with "[each v]". The KEY variable k
+        // is NOT an element of the collection (it is the key itself), so a bare use renders as the
+        // plain variable `k`, introduced by the "for some k, v in ..." bullet; the earlier
+        // "[each k]" rendering claimed the value at k where the policy tests the key.
         val conditions = conditionsOf(loadProbe("06-some-kv-in-object.rego"), "deny")
         assertThat(conditions).hasSize(3)
         assertThat(render(conditions[0])).isEqualTo("for some k, v in `change ▸ metadata`")
-        assertThat(render(conditions[1])).isEqualTo("`change ▸ metadata ▸ [each k]` is `\"signed_off_by\"`")
+        assertThat(render(conditions[1])).isEqualTo("`k` is `\"signed_off_by\"`")
         assertThat(render(conditions[2])).isEqualTo("`change ▸ metadata ▸ [each v]` is `\"\"`")
     }
 

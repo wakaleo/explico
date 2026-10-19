@@ -1243,10 +1243,12 @@ class AstMapperTest {
         """.trimIndent()
 
         @Test
-        fun bindsBothKeyAndValueAndLaterBareUsesOfEachResolveThroughTheCollection() {
+        fun theValueResolvesThroughTheCollectionAndTheKeyIsAPlainVariable() {
             // `some k, v in input.change.approvals; v == "approved"; k == "release-manager"` -- spec
-            // §14 promotion: both k and v bind as iteration variables against the SAME collection,
-            // exactly like the single-variable form already binds one.
+            // §14 promotion: v binds as an iteration variable over the collection (an element of it);
+            // k is its KEY, so a bare use is the plain variable `k` -- rendering it as
+            // `approvals ▸ [each k]` (what this test used to pin) claimed the element at k where the
+            // policy tests the key itself.
             val module = moduleOf(
                 """
                 {
@@ -1304,9 +1306,7 @@ class AstMapperTest {
             )
 
             val keyComparison = body.conditions[2] as Condition.Comparison
-            assertThat((keyComparison.left as Operand.Path).segments).containsExactly(
-                PathSegment.Field("input"), PathSegment.Field("change"), PathSegment.Field("approvals"), PathSegment.VarIndex("k"),
-            )
+            assertThat(keyComparison.left).isEqualTo(Operand.Variable("k"))
         }
 
         @Test
