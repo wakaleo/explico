@@ -281,13 +281,13 @@ internal object AstMapper {
     private fun packagePath(module: OpaModule): String =
         module.pkg.path.drop(1).joinToString(".") { stringValueOf(it) }
 
-    /** Import alias -> fully-qualified package path, e.g. "exemptions" -> "release.exemptions". Non-`data.*` imports (e.g. `rego.v1`) are ignored. */
+    /** Import alias -> fully-qualified package path, e.g. "exemptions" -> "release.exemptions" (the `as` name when given, else the last path segment). Non-`data.*` imports (e.g. `rego.v1`) are ignored. */
     private fun resolveImportAliases(module: OpaModule): Map<String, String> =
         module.imports.mapNotNull { import ->
             val chain = decodeTermList(import.path.value)
             if (chain.isEmpty() || stringValueOf(chain.first()) != "data") return@mapNotNull null
             val packageSegments = chain.drop(1)
-            val alias = stringValueOf(packageSegments.last())
+            val alias = import.alias ?: stringValueOf(packageSegments.last())
             alias to packageSegments.joinToString(".") { stringValueOf(it) }
         }.toMap()
 
@@ -344,9 +344,8 @@ internal object AstMapper {
      * User-defined functions, same-package calls only (review item 8): package -> function name
      * -> declared parameter names, in order. `head.args` is null for an ordinary rule and a
      * (possibly empty) list of `"var"` terms for a function -- confirmed via a real `opa parse`
-     * run. Cross-package function calls are a disclosed, not-yet-handled limitation; only a
-     * bare, single-segment call name is ever looked up against this registry (see
-     * [mapCallShapedCondition]). The first definition found wins when a function has several
+     * run. A call is resolved against this registry by [resolveFunctionCall] -- same package, an
+     * import alias, or a full `data.` path. The first definition found wins when a function has several
      * overloaded bodies -- Rego requires consistent parameter names across them for the same
      * arity, so there is nothing to disambiguate.
      */
@@ -762,28 +761,40 @@ internal object AstMapper {
             val operands = mapped.filterIsInstance<ConstructResult.Ok>().map { it.operand }
             return Condition.BuiltinCall(name, operands, expr.negated)
         }
-        // A call to a user-defined function, same-package only (review item 8). `name` is already
-        // the bare, single-segment function name here (decodeCallShape's own dotted join of a
-        // one-element ref chain for a same-package call, confirmed via a real `opa parse` run) --
-        // a cross-package call (`helper.is_prod(...)`/`data.pkg.func(...)`) would need resolving
-        // through importAliases/ctx.currentPackage the same way ruleReferenceIfKnown does, which
-        // this promotion deliberately doesn't attempt yet (disclosed limitation). An argument that
-        // doesn't resolve at all (a comprehension) falls through to the generic fallback below,
-        // never a partially-faithful call.
-        if (isKnownFunctionCall(name, args.size, ctx)) {
+        // A call to a user-defined function (review item 8; cross-package via imports added after the
+        // real-world corpus benchmark): see [resolveFunctionCall]. An argument that doesn't resolve at
+        // all (a comprehension) falls through to the generic fallback below, never a
+        // partially-faithful call.
+        val target = resolveFunctionCall(name, args.size, ctx)
+        if (target != null) {
             val mapped = args.map { mapOperand(it, symbolTable, ctx) }
             val unsupported = mapped.filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
             if (unsupported == null) {
                 val operands = mapped.map { (it as ConstructResult.Ok).operand }
-                return Condition.FunctionCall(ctx.currentPackage, name, operands, expr.negated)
+                return Condition.FunctionCall(target.first, target.second, operands, expr.negated)
             }
         }
         return Condition.Unrendered(sourceText(expr.location), "function-call")
     }
 
-    /** A same-package user-defined function with matching arity -- the one resolution rule shared by condition- and operand-position calls. */
-    private fun isKnownFunctionCall(name: String, argCount: Int, ctx: MappingContext): Boolean =
-        ctx.functionRegistry[ctx.currentPackage]?.get(name)?.size == argCount
+    /**
+     * Resolves a call's dotted [name] to the (package, function) it names, or null when it names no
+     * user-defined function of exactly [argCount] parameters -- the one resolution rule shared by
+     * condition- and operand-position calls. Three spellings, all confirmed via real `opa parse`
+     * output: a bare name (this package), `<import alias>[.<sub package>].<fn>` (an `import data.x.y`
+     * or `import data.x.y as z`), and a full `data.<package>.<fn>` path. A package or function the
+     * loaded policy set does not define resolves to null (the caller falls back), never a guess.
+     */
+    private fun resolveFunctionCall(name: String, argCount: Int, ctx: MappingContext): Pair<String, String>? {
+        val segments = name.split('.')
+        val functionName = segments.last()
+        val packagePath = when {
+            segments.size == 1 -> ctx.currentPackage
+            segments[0] == "data" && segments.size >= 3 -> segments.subList(1, segments.size - 1).joinToString(".")
+            else -> ctx.importAliases[segments[0]]?.let { (listOf(it) + segments.subList(1, segments.size - 1)).joinToString(".") }
+        } ?: return null
+        return if (ctx.functionRegistry[packagePath]?.get(functionName)?.size == argCount) packagePath to functionName else null
+    }
 
     private inline fun buildComparisonLike(
         expr: OpaExpr,
@@ -1211,8 +1222,8 @@ internal object AstMapper {
         // Same-package user-defined function (coverage audit rank 4). An argument that is itself
         // Operand.Unrendered stays wrapped inside the call (like BuiltinCall), so the footer still
         // counts it; an Unsupported one already returned above.
-        if (isKnownFunctionCall(name, args.size, ctx)) {
-            return ConstructResult.Ok(Operand.FunctionCall(ctx.currentPackage, name, operands))
+        resolveFunctionCall(name, args.size, ctx)?.let { (packagePath, functionName) ->
+            return ConstructResult.Ok(Operand.FunctionCall(packagePath, functionName, operands))
         }
         return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
     }

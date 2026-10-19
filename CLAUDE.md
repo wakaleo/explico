@@ -1331,3 +1331,10 @@ entry in `showcaseExamples` in `build.gradle.kts`.
 whose body templates match it; any ambiguity (boolean rule, missing template, message matching zero or
 several groups) means NO examples for that name's cards -- never a copy onto every card. A name is now
 evaluated once (it was once per card, which also repeated the example list). A split default entry gets none.
+
+## Cross-package function calls (spec §14.32)
+
+`AstMapper.resolveFunctionCall(name, argCount, ctx)` is the single resolution rule for condition- and
+operand-position calls: bare name (this package), import alias (`as` honoured), or `data.<pkg>.<fn>`; target must be
+a loaded function of that arity. `FunctionCall.packagePath` is the defining package. Remaining call fallbacks on
+real code are mostly custom/external builtins -- correct as fallbacks. Use `Bench.java ... all` to measure.

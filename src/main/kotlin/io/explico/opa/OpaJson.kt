@@ -135,6 +135,8 @@ internal data class OpaPackage(
 @Serializable
 internal data class OpaImport(
     val path: OpaTerm,
+    /** The `as <alias>` name; absent for a plain import (the alias is then the path's last segment). */
+    val alias: String? = null,
     val location: OpaLocation? = null,
 )
 

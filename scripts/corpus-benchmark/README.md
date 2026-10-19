@@ -13,6 +13,11 @@ mkdir -p /tmp/out/trivy-checks
 java -cp "build/install/explico/lib/*" scripts/corpus-benchmark/Bench.java /tmp/corpus/trivy-checks /tmp/out/trivy-checks
 ```
 
+Optional third argument: `file` (default), `dir` or `all` -- how many files are loaded together. `dir` lets
+same-package helpers in sibling files resolve; `all` loads the whole corpus at once so cross-package calls and
+imports resolve too (one OPA rejection then fails the whole unit, so use it on all-Rego-v1 corpora such as
+Trivy). Rows in `results.tsv` are then per unit, not per file.
+
 Outputs, in `<out-dir>`:
 
 | File | Contents |
@@ -33,3 +38,15 @@ Reading `LOAD_FAIL`: an `OpaInvocationException` is OPA itself rejecting the fil
 *undefined function* because the file depends on another one that this one-file-at-a-time method does
 not load (an artifact of the method, not a bug). Anything else (`IllegalArgumentException`,
 `JsonDecodingException`, ...) is an explico bug.
+
+## Reading call fallbacks (finding from `dir` mode)
+
+Loading a directory at a time barely changes coverage (Gatekeeper 62%, conftest 60%, Trivy 60%, Regal 48%),
+because most unresolved plain-name calls are unresolvable by *any* tool: Trivy's `isManaged`/`result.new` are
+not defined in its Rego at all (OPA itself rejects the corpus loaded whole: `undefined function`), and
+Gatekeeper's `is_exempt`/`is_update` come from library templates concatenated at deploy time. A fallback is the
+correct rendering there. The real, resolvable gap is alias-qualified calls into an imported package
+(`kubernetes.command_has_flag(...)` after `import data.lib.kubernetes`).
+
+Measured effect of resolving cross-package calls (Trivy's Kubernetes checks plus `lib/kubernetes`, loaded whole
+with `all`, a one-line stub for Trivy's Go-side `result.new`): condition coverage 49% -> 63%, fallbacks 509 -> 352.

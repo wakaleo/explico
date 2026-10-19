@@ -127,13 +127,15 @@ class RealisticOperandFunctionCallsAcceptanceIT {
     }
 
     @Nested
-    @DisplayName("F — guard: a CROSS-PACKAGE call stays a raw unrendered operand (same-package calls only)")
+    @DisplayName("F — a CROSS-PACKAGE call resolves through its import and links into the other package's document")
     inner class CrossPackageCall {
         @Test
-        fun staysRawAndCounted() {
+        fun rendersAsALinkedResult() {
             val c = card("unknown")
-            assertThat(bullets(c).single()).contains("`other.helper(input.x)`")
-            assertThat(footer(c)).contains("1 unrendered value")
+            assertThat(bullets(c).single())
+                .contains("result of function [`helper`](funcvalues-other.md#funcvalues-other-helper)")
+                .doesNotContain("other.helper(input.x)")
+            assertThat(footer(c)).doesNotContain("unrendered value")
         }
     }
 

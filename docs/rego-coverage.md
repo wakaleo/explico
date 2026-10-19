@@ -1064,3 +1064,20 @@ list to begin with, since it's a bug fix rather than a coverage promotion.)
   confirming the exact real exception resurfaces as a test failure, then
   restoring it and confirming green again — the same standard this
   project's own build-verification passes are always held to.
+
+## Cross-package function calls
+
+A call into an imported package's function now renders exactly like a same-package one (condition position:
+"function [`f`](other-doc.md#anchor) is satisfied for ..."; operand position: "result of function ..."), linked into
+the defining package's document. Three spellings resolve, all via the loaded policy set: `alias.fn(...)` (an
+`import data.x.y`), `alias.fn(...)` with `import data.x.y as alias`, and a full `data.x.y.fn(...)` path; a parent-package
+import extends through the remaining segments (`lib.kube.fn` after `import data.lib`). Anything that names no loaded
+function of exactly that arity (package not loaded, unknown name, wrong arity, a builtin namespace like `strings.`)
+stays the verbatim fallback.
+
+Found along the way: `import ... as alias` was ignored (the last path segment was always used), which also affected
+rule references through an aliased import. Fixed in the same change.
+
+Measured by the corpus benchmark (`scripts/corpus-benchmark`, `all` mode): Trivy's Kubernetes checks with their
+library loaded, condition coverage 49% -> 63%. Calls that remain fallbacks are mostly unresolvable by design: Trivy's
+`isManaged`/`result.new` are Go-side custom builtins, and Gatekeeper's `is_exempt` comes from lib templates concatenated at deploy time.

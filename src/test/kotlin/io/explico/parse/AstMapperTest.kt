@@ -2677,6 +2677,96 @@ class AstMapperTest {
     }
 
     @Nested
+    inner class CrossPackageFunctionCalls {
+        // Real-world corpus benchmark follow-up: a call into an imported package's function.
+
+        private fun seg(vararg names: String) = names.joinToString(",") { """{"type":"string","value":"$it"}""" }
+
+        /** `lib.kube` defines `check(x)` (arity 1); `caller` imports per [importsJson] and calls [callName] with [argCount] arguments. */
+        private fun callerBody(importsJson: String, callNameJson: String, callText: String, argCount: Int): Condition {
+            val lib = moduleOf(
+                """
+                {"package": {"path": [{"type":"var","value":"data"},${seg("lib", "kube")}]},
+                 "rules": [{"head": {"name": "check", "args": [{"type":"var","value":"x"}], "ref": [{"type":"var","value":"check"}]}, "body": []}]}
+                """.trimIndent()
+            )
+            val args = (1..argCount).joinToString(",") { """{"type":"ref","value":[{"type":"var","value":"input"},${seg("a$it")}]}""" }
+            val caller = moduleOf(
+                """
+                {"package": {"path": [{"type":"var","value":"data"},${seg("caller")}]},
+                 "imports": [$importsJson],
+                 "rules": [{"head": {"name": "deny", "ref": [{"type":"var","value":"deny"}]},
+                   "body": [{"index": 0, "location": {"row":1,"text":"${b64(callText)}"},
+                     "terms": [{"type":"ref","value":[$callNameJson]}, $args]}]}]}
+                """.trimIndent()
+            )
+            val set = AstMapper.mapPolicySet(listOf(ParsedFile("lib.rego", lib), ParsedFile("caller.rego", caller)))
+            return set.packages.single { it.path == "caller" }.rules.single().bodies.single().conditions.single()
+        }
+
+        private fun importOf(alias: String?, vararg path: String) =
+            """{"path": {"type":"ref","value":[{"type":"var","value":"data"},${seg(*path)}]}${alias?.let { ""","alias":"$it"""" } ?: ""}}"""
+
+        private fun assertResolved(condition: Condition) {
+            val call = condition as Condition.FunctionCall
+            assertThat(call.packagePath).isEqualTo("lib.kube")
+            assertThat(call.functionName).isEqualTo("check")
+        }
+
+        @Test
+        fun anImportAliasLeadsToTheDefiningPackage() {
+            assertResolved(callerBody(importOf(null, "lib", "kube"), """{"type":"var","value":"kube"},${seg("check")}""", "kube.check(input.a1)", 1))
+        }
+
+        @Test
+        fun anExplicitAsAliasReplacesTheLastPathSegment() {
+            assertResolved(callerBody(importOf("k", "lib", "kube"), """{"type":"var","value":"k"},${seg("check")}""", "k.check(input.a1)", 1))
+        }
+
+        @Test
+        fun theOriginalNameIsNotAnAliasOnceRenamed() {
+            // `import data.lib.kube as k` makes `kube` undefined in Rego; the mapper must not resolve it either.
+            val c = callerBody(importOf("k", "lib", "kube"), """{"type":"var","value":"kube"},${seg("check")}""", "kube.check(input.a1)", 1)
+            assertThat((c as Condition.Unrendered).reason).isEqualTo("function-call")
+        }
+
+        @Test
+        fun aParentPackageImportExtendsThroughTheRemainingSegments() {
+            assertResolved(callerBody(importOf(null, "lib"), """{"type":"var","value":"lib"},${seg("kube", "check")}""", "lib.kube.check(input.a1)", 1))
+        }
+
+        @Test
+        fun aFullDataPathNeedsNoImport() {
+            assertResolved(callerBody("", """{"type":"var","value":"data"},${seg("lib", "kube", "check")}""", "data.lib.kube.check(input.a1)", 1))
+        }
+
+        @Test
+        fun anArityMismatchStaysAFallback() {
+            val c = callerBody(importOf(null, "lib", "kube"), """{"type":"var","value":"kube"},${seg("check")}""", "kube.check(input.a1, input.a2)", 2)
+            assertThat((c as Condition.Unrendered).reason).isEqualTo("function-call")
+        }
+
+        @Test
+        fun anUndefinedFunctionInALoadedPackageStaysAFallback() {
+            val c = callerBody(importOf(null, "lib", "kube"), """{"type":"var","value":"kube"},${seg("missing")}""", "kube.missing(input.a1)", 1)
+            assertThat((c as Condition.Unrendered).reason).isEqualTo("function-call")
+        }
+
+        @Test
+        fun aPackageThatIsNotLoadedStaysAFallback() {
+            val c = callerBody(importOf(null, "other", "pkg"), """{"type":"var","value":"pkg"},${seg("check")}""", "pkg.check(input.a1)", 1)
+            assertThat((c as Condition.Unrendered).reason).isEqualTo("function-call")
+        }
+
+        @Test
+        fun aBuiltinNamespaceIsNeverMistakenForAPackage() {
+            // `strings.any_prefix_match` with no `import data.strings`: no alias, not a data path.
+            val c = callerBody("", """{"type":"var","value":"strings"},${seg("any_prefix_match")}""", "strings.any_prefix_match(input.a1)", 1)
+            assertThat((c as Condition.Unrendered).reason).isEqualTo("function-call")
+        }
+    }
+
+    @Nested
     inner class FunctionCallsAndMessagePlaceholders {
         // Review items 8-9.
 

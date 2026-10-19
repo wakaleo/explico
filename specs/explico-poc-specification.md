@@ -1603,3 +1603,12 @@ body `messageTemplate`s match it, with situation labels numbered within that gro
 never guessed", anything not attributable with certainty (boolean rules, a body without a template, a message
 matching no group or several groups) yields no worked examples for those cards. A split default entry gets none.
 Pack goldens and `docs/sample-output` are unchanged.
+
+### 14.32 Cross-package function calls
+
+`AstMapper.resolveFunctionCall` replaces the same-package-only check: a call's dotted name resolves to a
+(package, function) through the module's imports (honouring `import ... as`) or a full `data.` path, and must
+match a loaded function of exactly that arity; otherwise the call stays `Unrendered("function-call")`.
+`Condition.FunctionCall`/`Operand.FunctionCall.packagePath` is the DEFINING package (already hashed by the
+`Canonicalizer`, so renaming an import alias does not change a logic hash but retargeting a call does).
+`OpaImport` gained `alias`; `import ... as` was previously ignored. Benchmarked: Trivy Kubernetes checks 49% -> 63%.

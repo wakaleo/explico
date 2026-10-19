@@ -148,10 +148,9 @@ public sealed interface Condition {
     public data class RuleReference(val packagePath: String, val ruleName: String, val negated: Boolean) : Condition
 
     /**
-     * A call to a user-defined function in the same package (review item 8), e.g.
+     * A call to a user-defined function (review item 8; same package, an import alias or a full `data.` path -- [packagePath] is the DEFINING package), e.g.
      * `not is_exempt(input.request.namespace)`. [args] are the call's own arguments, each resolved
-     * through the same operand mapping every other position uses -- a cross-package call is not
-     * yet recognised and stays [Unrendered] (disclosed limitation).
+     * through the same operand mapping every other position uses.
      */
     public data class FunctionCall(val packagePath: String, val functionName: String, val args: List<Operand>, val negated: Boolean) : Condition
 
@@ -206,8 +205,8 @@ public sealed interface Operand {
      * The result of a same-package call to a user-defined function, used as an operand (coverage
      * audit rank 4), e.g. `severity_of(input.finding.level) >= 2`. The operand-position counterpart
      * of [Condition.FunctionCall]: rendered as a link to the function's own card plus its humanized
-     * arguments, never inlining the function's logic. Cross-package calls and calls with an
-     * unmappable argument are not promoted and stay [Unrendered].
+     * arguments, never inlining the function's logic. A call that names no loaded function of that arity, or
+     * has an unmappable argument, is not promoted and stays [Unrendered].
      */
     public data class FunctionCall(val packagePath: String, val functionName: String, val args: List<Operand>) : Operand
 
