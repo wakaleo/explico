@@ -1716,3 +1716,30 @@ Added after a review of the real output from a compliance owner's seat; none of 
 - **Not done / disclosed.** No line numbers or source URLs in "defined in"; METADATA text (titles, framework strings) is still inserted into
   Markdown unescaped, as everywhere else, so a `]` or `|` in a title breaks its link or table row.
 
+### 14.41 Reference data values (`--data` on its own)
+
+A compliance reader sees `` `data ▸ release ▸ exempt services` `` on a card but not what the list contains. When `Explico.render` is
+given a `dataDir` -- independent of `--examples` -- every card whose bodies read a plain `data.*` document gets a `**Reference
+data**` block after its conditions (before worked examples), one bullet per distinct path in first-appearance order: breadcrumb,
+then OPA's own value for `data.<path>` as compact JSON, resolved by `opa eval` with no `--input` (never read or parsed in Kotlin).
+- **Plain prefix only.** Each path is truncated to its segments up to (not including) the first iterated/dynamic segment --
+  `ReferenceData.plainPrefix` -- so `data.limits.owners[owner].name` dedupes with the `some owner in data.limits.owners` collection
+  into one bullet for `` `data ▸ limits ▸ owners` ``. Recurses into builtin-call, function-call and comprehension arguments.
+- **Never a loaded rule or package, or an ancestor of one.** `ReferenceData.namesALoadedRuleOrPackage` excludes any plain prefix that
+  matches a loaded package's path, a loaded package plus one of its rule names at any depth, or a strict ANCESTOR of a loaded
+  package's path -- confirmed empirically (`opa eval data.release` over a `release.*`-packaged policy set evaluates every rule in
+  every one of those packages) that an ancestor query is the same risk as an exact match, one level up. This is also what makes the
+  feature provably safe: an accepted path never overlaps any loaded package's namespace, so it cannot evaluate Rego logic.
+- **Undefined is distinct from JSON `null`.** `OpaRunner.evalDataPath` checks for the `result`/`expressions` entry itself, not for a
+  non-null decoded value -- a CHALLENGE finding: kotlinx-serialization decodes a real JSON `null` to Kotlin null too, so chaining
+  straight through would have reported a genuinely defined `null` value as undefined. A truly undefined path (opa's JSON carries no
+  `result` entry) renders `not defined in the supplied data`.
+- **Display:** an array over 5 elements shows the first 5 then `…` and `(N items)`; anything else over 200 compact-JSON characters is
+  cut with a trailing `…`. A one-line footer (`*Values are read from the supplied data by OPA at generation time.*`) follows the
+  block. `MarkdownRenderer.renderCard`/`renderPackage` take the resolved values as `Map<Operand.Path, JsonElement?>?`, null (not
+  empty) meaning no `dataDir` at all, so existing direct unit-test callers are unaffected.
+- **One `opa eval` per distinct path for the whole render**, deduped in `Explico.resolveReferenceDataValues` across every rule in
+  the policy set -- not per card -- before any document is rendered.
+- **Out of scope:** input paths (worked examples already show those), data formats beyond what `opa eval --data` reads, redaction
+  (the supplied data is copied into the docs verbatim -- see SECURITY.md/user-guide.md). The diff report has no `dataDir` and is
+  unaffected.

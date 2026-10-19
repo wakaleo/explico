@@ -8,6 +8,9 @@ A new opt-in feature, and fixes for two defects found while building it. Recomme
   each rule's conditions where the author's own fixtures leave a gap: inputs that satisfy a rule body and "near-misses" that break exactly one
   condition, each **verified by `opa eval`** and shown in a separate, labelled *Generated examples* section with mechanical names. Off by
   default (output is byte-identical without it). Bodies it cannot model get none.
+- **Added:** a *Reference data* section on a card that reads a plain `data.*` document (e.g. an exemption list): shows what the
+  supplied data actually holds, resolved by `opa eval` and never a loaded rule's own value. Works with `--data` alone, with no
+  `--examples` needed.
 - **Added:** a policy digest -- a SHA-256 over the policy's `.rego` files (line endings normalised, examples/data/tool version excluded) --
   shown under the title of `index.md` and, shortened, at the end of every package document, so a reader can tell which policy version a
   document describes.

@@ -11,7 +11,9 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.streams.toList
@@ -71,6 +73,29 @@ class OpaRunnerSmokeTest {
         } finally {
             Files.deleteIfExists(inputFile)
         }
+    }
+
+    @Test
+    fun evalsDataPathAgainstTheSuppliedDataDirectly() {
+        val value = OpaRunner.evalDataPath(listOf(dataDir), listOf("release", "exempt_services"))
+        assertThat(value?.jsonArray?.map { it.jsonPrimitive.content }).containsExactly("legacy-batch")
+    }
+
+    @Test
+    fun evalDataPathReturnsNullForAPathUndefinedInTheSuppliedData() {
+        assertThat(OpaRunner.evalDataPath(listOf(dataDir), listOf("release", "no_such_document"))).isNull()
+    }
+
+    @Test
+    @DisplayName("CHALLENGE: a real JSON null value is distinct from an undefined path, not conflated into the same Kotlin null")
+    fun evalDataPathDistinguishesARealJsonNullFromUndefined(@TempDir tempDir: Path) {
+        val dataFile = tempDir.resolve("data.json")
+        Files.writeString(dataFile, """{"x": null}""")
+
+        val value = OpaRunner.evalDataPath(listOf(dataFile), listOf("x"))
+
+        assertThat(value).isNotNull() // defined: a real JsonNull, not the "undefined" Kotlin null
+        assertThat(value).isInstanceOf(kotlinx.serialization.json.JsonNull::class.java)
     }
 
     @Test

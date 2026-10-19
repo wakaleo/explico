@@ -1412,3 +1412,17 @@ candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFI
   regenerated after line-by-line review; `diff-all-categories` unchanged.
 - CHALLENGE found: a framework listed twice in one rule's METADATA duplicated its link (fixed with `distinct()`).
 
+## Reference data values (spec §14.41)
+
+- `ReferenceData.kt`: `referencedDataPaths` collects distinct `data.*` plain prefixes (truncated before the first dynamic segment;
+  recurses into BuiltinCall/FunctionCall/Comprehension), then excludes anything naming a loaded rule, package, or a strict ANCESTOR
+  of a loaded package -- the ancestor check matters because `opa eval` of an ancestor evaluates every nested rule (confirmed via a
+  real `opa eval data.release` run over the pack). This is also the feature's safety argument: an accepted path never overlaps a
+  loaded package, so `OpaRunner.evalDataPath` can never execute Rego logic.
+- `OpaRunner.evalDataPath` distinguishes "undefined" (no `result` entry) from a real JSON `null` value by checking for the entry
+  itself, not a non-null `.value` -- CHALLENGE found kotlinx-serialization decodes both to Kotlin null otherwise.
+- `dataValues: Map<Operand.Path, JsonElement?>?` on `renderCard`/`renderPackage`, null (not empty) = no `dataDir` at all. Resolved
+  once per distinct path across the whole policy set in `Explico.resolveReferenceDataValues`, never per card.
+- Goldens/docs: `release-exemptions.md`, `release-governance.md` and the matching `docs/sample-output` files gained the block (the
+  pack's own `--data`); `docs/showcase/api-authorization.md` gained one too (a dynamic-key path truncating to `data ▸ grants`).
+  `diff-all-categories` unchanged -- the diff report has no `dataDir`.

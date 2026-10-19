@@ -1,0 +1,8 @@
+{
+  "limits": {
+    "regions": ["eu-west-1", "eu-west-2", "eu-central-1", "us-east-1", "us-east-2", "ap-south-1", "ap-northeast-1"],
+    "settings": {
+      "owners": [{"name": "ann"}, {"name": "bob"}]
+    }
+  }
+}

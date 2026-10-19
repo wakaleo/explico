@@ -67,6 +67,12 @@ inside a freeze window, and all mandatory checks must have passed.
 
 *Produces:* "not all mandatory checks passed"
 
+**Reference data**
+
+- `data ▸ release ▸ freeze windows`: `[{"finish":1767657600,"name":"year-end change freeze","start":1766966400}]`
+
+*Values are read from the supplied data by OPA at generation time.*
+
 **Worked examples**
 
 - **unsigned artifact in freeze window** — ❌ denied

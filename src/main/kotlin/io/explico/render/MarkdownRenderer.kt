@@ -12,6 +12,7 @@ import io.explico.model.PolicyPackage
 import io.explico.model.PolicySet
 import io.explico.model.RuleBody
 import io.explico.model.RuleGroup
+import kotlinx.serialization.json.JsonElement
 
 internal object MarkdownRenderer {
 
@@ -24,6 +25,8 @@ internal object MarkdownRenderer {
         generatedByRuleIndex: Map<Int, GeneratedExamples> = emptyMap(),
         /** The full policy digest (spec §14.40), if the caller computed one; null prints no digest line at all. */
         policyDigest: String? = null,
+        /** Spec §14.41's resolved `data.*` values for the whole render; null means no `dataDir` was supplied. */
+        dataValues: Map<Operand.Path, JsonElement?>? = null,
     ): String {
         val sb = StringBuilder()
         sb.appendLine("# Package `${pkg.path}`")
@@ -52,6 +55,7 @@ internal object MarkdownRenderer {
                     WorkedExamples.forGroup(rule, pkg, examplesByRule[rule.name] ?: emptyList()),
                     anchorIds[index],
                     generatedExamples = generatedByRuleIndex[index],
+                    dataValues = dataValues,
                 ),
             )
             sb.appendLine()
@@ -83,6 +87,11 @@ internal object MarkdownRenderer {
         isLinkable: (packagePath: String, ruleName: String) -> Boolean = { _, _ -> true },
         /** Verified generated examples for this card (spec §14.39); null or empty renders nothing. */
         generatedExamples: GeneratedExamples? = null,
+        /**
+         * Every `data.*` path resolved for this render (spec §14.41), keyed by [ReferenceData.referencedDataPaths]'
+         * own plain-prefix paths; null means no `dataDir` was supplied at all (the feature is off, not just empty).
+         */
+        dataValues: Map<Operand.Path, JsonElement?>? = null,
     ): String {
         val sb = StringBuilder()
         // Review item 18: an explicit anchor, because links target the control-id / package-rulename
@@ -109,6 +118,7 @@ internal object MarkdownRenderer {
             else -> appendSingleBody(sb, rule.bodies.single(), anchorFor, functionAnchorFor, ruleValueAnchorFor)
         }
 
+        appendReferenceData(sb, rule, policySet, dataValues)
         appendWorkedExamples(sb, rule, workedExamples)
         if (generatedExamples != null) appendGeneratedExamples(sb, rule, generatedExamples, anchorFor, functionAnchorFor, ruleValueAnchorFor)
         appendCoverageFooter(sb, rule)
@@ -215,6 +225,28 @@ internal object MarkdownRenderer {
     }
 
     /** Spec §6.7: up to 3 matching + 2 non-matching fixtures, each with its produced message(s) and referenced-path values. */
+    /**
+     * Spec §14.41: what every `data.*` document this rule's bodies actually read resolves to in the supplied
+     * data -- a compliance reader sees `` `data ▸ release ▸ exempt services` `` on a card but not what it holds.
+     * Nothing at all when [dataValues] is null (no `dataDir` supplied) or the rule reads no plain data document.
+     */
+    private fun appendReferenceData(sb: StringBuilder, rule: RuleGroup, policySet: PolicySet, dataValues: Map<Operand.Path, JsonElement?>?) {
+        if (dataValues == null) return
+        val paths = ReferenceData.referencedDataPaths(rule, policySet)
+        if (paths.isEmpty()) return
+        sb.appendLine("**Reference data**")
+        sb.appendLine()
+        for (path in paths) {
+            val breadcrumb = PathHumanizer.humanize(path.segments).rendered
+            val resolved = dataValues[path]
+            val valueText = if (resolved == null) ReferenceData.formatValue(null) else "`${ReferenceData.formatValue(resolved)}`"
+            sb.appendLine("- $breadcrumb: $valueText")
+        }
+        sb.appendLine()
+        sb.appendLine("*Values are read from the supplied data by OPA at generation time.*")
+        sb.appendLine()
+    }
+
     private fun appendWorkedExamples(sb: StringBuilder, rule: RuleGroup, outcomes: List<WorkedExample>) {
         val selected = WorkedExamples.select(outcomes)
         if (selected.isEmpty()) return

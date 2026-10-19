@@ -20,6 +20,10 @@ Only the latest release receives fixes (0.x: the API may still change). Releases
   `net.lookup_ip_addr`, and `opa.runtime`, which exposes environment variables). **Do not render worked examples for a
   policy you do not trust**, and run example generation in an environment without credentials or network access you are
   unwilling to expose. The same applies to the `Explico.render(..., examples = ...)` library call.
+- **`--data` on its own also runs `opa eval`, for the Reference-data section on a card** -- but each `data.*` path is
+  checked first and only queried when it names no loaded rule or package (or an ancestor of one), so this call never
+  evaluates Rego rule logic and cannot reach a builtin. The supplied data is still copied into the rendered Markdown
+  verbatim, same as any other value shown on a card.
 - **explico drives an external `opa` binary.** It uses the `opa` on `PATH` or the one named by `OPA_BIN`. Install `opa`
   from a source you trust. `explico demo --fetch-opa` downloads `opa` from the official GitHub release and verifies its
   SHA-256 checksum against the release's own checksum file.

@@ -20,7 +20,7 @@ explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--r
 | `<policyDir>` | yes | Directory containing `.rego` policy files. Scanned recursively. |
 | `--out <outDir>` | yes | Output directory for the rendered Markdown. **Fully replaced on every run** — the whole directory is deleted and rewritten, so don't point it at a directory with other content in it. |
 | `--examples <dir>` | no | Directory of worked-example fixtures (`*.json`, spec §6.7's format — see `policy-authoring.md`). When supplied, control cards gain a **Worked examples** section and `index.md` gains an example-coverage column. |
-| `--data <dir>` | no | A data document (or directory) made available to `opa eval` alongside `--examples`, for policies that reference `data.*` paths beyond the fixture's own `input`. |
+| `--data <dir>` | no | A data document (or directory) made available to `opa eval`, for policies that reference `data.*` paths beyond a fixture's own `input`. Independent of `--examples`: supplying it alone (no fixtures at all) also runs `opa eval` -- see *Reference data* below -- and makes every card whose bodies read a plain `data.*` document show what that document holds. |
 | `--generate-examples` | no | Also derive worked examples from each rule's conditions where `--examples` leaves a gap (each verified by `opa eval`; labelled as generated; runs the policy). See *Generated examples* below. |
 | `--rego-version v1\|v0` | no | The Rego syntax of the policies: `v1` (default) or `v0` (legacy: `deny[msg] { ... }` with no `if`/`contains`, as in the Gatekeeper library). Passed to every `opa` call as `--v0-compatible`. Never auto-detected; v0 mode applies to the whole directory (v1 files that `import rego.v1` still parse). The `opa` binary must be 1.x either way. `diff` applies it to both directories. |
 
@@ -57,6 +57,28 @@ Rendering coverage: 22 of 23 conditions (95%)
   It is fine for typical policy sets, but expect it to take noticeably longer than a plain render on a very large package.
 - The CLI prints `Generated examples for N of M rules` after the coverage line. The index's *Example coverage* column still reflects
   **only your** fixtures: generated examples are illustrations, not evidence that the author considered the case.
+
+### Reference data (`--data`)
+
+Supplying `--data` (library: a non-null `dataDir`) on its own -- no `--examples` needed -- also makes every card whose bodies read a
+plain `data.*` document show what that document actually holds in the supplied data, resolved by `opa eval`:
+
+```markdown
+**Reference data**
+
+- `data ▸ release ▸ exempt services`: `["legacy-batch"]`
+
+*Values are read from the supplied data by OPA at generation time.*
+```
+
+- **Only plain data, never policy code:** a `data.*` path that names a loaded rule or package (or any ancestor of one -- `opa eval` of
+  an ancestor evaluates every rule nested under it) is never shown here; it's already a link or breadcrumb to that rule's own card.
+- **Only the plain prefix:** `data.limits.owners[owner].name` (after `some owner in data.limits.owners`) shows one bullet for
+  `` `data ▸ limits ▸ owners` ``, the whole document -- not one per element.
+- **Undefined, not guessed:** a path the supplied data doesn't define says `not defined in the supplied data`, never a blank or a `0`.
+- **It runs the policy's data -- not its rules.** Each path is checked first and queried only if it names no loaded rule or package, so
+  this `opa eval` call never executes Rego logic; still, treat a `--data` document the same as any other input to `opa eval` (see
+  [Security considerations](#security-considerations)) -- it's copied into the rendered Markdown verbatim.
 
 ### `explico diff`
 
@@ -444,11 +466,14 @@ to exit code `0`.
 
 ## Security considerations
 
-- **`render` without `--examples` only parses.** It runs `opa parse` and `opa inspect`, which read the Rego but never
-  evaluate it, so it is safe on untrusted policies.
+- **`render` with neither `--examples` nor `--data` only parses.** It runs `opa parse` and `opa inspect`, which read
+  the Rego but never evaluate it, so it is safe on untrusted policies.
 - **`render --examples` (and `Explico.render(..., examples)`) executes the policy.** Each fixture is run through
   `opa eval`. Rego builtins can reach outside the process (`http.send`, `net.lookup_ip_addr`, `opa.runtime` exposing
   environment variables). Only generate worked examples for policies you trust, in an environment where that is acceptable.
+- **`render --data` on its own also runs `opa eval`**, for the *Reference data* section (see above) -- but only ever
+  queries a plain `data.*` document, never a path that names a loaded rule or package, so it cannot trigger a Rego
+  builtin. Still, any data you supply is copied into the rendered Markdown verbatim.
 - **The `opa` binary is yours to trust.** explico uses the `opa` on `PATH` (or `OPA_BIN`). `explico demo --fetch-opa`
   downloads the official release and verifies its SHA-256 checksum.
 

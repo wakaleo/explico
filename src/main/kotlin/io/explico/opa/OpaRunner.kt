@@ -5,6 +5,7 @@ package io.explico.opa
 
 import io.explico.model.RegoVersion
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
@@ -69,6 +70,32 @@ internal object OpaRunner {
         val stdout = run(*withVersion(regoVersion, *args.toTypedArray()))
         val decoded = opaJson.decodeFromString(OpaEvalResult.serializer(), stdout)
         return decoded.result.firstOrNull()?.expressions?.firstOrNull()?.value ?: JsonObject(emptyMap())
+    }
+
+    /**
+     * Runs `opa eval --format json [--data <dir>]... data.<path>` (spec §14.41: reference data values) -- no
+     * `--input`, since a plain data-document query never reads `input`. Returns null if [path] is undefined in
+     * the supplied data (opa's own JSON then carries no `result` entry at all) -- never a guessed default, unlike
+     * [eval]'s `data.<package>` queries, which are always defined for a loaded package and so can safely default
+     * to an empty object.
+     *
+     * CHALLENGE finding: checks for the `result`/`expressions` ENTRY, not for a non-null `.value` -- a document
+     * whose real value is JSON `null` decodes [OpaEvalExpression.value] to Kotlin null too (confirmed empirically:
+     * kotlinx-serialization doesn't distinguish "the JSON literal `null`" from "the field was absent" for a
+     * nullable [JsonElement] property), so chaining straight through `?.value` would have silently reported a
+     * genuinely defined `null` value as "undefined" -- two different things this function must tell apart.
+     */
+    fun evalDataPath(dataDirs: List<Path>, path: List<String>, regoVersion: RegoVersion = RegoVersion.V1): JsonElement? {
+        val query = "data." + path.joinToString(".")
+        val args = buildList {
+            add("eval"); add("--format"); add("json")
+            dataDirs.forEach { add("--data"); add(dataArgument(it)) }
+            add(query)
+        }
+        val stdout = run(*withVersion(regoVersion, *args.toTypedArray()))
+        val decoded = opaJson.decodeFromString(OpaEvalResult.serializer(), stdout)
+        val expression = decoded.result.firstOrNull()?.expressions?.firstOrNull() ?: return null
+        return expression.value ?: JsonNull
     }
 
     /** Appends `--v0-compatible` for [RegoVersion.V0]; the flag is accepted by `parse`, `inspect` and `eval` alike. */

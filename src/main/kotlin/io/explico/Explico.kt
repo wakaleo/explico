@@ -6,6 +6,7 @@ import io.explico.diff.DiffRenderer
 import io.explico.diff.PolicyDiff
 import io.explico.generate.ExampleGenerator
 import io.explico.generate.GenerationResult
+import io.explico.model.Operand
 import io.explico.model.PolicySet
 import io.explico.model.RegoVersion
 import io.explico.opa.OpaRunner
@@ -16,9 +17,11 @@ import io.explico.render.CoverageSummary
 import io.explico.render.ExampleSet
 import io.explico.render.MarkdownRenderer
 import io.explico.render.PolicyDigest
+import io.explico.render.ReferenceData
 import io.explico.render.WorkedExample
 import io.explico.render.WorkedExamples
 import io.explico.render.parseExampleSet
+import kotlinx.serialization.json.JsonElement
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -98,6 +101,10 @@ public object Explico {
      * Every render also computes a SHA-256 over [policyDir]'s `.rego` files (spec §14.40) and shows it on `index.md` and
      * every package document, so a reader can confirm which exact policy version the documentation describes. It depends
      * only on the policy source -- never [examples], [dataDir], or explico's own version.
+     *
+     * When [dataDir] is supplied, a card whose bodies read a plain `data.*` document (not a loaded policy rule) also
+     * gains a **Reference data** section showing what that document holds, resolved by `opa eval`, never read or
+     * parsed in Kotlin (spec §14.41). Off entirely -- not merely empty -- without a [dataDir].
      */
     @JvmStatic
     @JvmOverloads
@@ -113,6 +120,9 @@ public object Explico {
         // Spec §14.40: ties every document to an exact policy version. Computed from policyDir alone -- never
         // examples, data, or explico's own version -- so it is independent of how render() was called.
         val policyDigest = PolicyDigest.of(policyDir)
+        // Spec §14.41: null (not just empty) when no dataDir was supplied -- the whole "Reference data" section
+        // is off, not merely empty, which is how MarkdownRenderer tells the two apart.
+        val dataValues = dataDir?.let { resolveReferenceDataValues(policySet, policyDir, it) }
 
         val files = policySet.packages.associate { pkg ->
             "${pkg.path.replace('.', '-')}.md" to MarkdownRenderer.renderPackage(
@@ -121,6 +131,7 @@ public object Explico {
                 examplesByPackage[pkg.path] ?: emptyMap(),
                 generated?.byPackage?.get(pkg.path) ?: emptyMap(),
                 policyDigest,
+                dataValues,
             )
         } + ("index.md" to MarkdownRenderer.renderIndex(policySet, examplesByPackage, policyDigest))
 
@@ -142,6 +153,21 @@ public object Explico {
     public fun diff(old: PolicySet, new: PolicySet): DiffReport {
         val entries = PolicyDiff.diff(old, new)
         return DiffReport(entries, DiffRenderer.render(entries, old, new))
+    }
+
+    /**
+     * Resolves every distinct `data.*` path any rule in [policySet] reads (spec §14.41), deduped across the
+     * whole render -- one `opa eval` per distinct path, not per card, so a path shared by several rules (or
+     * referenced from both the original collection and an iterated tail that truncates to the same prefix) is
+     * only ever evaluated once.
+     */
+    private fun resolveReferenceDataValues(policySet: PolicySet, policyDir: Path, dataDir: Path): Map<Operand.Path, JsonElement?> {
+        val paths = LinkedHashSet<Operand.Path>()
+        for (pkg in policySet.packages) {
+            for (rule in pkg.rules) paths.addAll(ReferenceData.referencedDataPaths(rule, policySet))
+        }
+        val dataDirs = listOf(policyDir, dataDir)
+        return paths.associateWith { path -> OpaRunner.evalDataPath(dataDirs, ReferenceData.dottedSegments(path), policySet.regoVersion) }
     }
 
     /** Derives and verifies generated examples; each candidate is evaluated through a short-lived temp input file. */

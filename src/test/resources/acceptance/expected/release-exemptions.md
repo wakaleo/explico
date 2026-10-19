@@ -14,6 +14,12 @@
 
 - `deployment ▸ service` is one of `data ▸ release ▸ exempt services`
 
+**Reference data**
+
+- `data ▸ release ▸ exempt services`: `["legacy-batch"]`
+
+*Values are read from the supplied data by OPA at generation time.*
+
 **Worked examples**
 
 - **exempt legacy service** — matched
