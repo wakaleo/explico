@@ -7,12 +7,15 @@ import com.github.ajalt.clikt.core.ProgramResult
 import com.github.ajalt.clikt.core.main
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
+import com.github.ajalt.clikt.parameters.types.choice
 import com.github.ajalt.clikt.parameters.types.path
 import io.explico.Explico
 import io.explico.diff.DuplicateControlIdException
+import io.explico.model.RegoVersion
 import io.explico.opa.OpaFetcher
 import io.explico.opa.OpaInvocationException
 import io.explico.opa.OpaRunner
@@ -31,6 +34,8 @@ fun main(args: Array<String>) {
         .main(args)
 }
 
+private fun parseRegoVersion(name: String): RegoVersion = if (name == "v0") RegoVersion.V0 else RegoVersion.V1
+
 private class RenderCommand : CliktCommand(name = "render") {
     private val policyDir by argument(help = "Directory containing .rego policy files")
         .path(mustExist = true, canBeFile = false)
@@ -39,11 +44,13 @@ private class RenderCommand : CliktCommand(name = "render") {
         .path(mustExist = true, canBeFile = false)
     private val dataDir by option("--data", help = "Data document/directory for worked-example evaluation")
         .path(mustExist = true)
+    private val regoVersion by option("--rego-version", help = "Rego syntax of the policies: v1 (default) or v0 (legacy, e.g. the Gatekeeper library)")
+        .choice("v1", "v0").default("v1")
 
     override fun run() {
         requireOpaOrExit()
         try {
-            val policySet = Explico.load(policyDir)
+            val policySet = Explico.load(policyDir, parseRegoVersion(regoVersion))
             val examples = examplesDir?.let { Explico.loadExamples(it) }
             val rendered = Explico.render(policySet, policyDir, examples, dataDir)
             replaceOutputDirectory(out, rendered.files)
@@ -60,12 +67,15 @@ private class DiffCommand : CliktCommand(name = "diff") {
     private val oldDir by argument(help = "Old policy directory").path(mustExist = true, canBeFile = false)
     private val newDir by argument(help = "New policy directory").path(mustExist = true, canBeFile = false)
     private val out by option("--out", help = "Output file for the change report").path().required()
+    private val regoVersion by option("--rego-version", help = "Rego syntax of the policies: v1 (default) or v0 (legacy, e.g. the Gatekeeper library)")
+        .choice("v1", "v0").default("v1")
+
 
     override fun run() {
         requireOpaOrExit()
         try {
-            val old = Explico.load(oldDir)
-            val new = Explico.load(newDir)
+            val old = Explico.load(oldDir, parseRegoVersion(regoVersion))
+            val new = Explico.load(newDir, parseRegoVersion(regoVersion))
             val report = Explico.diff(old, new)
             out.parent?.let { Files.createDirectories(it) }
             Files.writeString(out, report.markdown)

@@ -3,6 +3,7 @@
  */
 package io.explico.opa
 
+import io.explico.model.RegoVersion
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import java.nio.file.Path
@@ -43,14 +44,14 @@ internal object OpaRunner {
     }
 
     /** Runs `opa parse --format json --json-include locations <file>` and decodes the module AST. */
-    fun parse(file: Path): OpaModule {
-        val stdout = run("parse", "--format", "json", "--json-include", "locations", file.toString())
+    fun parse(file: Path, regoVersion: RegoVersion = RegoVersion.V1): OpaModule {
+        val stdout = run(*withVersion(regoVersion, "parse", "--format", "json", "--json-include", "locations", file.toString()))
         return opaJson.decodeFromString(OpaModule.serializer(), stdout)
     }
 
     /** Runs `opa inspect --annotations --format json <dir>` and decodes the METADATA annotations. */
-    fun inspect(dir: Path): OpaInspectResult {
-        val stdout = run("inspect", "--annotations", "--format", "json", dir.toString())
+    fun inspect(dir: Path, regoVersion: RegoVersion = RegoVersion.V1): OpaInspectResult {
+        val stdout = run(*withVersion(regoVersion, "inspect", "--annotations", "--format", "json", dir.toString()))
         return opaJson.decodeFromString(OpaInspectResult.serializer(), stdout)
     }
 
@@ -59,16 +60,20 @@ internal object OpaRunner {
      * returns the query's evaluated value (e.g. `data.<package>`'s rule-name -> value object), or
      * an empty object if the query was undefined.
      */
-    fun eval(inputFile: Path, dataDirs: List<Path>, query: String): JsonElement {
+    fun eval(inputFile: Path, dataDirs: List<Path>, query: String, regoVersion: RegoVersion = RegoVersion.V1): JsonElement {
         val args = buildList {
             add("eval"); add("--format"); add("json"); add("--input"); add(inputFile.toString())
             dataDirs.forEach { add("--data"); add(it.toString()) }
             add(query)
         }
-        val stdout = run(*args.toTypedArray())
+        val stdout = run(*withVersion(regoVersion, *args.toTypedArray()))
         val decoded = opaJson.decodeFromString(OpaEvalResult.serializer(), stdout)
         return decoded.result.firstOrNull()?.expressions?.firstOrNull()?.value ?: JsonObject(emptyMap())
     }
+
+    /** Appends `--v0-compatible` for [RegoVersion.V0]; the flag is accepted by `parse`, `inspect` and `eval` alike. */
+    private fun withVersion(regoVersion: RegoVersion, vararg args: String): Array<String> =
+        if (regoVersion == RegoVersion.V0) arrayOf(*args, "--v0-compatible") else arrayOf(*args)
 
     private fun detectedMajorVersion(): Int? {
         val output = try {

@@ -54,6 +54,25 @@ class CliProcessTest {
     }
 
     @Test
+    fun regoVersionV0RendersLegacySyntaxAndTheDefaultRejectsIt(@TempDir tempDir: Path) {
+        val legacy = Path.of("src/test/resources/realistic/rego-v0/policies").toAbsolutePath()
+        val out = tempDir.resolve("out")
+
+        val rejected = runCli(listOf("render", legacy.toString(), "--out", out.toString()), tempDir)
+        assertThat(rejected.exitCode).isEqualTo(2)
+
+        val accepted = runCli(listOf("render", legacy.toString(), "--out", out.toString(), "--rego-version", "v0"), tempDir)
+        assertThat(accepted.exitCode).isEqualTo(0)
+        assertThat(Files.exists(out.resolve("legacy-admission.md"))).isTrue()
+    }
+
+    @Test
+    fun anUnknownRegoVersionIsAUsageError(@TempDir tempDir: Path) {
+        val result = runCli(listOf("render", policiesDir.toString(), "--out", tempDir.resolve("o").toString(), "--rego-version", "v2"), tempDir)
+        assertThat(result.exitCode).isEqualTo(1)
+    }
+
+    @Test
     fun missingOpaExitsThreeWithAnActionableMessageAndNoStackTrace(@TempDir tempDir: Path) {
         val out = tempDir.resolve("out")
         val result = runCli(

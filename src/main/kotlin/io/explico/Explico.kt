@@ -5,6 +5,7 @@ import io.explico.diff.DiffEntry
 import io.explico.diff.DiffRenderer
 import io.explico.diff.PolicyDiff
 import io.explico.model.PolicySet
+import io.explico.model.RegoVersion
 import io.explico.opa.OpaRunner
 import io.explico.parse.AstMapper
 import io.explico.parse.ParsedFile
@@ -34,18 +35,23 @@ public data class DiffReport(val entries: List<DiffEntry>, val markdown: String)
  * passing explicit `null`s Kotlin's default-parameter syntax doesn't generate for Java.
  */
 public object Explico {
-    /** Parses every `.rego` file under [policyDir] (via the `opa` binary) into a [PolicySet]. */
+    /**
+     * Parses every `.rego` file under [policyDir] (via the `opa` binary) into a [PolicySet]. Pass
+     * [RegoVersion.V0] for policies written in the legacy Rego syntax (see [RegoVersion]); the default
+     * is [RegoVersion.V1], which is what OPA 1.x accepts without flags.
+     */
     @JvmStatic
-    public fun load(policyDir: Path): PolicySet {
+    @JvmOverloads
+    public fun load(policyDir: Path, regoVersion: RegoVersion = RegoVersion.V1): PolicySet {
         val regoFiles = Files.walk(policyDir).use { paths ->
             paths.filter { it.toString().endsWith(".rego") }.sorted().toList()
         }
         val parsedFiles = regoFiles.map { file ->
             val relativePath = policyDir.relativize(file).toString().replace(java.io.File.separatorChar, '/')
-            ParsedFile(relativePath, OpaRunner.parse(file))
+            ParsedFile(relativePath, OpaRunner.parse(file, regoVersion))
         }
-        val inspectResult = OpaRunner.inspect(policyDir)
-        return AstMapper.mapPolicySet(parsedFiles, inspectResult)
+        val inspectResult = OpaRunner.inspect(policyDir, regoVersion)
+        return AstMapper.mapPolicySet(parsedFiles, inspectResult).copy(regoVersion = regoVersion)
     }
 
     /**
@@ -108,7 +114,7 @@ public object Explico {
             val dataDirs = listOfNotNull(policyDir, dataDir)
             return policySet.packages.associate { pkg ->
                 pkg.path to WorkedExamples.evaluatePackage(examples.fixtures, pkg) { fixture ->
-                    OpaRunner.eval(inputFiles.getValue(fixture), dataDirs, "data.${pkg.path}")
+                    OpaRunner.eval(inputFiles.getValue(fixture), dataDirs, "data.${pkg.path}", policySet.regoVersion)
                 }
             }
         } finally {

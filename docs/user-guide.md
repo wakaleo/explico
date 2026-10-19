@@ -12,7 +12,7 @@ Four subcommands: `render`, `diff`, `version`, `demo`.
 ### `explico render`
 
 ```
-explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>]
+explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0]
 ```
 
 | Argument/flag | Required | Meaning |
@@ -21,6 +21,7 @@ explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>]
 | `--out <outDir>` | yes | Output directory for the rendered Markdown. **Fully replaced on every run** — the whole directory is deleted and rewritten, so don't point it at a directory with other content in it. |
 | `--examples <dir>` | no | Directory of worked-example fixtures (`*.json`, spec §6.7's format — see `policy-authoring.md`). When supplied, control cards gain a **Worked examples** section and `index.md` gains an example-coverage column. |
 | `--data <dir>` | no | A data document (or directory) made available to `opa eval` alongside `--examples`, for policies that reference `data.*` paths beyond the fixture's own `input`. |
+| `--rego-version v1\|v0` | no | The Rego syntax of the policies: `v1` (default) or `v0` (legacy: `deny[msg] { ... }` with no `if`/`contains`, as in the Gatekeeper library). Passed to every `opa` call as `--v0-compatible`. Never auto-detected; v0 mode applies to the whole directory (v1 files that `import rego.v1` still parse). The `opa` binary must be 1.x either way. `diff` applies it to both directories. |
 
 Writes one `<package-path>.md` file per Rego package plus `index.md`, and
 prints a one-line coverage summary to stdout, e.g.:
@@ -32,7 +33,7 @@ Rendering coverage: 21 of 23 conditions (91%)
 ### `explico diff`
 
 ```
-explico diff <oldDir> <newDir> --out <reportFile>
+explico diff <oldDir> <newDir> --out <reportFile> [--rego-version v1|v0]
 ```
 
 | Argument/flag | Required | Meaning |
@@ -106,8 +107,8 @@ object Explico {
 }
 ```
 
-- **`load(policyDir)`** — parses every `.rego` file under `policyDir` (via
-  `opa parse`/`opa inspect`) into a `PolicySet`. `policyDir` must be kept
+- **`load(policyDir)`** / **`load(policyDir, RegoVersion.V0)`** — parses every `.rego` file under `policyDir` (via
+  `opa parse`/`opa inspect`) into a `PolicySet`; `RegoVersion.V0` is for legacy-syntax policies (the version travels with the `PolicySet`, so `render()` evaluates worked examples the same way). `policyDir` must be kept
   around and passed to `render()` later — worked examples need to re-invoke
   `opa eval` against the real files, which the domain model alone can't
   locate.

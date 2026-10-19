@@ -1349,3 +1349,8 @@ position is unchanged (still a fallback), deliberately.
 
 Fixed-arity operand builtins live in `MULTI_ARG_OPERAND_BUILTINS` (mapper) and `MULTI_ARG_OPERAND_TEMPLATES`
 (renderer) -- verify any new phrase against a real `opa eval` first.
+
+## Rego v0 (spec §14.35)
+
+`RegoVersion` is chosen explicitly (`--rego-version`, `Explico.load(dir, V0)`), stored on `PolicySet`, and threaded to every
+`opa` call; never auto-detect it.

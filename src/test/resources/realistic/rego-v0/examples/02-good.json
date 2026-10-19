@@ -1,0 +1,1 @@
+{"name":"good pod","input":{"user":"alice","containers":[{"name":"app","image":"registry.example/x","privileged":false}]}}

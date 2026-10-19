@@ -1583,7 +1583,7 @@ Rationale in `docs/rego-coverage.md`.
   function's pattern parameter is displayed as its verbatim source.
 - **§5 amendment (`producesValue`).** The display message of a `sprintf` is produced only when every
   verb is `%v`, `%s` or `%%` and verbs match arguments exactly; otherwise it is null.
-- **Disclosed, not addressed:** Rego v0 syntax is rejected by OPA 1.x and therefore not rendered.
+- **Rego v0 syntax** is rejected by OPA 1.x by default; supported explicitly since §14.35 (`--rego-version v0`).
 
 Rationale and measurements in `docs/rego-coverage.md`.
 
@@ -1628,3 +1628,11 @@ Operand builtins `split`, `trim_prefix`, `trim_suffix`, `trim`, `replace`, `subs
 (`OPERAND_BUILTINS`) render through `Operand.BuiltinCall`, with phrases verified against a real `opa eval` of each
 builtin (`MULTI_ARG_OPERAND_TEMPLATES` / `OPERAND_BUILTIN_TEMPLATES`). A call with any other argument count stays
 `Operand.Unrendered`. `json.marshal` stays unpromoted.
+
+### 14.35 Rego v0 support
+
+`RegoVersion { V1, V0 }` (public, `model/Model.kt`) selects the policies' Rego syntax; `Explico.load(dir, regoVersion = V1)`
+stores it on `PolicySet.regoVersion`, and `OpaRunner.parse/inspect/eval` append `--v0-compatible` for V0 (`render`'s worked
+examples read it from the `PolicySet`). The CLI gains `--rego-version v1|v0` on `render` and `diff`. Deliberately explicit,
+never detected: a wrong guess can silently change what a policy means. The README's "Targets OPA 1.x" remains true of the
+`opa` binary. Measured: the Gatekeeper library went from 0 to 91 of 91 files rendering (66% condition coverage).

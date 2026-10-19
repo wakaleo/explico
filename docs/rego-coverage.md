@@ -1101,3 +1101,11 @@ Measured by the corpus benchmark (Trivy Kubernetes checks with their library loa
 `split`, `trim_prefix`, `trim_suffix`, `trim`, `replace`, `substring`, `array.concat`, `indexof`, `abs`, `ceil`, `floor`,
 `round`, `sort` and `json.unmarshal` now render in operand position (e.g. "the parts of `image` split on `":"`"), each
 phrase checked against a real `opa eval`. Exact argument counts only; anything else stays verbatim source.
+
+## Rego v0 syntax
+
+Resolved as an explicit option rather than a detection heuristic: `--rego-version v0` / `RegoVersion.V0` adds
+`--v0-compatible` to every `opa parse`/`inspect`/`eval`. The mapper already coped with v0's AST (`deny[msg] { ... }`,
+bracket-form partial rules, `x[_]` membership), so nothing else changed. Default stays v1. Measured: the Gatekeeper
+library went from 0 files rendering under the default to 91/91 (66% condition coverage). Auto-detection was rejected
+because a wrong guess can silently change a policy's meaning, and there is no way to verify which version the author intended.

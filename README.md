@@ -30,6 +30,10 @@ the Open Policy Agent project or Styra.
   see the Install section). `opa parse`'s JSON shape and the METADATA
   annotation format are both spec'd per-major-version by OPA; a 2.x line,
   if one ever exists, isn't assumed compatible without re-verifying.
+  This is the version of the `opa` *binary*. Policies written in the legacy
+  **Rego v0** syntax (`deny[msg] { ... }`, as in the Gatekeeper library) are
+  supported too: pass `--rego-version v0` (library: `RegoVersion.V0`). It is
+  always chosen explicitly, never auto-detected, and the default is v1.
 - **Positioning vs. other Rego tooling**: [Regal](https://www.openpolicyagent.org/ecosystem/entry/regal)
   (Styra's Rego linter and language server) checks whether your Rego is
   *well-written* — style, bugs, best practices. explico doesn't lint
@@ -164,8 +168,8 @@ project's own `kotlin("jvm")` plugin version.
 ## CLI usage
 
 ```
-explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>]
-explico diff <oldDir> <newDir> --out <reportFile>
+explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0]
+explico diff <oldDir> <newDir> --out <reportFile> [--rego-version v1|v0]
 explico version
 explico demo [--fetch-opa]
 ```

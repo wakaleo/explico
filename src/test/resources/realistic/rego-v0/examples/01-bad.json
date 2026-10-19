@@ -1,0 +1,1 @@
+{"name":"bad pod","input":{"user":"mallory","containers":[{"name":"app","image":"docker.io/x","privileged":true}]}}

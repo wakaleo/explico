@@ -5,8 +5,16 @@
  */
 package io.explico.model
 
-/** A parsed set of Rego packages, e.g. everything under one policy directory. */
-public data class PolicySet(val packages: List<PolicyPackage>)
+/**
+ * The Rego language version the policies are written in. OPA 1.x parses [V1] by default and rejects v0
+ * syntax (`deny[msg] { ... }`, no `if`/`contains`); [V0] passes `--v0-compatible` to every `opa`
+ * invocation. It is chosen explicitly by the caller and never auto-detected: guessing could silently
+ * change what a policy means. The `opa` BINARY must still be 1.x either way.
+ */
+public enum class RegoVersion { V1, V0 }
+
+/** A parsed set of Rego packages, e.g. everything under one policy directory. [regoVersion] is how it was parsed, and how worked examples are later evaluated. */
+public data class PolicySet(val packages: List<PolicyPackage>, val regoVersion: RegoVersion = RegoVersion.V1)
 
 /** One Rego package: its path, the rules it defines, and the files it came from. */
 public data class PolicyPackage(
