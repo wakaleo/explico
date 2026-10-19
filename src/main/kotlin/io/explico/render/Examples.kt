@@ -67,8 +67,11 @@ internal object WorkedExamples {
         warn: (String) -> Unit = { System.err.println(it) },
         evalPackage: (Fixture) -> JsonElement,
     ): Map<String, List<WorkedExample>> {
-        val outcomesByRule = pkg.rules.associate { it.name to mutableListOf<WorkedExample>() }
-        val attributionByRule = pkg.rules.associate { it.name to attributionRegexes(it) }
+        // Keyed by rule NAME: several cards may share one (split by METADATA), but opa evaluates a
+        // name once, so each name is evaluated once here and scoped per card by [forGroup].
+        val rules = pkg.rules.filter { !it.isSplitDefaultEntry }.distinctBy { it.name }
+        val outcomesByRule = rules.associate { it.name to mutableListOf<WorkedExample>() }
+        val attributionByRule = rules.associate { it.name to attributionRegexes(it) }
 
         for (fixture in fixtures) {
             val packageValue = try {
@@ -77,13 +80,42 @@ internal object WorkedExamples {
                 warn("Skipping fixture '${fixture.name}' for package '${pkg.path}': opa eval failed:\n${e.stderr}")
                 continue
             }
-            for (rule in pkg.rules) {
+            for (rule in rules) {
                 val (matched, messages) = verdictFor(rule.name, packageValue)
                 val labels = messages.map { situationFor(attributionByRule.getValue(rule.name), it) }
                 outcomesByRule.getValue(rule.name).add(WorkedExample(fixture, matched, messages, labels))
             }
         }
         return outcomesByRule
+    }
+
+    /**
+     * Scopes the name-level [outcomes] to one card. A name shared by several cards (same rule name,
+     * different METADATA) is evaluated once, so its verdict and messages belong to the whole name;
+     * showing them on every card would credit a card with messages its bodies never produced. Each
+     * message is attributed to the one group whose body templates match it (situation labels
+     * numbered within the group). Anything that cannot be attributed with certainty -- a boolean
+     * rule (no messages), a body without a template, a message matching no group or several --
+     * yields NO examples for the name's cards: never a guess (spec §6.7, "best effort, never guessed").
+     * A name with a single card is returned unchanged.
+     */
+    fun forGroup(rule: RuleGroup, pkg: PolicyPackage, outcomes: List<WorkedExample>): List<WorkedExample> {
+        val siblings = pkg.rules.filter { it.name == rule.name && !it.isSplitDefaultEntry }
+        if (rule.isSplitDefaultEntry && siblings.size > 1) return emptyList()
+        if (siblings.size <= 1) return outcomes
+
+        val regexesByGroup = siblings.map { attributionRegexes(it) ?: return emptyList() }
+        val owners = outcomes.flatMap { o -> o.messages }.associateWith { message ->
+            regexesByGroup.indices.filter { g -> regexesByGroup[g].any { it.matches(message) } }
+        }
+        if (owners.values.any { it.size != 1 }) return emptyList()
+
+        val self = siblings.indexOfFirst { it === rule }
+        if (self < 0) return emptyList()
+        return outcomes.map { o ->
+            val mine = o.messages.filter { owners.getValue(it).single() == self }
+            WorkedExample(o.fixture, mine.isNotEmpty(), mine, mine.map { situationFor(regexesByGroup[self], it) })
+        }
     }
 
     /** Up to 3 matching then up to 2 non-matching, each group in filename order (spec §6.7 -- confirmed against the release-approvals.md golden, which shows matched examples before non-matched ones even when a non-matched fixture's filename sorts earlier). */

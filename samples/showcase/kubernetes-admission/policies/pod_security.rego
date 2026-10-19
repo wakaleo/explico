@@ -14,7 +14,7 @@ import rego.v1
 #   control-id: K8S-001
 #   frameworks:
 #     - CIS Kubernetes 5.2.1
-privileged_container contains msg if {
+deny contains msg if {
 	input.request.kind.kind == "Pod"
 	some container in input.request.object.spec.containers
 	container.securityContext.privileged == true
@@ -25,7 +25,7 @@ privileged_container contains msg if {
 # title: Images come from the approved registry
 # custom:
 #   control-id: K8S-002
-unapproved_image contains msg if {
+deny contains msg if {
 	input.request.kind.kind == "Pod"
 	some container in input.request.object.spec.containers
 	not startswith(container.image, "registry.corp.example/")
@@ -36,7 +36,7 @@ unapproved_image contains msg if {
 # title: Required labels are present
 # custom:
 #   control-id: K8S-003
-missing_owner_label contains msg if {
+deny contains msg if {
 	input.request.kind.kind == "Pod"
 	not input.request.object.metadata.labels.owner
 	msg := "pod has no owner label"

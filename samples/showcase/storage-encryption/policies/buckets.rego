@@ -13,7 +13,7 @@ import rego.v1
 #   frameworks:
 #     - SOC 2 CC6.1
 #     - ISO 27001 A.8.24
-unencrypted_bucket contains msg if {
+deny contains msg if {
 	input.encrypted == false
 	msg := sprintf("bucket %v is not encrypted", [input.name])
 }
@@ -22,7 +22,7 @@ unencrypted_bucket contains msg if {
 # title: Production buckets must be private
 # custom:
 #   control-id: STO-002
-public_production_bucket contains msg if {
+deny contains msg if {
 	input.env == "production"
 	input.acl in {"public-read", "public-read-write"}
 	msg := sprintf("production bucket %v is publicly readable", [input.name])
@@ -32,7 +32,7 @@ public_production_bucket contains msg if {
 # title: Retention must be at least 90 days
 # custom:
 #   control-id: STO-003
-short_retention contains msg if {
+deny contains msg if {
 	input.retention_days < 90
 	msg := "retention is shorter than 90 days"
 }

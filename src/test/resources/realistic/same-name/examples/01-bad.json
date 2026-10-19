@@ -1,0 +1,1 @@
+{"name":"bad bucket","input":{"name":"logs","encrypted":false,"env":"production","acl":"public-read","admin":true}}

@@ -1321,6 +1321,13 @@ was proposed in, not deferred to a separate increment.
 ## Documentation showcase
 
 `docs/showcase/` is generated (`./gradlew generateShowcase`) from `samples/showcase/`; never hand-edit
-it, and CI drift-checks it. Give showcase rules distinct names: same-named rules misattribute worked-example
-messages across cards (known limitation). Adding an example means a new `samples/showcase/<name>/` plus an
+it, and CI drift-checks it. Same-named `deny` rules are fine (§14.31 scopes examples per card); same-named
+BOOLEAN rules (`allow` x3) get no examples, so give those distinct names. Adding an example means a new `samples/showcase/<name>/` plus an
 entry in `showcaseExamples` in `build.gradle.kts`.
+
+## Same-named rules and worked examples (spec §14.31)
+
+`WorkedExamples.forGroup` scopes a name's outcomes to one card: each message goes to the single sibling
+whose body templates match it; any ambiguity (boolean rule, missing template, message matching zero or
+several groups) means NO examples for that name's cards -- never a copy onto every card. A name is now
+evaluated once (it was once per card, which also repeated the example list). A split default entry gets none.

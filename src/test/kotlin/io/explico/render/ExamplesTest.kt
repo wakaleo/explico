@@ -208,6 +208,98 @@ class ExamplesTest {
     }
 
     @Nested
+    inner class SameNamedRuleGroups {
+
+        private fun body(template: String?, row: Int) =
+            RuleBody(emptyList(), template, template, SourceRef("f.rego", row), "")
+
+        private fun group(name: String, vararg templates: String?) =
+            RuleGroup(name, null, null, templates.mapIndexed { i, t -> body(t, i + 1) })
+
+        private val fixture = Fixture("f", null, buildJsonObject { })
+
+        private fun outcomesFor(pkg: io.explico.model.PolicyPackage, vararg messages: String): List<WorkedExample> =
+            WorkedExamples.evaluatePackage(listOf(fixture), pkg, warn = {}) {
+                buildJsonObject { put("deny", buildJsonArray { messages.forEach { add(JsonPrimitive(it)) } }) }
+            }.getValue("deny")
+
+        @Test
+        fun everySameNamedGroupIsEvaluatedOncePerFixtureNotOncePerGroup() {
+            val pkg = io.explico.model.PolicyPackage("pkg", listOf(group("deny", "a"), group("deny", "b")), listOf("f.rego"))
+            assertThat(outcomesFor(pkg, "a")).hasSize(1)
+        }
+
+        @Test
+        fun eachGroupSeesOnlyTheMessagesItsOwnBodiesCanProduce() {
+            val first = group("deny", "bucket %v is not encrypted")
+            val second = group("deny", "retention is too short")
+            val pkg = io.explico.model.PolicyPackage("pkg", listOf(first, second), listOf("f.rego"))
+            val outcomes = outcomesFor(pkg, "bucket logs is not encrypted")
+
+            val forFirst = WorkedExamples.forGroup(first, pkg, outcomes).single()
+            val forSecond = WorkedExamples.forGroup(second, pkg, outcomes).single()
+
+            assertThat(forFirst.matched).isTrue()
+            assertThat(forFirst.messages).containsExactly("bucket logs is not encrypted")
+            assertThat(forSecond.matched).isFalse()
+            assertThat(forSecond.messages).isEmpty()
+        }
+
+        @Test
+        fun situationLabelsAreNumberedWithinTheGroupNotAcrossTheName() {
+            val first = group("deny", "one")
+            val second = group("deny", "two", "three")
+            val pkg = io.explico.model.PolicyPackage("pkg", listOf(first, second), listOf("f.rego"))
+            val forSecond = WorkedExamples.forGroup(second, pkg, outcomesFor(pkg, "three")).single()
+            assertThat(forSecond.situationLabels).containsExactly(2)
+        }
+
+        @Test
+        fun ambiguousAttributionShowsNoExamplesRatherThanAWrongOne() {
+            // "%v" matches anything, so the message belongs to both groups: it cannot be attributed.
+            val first = group("deny", "%v")
+            val second = group("deny", "x is bad")
+            val pkg = io.explico.model.PolicyPackage("pkg", listOf(first, second), listOf("f.rego"))
+            val outcomes = outcomesFor(pkg, "x is bad")
+            assertThat(WorkedExamples.forGroup(first, pkg, outcomes)).isEmpty()
+            assertThat(WorkedExamples.forGroup(second, pkg, outcomes)).isEmpty()
+        }
+
+        @Test
+        fun aMessageNoGroupClaimsShowsNoExamples() {
+            val first = group("deny", "one")
+            val second = group("deny", "two")
+            val pkg = io.explico.model.PolicyPackage("pkg", listOf(first, second), listOf("f.rego"))
+            assertThat(WorkedExamples.forGroup(first, pkg, outcomesFor(pkg, "mystery"))).isEmpty()
+        }
+
+        @Test
+        fun groupsWithoutMessageTemplatesCannotBeAttributed() {
+            val first = group("deny", null)
+            val second = group("deny", "two")
+            val pkg = io.explico.model.PolicyPackage("pkg", listOf(first, second), listOf("f.rego"))
+            assertThat(WorkedExamples.forGroup(second, pkg, outcomesFor(pkg, "two"))).isEmpty()
+        }
+
+        @Test
+        fun aSplitDefaultEntryNeverShowsPerRuleExamples() {
+            val first = group("deny", "one")
+            val second = group("deny", "two")
+            val splitDefault = RuleGroup("deny", null, null, emptyList(), isSplitDefaultEntry = true)
+            val pkg = io.explico.model.PolicyPackage("pkg", listOf(first, second, splitDefault), listOf("f.rego"))
+            assertThat(WorkedExamples.forGroup(splitDefault, pkg, outcomesFor(pkg, "one"))).isEmpty()
+        }
+
+        @Test
+        fun aLoneGroupKeepsItsOutcomesUntouched() {
+            val only = group("deny", "one")
+            val pkg = io.explico.model.PolicyPackage("pkg", listOf(only), listOf("f.rego"))
+            val outcomes = outcomesFor(pkg, "anything")
+            assertThat(WorkedExamples.forGroup(only, pkg, outcomes)).isEqualTo(outcomes)
+        }
+    }
+
+    @Nested
     inner class Selection {
 
         private fun outcome(name: String, matched: Boolean) = WorkedExample(Fixture(name, null, buildJsonObject { }), matched, emptyList(), emptyList())

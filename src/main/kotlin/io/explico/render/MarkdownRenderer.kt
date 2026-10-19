@@ -36,7 +36,7 @@ internal object MarkdownRenderer {
 
         val anchorIds = cardAnchorIds(pkg)
         for ((index, rule) in pkg.rules.withIndex()) {
-            sb.append(renderCard(rule, pkg, policySet, examplesByRule[rule.name] ?: emptyList(), anchorIds[index]))
+            sb.append(renderCard(rule, pkg, policySet, WorkedExamples.forGroup(rule, pkg, examplesByRule[rule.name] ?: emptyList()), anchorIds[index]))
             sb.appendLine()
             sb.appendLine("---")
             sb.appendLine()
@@ -313,7 +313,7 @@ internal object MarkdownRenderer {
         val hasExamples = examplesByPackage.isNotEmpty()
         val rows = policySet.packages.flatMap { pkg ->
             pkg.rules.map { rule ->
-                val outcomes = examplesByPackage[pkg.path]?.get(rule.name) ?: emptyList()
+                val outcomes = WorkedExamples.forGroup(rule, pkg, examplesByPackage[pkg.path]?.get(rule.name) ?: emptyList())
                 Row(
                     controlId = rule.metadata?.controlId,
                     title = rule.metadata?.title ?: rule.name,
