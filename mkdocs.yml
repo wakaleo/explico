@@ -52,8 +52,13 @@ nav:
   - Home: index.md
   - Getting started:
       - Tutorial: tutorial.md
+  - Concepts:
+      - True by construction: concepts/true-by-construction.md
+      - Reading a card: concepts/reading-a-card.md
+      - Coverage: concepts/coverage.md
   - Guides:
       - Writing policies: policy-authoring.md
+      - CI recipes: guides/ci-recipes.md
   - Reference:
       - CLI and library: user-guide.md
       - JSON output: json-output.md
@@ -75,6 +80,7 @@ nav:
           - Release governance: sample-output/release-governance.md
           - Release exemptions: sample-output/release-exemptions.md
   - Project:
+      - Limits and FAQ: limits-and-faq.md
       - Architecture: architecture.md
       - Changelog: changelog.md
       - Security: security.md
