@@ -388,6 +388,26 @@ class ExamplesTest {
         }
 
         @Test
+        @org.junit.jupiter.api.DisplayName("cold-start finding: a path that is only the ARGUMENT of a nested operand call (`count(input.reviewers) < 2`) is listed, because it is why the rule fired")
+        fun argumentsOfNestedOperandCallsAreListed() {
+            val reviewers = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("deployment"), PathSegment.Field("reviewers")))
+            val region = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("region")))
+            val rule = RuleGroup(
+                "deny", null, null,
+                bodies = listOf(
+                    RuleBody(
+                        listOf(
+                            Condition.Comparison(Operand.BuiltinCall("count", listOf(reviewers)), Operator.LT, Operand.Literal("2")),
+                            Condition.Comparison(Operand.FunctionCall("p", "limit_of", listOf(region)), Operator.GT, Operand.Literal("1")),
+                        ),
+                        null, null, SourceRef("f.rego", 1), "",
+                    ),
+                ),
+            )
+            assertThat(WorkedExamples.referencedPaths(rule)).containsExactly(reviewers, region)
+        }
+
+        @Test
         fun resolvesAPresentScalarValue() {
             val path = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("deployment"), PathSegment.Field("environment")))
             val input = buildJsonObject { put("deployment", buildJsonObject { put("environment", "production") }) }

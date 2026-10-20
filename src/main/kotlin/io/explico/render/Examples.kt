@@ -140,14 +140,24 @@ internal object WorkedExamples {
                 // access via VarIndex (`pipeline ▸ stages ▸ [each stage] ▸ status`) is what's
                 // actually useful, and that's a separate Path already covered below.
                 if (condition is Condition.SomeIn || condition is Condition.Every || condition is Condition.SomeKey) continue
-                for (operand in Coverage.operandsOf(condition)) {
-                    if (operand is Operand.Path && operand.segments.firstOrNull() == PathSegment.Field("input")) {
-                        seen.add(operand)
-                    }
-                }
+                for (operand in Coverage.operandsOf(condition)) collectInputPaths(operand, seen)
             }
         }
         return seen.toList()
+    }
+
+    /**
+     * The `input.`-rooted paths in [operand], including a path that is only an ARGUMENT of a nested operand call: in `count(input.reviewers) < 2`
+     * the reviewers are the reason the rule fired, and a cold-start reader found the example listing everything but them. A comprehension's
+     * own paths are not collected (its term and body are described in the sentence itself).
+     */
+    private fun collectInputPaths(operand: Operand, into: MutableSet<Operand.Path>) {
+        when (operand) {
+            is Operand.Path -> if (operand.segments.firstOrNull() == PathSegment.Field("input")) into.add(operand)
+            is Operand.BuiltinCall -> operand.args.forEach { collectInputPaths(it, into) }
+            is Operand.FunctionCall -> operand.args.forEach { collectInputPaths(it, into) }
+            else -> {}
+        }
     }
 
     /** Resolves [path] against the fixture's `input` object. Null = absent. `AnyIndex`/`VarIndex` collect across elements, capped at 3 with "…". */
