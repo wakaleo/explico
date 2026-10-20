@@ -62,7 +62,9 @@ nav:
   - Reference:
       - CLI and library: user-guide.md
       - JSON output: json-output.md
-      - Rego coverage: rego-coverage.md
+      - What explico renders: reference/constructs.md
+      - API reference: https://wakaleo.github.io/explico/api/
+      - Rego coverage audit: rego-coverage.md
   - Showcase:
       - Overview: showcase/README.md
       - Kubernetes admission: showcase/kubernetes-admission.md

@@ -10,6 +10,9 @@ plugins {
     // maintained fork -- com.github.johnrengelman.shadow is unmaintained -- verified against the
     // plugin's own current docs (gradleup.com/shadow), not assumed from memory.
     id("com.gradleup.shadow") version "9.6.0"
+    // Build-only tooling (spec §2/§13.1): generates the API reference for the documentation site from the KDoc on the public facade and
+    // model. Nothing it adds reaches the published jar or its POM; `check` does not depend on it.
+    id("org.jetbrains.dokka") version "2.2.0"
 }
 
 // Maven coordinates (io.github.wakaleo -- auto-verified via GitHub OAuth on the Central Portal,
@@ -266,6 +269,8 @@ val generateShowcase = tasks.register("generateShowcase") {
 
 tasks.test {
     useJUnitPlatform()
+    // ConstructsReferenceTest reads this page by path; without declaring it, editing the page would leave the test "up to date".
+    inputs.file("docs/reference/constructs.md")
     // Show WHY a test failed (the full assertion message) in the console/CI log, not just the exception class.
     testLogging {
         events("failed")
@@ -314,6 +319,11 @@ val acceptanceTest = tasks.register<Test>("acceptanceTest") {
 mavenPublishing {
     publishToMavenCentral(automaticRelease = false)
 
+    // Applying the Dokka plugin (for the documentation site's API reference) makes this publishing plugin attach a REAL Dokka-built javadoc jar
+    // (1.2 MB, 400 files) in place of the empty one every release so far has shipped. The published artifacts are not what the docs site is
+    // for, so pin the previous behaviour explicitly; switch to JavadocJar.Dokka("dokkaGeneratePublicationHtml") to ship the API docs too.
+    configure(com.vanniktech.maven.publish.KotlinJvm(javadocJar = com.vanniktech.maven.publish.JavadocJar.Empty(), sourcesJar = true))
+
     // Only sign when credentials are actually present (mapped from ORG_GRADLE_PROJECT_* env vars
     // by Gradle itself, spec §10) -- keeps `publishToMavenLocal` usable for local/CI smoke testing
     // without a real GPG key. `publishToMavenCentral` itself still fails loudly without them: an
@@ -351,5 +361,22 @@ mavenPublishing {
             connection.set("scm:git:git://github.com/wakaleo/explico.git")
             developerConnection.set("scm:git:ssh://git@github.com/wakaleo/explico.git")
         }
+    }
+}
+
+// The API reference for the documentation site (docs.yml publishes build/dokka/html under /api/). Only the main source set: the public
+// facade and model, whose KDoc is mandatory (CLAUDE.md rule 5). `internal` declarations are not documented by Dokka's default visibility.
+dokka {
+    moduleName.set("explico")
+    dokkaSourceSets.configureEach {
+        if (name != "main") suppress.set(true)
+        sourceLink {
+            localDirectory.set(file("src/main/kotlin"))
+            remoteUrl("https://github.com/wakaleo/explico/blob/main/src/main/kotlin")
+            remoteLineSuffix.set("#L")
+        }
+    }
+    pluginsConfiguration.html {
+        footerMessage.set("explico API reference")
     }
 }

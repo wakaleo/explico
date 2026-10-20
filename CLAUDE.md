@@ -1528,3 +1528,12 @@ two beyond what a test proves: the message assignment is consumed ONLY when last
 `AstMapper.freeIndexSegment` is the single rule: single-use (counted by `countVariables` over opa's own JSON for the rule, declare-only `some` excluded) = `AnyIndex`; shared = `Condition.SomeKey` bound at first use through
 the per-rule `FreeKeys` state (inserted before the conditions of that expression by `mapBodyExpr`). Binding is OFF (`ctx.freeKeys = null`) in comprehensions, `every`, message and value operands, under `not`, and
 for parameter-rooted paths; keep it off there. Never bind a name that is a rule, function or import. Wording is the operator-approved M2: "for some index or key `i` of `<collection>`".
+
+## Documentation site (MkDocs Material -> GitHub Pages)
+
+`mkdocs.yml` + `scripts/docs/prepare.py` (stages `docs/` and README/ARCHITECTURE/CHANGELOG/SECURITY, rewriting relative links) + `.github/workflows/docs.yml`
+(strict build on every push/PR, publish from main, API reference from Dokka under `/api/`). A new page MUST be added to `nav` (strict mode fails on an orphan) and link to
+repository files by their real repo-relative path (the script turns them into GitHub URLs). `docs/reference/constructs.md` is a TABLE CHECKED BY `ConstructsReferenceTest`
+against the real renderer: change a phrase or promote a construct and the test names the rows to update; the page is declared a test input in `build.gradle.kts`
+(without that, Gradle would call the test up to date after an edit). Applying the Dokka plugin makes the publishing plugin attach a real 1 MB javadoc jar; `build.gradle.kts`
+pins the empty one and `ci.yml` fails if it grows. Pages must be enabled once: `gh api -X POST repos/wakaleo/explico/pages -f build_type=workflow`.

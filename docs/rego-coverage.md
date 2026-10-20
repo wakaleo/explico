@@ -1,5 +1,9 @@
 # Rego language coverage audit
 
+> **Looking for what a piece of Rego becomes on a card?** Read [What explico renders](reference/constructs.md): a table of constructs
+> checked against the real renderer on every build. This page is the engineering audit log behind it: what was audited, promoted and
+> deliberately left alone, session by session.
+
 A systematic audit (spec §14) of every rendering decision `AstMapper` /
 `ExpressionRenderer` / `PathHumanizer` make, checked against the real Rego
 language (not just the acceptance pack's own 5 policies) via a 40-file probe

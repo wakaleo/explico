@@ -60,6 +60,15 @@ jobs:
         if: matrix.primary
         run: ./gradlew publishToMavenLocal --console=plain
 
+      # Applying the Dokka plugin (documentation site) would silently make the publishing plugin ship a 1 MB Dokka javadoc jar instead of the
+      # empty one every release has carried; build.gradle.kts pins the empty jar, and this fails if that pin is ever lost.
+      - name: Published javadoc jar is still the empty one
+        if: matrix.primary
+        run: |
+          size=$(wc -c < ~/.m2/repository/io/github/wakaleo/explico/*/explico-*-javadoc.jar | tr -d ' ')
+          echo "javadoc jar: $size bytes"
+          test "$size" -lt 10000
+
       - name: Consumer smoke test
         if: matrix.primary
         run: ./gradlew -p consumer-smoke-test run --console=plain

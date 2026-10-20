@@ -17,6 +17,8 @@ on:
       - "SECURITY.md"
       - "mkdocs.yml"
       - "scripts/docs/**"
+      - "src/main/**"
+      - "build.gradle.kts"
       - ".github/workflows/docs.yml"
   pull_request:
     paths:
@@ -27,6 +29,8 @@ on:
       - "SECURITY.md"
       - "mkdocs.yml"
       - "scripts/docs/**"
+      - "src/main/**"
+      - "build.gradle.kts"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
 
@@ -55,6 +59,16 @@ jobs:
         run: python3 scripts/docs/prepare.py . build/site-src "https://github.com/${{ github.repository }}" "${{ github.sha }}"
       - name: Build the site (strict)
         run: mkdocs build --strict
+      # The API reference is generated from the KDoc on the public facade and model (Dokka) and published under /api/.
+      - uses: actions/setup-java@v6
+        with: { distribution: temurin, java-version: "21" }
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build the API reference (Dokka)
+        run: ./gradlew dokkaGeneratePublicationHtml --console=plain
+      - name: Add the API reference to the site
+        run: |
+          cp -r build/dokka/html build/site/api
+          test -f build/site/api/index.html
       - name: Upload the site
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v5
