@@ -12,7 +12,7 @@ Four subcommands: `render`, `diff`, `version`, `demo`.
 ### `explico render`
 
 ```
-explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>] [--fail-under <percent>] [--fail-on-gaps]
+explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>] [--source-url <template>] [--fail-under <percent>] [--fail-on-gaps]
 ```
 
 | Argument/flag | Required | Meaning |
@@ -24,6 +24,7 @@ explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--r
 | `--generate-examples` | no | Also derive worked examples from each rule's conditions where `--examples` leaves a gap (each verified by `opa eval`; labelled as generated; runs the policy). See *Generated examples* below. |
 | `--json` | no | Also write `explico.json`, the machine-readable result (see [`json-output.md`](json-output.md)). Off by default; nothing else changes. |
 | `--requirements <file>` | no | A text file listing the requirements your organisation must evidence, one per line (blank lines and `#` comments ignored, lines trimmed, duplicates collapsed). Adds a *Requirements coverage* table to `index.md`: each requirement in the file's order with the controls that name it, or **No control**; and the framework strings your controls use that are *not* on the list (a typo catcher). Matching is exact string equality with the METADATA `frameworks` strings. A missing file is a usage error (exit `1`). |
+| `--source-url <template>` | no | Link every card's *defined in*, every package page's source files and every index row's *Source file* to the Rego source in your repository. A URL template with `{file}` (**required**: the policy file's path relative to `<policyDir>`, each segment percent-encoded) and `{line}` (optional: the rule's 1-based line). A template without `{file}` is a usage error (exit `1`). See *Linking cards to your repository* in [`policy-authoring.md`](policy-authoring.md). |
 | `--fail-under <percent>` | no | CI gate: exit `5` if overall rendering coverage is below this integer (0-100). Compared exactly (22 of 23 conditions is 95.65%: it passes 95 and fails 96). The output is still written. |
 | `--fail-on-gaps` | no | CI gate: exit `5` if the documentation has gaps — a control with no description or no framework, a title shared by controls, and (with `--requirements`) a requirement with no control or a framework string not on the list. Each gap is listed on stderr. |
 | `--rego-version v1\|v0` | no | The Rego syntax of the policies: `v1` (default) or `v0` (legacy: `deny[msg] { ... }` with no `if`/`contains`, as in the Gatekeeper library). Passed to every `opa` call as `--v0-compatible`. Never auto-detected; v0 mode applies to the whole directory (v1 files that `import rego.v1` still parse). The `opa` binary must be 1.x either way. `diff` applies it to both directories. |
@@ -177,13 +178,13 @@ object Explico {
 - **`loadExamples(dir)`** — loads `*.json` fixtures from `dir`, in filename
   order. Throws `io.explico.render.DuplicateFixtureNameException` (public)
   if two fixtures share a `name`.
-- **`render(policySet, policyDir, examples, dataDir, generateExamples = false, json = false, requirements = emptyList())`** — returns
+- **`render(policySet, policyDir, examples, dataDir, generateExamples = false, json = false, requirements = emptyList(), sourceUrl = null)`** — returns
   `RenderedDocs(files: Map<String, String>, coverage: CoverageSummary,
   generatedExamples: GeneratedExamplesSummary?)`, the rendered Markdown keyed by
   output filename plus overall coverage (`coverage.rendered`, `coverage.total`,
   `coverage.percent`). `generatedExamples` is null unless `generateExamples = true`,
   then `rulesWithExamples` of `rulesConsidered`. A trailing `json = true` also adds `explico.json` to `files`
-  (see [`json-output.md`](json-output.md)); a further trailing `requirements: List<String>` adds the *Requirements coverage* section (see
+  (see [`json-output.md`](json-output.md)); a further trailing `requirements: List<String>` and `sourceUrl: String?` add the *Requirements coverage* section (see
   *Keeping your documentation complete* in [`policy-authoring.md`](policy-authoring.md)). `RenderedDocs.gaps` is always filled: one line
   per documentation gap, worded once for every consumer (empty when the documentation is complete).
 - **`diff(old, new)`** — returns `DiffReport(entries: List<DiffEntry>,

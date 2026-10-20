@@ -106,7 +106,8 @@ explico/
 │   │   ├── render/                PathHumanizer.kt, ExpressionRenderer.kt, MarkdownRenderer.kt,
 │   │   │                          Coverage.kt, Examples.kt (worked examples, §6.7),
 │   │   │                          ReferenceData.kt (§14.41), PolicyDigest.kt (§14.40),
-│   │   │                          JsonExport.kt (§14.45), Quality.kt (§14.46)
+│   │   │                          JsonExport.kt (§14.45), Quality.kt (§14.46),
+│   │   │                          SourceLinks.kt (§14.48)
 │   │   ├── generate/              InputSynthesizer.kt, ExampleGenerator.kt (§14.39)
 │   │   ├── diff/                  Canonicalizer.kt, PolicyDiff.kt, LineDiffer.kt, DiffRenderer.kt,
 │   │   │                          ChangeSummary.kt (§14.42), DiffJson.kt (§14.45)
@@ -584,7 +585,8 @@ object Explico {
     fun loadExamples(dir: Path): ExampleSet
     fun render(policySet: PolicySet, policyDir: Path, examples: ExampleSet? = null,
                dataDir: Path? = null, generateExamples: Boolean = false,                    // §14.39
-               json: Boolean = false, requirements: List<String> = emptyList()): RenderedDocs   // §14.45, §14.46
+               json: Boolean = false, requirements: List<String> = emptyList(),
+               sourceUrl: String? = null): RenderedDocs                                         // §14.45-§14.48
     fun diff(old: PolicySet, new: PolicySet): DiffReport  // model + markdown + json
 }
 data class RenderedDocs(val files: Map<String, String>, val coverage: CoverageSummary,
@@ -600,7 +602,7 @@ Everything else is `internal`. KDoc on every public declaration.
 
 ```
 explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>]
-               [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>]
+               [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>] [--source-url <template>]
                [--fail-under <percent>] [--fail-on-gaps]
 explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--fail-on <categories>]
                [--rego-version v1|v0]
@@ -1868,4 +1870,16 @@ Decisions and wording live in `cli/Gates.kt` (testable without a process).
   the valid values). Fails when any entry is in a listed category. Message: `explico: gate failed (--fail-on LOGIC_CHANGED,REMOVED): 2 control(s): REL-001, REL-003` -- categories
   echoed as given (upper-cased), controls by control id (`package.rule` when none) in the diff report's own order.
 - The diff gate reports structure only, like the report itself: it does not say whether a change is stricter or looser.
+
+### 14.48 Source links (`--source-url`)
+
+An auditor needs one click from a card to the exact Rego at the commit under review. `Explico.render(..., sourceUrl)` / `render --source-url <template>` takes a URL template
+with `{file}` (REQUIRED: the file path relative to the policy directory, `/`-separated, each SEGMENT percent-encoded -- every byte except the RFC 3986 unreserved set, UTF-8
+for non-ASCII, so no name can break out of the URL or a Markdown link) and `{line}` (optional, 1-based); every occurrence is replaced. A template without `{file}` throws
+`IllegalArgumentException` (library) / is a usage error, exit 1 (CLI), before any opa work. `render/SourceLinks.kt` is the one helper cards, package pages, the index and the JSON use.
+- **Card:** `defined in [`basename:row`](url)`, the row being the rule's first body (else its `default`, else its constant value: `MarkdownRenderer.ruleLocation`); no location keeps
+  today's plain text. **Package page:** each source file linked (line 1), label the relative path. **Index:** the Source file cell is `[`file:row`](url)`.
+- **JSON:** every rule has `sourceLine` (always; null when it has no location) and `sourceUrl` (null without a template). Additive: the schema stays `explico/render/1`.
+- **Off by default and byte-identical:** no template means every Markdown file is exactly as before. The diff report has no policy directory or template and is unaffected.
+- **Guidance:** pin `COMMIT`, not a branch, or the link drifts when the branch moves (documented in the authoring guide with GitHub/GitLab/Bitbucket templates).
 

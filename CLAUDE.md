@@ -1499,3 +1499,10 @@ candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFI
 - Two `/accept` tests of mine passed vacuously before the feature existed (an empty-list determinism check; an unknown option also exits 1); both were fixed to need the
   feature. When asserting "bad input is a usage error", first assert a good value is accepted.
 
+## Source links (spec §14.48)
+
+- `render/SourceLinks.kt` is the ONLY place a source URL is built (cards, package page, index, JSON). `MarkdownRenderer.ruleLocation` is the ONLY definition of "where a rule is defined".
+- Percent-encoding is per segment over the RFC 3986 unreserved set (parentheses and brackets are encoded, so a file name cannot end a Markdown link early). A template is validated
+  (`{file}` required) before any opa work, in the library (`IllegalArgumentException`) and the CLI (`convert`/`fail`, exit 1).
+- Verified with a real directory containing a space and `#` (`/tmp`, not a committed fixture: awkward file names are a Windows CI risk); the encoding is unit-tested instead.
+

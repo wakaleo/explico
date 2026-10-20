@@ -25,6 +25,7 @@ import io.explico.opa.OpaInvocationException
 import io.explico.opa.OpaRunner
 import io.explico.opa.OpaUnavailableException
 import io.explico.render.DuplicateFixtureNameException
+import io.explico.render.SourceLinks
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Comparator
@@ -70,6 +71,10 @@ private class RenderCommand : CliktCommand(name = "render") {
         "--requirements",
         help = "Text file listing the requirements to evidence, one per line (# comments allowed); adds a requirements-coverage table to index.md",
     ).path(mustExist = true, canBeDir = false)
+    private val sourceUrl by option(
+        "--source-url",
+        help = "URL template linking every card to its Rego line, with {file} (required) and {line}, e.g. https://github.com/ORG/REPO/blob/COMMIT/policies/{file}#L{line}",
+    ).convert { value -> try { SourceLinks.of(value); value } catch (e: IllegalArgumentException) { fail(e.message ?: "invalid template") } }
     private val failUnder by option("--fail-under", help = "Exit 5 if overall rendering coverage is below this percent (0-100); the output is still written")
         .int().restrictTo(0..100)
     private val failOnGaps by option(
@@ -82,7 +87,7 @@ private class RenderCommand : CliktCommand(name = "render") {
         try {
             val policySet = Explico.load(policyDir, parseRegoVersion(regoVersion))
             val examples = examplesDir?.let { Explico.loadExamples(it) }
-            val rendered = Explico.render(policySet, policyDir, examples, dataDir, generateExamples, json, requirementsFile?.let { parseRequirements(Files.readString(it)) } ?: emptyList())
+            val rendered = Explico.render(policySet, policyDir, examples, dataDir, generateExamples, json, requirementsFile?.let { parseRequirements(Files.readString(it)) } ?: emptyList(), sourceUrl)
             replaceOutputDirectory(out, rendered.files)
             echo("Rendering coverage: ${rendered.coverage.rendered} of ${rendered.coverage.total} conditions (${rendered.coverage.percent}%)")
             rendered.generatedExamples?.let { echo("Generated examples for ${it.rulesWithExamples} of ${it.rulesConsidered} rules") }

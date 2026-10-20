@@ -8,6 +8,8 @@ A new opt-in feature, and fixes for two defects found while building it. Recomme
   each rule's conditions where the author's own fixtures leave a gap: inputs that satisfy a rule body and "near-misses" that break exactly one
   condition, each **verified by `opa eval`** and shown in a separate, labelled *Generated examples* section with mechanical names. Off by
   default (output is byte-identical without it). Bodies it cannot model get none.
+- **Added:** `render --source-url <template>` links every card's *defined in*, every package page's source files and every index row to the Rego line in your repository
+  (`{file}` required, `{line}` optional; path segments percent-encoded). `sourceLine`/`sourceUrl` in `explico.json`. Pin a commit, not a branch.
 - **Added:** CI gates, new exit code `5`: `render --fail-under <percent>` (rendering coverage), `render --fail-on-gaps` (documentation gaps: missing description or
   framework, shared titles, and with `--requirements` uncovered requirements or unlisted framework strings) and `diff --fail-on <categories>` (e.g. `LOGIC_CHANGED,REMOVED`).
   Output is still written; the reason is on stderr. Library: `RenderedDocs.gaps`, one worded line per gap.

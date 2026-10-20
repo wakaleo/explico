@@ -20,6 +20,7 @@ import io.explico.render.ExampleSet
 import io.explico.render.MarkdownRenderer
 import io.explico.render.PolicyDigest
 import io.explico.render.Quality
+import io.explico.render.SourceLinks
 import io.explico.render.ReferenceData
 import io.explico.render.WorkedExample
 import io.explico.render.WorkedExamples
@@ -128,7 +129,11 @@ public object Explico {
         json: Boolean = false,
         /** The requirements (framework strings) the organisation must evidence, for the index's requirements coverage (spec §14.46). */
         requirements: List<String> = emptyList(),
+        /** A URL template (`{file}`, `{line}`) that links cards, package pages and the index to the Rego source (spec §14.48). Off by default. */
+        sourceUrl: String? = null,
     ): RenderedDocs {
+        // Validate the URL template before any (slow) opa work: a template without {file} is the caller's mistake.
+        val sourceLinks = SourceLinks.of(sourceUrl)
         val examplesByPackage = evaluateWorkedExamples(policySet, policyDir, examples, dataDir)
         val generated = if (generateExamples) generateWorkedExamples(policySet, policyDir, dataDir, examplesByPackage) else null
         // Spec §14.40: ties every document to an exact policy version. Computed from policyDir alone -- never
@@ -146,9 +151,10 @@ public object Explico {
                 generated?.byPackage?.get(pkg.path) ?: emptyMap(),
                 policyDigest,
                 dataValues,
+                sourceLinks,
             )
-        } + ("index.md" to MarkdownRenderer.renderIndex(policySet, examplesByPackage, policyDigest, requirements)) +
-            (if (json) mapOf("explico.json" to JsonExport.render(policySet, policyDigest, examplesByPackage, generated?.byPackage ?: emptyMap(), dataValues, requirements)) else emptyMap())
+        } + ("index.md" to MarkdownRenderer.renderIndex(policySet, examplesByPackage, policyDigest, requirements, sourceLinks)) +
+            (if (json) mapOf("explico.json" to JsonExport.render(policySet, policyDigest, examplesByPackage, generated?.byPackage ?: emptyMap(), dataValues, requirements, sourceLinks)) else emptyMap())
 
         val packageCoverages = policySet.packages.map { Coverage.of(it) }
         val overallCoverage = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })

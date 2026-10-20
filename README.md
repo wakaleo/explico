@@ -78,6 +78,7 @@ and tested. What it produces:
 - **Reference data**: with `--data`, the values of the `data.*` documents a rule reads.
 - **`explico diff`**: a plain "What changed" list, then per-control cards and source diffs,
   insensitive to formatting, comments and variable names.
+- **Source links** (`--source-url`): every card, package page and index row links to the exact Rego line in your repository.
 - **CI gates**: `--fail-under`, `--fail-on-gaps` and `diff --fail-on` exit `5` so a pipeline can enforce rendering coverage, complete
   documentation and review of policy changes — the output is still written.
 - **JSON** (`--json`) for dashboards, GRC tools and scripts — the same facts, machine-readable
@@ -187,7 +188,7 @@ project's own `kotlin("jvm")` plugin version.
 ## CLI usage
 
 ```
-explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>]
+explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>] [--source-url <template>]
                [--fail-under <percent>] [--fail-on-gaps]
 explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--fail-on <categories>] [--rego-version v1|v0]
 explico version

@@ -191,6 +191,23 @@ NIST 800-53 CM-3
 a closing line lists *framework strings not in the requirements list*, which is how a typo shows up on both sides. The same
 data is in `explico.json` (`requirements`: total, covered, items, unlisted).
 
+## Linking cards to your repository
+
+With `--source-url` every card's *defined in*, every package page's *Source files* and every index row's *Source file* becomes a link to the
+exact Rego line, so a reviewer is one click from the code. Give a URL template; `{file}` (required) is the policy file's path relative to the
+policy directory and `{line}` (optional) the rule's line:
+
+| Host | Template |
+|---|---|
+| GitHub | `https://github.com/ORG/REPO/blob/COMMIT/policies/{file}#L{line}` |
+| GitLab | `https://gitlab.com/ORG/REPO/-/blob/COMMIT/policies/{file}#L{line}` |
+| Bitbucket | `https://bitbucket.org/ORG/REPO/src/COMMIT/policies/{file}#lines-{line}` |
+
+Pin `COMMIT` to the commit hash you rendered from, **not a branch name**: a link to `main` silently starts pointing at different code when
+`main` moves, which is exactly what a published, signed-off document must not do. (`policies/` is the folder your policy directory lives in,
+inside the repository.) Each path segment is percent-encoded, so spaces and symbols in file names are safe. Pair it with the *policy digest*
+on every page, which proves which version of the policies the document describes.
+
 ## Enforcing it in CI
 
 Reports are only useful if someone reads them. Three opt-in gates make a pipeline fail instead (exit code `5`); the output is

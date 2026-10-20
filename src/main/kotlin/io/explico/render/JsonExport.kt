@@ -42,6 +42,7 @@ internal object JsonExport {
         generatedByPackage: Map<String, Map<Int, GeneratedExamples>>,
         dataValues: Map<Operand.Path, JsonElement?>?,
         requirements: List<String> = emptyList(),
+        sourceLinks: SourceLinks? = null,
     ): String {
         val packageCoverages = policySet.packages.map { Coverage.of(it) }
         val overall = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })
@@ -52,7 +53,7 @@ internal object JsonExport {
             put("quality", qualityObject(Quality.findingsOf(policySet)))
             put("requirements", Quality.normalise(requirements).takeIf { it.isNotEmpty() }?.let { requirementsObject(Quality.coverageOf(policySet, it)) } ?: JsonNull)
             put("packages", buildJsonArray {
-                for (pkg in policySet.packages) add(packageObject(pkg, policySet, examplesByPackage[pkg.path] ?: emptyMap(), generatedByPackage[pkg.path] ?: emptyMap(), dataValues))
+                for (pkg in policySet.packages) add(packageObject(pkg, policySet, examplesByPackage[pkg.path] ?: emptyMap(), generatedByPackage[pkg.path] ?: emptyMap(), dataValues, sourceLinks))
             })
         }
         return prettyJson(document)
@@ -103,6 +104,7 @@ internal object JsonExport {
         examples: Map<String, List<WorkedExample>>,
         generated: Map<Int, GeneratedExamples>,
         dataValues: Map<Operand.Path, JsonElement?>?,
+        sourceLinks: SourceLinks?,
     ): JsonObject {
         val anchors = MarkdownRenderer.cardAnchorIds(pkg)
         return buildJsonObject {
@@ -116,7 +118,7 @@ internal object JsonExport {
             put("coverage", coverage(Coverage.of(pkg)))
             put("rules", buildJsonArray {
                 pkg.rules.forEachIndexed { index, rule ->
-                    add(ruleObject(rule, pkg, policySet, anchors[index], WorkedExamples.forGroup(rule, pkg, examples[rule.name] ?: emptyList()), generated[index], dataValues))
+                    add(ruleObject(rule, pkg, policySet, anchors[index], WorkedExamples.forGroup(rule, pkg, examples[rule.name] ?: emptyList()), generated[index], dataValues, sourceLinks))
                 }
             })
         }
@@ -130,6 +132,7 @@ internal object JsonExport {
         examples: List<WorkedExample>,
         generated: GeneratedExamples?,
         dataValues: Map<Operand.Path, JsonElement?>?,
+        sourceLinks: SourceLinks?,
     ): JsonObject = buildJsonObject {
         val metadata = rule.metadata
         put("name", rule.name)
@@ -137,7 +140,11 @@ internal object JsonExport {
         put("title", nullable(metadata?.title))
         put("description", nullable(metadata?.description?.trimEnd()))
         put("anchor", nullable(anchor))
-        put("sourceFile", nullable((rule.bodies.firstOrNull()?.sourceLocation ?: rule.default?.sourceLocation ?: rule.constantValue?.sourceLocation)?.file))
+        val location = MarkdownRenderer.ruleLocation(rule)
+        put("sourceFile", nullable(location?.file))
+        // Spec §14.48: always present (additive); the URL only when a template was given and the rule has a location.
+        put("sourceLine", location?.let { JsonPrimitive(it.row) } ?: JsonNull)
+        put("sourceUrl", nullable(if (location != null) sourceLinks?.url(location.file, location.row) else null))
         put("frameworks", buildJsonArray { metadata?.frameworks.orEmpty().forEach { add(JsonPrimitive(it)) } })
         put("authors", authors(metadata?.authors.orEmpty()))
         put("relatedResources", relatedResources(metadata?.relatedResources.orEmpty()))

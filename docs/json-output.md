@@ -45,6 +45,8 @@ Library: `Explico.render(policySet, policyDir, examples, dataDir, generateExampl
 | `controlId`, `title`, `description` | string or null | From METADATA |
 | `anchor` | string or null | The card's anchor id in the package document (`#rel-001`); null for a duplicate that lost the claim |
 | `sourceFile` | string or null | The `.rego` file (relative to the policy directory) |
+| `sourceLine` | integer or null | The rule's first line in that file (its first body, else its `default`, else its constant value) |
+| `sourceUrl` | string or null | The link to that line when a `--source-url` template was given, else null |
 | `frameworks` | string[] | METADATA `custom.frameworks` |
 | `authors` | `{name, email}`[] | METADATA `authors`; either field may be null |
 | `relatedResources` | `{ref, description}`[] | METADATA `related_resources` |

@@ -27,11 +27,13 @@ internal object MarkdownRenderer {
         policyDigest: String? = null,
         /** Spec §14.41's resolved `data.*` values for the whole render; null means no `dataDir` was supplied. */
         dataValues: Map<Operand.Path, JsonElement?>? = null,
+        /** Links to the Rego source (spec §14.48); null leaves every location as plain text. */
+        sourceLinks: SourceLinks? = null,
     ): String {
         val sb = StringBuilder()
         sb.appendLine("# Package `${pkg.path}`")
         sb.appendLine()
-        sb.appendLine("*Source files: ${pkg.sourceFiles.joinToString(", ") { "`$it`" }}*")
+        sb.appendLine("*Source files: ${pkg.sourceFiles.joinToString(", ") { file -> sourceLinks?.let { "[`$file`](${it.url(file, 1)})" } ?: "`$file`" }}*")
         sb.appendLine()
 
         // Package-scope METADATA (review item 4), shown before the first card -- title bold (no
@@ -62,6 +64,7 @@ internal object MarkdownRenderer {
                     anchorIds[index],
                     generatedExamples = generatedByRuleIndex[index],
                     dataValues = dataValues,
+                    sourceLinks = sourceLinks,
                 ),
             )
             sb.appendLine()
@@ -98,6 +101,8 @@ internal object MarkdownRenderer {
          * own plain-prefix paths; null means no `dataDir` was supplied at all (the feature is off, not just empty).
          */
         dataValues: Map<Operand.Path, JsonElement?>? = null,
+        /** Links to the Rego source (spec §14.48); null leaves the location as plain text. */
+        sourceLinks: SourceLinks? = null,
     ): String {
         val sb = StringBuilder()
         // Review item 18: an explicit anchor, because links target the control-id / package-rulename
@@ -108,7 +113,7 @@ internal object MarkdownRenderer {
             sb.appendLine()
         }
         appendHeading(sb, rule, pkg)
-        appendMetadataLines(sb, rule, pkg)
+        appendMetadataLines(sb, rule, pkg, sourceLinks)
 
         val anchorFor: (Condition.RuleReference) -> String? = { ref -> resolveAnchor(pkg.path, ref, policySet, isLinkable) }
         val functionAnchorFor: (Condition.FunctionCall) -> String? = { call -> resolveFunctionAnchor(pkg.path, call, policySet, isLinkable) }
@@ -181,13 +186,19 @@ internal object MarkdownRenderer {
         if (customFields.isNotEmpty()) sb.appendLine("*Custom: ${customFields.entries.joinToString(", ") { "${it.key}: ${it.value}" }}*")
     }
 
-    private fun appendMetadataLines(sb: StringBuilder, rule: RuleGroup, pkg: PolicyPackage) {
+    private fun appendMetadataLines(sb: StringBuilder, rule: RuleGroup, pkg: PolicyPackage, sourceLinks: SourceLinks?) {
         val metadata = rule.metadata
         // "?" only for a default-only rule with zero bodies in this file (review item 3) -- should
         // never actually surface, since a RuleGroup is only ever constructed with at least one of
         // bodies/default non-empty, but this stays a graceful fallback rather than a crash either way.
-        val sourceFile = (rule.bodies.firstOrNull()?.sourceLocation ?: rule.default?.sourceLocation ?: rule.constantValue?.sourceLocation)?.file?.substringAfterLast('/') ?: "?"
-        sb.appendLine("*Rule `${rule.name}` in package `${pkg.path}` — defined in `$sourceFile`*")
+        val location = ruleLocation(rule)
+        // Spec §14.48: with a URL template the location is a link to the exact line (basename:row); no location, or no template, is today's plain text.
+        val definedIn = if (location != null && sourceLinks != null) {
+            "[`${location.file.substringAfterLast('/')}:${location.row}`](${sourceLinks.url(location.file, location.row)})"
+        } else {
+            "`${location?.file?.substringAfterLast('/') ?: "?"}`"
+        }
+        sb.appendLine("*Rule `${rule.name}` in package `${pkg.path}` — defined in $definedIn*")
         if (!metadata?.frameworks.isNullOrEmpty()) {
             sb.appendLine("*Frameworks: ${metadata.frameworks.joinToString(", ")}*")
         }
@@ -468,10 +479,12 @@ internal object MarkdownRenderer {
         policyDigest: String? = null,
         /** The requirements the organisation must evidence (spec §14.46); empty adds nothing to the index. */
         requirements: List<String> = emptyList(),
+        /** Links to the Rego source (spec §14.48); null leaves the Source file column as plain text. */
+        sourceLinks: SourceLinks? = null,
     ): String {
         data class Row(
             val controlId: String?, val title: String, val packagePath: String, val ruleName: String,
-            val coverage: CoverageSummary, val sourceFile: String, val hasMatching: Boolean, val hasNotMatching: Boolean,
+            val coverage: CoverageSummary, val sourceFile: String, val sourceRow: Int?, val hasMatching: Boolean, val hasNotMatching: Boolean,
             // Compliance quick wins (a policy-owner review of the real output, not spec-pinned): the real anchor
             // id this row's card claimed (null for a duplicate name that lost the claim -- see cardAnchorIds --
             // so the title never links to a nonexistent anchor), and the frameworks its METADATA names, for the
@@ -490,7 +503,8 @@ internal object MarkdownRenderer {
                     packagePath = pkg.path,
                     ruleName = rule.name,
                     coverage = Coverage.of(rule),
-                    sourceFile = (rule.bodies.firstOrNull()?.sourceLocation ?: rule.default?.sourceLocation ?: rule.constantValue?.sourceLocation)?.file ?: "?",
+                    sourceFile = ruleLocation(rule)?.file ?: "?",
+                    sourceRow = ruleLocation(rule)?.row,
                     hasMatching = outcomes.any { it.matched },
                     hasNotMatching = outcomes.any { !it.matched },
                     anchorId = anchorIds[index],
@@ -512,6 +526,8 @@ internal object MarkdownRenderer {
         //
         // Compliance quick win: the header reads "Rendered", not "Coverage" -- a compliance reader reads
         // "Coverage" as control coverage, which this column does not measure (see the closing legend).
+        fun sourceCell(file: String, row: Int?): String =
+            if (sourceLinks != null && row != null) "[`$file:$row`](${sourceLinks.url(file, row)})" else "`$file`"
         fun appendTable(tableRows: List<Row>) {
             if (hasExamples) {
                 sb.appendLine("| Control ID | Title | Package | Rule | Rendered | Example coverage | Source file |")
@@ -527,9 +543,9 @@ internal object MarkdownRenderer {
                 val prefix = "| ${row.controlId ?: "—"} | $titleCell | `${row.packagePath}` | `${row.ruleName}` | ${row.coverage.percent}%"
                 if (hasExamples) {
                     val exampleColumn = "${if (row.hasMatching) "✓" else "–"} / ${if (row.hasNotMatching) "✓" else "–"}"
-                    sb.appendLine("$prefix | $exampleColumn | `${row.sourceFile}` |")
+                    sb.appendLine("$prefix | $exampleColumn | ${sourceCell(row.sourceFile, row.sourceRow)} |")
                 } else {
-                    sb.appendLine("$prefix | `${row.sourceFile}` |")
+                    sb.appendLine("$prefix | ${sourceCell(row.sourceFile, row.sourceRow)} |")
                 }
             }
             sb.appendLine()
@@ -620,6 +636,10 @@ internal object MarkdownRenderer {
         val anchorId = anchorIdOf(targetRule, targetPackagePath)
         return if (targetPackagePath == currentPackagePath) "#$anchorId" else "${docFileName(targetPackagePath)}#$anchorId"
     }
+
+    /** Where [rule] is defined: its first body, else its `default`, else its constant value; null when it has no location at all. Shared by the card, the index and the JSON. */
+    internal fun ruleLocation(rule: RuleGroup): io.explico.model.SourceRef? =
+        rule.bodies.firstOrNull()?.sourceLocation ?: rule.default?.sourceLocation ?: rule.constantValue?.sourceLocation
 
     /** `[title](file#anchor)`, or the plain title when the rule's card claimed no anchor (a duplicate name). */
     private fun titleLink(title: String, packagePath: String, anchorId: String?): String =
