@@ -834,6 +834,8 @@ internal object AstMapper {
         for (expr in bodyExprs) mapBodyExpr(expr, local, ctx, conditions)
         val renderable = conditions.all { c ->
             c !is Condition.Unrendered && c !is Condition.RuleReference && c !is Condition.FunctionCall &&
+                // An `every` renders as a head bullet plus nested bullets; a comprehension phrase is one line, so it could only show the head (spec §14.49).
+                c !is Condition.Every &&
                 Coverage.operandsOf(c).all { isFullyRendered(it) }
         }
         if (!renderable) return ConstructResult.Unsupported("comprehension")
@@ -859,7 +861,7 @@ internal object AstMapper {
             is JsonArray -> mapCallShapedCondition(expr, decodeTermList(terms), symbolTable, ctx)
             is JsonObject -> when {
                 "symbols" in terms -> mapSomeIn(expr, terms, symbolTable, ctx)
-                "domain" in terms -> Condition.Unrendered(sourceText(expr.location), "every")
+                "domain" in terms -> mapEvery(expr, terms, symbolTable, ctx)
                 "type" in terms -> mapSingleTermCondition(expr, opaJson.decodeFromJsonElement(OpaTerm.serializer(), terms), symbolTable, ctx)
                 else -> Condition.Unrendered(sourceText(expr.location), "unclassified")
             }
@@ -965,6 +967,23 @@ internal object AstMapper {
         return Condition.Comparison(left.operand, Operator.EQ, right.operand, negated)
     }
 
+    /**
+     * The collection a `some x in c` / `every x in c` iterates: an ordinary operand, except that a bare partial-rule reference
+     * (`workloads.containers`, `local_items`) is exactly right here -- it IS that rule's value -- though an operand position refuses it.
+     */
+    private fun mapIterationCollection(collectionTerm: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): ConstructResult {
+        // (original note) `some x in workloads.containers` / `some x in local_items`: the collection IS a partial rule's
+        // value, so the bare rule reference (which an operand position refuses) is exactly right here.
+        val ruleCollection = if (collectionTerm.type == "var" || collectionTerm.type == "ref") {
+            val chain = if (collectionTerm.type == "var") listOf(collectionTerm) else decodeTermList(collectionTerm.value)
+            val root = chain.first()
+            if ((root.type == "var" || root.type == "string") && symbolTable[stringValueOf(root)] == null) {
+                partialRuleRootedPath(stringValueOf(root), chain.drop(1), symbolTable, ctx, allowBareRule = true)
+            } else null
+        } else null
+        return if (ruleCollection != null) ConstructResult.Ok(ruleCollection) else mapOperand(collectionTerm, symbolTable, ctx)
+    }
+
     private fun mapSomeIn(expr: OpaExpr, terms: JsonObject, symbolTable: MutableMap<String, VarBinding>, ctx: MappingContext): Condition {
         val symbols = opaJson.decodeFromJsonElement(ListSerializer(OpaTerm.serializer()), terms.getValue("symbols"))
         val callTerm = symbols.singleOrNull() ?: return Condition.Unrendered(sourceText(expr.location), "unclassified")
@@ -986,21 +1005,43 @@ internal object AstMapper {
                 Triple(stringValueOf(args[0]), stringValueOf(args[1]), args[2])
             else -> return Condition.Unrendered(sourceText(expr.location), "unclassified")
         }
-        // `some x in workloads.containers` / `some x in local_items`: the collection IS a partial rule's
-        // value, so the bare rule reference (which an operand position refuses) is exactly right here.
-        val ruleCollection = if (collectionTerm.type == "var" || collectionTerm.type == "ref") {
-            val chain = if (collectionTerm.type == "var") listOf(collectionTerm) else decodeTermList(collectionTerm.value)
-            val root = chain.first()
-            if ((root.type == "var" || root.type == "string") && symbolTable[stringValueOf(root)] == null) {
-                partialRuleRootedPath(stringValueOf(root), chain.drop(1), symbolTable, ctx, allowBareRule = true)
-            } else null
-        } else null
-        val collection = if (ruleCollection != null) ConstructResult.Ok(ruleCollection) else mapOperand(collectionTerm, symbolTable, ctx)
+        val collection = mapIterationCollection(collectionTerm, symbolTable, ctx)
         val collectionPath = (collection as? ConstructResult.Ok)?.operand as? Operand.Path
             ?: return Condition.Unrendered(sourceText(expr.location), (collection as? ConstructResult.Unsupported)?.reason ?: "unclassified")
         if (key != null) symbolTable[key] = VarBinding.IterationKey(collectionPath)
         symbolTable[variable] = VarBinding.Iteration(collectionPath)
         return Condition.SomeIn(variable, collectionPath, key)
+    }
+
+    /**
+     * `every [key,] value in domain { body }` (spec §14.49), rendered ALL-OR-NOTHING -- the same rule comprehensions follow. It becomes a
+     * [Condition.Every] only when the domain is a plain path (resolved exactly as `some`'s collection) and EVERY condition of the body, mapped
+     * with the very same per-expression logic a rule body uses, is fully rendered (a rule or function reference is fine: the nested bullet links it).
+     * The body is mapped in a COPY of the symbol table, with the value bound as an iteration element and the key as an iteration key, so those
+     * names never leak out. Anything else -- a literal or computed domain, a pattern instead of a variable, an unrenderable condition or operand
+     * anywhere inside -- keeps the whole block as verbatim source with the reason `every`, never half-rendered.
+     */
+    private fun mapEvery(expr: OpaExpr, terms: JsonObject, symbolTable: MutableMap<String, VarBinding>, ctx: MappingContext): Condition {
+        val fallback = Condition.Unrendered(sourceText(expr.location), "every")
+        fun term(key: String): OpaTerm? = (terms[key] as? JsonObject)?.let { opaJson.decodeFromJsonElement(OpaTerm.serializer(), it) }
+        val domain = term("domain") ?: return fallback
+        val value = term("value")?.takeIf { it.type == "var" } ?: return fallback
+        val keyTerm = term("key")
+        if (keyTerm != null && keyTerm.type != "var") return fallback
+        val bodyJson = terms["body"] as? JsonArray ?: return fallback
+        val collection = (mapIterationCollection(domain, symbolTable, ctx) as? ConstructResult.Ok)?.operand as? Operand.Path ?: return fallback
+
+        val local = symbolTable.toMutableMap()
+        keyTerm?.let { local[stringValueOf(it)] = VarBinding.IterationKey(collection) }
+        local[stringValueOf(value)] = VarBinding.Iteration(collection)
+        val conditions = mutableListOf<Condition>()
+        for (bodyExpr in opaJson.decodeFromJsonElement(ListSerializer(OpaExpr.serializer()), bodyJson)) mapBodyExpr(bodyExpr, local, ctx, conditions)
+        if (conditions.isEmpty()) return fallback
+        val renderable = Coverage.flatten(conditions).all { c ->
+            c !is Condition.Unrendered && Coverage.operandsOf(c).all { isFullyRendered(it) }
+        }
+        if (!renderable) return fallback
+        return Condition.Every(stringValueOf(value), collection, conditions, keyTerm?.let { stringValueOf(it) })
     }
 
     private fun mapSingleTermCondition(

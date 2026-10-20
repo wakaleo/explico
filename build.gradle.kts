@@ -206,8 +206,10 @@ val showcaseExamples = mapOf(
         "A constant rule, a user-defined function with a parameter, and rules that call both. References become links to the target's card."),
     "comprehensions" to ("Comprehensions" to
         "Set, list and variable-bound comprehensions rendered as readable phrases: counting matching items, an emptiness check, and a set substituted into a membership test."),
+    "every" to ("Every element, and the empty case" to
+        "`every` rendered as a nested list: it says outright that an empty collection satisfies it, and the worked examples show the value read from each element."),
     "fallbacks" to ("When explico will not paraphrase" to
-        "A comprehension with one condition explico cannot render (all-or-nothing, so the whole thing stays source) and an `every` block. explico shows the verbatim Rego in a marked block and reports it in the coverage footer, rather than describing logic it did not check."),
+        "A comprehension and an `every` block that each contain one condition explico cannot render (all-or-nothing, so the whole thing stays source). explico shows the verbatim Rego in a marked block and reports it in the coverage footer, rather than describing logic it did not check."),
 )
 
 val showcaseRenderTasks = showcaseExamples.keys.sorted().map { name ->

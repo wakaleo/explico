@@ -1506,3 +1506,12 @@ candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFI
   (`{file}` required) before any opa work, in the library (`IllegalArgumentException`) and the CLI (`convert`/`fail`, exit 1).
 - Verified with a real directory containing a space and `#` (`/tmp`, not a committed fixture: awkward file names are a Windows CI risk); the encoding is unit-tested instead.
 
+
+## `every` (spec §14.49) -- an operator-approved amendment of a frozen contract
+
+`Condition.Every(variable, collection, body, key)` renders as a head bullet with its conditions nested (two spaces per level); the head says "(vacuously true when there are none)".
+**All-or-nothing**, like comprehensions: the domain must be a plain path and every body condition fully rendered (`AstMapper.mapEvery`, body mapped by `mapBodyExpr` in a COPY of the symbol
+table); otherwise the whole block stays one `Unrendered` with reason `every`. Never render half of one. `Coverage.flatten` is the one place that inlines nested conditions (head + each nested
+one count); `Examples`/`ReferenceData`/`ChangeSummary` use it too. The acceptance pack's `all_checks_passed` is now 2 of 2 and the pack 24 of 24 (100%) -- README "Amendment 2",
+`ReleaseGovernanceAcceptanceIT`/`IndexAcceptanceIT` amended with explicit notes; goldens `index.md`/`release-governance.md` regenerated after line-by-line review. Fallback guards that used
+`every` as their example were repointed (to an `every` with an unrenderable body, `with`, `else`); do not relax the all-or-nothing rule.

@@ -109,7 +109,7 @@ This extracts a small real policy set to `./explico-demo/`, renders it, and
 prints exactly where to look:
 
 ```
-Rendered 6 documents to explico-demo/docs/ (95% coverage).
+Rendered 6 documents to explico-demo/docs/ (100% coverage).
 Open explico-demo/docs/release-approvals.md to see a rendered control card.
 ```
 
@@ -213,7 +213,7 @@ explico render samples/policies --out docs \
 ```
 
 ```
-Rendering coverage: 22 of 23 conditions (95%)
+Rendering coverage: 24 of 24 conditions (100%)
 ```
 
 The input policy (`samples/policies/approvals/change_approval.rego`):
@@ -369,7 +369,7 @@ later. Reproduced from the spec so this list can't drift from it:
 | 2 | No differential evaluation **across versions** / decision-flip analysis (future phase). Single-version fixture evaluation for worked examples IS in scope (§6.7). |
 | 3 | No HTML output, no web server, no graphical rendering (Markdown, plus opt-in JSON for tools). |
 | 4 | No inlining/flattening of helper rule bodies (references are rendered as links). |
-| 5 | No rendering of: `every`, `with` statements, `else` chains, or a comprehension containing anything explico cannot itself render (comprehensions whose whole body renders are rendered). These render via the fallback mechanism (§6.6). |
+| 5 | No rendering of: `with` statements, `else` chains, or a comprehension or `every` block containing anything explico cannot itself render (comprehensions and `every` blocks whose whole body renders are rendered). These render via the fallback mechanism (§6.6). |
 | 6 | No git integration. Diff takes two plain directories; the caller checks out versions themselves (e.g. via `git worktree`). |
 | 7 | No Rego parsing in Kotlin. Parsing is delegated to the `opa` binary (§4). |
 
@@ -379,7 +379,7 @@ against the coverage percentage reported on every card and package.
 
 ## Documentation
 
-- [`docs/showcase/`](docs/showcase/README.md) — **start here to see it in action**: five example policies (Kubernetes admission, storage, API authorization, helpers/functions, and what a fallback looks like), each with the Rego source beside the real rendered output.
+- [`docs/showcase/`](docs/showcase/README.md) — **start here to see it in action**: six example policies (Kubernetes admission, storage, API authorization, helpers/functions, `every`, and what a fallback looks like), each with the Rego source beside the real rendered output.
 - [`docs/user-guide.md`](docs/user-guide.md) — every CLI flag, every exit code, every public library function.
 - [`docs/json-output.md`](docs/json-output.md) — the machine-readable result (`render --json`, `diff --json`): what every field means and what it promises, for dashboards, GRC tools and scripts.
 - [`docs/policy-authoring.md`](docs/policy-authoring.md) — writing Rego policies explico renders well: METADATA conventions, the distinct-message/Situation-label convention, control-id/frameworks, fallback and coverage as design, fixture authoring.

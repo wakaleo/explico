@@ -1,0 +1,1 @@
+{"name": "one check failed", "input": {"pipeline": {"checks": [{"status": "passed"}, {"status": "failed"}]}}}

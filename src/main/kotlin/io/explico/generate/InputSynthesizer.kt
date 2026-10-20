@@ -264,6 +264,7 @@ internal object InputSynthesizer {
                 is Condition.RuleReference -> unsolvable("RuleReference is not modelled")
                 is Condition.FunctionCall -> unsolvable("FunctionCall is not modelled")
                 is Condition.Unrendered -> unsolvable("Unrendered (${condition.reason}) is not modelled")
+                is Condition.Every -> unsolvable("every is not modelled")
             }
         }
 

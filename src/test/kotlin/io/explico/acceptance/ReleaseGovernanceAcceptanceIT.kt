@@ -66,30 +66,28 @@ class ReleaseGovernanceAcceptanceIT {
         }
 
         @Test
-        @DisplayName("Situation 3 references rule `all_checks_passed`; the `all_checks_passed` card contains a ⚠ block whose fenced content includes `every check in`")
-        fun situation3ReferencesAllChecksPassedWhichFallsBackOnEvery() {
+        @DisplayName("Situation 3 references rule `all_checks_passed`; the `all_checks_passed` card shows `for every check in` with its nested condition, and no ⚠ block")
+        fun situation3ReferencesAllChecksPassedWhichRendersTheEvery() {
+            // AMENDED (operator-approved, spec §14.49): this was "contains a ⚠ block whose fenced content includes `every check in`".
             assertThat(markdown).contains("[`all_checks_passed`]")
             assertThat(markdown).contains("does not match")
-            assertThat(markdown).contains("every check in")
+            assertThat(helperCard()).contains("for every check in").contains("`pipeline ▸ checks ▸ [each check] ▸ status` is `\"passed\"`").doesNotContain("⚠")
         }
 
         @Test
-        @DisplayName("REL-004's own coverage footer reports 8 of 8; the `all_checks_passed` card reports less than 100% listing the `every` fallback; the package footer is less than 100%")
-        fun coverageMovedToTheEveryHelper() {
-            // AMENDED (operator-approved): this was "Coverage footer reports less than 100% and the
-            // card lists the fallback count" for REL-004's own card, which had the comprehension fallback.
+        @DisplayName("REL-004's own coverage footer reports 8 of 8; the `all_checks_passed` card reports 2 of 2; the package footer is 100%")
+        fun coverageIsFullEverywhere() {
+            // AMENDED (operator-approved, spec §14.49): the helper's footer was "less than 100%" and the package footer was "less than 100%".
             assertThat(Regex("Rendering coverage: (\\d+) of (\\d+) conditions").find(rel004Card())!!.destructured.toList()).containsExactly("8", "8")
+            assertThat(Regex("Rendering coverage: (\\d+) of (\\d+) conditions").find(helperCard())!!.destructured.toList()).containsExactly("2", "2")
+            assertThat(Regex("Package rendering coverage: (\\d+) of (\\d+) conditions").find(markdown)!!.destructured.toList()).containsExactly("10", "10")
+        }
 
-            val helperStart = markdown.indexOf("## release.governance.all_checks_passed")
-            assertThat(helperStart).isGreaterThanOrEqualTo(0)
-            val helperEnd = markdown.indexOf("\n## ", helperStart + 1).let { if (it == -1) markdown.length else it }
-            val helperCard = markdown.substring(helperStart, helperEnd)
-            val (rendered, total) = Regex("Rendering coverage: (\\d+) of (\\d+) conditions").find(helperCard)!!.destructured
-            assertThat(rendered.toInt()).isLessThan(total.toInt())
-            assertThat(helperCard).contains("every check in")
-
-            val (pkgRendered, pkgTotal) = Regex("Package rendering coverage: (\\d+) of (\\d+) conditions").find(markdown)!!.destructured
-            assertThat(pkgRendered.toInt()).isLessThan(pkgTotal.toInt())
+        private fun helperCard(): String {
+            val start = markdown.indexOf("## release.governance.all_checks_passed")
+            assertThat(start).isGreaterThanOrEqualTo(0)
+            val end = markdown.indexOf("\n## ", start + 1).let { if (it == -1) markdown.length else it }
+            return markdown.substring(start, end)
         }
 
         /** REL-004's own card, up to the next heading (release-governance.md also has an `all_checks_passed` card). */

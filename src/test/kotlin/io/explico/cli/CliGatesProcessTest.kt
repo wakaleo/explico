@@ -26,6 +26,8 @@ class CliGatesProcessTest {
     }
 
     private val pack = Path.of("src/test/resources/acceptance/policies").toAbsolutePath().toString()
+    // Not fully rendered: two `every` blocks stay source (18 of 20 conditions, 90%). The pack itself is 100% since `every` renders (spec §14.49).
+    private val partial = Path.of("src/test/resources/realistic/every/policies").toAbsolutePath().toString()
     private val quality = Path.of("src/test/resources/realistic/quality/policies").toAbsolutePath().toString()
     private val req = Path.of("src/test/resources/realistic/requirements").toAbsolutePath()
     private val oldDir = Path.of("src/test/resources/diff/diff-all-categories/old").toAbsolutePath().toString()
@@ -41,27 +43,28 @@ class CliGatesProcessTest {
     inner class FailUnder {
 
         @Test
-        @DisplayName("22 of 23 (95.65%) passes 95 and 0")
+        @DisplayName("18 of 20 (90%) passes 90 and 0")
         fun passes(@TempDir tempDir: Path) {
-            assertThat(render(tempDir, pack, "--fail-under", "95").exitCode).isEqualTo(0)
-            assertThat(render(tempDir, pack, "--fail-under", "0").exitCode).isEqualTo(0)
+            assertThat(render(tempDir, partial, "--fail-under", "90").exitCode).isEqualTo(0)
+            assertThat(render(tempDir, partial, "--fail-under", "0").exitCode).isEqualTo(0)
         }
 
         @Test
-        @DisplayName("fails 96 with exit 5, the exact message on stderr, and the output still written and printed")
+        @DisplayName("fails 91 with exit 5, the exact message on stderr, and the output still written and printed")
         fun failsAt96(@TempDir tempDir: Path) {
-            val result = render(tempDir, pack, "--fail-under", "96")
+            val result = render(tempDir, partial, "--fail-under", "91")
 
             assertThat(result.exitCode).isEqualTo(5)
-            assertThat(result.stderr.trim()).isEqualTo("explico: gate failed (--fail-under 96): rendering coverage is 95% (22 of 23 conditions)")
-            assertThat(result.stdout).contains("Rendering coverage: 22 of 23 conditions (95%)")
+            assertThat(result.stderr.trim()).isEqualTo("explico: gate failed (--fail-under 91): rendering coverage is 90% (18 of 20 conditions)")
+            assertThat(result.stdout).contains("Rendering coverage: 18 of 20 conditions (90%)")
             assertThat(Files.exists(tempDir.resolve("out/index.md"))).isTrue()
         }
 
         @Test
-        @DisplayName("100 fails (95.65 < 100)")
+        @DisplayName("100 fails (90 < 100), and the fully rendered pack passes it")
         fun failsAt100(@TempDir tempDir: Path) {
-            assertThat(render(tempDir, pack, "--fail-under", "100").exitCode).isEqualTo(5)
+            assertThat(render(tempDir, partial, "--fail-under", "100").exitCode).isEqualTo(5)
+            assertThat(render(tempDir, pack, "--fail-under", "100").exitCode).isEqualTo(0)
         }
 
         @Test
@@ -135,10 +138,10 @@ class CliGatesProcessTest {
     @Test
     @DisplayName("both gates failing give ONE exit 5 and both messages")
     fun bothGates(@TempDir tempDir: Path) {
-        val result = render(tempDir, pack, "--fail-under", "96", "--fail-on-gaps", "--requirements", req.resolve("requirements.txt").toString())
+        val result = render(tempDir, partial, "--fail-under", "91", "--fail-on-gaps", "--requirements", req.resolve("requirements.txt").toString())
 
         assertThat(result.exitCode).isEqualTo(5)
-        assertThat(result.stderr).contains("gate failed (--fail-under 96)").contains("gate failed (--fail-on-gaps): 1 gap(s)")
+        assertThat(result.stderr).contains("gate failed (--fail-under 91)").containsPattern("gate failed \\(--fail-on-gaps\\): [1-9][0-9]* gap\\(s\\)")
     }
 
     @Nested

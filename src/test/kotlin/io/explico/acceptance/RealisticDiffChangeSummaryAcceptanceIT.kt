@@ -193,11 +193,12 @@ class RealisticDiffChangeSummaryAcceptanceIT {
         }
 
         @Test
-        @DisplayName("CS-004 changes only an every block, which the card shows as source")
+        @DisplayName("CS-004 changes only a condition inside an every block, which is named like any other condition (rendered since spec §14.49)")
         fun everyBlockOnly() {
             assertThat(entry(summary, "CS-004")).containsExactly(
                 "- [CS-004 — Every block only](#cs-004) — logic changed",
-                "  - code shown as source changed (see the source diff below)",
+                "  - condition removed: `items ▸ [each item] ▸ ok` is `true`",
+                "  - condition added: `items ▸ [each item] ▸ ok` is `false`",
             )
         }
 

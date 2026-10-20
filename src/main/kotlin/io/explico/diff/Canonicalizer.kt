@@ -95,6 +95,17 @@ internal object Canonicalizer {
             put("type", JsonPrimitive("SomeIn"))
             put("variable", JsonPrimitive(alias))
         }
+        // Spec §14.49: hashed by STRUCTURE (never by source text), so reformatting or re-commenting an `every` keeps the hash, while changing a
+        // nested condition changes it. Variables are aliased like `some`'s: key, then variable, then the collection, then the body in order.
+        is Condition.Every -> buildJsonObject {
+            val keyAlias = condition.key?.let { aliasFor(it, aliases) }
+            val alias = aliasFor(condition.variable, aliases)
+            put("body", buildJsonArray { condition.body.forEach { add(canonicalCondition(it, aliases)) } })
+            put("collection", canonicalOperand(condition.collection, aliases))
+            put("key", keyAlias?.let { JsonPrimitive(it) } ?: JsonNull)
+            put("type", JsonPrimitive("Every"))
+            put("variable", JsonPrimitive(alias))
+        }
         is Condition.RuleReference -> buildJsonObject {
             put("negated", JsonPrimitive(condition.negated))
             put("packagePath", JsonPrimitive(condition.packagePath))

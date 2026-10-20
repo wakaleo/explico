@@ -340,12 +340,12 @@ class AstMapperTest {
         }
 
         @Test
-        fun everyStatementFallsBackWithVerbatimSourceFromLocationText() {
+        fun everyStatementIsMappedToAnEveryWithItsNestedComparison() {
+            // Amended (spec §14.49, operator-approved): was a verbatim-source fallback before `every` was rendered.
             val body = onlyFile("release_governance", "governance/release_governance.rego").packages[0].rules.single { it.name == "all_checks_passed" }.bodies.single()
-            val fallback = body.conditions.single() as Condition.Unrendered
-            assertThat(fallback.reason).isEqualTo("every")
-            assertThat(fallback.sourceText).startsWith("every check in")
-            assertThat(fallback.sourceText).contains("check.status == \"passed\"")
+            val every = body.conditions.single() as Condition.Every
+            assertThat(every.variable).isEqualTo("check")
+            assertThat(every.body.single()).isInstanceOf(Condition.Comparison::class.java)
         }
     }
 

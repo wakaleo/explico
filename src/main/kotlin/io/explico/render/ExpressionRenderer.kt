@@ -84,6 +84,13 @@ internal object ExpressionRenderer {
             val vars = if (condition.key != null) "${condition.key}, ${condition.variable}" else condition.variable
             withAnyOfPrefix("for some $vars in $text", hasAnyIndex)
         }
+        // Spec §14.49: ONLY the head phrase; the nested conditions are rendered as their own (indented) bullets by the caller. It says outright
+        // that an empty collection satisfies it -- the one thing a reader could otherwise miss.
+        is Condition.Every -> {
+            val (text, hasAnyIndex) = renderOperand(condition.collection, ruleValueAnchorFor)
+            val vars = if (condition.key != null) "${condition.key}, ${condition.variable}" else condition.variable
+            withAnyOfPrefix("for every $vars in $text, all of the following are true (vacuously true when there are none)", hasAnyIndex)
+        }
         is Condition.RuleReference -> renderRuleReference(condition, anchorFor)
         is Condition.FunctionCall -> renderFunctionCall(condition, functionAnchorFor, ruleValueAnchorFor)
         is Condition.Unrendered -> throw IllegalArgumentException(

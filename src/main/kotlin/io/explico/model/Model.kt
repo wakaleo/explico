@@ -193,6 +193,13 @@ public sealed interface Condition {
      */
     public data class FunctionCall(val packagePath: String, val functionName: String, val args: List<Operand>, val negated: Boolean) : Condition
 
+    /**
+     * `every [key,] variable in collection { body }` (spec §14.49), rendered ALL-OR-NOTHING: this variant exists only when the domain is a
+     * plain path and every [body] condition is fully rendered; otherwise the whole block stays a [Unrendered]. Vacuously true when the
+     * collection is empty -- the rendering says so. [variable] (and [key]) are bound inside [body] exactly as `some` binds them.
+     */
+    public data class Every(val variable: String, val collection: Operand, val body: List<Condition>, val key: String? = null) : Condition
+
     /** Anything the mapper cannot classify. Rendered as marked, verbatim source — never guessed. */
     public data class Unrendered(val sourceText: String, val reason: String) : Condition
 }

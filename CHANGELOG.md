@@ -4,6 +4,7 @@
 
 A new opt-in feature, and fixes for two defects found while building it. Recommended over 0.1.1, especially on Windows.
 
+- **Added:** `every` blocks are rendered: `every x in coll { ... }` becomes a head bullet ("for every x in `coll`, all of the following are true (vacuously true when there are none)") with its conditions nested beneath it; the two-variable form and nested `every`s work too. All-or-nothing, like comprehensions: a collection that is not a plain path, or anything unrenderable inside, keeps the whole block as source. `kind: "every"` with nested `conditions` in `explico.json`. This changes the acceptance pack's own figures (the `every` helper is now 2 of 2; overall 24 of 24, 100%, was 22 of 23) -- a deliberate, approved amendment of the frozen acceptance README (spec §14.49). Note for library consumers: the public sealed `Condition` gains a variant (`Condition.Every`), so an exhaustive Kotlin `when` over it needs a new branch.
 - **Added:** `--generate-examples` (library: `Explico.render(..., generateExamples = true)`). explico derives worked examples itself from
   each rule's conditions where the author's own fixtures leave a gap: inputs that satisfy a rule body and "near-misses" that break exactly one
   condition, each **verified by `opa eval`** and shown in a separate, labelled *Generated examples* section with mechanical names. Off by

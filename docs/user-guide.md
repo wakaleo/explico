@@ -25,7 +25,7 @@ explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--r
 | `--json` | no | Also write `explico.json`, the machine-readable result (see [`json-output.md`](json-output.md)). Off by default; nothing else changes. |
 | `--requirements <file>` | no | A text file listing the requirements your organisation must evidence, one per line (blank lines and `#` comments ignored, lines trimmed, duplicates collapsed). Adds a *Requirements coverage* table to `index.md`: each requirement in the file's order with the controls that name it, or **No control**; and the framework strings your controls use that are *not* on the list (a typo catcher). Matching is exact string equality with the METADATA `frameworks` strings. A missing file is a usage error (exit `1`). |
 | `--source-url <template>` | no | Link every card's *defined in*, every package page's source files and every index row's *Source file* to the Rego source in your repository. A URL template with `{file}` (**required**: the policy file's path relative to `<policyDir>`, each segment percent-encoded) and `{line}` (optional: the rule's 1-based line). A template without `{file}` is a usage error (exit `1`). See *Linking cards to your repository* in [`policy-authoring.md`](policy-authoring.md). |
-| `--fail-under <percent>` | no | CI gate: exit `5` if overall rendering coverage is below this integer (0-100). Compared exactly (22 of 23 conditions is 95.65%: it passes 95 and fails 96). The output is still written. |
+| `--fail-under <percent>` | no | CI gate: exit `5` if overall rendering coverage is below this integer (0-100). Compared exactly (18 of 20 conditions is exactly 90%: it passes 90 and fails 91). The output is still written. |
 | `--fail-on-gaps` | no | CI gate: exit `5` if the documentation has gaps — a control with no description or no framework, a title shared by controls, and (with `--requirements`) a requirement with no control or a framework string not on the list. Each gap is listed on stderr. |
 | `--rego-version v1\|v0` | no | The Rego syntax of the policies: `v1` (default) or `v0` (legacy: `deny[msg] { ... }` with no `if`/`contains`, as in the Gatekeeper library). Passed to every `opa` call as `--v0-compatible`. Never auto-detected; v0 mode applies to the whole directory (v1 files that `import rego.v1` still parse). The `opa` binary must be 1.x either way. `diff` applies it to both directories. |
 
@@ -33,7 +33,7 @@ Writes one `<package-path>.md` file per Rego package plus `index.md`, and
 prints a one-line coverage summary to stdout, e.g.:
 
 ```
-Rendering coverage: 22 of 23 conditions (95%)
+Rendering coverage: 24 of 24 conditions (100%)
 ```
 
 ### Generated examples (`--generate-examples`)

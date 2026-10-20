@@ -14,7 +14,7 @@ explico render samples/policies --out docs \
 ```
 
 ```
-Rendering coverage: 22 of 23 conditions (95%)
+Rendering coverage: 24 of 24 conditions (100%)
 ```
 
 This writes one Markdown file per Rego package, plus `index.md`. Open
@@ -38,7 +38,7 @@ This writes one Markdown file per Rego package, plus `index.md`. Open
 |---|---|---|---|---|---|---|
 | — | [Release candidate environments](release-evidence.md#release-evidence-is-release-candidate) | `release.evidence` | `is_release_candidate` | 100% | ✓ / – | `evidence/pipeline_evidence.rego` |
 | — | [exempt_service](release-exemptions.md#release-exemptions-exempt-service) | `release.exemptions` | `exempt_service` | 100% | ✓ / ✓ | `exemptions/exemptions.rego` |
-| — | [Mandatory check completeness](release-governance.md#release-governance-all-checks-passed) | `release.governance` | `all_checks_passed` | 0% | ✓ / – | `governance/release_governance.rego` |
+| — | [Mandatory check completeness](release-governance.md#release-governance-all-checks-passed) | `release.governance` | `all_checks_passed` | 100% | ✓ / – | `governance/release_governance.rego` |
 
 ## Controls by framework
 
@@ -49,13 +49,11 @@ This writes one Markdown file per Rego package, plus `index.md`. Open
 | SLSA v1.0 L2 | [REL-003](release-provenance.md#rel-003) |
 | SOC 2 CC8.1 | [REL-001](release-approvals.md#rel-001), [REL-002](release-evidence.md#rel-002), [REL-004](release-governance.md#rel-004) |
 
-*Overall rendering coverage: 22 of 23 conditions (95%)*
-
-*Below 100%: [Mandatory check completeness](release-governance.md#release-governance-all-checks-passed) -- each shows the constructs it could not render as source on its own card.*
+*Overall rendering coverage: 24 of 24 conditions (100%)*
 
 ## How to read this index
 
-- **Rendered** — the share of a rule's conditions explico could render as readable text; the rest is shown as marked verbatim source on the rule's own card. It says nothing about whether a control is effective or complete. A helper rule can show 0% because its only condition is a construct explico does not render (such as every); that says nothing about the rules that call it.
+- **Rendered** — the share of a rule's conditions explico could render as readable text; the rest is shown as marked verbatim source on the rule's own card. It says nothing about whether a control is effective or complete. A helper rule can show 0% because its only condition is a construct explico does not render (such as a `with` override); that says nothing about the rules that call it.
 - **Example coverage** — `✓ / ✓` means at least one worked example where the rule matches and at least one where it does not; `–` means none.
 ```
 
@@ -69,9 +67,8 @@ The **Example coverage** column (`✓ / ✓` = at least one matching and one
 non-matching fixture demonstrate this control; `✓ / –` = only one
 direction is demonstrated) is exactly the kind of gap-visibility spec §6.7
 is for — a thin fixture set shows up here, not as a false "100% covered."
-The **Below 100%** line names every rule that couldn't be fully rendered (here the
-`every` helper, which shows 0%) and links to its card, where the construct is shown as
-source. A closing **How to read this index** section spells out what "Rendered" and
+When a rule can't be fully rendered, a **Below 100%** line (absent here, because the pack renders in full)
+names it and links to its card, where the construct is shown as source. A closing **How to read this index** section spells out what "Rendered" and
 "Example coverage" actually mean, so neither is mistaken for a statement about the control
 itself.
 
@@ -143,34 +140,30 @@ something explico can render:
 - (the set of `change ▸ approvals ▸ [each a]` such that for some a in `change ▸ approvals`; `change ▸ approvals ▸ [each a] ▸ role` is `"release-manager"`) is empty
 ```
 
-The one thing in this package it will *not* paraphrase is the helper rule
-`all_checks_passed`, which uses an `every` block. It sits below 100%
-coverage for an honest, visible reason, not a bug:
+The helper rule `all_checks_passed` uses an `every` block, which explico renders as a
+nested list. It says outright that an empty collection satisfies `every`, since that is
+the one thing a reader could miss:
 
 ```markdown
 ## release.governance.all_checks_passed
 
-- ⚠ **not rendered — shown as source:**
+- for every check in `pipeline ▸ checks`, all of the following are true (vacuously true when there are none)
+  - `pipeline ▸ checks ▸ [each check] ▸ status` is `"passed"`
 
-  ```rego
-  every check in input.pipeline.checks {
-  		check.status == "passed"
-  	}
-  ```
-
-*Rendering coverage: 0 of 1 conditions*
+*Rendering coverage: 2 of 2 conditions*
 ```
 
-and the package footer says how much of the whole package that affected:
+and the package footer says how much of the whole package rendered:
 
 ```markdown
-*Package rendering coverage: 8 of 9 conditions (88%)*
+*Package rendering coverage: 10 of 10 conditions (100%)*
 ```
 
-One condition out of nine, in one helper, in a five-policy package. See
+An `every` is rendered all-or-nothing: if its collection is not a plain path, or any
+condition inside it is something explico has no phrase for, the whole block is shown as
+source instead (`docs/showcase/fallbacks.md` shows one). It never shows half of one. See
 [`policy-authoring.md`](policy-authoring.md#fallback-and-coverage-design-not-defect)
-for why this is the intended, honest behavior — not something to "fix" by
-avoiding `every` in your own policies.
+for why a block shown as source is the intended, honest behavior.
 
 ## 4. Diff two versions
 
@@ -224,12 +217,9 @@ operand changed), only its metadata hash differs:
 | Frameworks | SOC 2 CC8.1, DORA Art. 9 | SOC 2 CC8.1, DORA Art. 9 |
 ```
 
-And because REL-004's own coverage is below 100% (step 3, above), the
-report's closing line reflects it:
-
-```
-⚠ 1 changed controls contain conditions that could not be rendered; review source diffs directly.
-```
+Because REL-004 renders in full, the report has no closing warning. When a changed control
+contains something shown as source, the report ends with `⚠ N changed controls contain
+conditions that could not be rendered; review source diffs directly.`
 
 The other six controls are `UNCHANGED` and don't get a section at all —
 only non-`UNCHANGED` controls appear in the report body, though every

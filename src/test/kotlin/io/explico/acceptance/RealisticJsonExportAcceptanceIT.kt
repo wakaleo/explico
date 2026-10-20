@@ -135,12 +135,12 @@ class RealisticJsonExportAcceptanceIT {
     inner class TopLevel {
 
         @Test
-        @DisplayName("schema, policy digest (the one the index shows) and overall coverage 22 of 23, 95%")
+        @DisplayName("schema, policy digest (the one the index shows) and overall coverage 24 of 24, 100%")
         fun header() {
             assertThat(packJson.str("schema")).isEqualTo("explico/render/1")
             val digestInIndex = Regex("sha256:([0-9a-f]{64})").find(packOn.getValue("index.md"))!!.groupValues[1]
             assertThat(packJson.str("policyDigest")).isEqualTo(digestInIndex)
-            assertThat(packJson.coverage()).isEqualTo(Triple(22, 23, 95))
+            assertThat(packJson.coverage()).isEqualTo(Triple(24, 24, 100))
         }
 
         @Test
@@ -212,16 +212,15 @@ class RealisticJsonExportAcceptanceIT {
     inner class Helpers {
 
         @Test
-        @DisplayName("all_checks_passed: its only condition is unrendered, with verbatim source and a reason, and 0%")
+        @DisplayName("all_checks_passed: its only condition is an every (rendered since spec §14.49) with its condition nested, and 2 of 2")
         fun allChecksPassed() {
             val rule = rule(packJson, "release.governance", "all_checks_passed")
             val condition = rule.arr("bodies").single().arr("conditions").single().jsonObject
-            assertThat(condition.str("kind")).isEqualTo("unrendered")
-            assertThat(condition["rendered"]?.jsonPrimitive?.boolean).isEqualTo(false)
-            assertThat(condition["text"]).isEqualTo(JsonNull)
-            assertThat(condition.str("source")).contains("every check in")
-            assertThat(condition.str("reason")).isNotBlank()
-            assertThat(rule.coverage()).isEqualTo(Triple(0, 1, 0))
+            assertThat(condition.str("kind")).isEqualTo("every")
+            assertThat(condition["rendered"]?.jsonPrimitive?.boolean).isEqualTo(true)
+            assertThat(condition.str("text")).startsWith("for every check in")
+            assertThat(condition.arr("conditions")).hasSize(1)
+            assertThat(rule.coverage()).isEqualTo(Triple(2, 2, 100))
             assertThat(rule.str("effectOfMatch")).isNull()
         }
 

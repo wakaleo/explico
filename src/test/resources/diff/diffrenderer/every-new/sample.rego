@@ -10,5 +10,6 @@ import rego.v1
 check_passed if {
 	every check in input.pipeline.checks {
 		check.status == "ok"
+		json.marshal(check) != ""
 	}
 }

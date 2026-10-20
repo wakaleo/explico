@@ -255,11 +255,11 @@ class RealisticBuiltinsAndHelpersAcceptanceIT {
         }
 
         @Test
-        @DisplayName("neither appears in fenced source any more; the `every` block still does")
+        @DisplayName("neither appears in fenced source any more, and neither does the `every` block (rendered, spec §14.49)")
         fun noLongerFencedButEveryIs() {
             val fence = fencedSource(md)
             assertThat(fence).doesNotContain("net.cidr_contains(").doesNotContain("is_string(")
-            assertThat(fence).contains("every role in input.user.roles")
+            assertThat(fence).doesNotContain("every role in input.user.roles")
         }
     }
 

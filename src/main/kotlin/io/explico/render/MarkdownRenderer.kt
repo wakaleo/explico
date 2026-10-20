@@ -415,6 +415,7 @@ internal object MarkdownRenderer {
         anchorFor: (Condition.RuleReference) -> String?,
         functionAnchorFor: (Condition.FunctionCall) -> String?,
         ruleValueAnchorFor: (Operand.RuleValueReference) -> String?,
+        indent: String = "",
     ) {
         var i = 0
         while (i < conditions.size) {
@@ -442,7 +443,10 @@ internal object MarkdownRenderer {
                 appendUnrenderedBlock(sb, "not rendered — shown as source", listOf(condition.sourceText))
                 i++
             } else {
-                sb.appendLine("- ${ExpressionRenderer.render(condition, anchorFor, functionAnchorFor, ruleValueAnchorFor)}")
+                sb.appendLine("$indent- ${ExpressionRenderer.render(condition, anchorFor, functionAnchorFor, ruleValueAnchorFor)}")
+                // Spec §14.49: an `every` block's conditions are nested one level under its head bullet (a block that could not be rendered in full is
+                // never an Every, so everything nested here is a rendered bullet).
+                if (condition is Condition.Every) appendConditions(sb, condition.body, anchorFor, functionAnchorFor, ruleValueAnchorFor, "$indent  ")
                 i++
             }
         }
@@ -594,7 +598,7 @@ internal object MarkdownRenderer {
             "- **Rendered** — the share of a rule's conditions explico could render as readable text; the rest " +
                 "is shown as marked verbatim source on the rule's own card. It says nothing about whether a " +
                 "control is effective or complete. A helper rule can show 0% because its only condition is a construct explico does " +
-                "not render (such as every); that says nothing about the rules that call it.",
+                "not render (such as a `with` override); that says nothing about the rules that call it.",
         )
         if (hasExamples) {
             sb.appendLine(

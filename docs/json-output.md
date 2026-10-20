@@ -61,9 +61,9 @@ Library: `Explico.render(policySet, policyDir, examples, dataDir, generateExampl
 | `workedExamples` | array | Every author fixture, in fixture order: `name`, `matched`, `outcome` (`"❌ denied"`), `messages`, `situations` (body numbers; null when attribution is impossible) |
 | `generatedExamples` | array | Only with `generateExamples`: the same shape plus `generated: true`, named as on the card |
 
-**Condition:** `kind` (`comparison`, `membership`, `truthy`, `builtinCall`, `someIn`, `ruleReference`, `functionCall`,
+**Condition:** `kind` (`comparison`, `membership`, `truthy`, `builtinCall`, `someIn`, `every`, `ruleReference`, `functionCall`,
 `unrendered`), `rendered` (boolean), `text` (the card phrase, or null when unrendered), `source` and `reason` (set only when
-unrendered), `link` (`{package, rule}` for a rule reference or function call, else null).
+unrendered), `link` (`{package, rule}` for a rule reference or function call, else null), and for an `every` its nested `conditions` (same shape; `text` is the head phrase).
 
 ## `explico/diff/1`
 

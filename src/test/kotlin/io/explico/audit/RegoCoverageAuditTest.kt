@@ -166,10 +166,11 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun nestedEveryFallsBackAsOneWholeBlock() {
-        val conditions = conditionsOf(loadProbe("09-nested-every.rego"), "deny")
-        assertThat(conditions).hasSize(1)
-        assertUnrendered(conditions.single(), "every")
+    fun nestedEveryRendersAsNestedBlocks() {
+        // Promoted (spec §14.49): was a whole-block fallback before `every` was rendered.
+        val outer = conditionsOf(loadProbe("09-nested-every.rego"), "deny").single() as Condition.Every
+        val inner = outer.body.single() as Condition.Every
+        assertThat(inner.body.single()).isInstanceOf(Condition.Comparison::class.java)
     }
 
     @Test

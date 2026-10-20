@@ -12,23 +12,21 @@
 
 **All of the following are true:**
 
-- ⚠ **not rendered — shown as source:**
-
-  ```rego
-  every check in input.pipeline.checks {
-  		check.status == "passed"
-  	}
-  ```
+- for every check in `pipeline ▸ checks`, all of the following are true (vacuously true when there are none)
+  - `pipeline ▸ checks ▸ [each check] ▸ status` is `"passed"`
 
 **Worked examples**
 
 - **approved standard release** — matched
+  - `pipeline ▸ checks ▸ [each check] ▸ status`: `"passed", "passed"`
 - **hotfix without change ticket** — matched
+  - `pipeline ▸ checks ▸ [each check] ▸ status`: `"passed"`
 - **self-approved change** — matched
+  - `pipeline ▸ checks ▸ [each check] ▸ status`: `"passed"`
 
 *Examples are evaluated against this policy version by OPA at generation time.*
 
-*Rendering coverage: 0 of 1 conditions*
+*Rendering coverage: 2 of 2 conditions*
 
 ---
 
@@ -95,6 +93,6 @@ inside a freeze window, and all mandatory checks must have passed.
 
 ---
 
-*Package rendering coverage: 8 of 9 conditions (88%)*
+*Package rendering coverage: 10 of 10 conditions (100%)*
 
 *Policy digest: `sha256:5f0bc88b6e15…` (full value in index.md)*

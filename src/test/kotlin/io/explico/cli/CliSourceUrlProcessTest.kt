@@ -32,7 +32,7 @@ class CliSourceUrlProcessTest {
         val result = runCli(listOf("render", policies, "--out", out.toString(), "--source-url", "https://git.example.com/r/blob/abc/{file}#L{line}"), tempDir)
 
         assertThat(result.exitCode).isEqualTo(0)
-        assertThat(result.stdout.trim()).isEqualTo("Rendering coverage: 22 of 23 conditions (95%)")
+        assertThat(result.stdout.trim()).isEqualTo("Rendering coverage: 24 of 24 conditions (100%)")
         assertThat(Files.readString(out.resolve("release-approvals.md")))
             .contains("defined in [`change_approval.rego:16`](https://git.example.com/r/blob/abc/approvals/change_approval.rego#L16)*")
     }

@@ -190,6 +190,7 @@ internal object JsonExport {
             is Condition.RuleReference -> "ruleReference"
             is Condition.FunctionCall -> "functionCall"
             is Condition.Unrendered -> "unrendered"
+            is Condition.Every -> "every"
         }
         val unrendered = condition as? Condition.Unrendered
         put("kind", kind)
@@ -197,6 +198,8 @@ internal object JsonExport {
         put("text", if (unrendered == null) JsonPrimitive(phrase(condition)) else JsonNull)
         put("source", nullable(unrendered?.sourceText))
         put("reason", nullable(unrendered?.reason))
+        // Spec §14.49: an `every` carries its own conditions, nested; `text` is the head phrase (the card's head bullet).
+        if (condition is Condition.Every) put("conditions", buildJsonArray { condition.body.forEach { add(conditionObject(it)) } })
         put("link", when (condition) {
             is Condition.RuleReference -> buildJsonObject { put("package", condition.packagePath); put("rule", condition.ruleName) }
             is Condition.FunctionCall -> buildJsonObject { put("package", condition.packagePath); put("rule", condition.functionName) }

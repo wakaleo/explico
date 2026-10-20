@@ -22,8 +22,17 @@ public data class CoverageSummary(val rendered: Int, val total: Int) {
 internal object Coverage {
 
     /** Numerator: rendered conditions. Denominator: all conditions (spec §6.6). */
-    fun of(conditions: List<Condition>): CoverageSummary =
-        CoverageSummary(conditions.count { it !is Condition.Unrendered }, conditions.size)
+    fun of(conditions: List<Condition>): CoverageSummary = flatten(conditions).let { flat ->
+        CoverageSummary(flat.count { it !is Condition.Unrendered }, flat.size)
+    }
+
+    /**
+     * [conditions] with every [Condition.Every]'s nested conditions inlined after it (recursively, spec §14.49): the head AND each condition
+     * inside it are shown on the card, so each counts as one condition. An unrenderable `every` is never an [Condition.Every] (it stays a single
+     * [Condition.Unrendered]), so the nested conditions counted here are always rendered ones.
+     */
+    fun flatten(conditions: List<Condition>): List<Condition> =
+        conditions.flatMap { if (it is Condition.Every) listOf(it) + flatten(it.body) else listOf(it) }
 
     fun of(rule: RuleGroup): CoverageSummary = of(conditionsOf(rule))
 
@@ -37,13 +46,13 @@ internal object Coverage {
      * doesn't explain, so excluding it would flatter the metric.
      */
     fun helperAssignmentCount(rule: RuleGroup): Int =
-        conditionsOf(rule).count { it is Condition.Unrendered && it.reason == HELPER_ASSIGNMENT_REASON }
+        flatten(conditionsOf(rule)).count { it is Condition.Unrendered && it.reason == HELPER_ASSIGNMENT_REASON }
 
     fun of(pkg: PolicyPackage): CoverageSummary = of(pkg.rules.flatMap { conditionsOf(it) })
 
     /** Operand-level fallbacks don't count against coverage but are reported separately (spec §6.6). */
     fun unrenderedOperandCount(conditions: List<Condition>): Int =
-        conditions.sumOf { operandsOf(it).sumOf { operand -> countUnrendered(operand) } }
+        flatten(conditions).sumOf { operandsOf(it).sumOf { operand -> countUnrendered(operand) } }
 
     fun unrenderedOperandCount(rule: RuleGroup): Int = unrenderedOperandCount(conditionsOf(rule))
 
@@ -73,5 +82,7 @@ internal object Coverage {
         is Condition.RuleReference -> emptyList()
         is Condition.FunctionCall -> condition.args
         is Condition.Unrendered -> emptyList()
+        // Only the collection: the nested conditions are separate entries in [flatten]'s output, so counting them here too would double-count.
+        is Condition.Every -> listOf(condition.collection)
     }
 }

@@ -1,0 +1,1 @@
+{"name": "all checks passed", "input": {"pipeline": {"checks": [{"status": "passed"}, {"status": "passed"}]}, "environment": "production", "containers": [{"image": "app:1.4.2", "privileged": false}]}}

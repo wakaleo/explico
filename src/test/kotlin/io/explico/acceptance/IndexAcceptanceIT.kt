@@ -59,11 +59,11 @@ class IndexAcceptanceIT {
     }
 
     @Test
-    @DisplayName("Overall coverage line present and below 100%")
-    fun overallCoverageLinePresentAndBelowFull() {
+    @DisplayName("Overall coverage line present (100% since amendment 2; it was \"below 100%\")")
+    fun overallCoverageLinePresent() {
+        // AMENDED (operator-approved, spec §14.49): `every` is rendered now, so the pack has no fallback left.
         val match = Regex("Overall rendering coverage: (\\d+) of (\\d+) conditions \\((\\d+)%\\)").find(markdown)
         assertThat(match).isNotNull()
-        val (_, _, percent) = match!!.destructured
-        assertThat(percent.toInt()).isLessThan(100)
+        assertThat(match!!.destructured.toList()).containsExactly("24", "24", "100")
     }
 }

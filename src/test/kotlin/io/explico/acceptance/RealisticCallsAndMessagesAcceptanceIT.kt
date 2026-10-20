@@ -164,10 +164,10 @@ class RealisticCallsAndMessagesAcceptanceIT {
         }
 
         @Test
-        @DisplayName("authz.md's `every` block stays fenced source (guard: passes today)")
+        @DisplayName("authz.md's `every` block is rendered now, no longer fenced source (spec §14.49)")
         fun authzEveryStaysFenced() {
             val src = fencedSource(files["authz.md"] ?: "")
-            assertThat(src).contains("every role in input.user.roles")
+            assertThat(src).doesNotContain("every role in input.user.roles")
         }
     }
 

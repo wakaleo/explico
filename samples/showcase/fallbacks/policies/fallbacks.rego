@@ -3,8 +3,8 @@
 # description: |
 #   Each rule uses a construct explico does not render as prose. It shows the
 #   verbatim Rego instead, clearly marked, and counts it in the coverage footer.
-#   A comprehension is rendered only when everything inside it is; one condition
-#   explico cannot render keeps the whole comprehension as source.
+#   A comprehension or an `every` block is rendered only when everything inside
+#   it is; one condition explico cannot render keeps the whole block as source.
 package fallbacks
 
 import rego.v1
@@ -32,5 +32,6 @@ unlimited_container contains msg if {
 every_container_limited if {
 	every c in input.containers {
 		c.limit
+		net.cidr_is_valid(c.cidr)
 	}
 }

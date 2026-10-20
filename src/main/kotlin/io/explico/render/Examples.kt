@@ -133,13 +133,13 @@ internal object WorkedExamples {
     fun referencedPaths(rule: RuleGroup): List<Operand.Path> {
         val seen = LinkedHashSet<Operand.Path>()
         for (body in rule.bodies) {
-            for (condition in body.conditions) {
+            for (condition in Coverage.flatten(body.conditions)) {
                 // A SomeIn's own collection (e.g. `pipeline ▸ stages`) resolves to a raw array of
                 // objects, not a scalar -- there's no sensible display value for it, and it's
                 // already shown structurally via the "for some ... in" bullet. The per-element
                 // access via VarIndex (`pipeline ▸ stages ▸ [each stage] ▸ status`) is what's
                 // actually useful, and that's a separate Path already covered below.
-                if (condition is Condition.SomeIn) continue
+                if (condition is Condition.SomeIn || condition is Condition.Every) continue
                 for (operand in Coverage.operandsOf(condition)) {
                     if (operand is Operand.Path && operand.segments.firstOrNull() == PathSegment.Field("input")) {
                         seen.add(operand)

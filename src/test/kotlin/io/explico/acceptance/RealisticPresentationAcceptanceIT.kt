@@ -121,11 +121,10 @@ class RealisticPresentationAcceptanceIT {
         }
 
         @Test
-        @DisplayName("guard: the `every` block keeps the generic header and never mentions else")
+        @DisplayName("guard: the `every` block is rendered (spec §14.49), so authz.allow has no ⚠ bullet at all, and certainly none that mentions else")
         fun everyKeepsTheGenericHeader() {
             val warn = warnBullets(section(files["authz.md"] ?: "", "authz.allow"))
-            assertThat(warn).hasSize(1)
-            assertThat(warn.single()).doesNotContainIgnoringCase("else")
+            assertThat(warn).isEmpty()
         }
     }
 

@@ -73,7 +73,7 @@ class IndexBelowFullTest {
     @Test
     fun theLegendAlwaysExplainsAHelperAtZeroPercent() {
         assertThat(index(rule("deny", "C-1", rendered)).substringAfter("## How to read this index")).contains(
-            "A helper rule can show 0% because its only condition is a construct explico does not render (such as every); that says nothing about the rules that call it.",
+            "A helper rule can show 0% because its only condition is a construct explico does not render (such as a `with` override); that says nothing about the rules that call it.",
         )
     }
 }

@@ -195,10 +195,11 @@ class RealisticPathsAcceptanceIT {
         }
 
         @Test
-        @DisplayName("`every` in authz.md stays fenced source (guard: passes today)")
+        @DisplayName("`every` in authz.md is rendered, no longer fenced source (spec §14.49)")
         fun unsupportedConstructsStayFenced() {
             val src = fencedSource(files["authz.md"] ?: "")
-            assertThat(src).contains("every role in input.user.roles")
+            assertThat(src).doesNotContain("every role in input.user.roles")
+            assertThat(files["authz.md"] ?: "").contains("for every role in `user ▸ roles`")
         }
     }
 }

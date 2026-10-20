@@ -49,9 +49,9 @@ criteria. No speculative abstraction, no plugin systems, no configuration files.
   phase). Single-version fixture evaluation for worked examples IS in scope (§6.7).
 - No HTML output, no web server, no graphical rendering (Markdown, plus the opt-in JSON of §14.45 for other tools).
 - No inlining/flattening of helper rule bodies (references are rendered as links).
-- No support for: `every`, `with` statements, `else` chains, or a comprehension containing anything
+- No support for: `with` statements, `else` chains, or a comprehension or `every` block containing anything
   the tool cannot itself render. These render via the fallback mechanism (§6.6). (Comprehensions
-  whose whole body renders ARE rendered since §14.36; user-defined functions with parameters since §14.)
+  whose whole body renders ARE rendered since §14.36, `every` blocks since §14.49; user-defined functions with parameters since §14.)
 - No git integration. Diff takes two plain directories; the caller checks out
   versions themselves (e.g. via `git worktree`).
 - No Rego parsing in Kotlin. Parsing is delegated to the `opa` binary (§4).
@@ -1883,3 +1883,24 @@ for non-ASCII, so no name can break out of the URL or a Markdown link) and `{lin
 - **Off by default and byte-identical:** no template means every Markdown file is exactly as before. The diff report has no policy directory or template and is unaffected.
 - **Guidance:** pin `COMMIT`, not a branch, or the link drifts when the branch moves (documented in the authoring guide with GitHub/GitLab/Bitbucket templates).
 
+### 14.49 `every` (operator-approved amendment of the §1.2 non-goal and of the frozen acceptance README)
+
+`every [key,] value in domain { body }` becomes `Condition.Every(variable, collection, body, key)` and renders as a head bullet with its conditions nested
+one level (two spaces) beneath it: "for every `v` in `<collection>`, all of the following are true (vacuously true when there are none)" -- the last clause states
+the one thing a reader could miss, that an EMPTY collection satisfies `every`. The two-variable form reads "for every k, v in ...". Nesting recurses (an `every` inside
+an `every`). **All-or-nothing, like comprehensions (§14.36):** the domain must be a plain path (resolved exactly as `some`'s collection, partial rules included) and every
+condition of the body -- mapped with the same per-expression logic as a rule body (`mapBodyExpr`), inside a COPY of the symbol table that binds the value as an iteration
+element and the key as an iteration key -- must be fully rendered (no `Unrendered` condition, no unrenderable operand). A rule or function reference inside is fine: it is a
+nested, linked bullet. Anything else keeps the WHOLE block as one `Condition.Unrendered` with reason `every` and the verbatim source; nothing is half-rendered.
+- **Coverage:** the head and each nested condition count as one condition each (`Coverage.flatten`), so a rendered `every` over one condition is 2 of 2; an unrendered one is 0 of 1.
+- **Worked examples / reference data / change summary:** the nested conditions' paths are listed and their `data.*` reads collected; the `every`'s own collection path is not listed (a raw
+  array, like `some`'s). A change inside an `every` is named as a removed and an added condition.
+- **Diff:** `Canonicalizer` hashes it structurally (variable renames, reformatting and comments are invisible; a changed nested condition, collection, key or body length changes the hash).
+- **JSON:** `kind: "every"`, `text` the head phrase (the card's bullet), `conditions` the nested condition objects. An unrendered one is `unrendered` / reason `every` as before.
+- **Inside a comprehension:** an `every` in a comprehension body keeps the whole comprehension as source (a comprehension phrase is one line and could only show the `every` head).
+- **Not modelled by the generator:** `InputSynthesizer` reports an `every` as not solvable, so no generated example is invented for it.
+
+**Frozen-contract amendment.** The acceptance README pinned the `all_checks_passed` `every` helper as a ⚠ fallback (`0 of 1`), the package as below 100% and the index's overall
+coverage as below 100%. With the operator's approval those assertions changed (Situation 3 shows `for every check in` with its nested condition; the helper is `2 of 2`; the package
+and the index are 100%), recorded as "Amendment 2" in the README and in `ReleaseGovernanceAcceptanceIT`/`IndexAcceptanceIT`. The Tier-2 goldens `index.md` and `release-governance.md`
+were regenerated after line-by-line review (overall coverage 22 of 23 -> 24 of 24). The index legend's example of a construct left as source changed from `every` to a `with` override.
