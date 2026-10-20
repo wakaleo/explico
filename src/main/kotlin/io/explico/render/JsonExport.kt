@@ -191,6 +191,7 @@ internal object JsonExport {
             is Condition.FunctionCall -> "functionCall"
             is Condition.Unrendered -> "unrendered"
             is Condition.Every -> "every"
+            is Condition.SomeKey -> "someKey"
         }
         val unrendered = condition as? Condition.Unrendered
         put("kind", kind)

@@ -105,8 +105,10 @@ class RealisticParameterPathsAcceptanceIT {
         @Test
         fun badKeepsItsVerbatimSourceAndStillCountsAsUnrendered() {
             val c = card("bad")
-            assertThat(bullets(c).single()).contains("`res.items[idx].ok`")
-            assertThat(footer(c)).contains("1 unrendered value")
+            // Repointed (spec §14.51): `idx` used ONCE is now the wildcard `_`, so the rule uses it twice (a shared index under a parameter has no
+            // plain path to bind against and stays raw).
+            assertThat(bullets(c).single()).contains("`res.items[idx].ok`").contains("`res.flags[idx]`")
+            assertThat(footer(c)).contains("2 unrendered values")
         }
     }
 

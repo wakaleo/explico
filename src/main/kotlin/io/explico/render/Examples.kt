@@ -139,7 +139,7 @@ internal object WorkedExamples {
                 // already shown structurally via the "for some ... in" bullet. The per-element
                 // access via VarIndex (`pipeline ▸ stages ▸ [each stage] ▸ status`) is what's
                 // actually useful, and that's a separate Path already covered below.
-                if (condition is Condition.SomeIn || condition is Condition.Every) continue
+                if (condition is Condition.SomeIn || condition is Condition.Every || condition is Condition.SomeKey) continue
                 for (operand in Coverage.operandsOf(condition)) {
                     if (operand is Operand.Path && operand.segments.firstOrNull() == PathSegment.Field("input")) {
                         seen.add(operand)

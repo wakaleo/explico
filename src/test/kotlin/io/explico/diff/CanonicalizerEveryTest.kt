@@ -61,4 +61,12 @@ class CanonicalizerEveryTest {
         val plain = element("i", "\"ok\"")
         assertThat(hash(Condition.Every("i", items, listOf(plain)))).isNotEqualTo(hash(plain))
     }
+
+    @Test
+    fun aSomeKeyHashesByStructure_renameInvariantAndDistinctFromSomeIn() {
+        val keyed = { name: String -> Condition.SomeKey(name, items) }
+        assertThat(hash(keyed("i"))).isEqualTo(hash(keyed("index")))
+        assertThat(hash(Condition.SomeKey("i", items))).isNotEqualTo(hash(Condition.SomeKey("i", field("input", "other"))))
+        assertThat(hash(Condition.SomeKey("i", items))).isNotEqualTo(hash(Condition.SomeIn("i", items)))
+    }
 }

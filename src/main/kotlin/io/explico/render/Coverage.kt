@@ -84,5 +84,6 @@ internal object Coverage {
         is Condition.Unrendered -> emptyList()
         // Only the collection: the nested conditions are separate entries in [flatten]'s output, so counting them here too would double-count.
         is Condition.Every -> listOf(condition.collection)
+        is Condition.SomeKey -> listOf(condition.collection)
     }
 }

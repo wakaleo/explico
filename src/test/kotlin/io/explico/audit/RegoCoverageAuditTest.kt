@@ -144,15 +144,15 @@ class RegoCoverageAuditTest {
 
     @Test
     fun someDeclareMultipleWithoutInFallsBackSafelyNoCrash() {
-        // `arr := input.change.approvals` is now promoted (spec §14 backlog rank #1) and disappears
-        // from the conditions list -- but `arr[i]`/`arr[j]` still fall back, since `i`/`j` themselves
-        // stay unbound (`some i, j` with no `in` never registers them as iteration variables).
+        // Spec §14.51: `i` and `j` are each used more than once, so each is bound at its first use ("for some index or key"), and later uses read
+        // `[each i]` / plain `i`. (`arr := input.change.approvals` substitutes and disappears; the declare-only `some i, j` is not a condition.)
         val conditions = conditionsOf(loadProbe("07-some-declare-multiple-no-in.rego"), "deny")
-        // The declare-only `some i, j` is no longer a condition (real-world benchmark promotion): it tests nothing.
-        assertThat(conditions).hasSize(3)
-        assertThat(render(conditions[0])).isEqualTo("`arr[i].role` is `\"release-manager\"`")
-        assertThat(render(conditions[1])).isEqualTo("`arr[j].role` is `\"security\"`")
-        assertThat(render(conditions[2])).isEqualTo("`i` is not `j`")
+        assertThat(conditions).hasSize(5)
+        assertThat(render(conditions[0])).isEqualTo("for some index or key `i` of `change ▸ approvals`")
+        assertThat(render(conditions[1])).isEqualTo("`change ▸ approvals ▸ [each i] ▸ role` is `\"release-manager\"`")
+        assertThat(render(conditions[2])).isEqualTo("for some index or key `j` of `change ▸ approvals`")
+        assertThat(render(conditions[3])).isEqualTo("`change ▸ approvals ▸ [each j] ▸ role` is `\"security\"`")
+        assertThat(render(conditions[4])).isEqualTo("`i` is not `j`")
     }
 
     @Test

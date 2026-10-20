@@ -1522,3 +1522,9 @@ one count); `Examples`/`ReferenceData`/`ChangeSummary` use it too. The acceptanc
 (`lib/` + `checks/kubernetes`, test files removed) to measure it: one-file loads understate it. Promoted: declare-only `some` and a bare `true` statement (not conditions), imports of a function or rule by name
 (`AstMapper.importedMember` is the single resolution rule, used by function calls, rule references and rule values), and a function's last-statement `msg := sprintf(...)` as its produced value. Do not widen the last
 two beyond what a test proves: the message assignment is consumed ONLY when last and fully understood.
+
+## Free index and key variables (spec §14.51)
+
+`AstMapper.freeIndexSegment` is the single rule: single-use (counted by `countVariables` over opa's own JSON for the rule, declare-only `some` excluded) = `AnyIndex`; shared = `Condition.SomeKey` bound at first use through
+the per-rule `FreeKeys` state (inserted before the conditions of that expression by `mapBodyExpr`). Binding is OFF (`ctx.freeKeys = null`) in comprehensions, `every`, message and value operands, under `not`, and
+for parameter-rooted paths; keep it off there. Never bind a name that is a rule, function or import. Wording is the operator-approved M2: "for some index or key `i` of `<collection>`".

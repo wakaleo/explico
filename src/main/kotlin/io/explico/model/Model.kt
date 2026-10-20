@@ -200,6 +200,13 @@ public sealed interface Condition {
      */
     public data class Every(val variable: String, val collection: Operand, val body: List<Condition>, val key: String? = null) : Condition
 
+    /**
+     * A free index or key variable that is used more than once in a rule (spec §14.51): `pods[i].name == names[i]`. Rendered "for some index or key
+     * `i` of `pods`"; later uses of [variable] read `[each i]` (as a path index) or plain `i` (as a value). [collection] is the path indexed at the variable's
+     * first use. A variable used exactly once never becomes this: it is the wildcard `_`.
+     */
+    public data class SomeKey(val variable: String, val collection: Operand.Path) : Condition
+
     /** Anything the mapper cannot classify. Rendered as marked, verbatim source — never guessed. */
     public data class Unrendered(val sourceText: String, val reason: String) : Condition
 }

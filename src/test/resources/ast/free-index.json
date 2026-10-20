@@ -1,0 +1,3111 @@
+{
+  "package": {
+    "location": {
+      "file": "src/test/resources/realistic/free-index/policies/free.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 1,
+          "col": 9,
+          "text": "ZnJlZQ=="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 1,
+          "col": 9,
+          "text": "ZnJlZQ=="
+        },
+        "type": "string",
+        "value": "free"
+      },
+      {
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 1,
+          "col": 14,
+          "text": "aW5kZXg="
+        },
+        "type": "string",
+        "value": "index"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 3,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 3,
+          "col": 8,
+          "text": "cmVnby52MQ=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 3,
+              "col": 8,
+              "text": "cmVnbw=="
+            },
+            "type": "var",
+            "value": "rego"
+          },
+          {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 3,
+              "col": 13,
+              "text": "djE="
+            },
+            "type": "string",
+            "value": "v1"
+          }
+        ]
+      }
+    }
+  ],
+  "annotations": [
+    {
+      "custom": {
+        "control-id": "FI-001"
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 5,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBVbmRlY2xhcmVkIGluZGV4IHVzZWQgb25jZQojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwMQ=="
+      },
+      "scope": "document",
+      "title": "Undeclared index used once"
+    },
+    {
+      "custom": {
+        "control-id": "FI-002"
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 14,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBEZWNsYXJlZCBpbmRleCB1c2VkIG9uY2UKIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBGSS0wMDI="
+      },
+      "scope": "document",
+      "title": "Declared index used once"
+    },
+    {
+      "custom": {
+        "control-id": "FI-003"
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 24,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBJbmRleCBzaGFyZWQgYnkgdHdvIGNvbGxlY3Rpb25zCiMgY3VzdG9tOgojICAgY29udHJvbC1pZDogRkktMDAz"
+      },
+      "scope": "document",
+      "title": "Index shared by two collections"
+    },
+    {
+      "custom": {
+        "control-id": "FI-004"
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 34,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBJbmRleCBhbHNvIHVzZWQgYXMgYSB2YWx1ZQojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwNA=="
+      },
+      "scope": "document",
+      "title": "Index also used as a value"
+    },
+    {
+      "custom": {
+        "control-id": "FI-005"
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 45,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBGcmVlIGtleSB0aGVuIHdpbGRjYXJkIGVsZW1lbnQKIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBGSS0wMDU="
+      },
+      "scope": "document",
+      "title": "Free key then wildcard element"
+    },
+    {
+      "custom": {
+        "control-id": "FI-006"
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 56,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBGaXJzdCB1c2UgdW5kZXIgYSBuZWdhdGlvbgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwNg=="
+      },
+      "scope": "document",
+      "title": "First use under a negation"
+    },
+    {
+      "custom": {
+        "control-id": "FI-007"
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 66,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBTaGFyZWQgaW5kZXggaW5zaWRlIGEgY29tcHJlaGVuc2lvbgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwNw=="
+      },
+      "scope": "document",
+      "title": "Shared index inside a comprehension"
+    },
+    {
+      "custom": {
+        "control-id": "FI-008"
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 75,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBJbmRleCBzaGFyZWQgd2l0aCB0aGUgcnVsZSBoZWFkCiMgY3VzdG9tOgojICAgY29udHJvbC1pZDogRkktMDA4"
+      },
+      "scope": "document",
+      "title": "Index shared with the rule head"
+    },
+    {
+      "custom": {
+        "control-id": "FI-009"
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 84,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBJbmRleCB1bmRlciBhIGZ1bmN0aW9uIHBhcmFtZXRlcgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwOQ=="
+      },
+      "scope": "document",
+      "title": "Index under a function parameter"
+    },
+    {
+      "custom": {
+        "control-id": "FI-010"
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 94,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBXaWxkY2FyZCBzdHJhaWdodCB1bmRlciB0aGUgcm9vdAojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAxMA=="
+      },
+      "scope": "document",
+      "title": "Wildcard straight under the root"
+    },
+    {
+      "custom": {
+        "control-id": "FI-011"
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 103,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBTaGFyZWQgaW5kZXggYXMgYW4gZXZlcnkgZG9tYWluCiMgY3VzdG9tOgojICAgY29udHJvbC1pZDogRkktMDEx"
+      },
+      "scope": "document",
+      "title": "Shared index as an every domain"
+    }
+  ],
+  "rules": [
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "FI-001"
+          },
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 5,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBVbmRlY2xhcmVkIGluZGV4IHVzZWQgb25jZQojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwMQ=="
+          },
+          "scope": "document",
+          "title": "Undeclared index used once"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 11,
+            "col": 2,
+            "text": "aW5wdXQucG9kc1tpXS5wcml2aWxlZ2VkID09IHRydWU="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 11,
+                "col": 27,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 11,
+                    "col": 27,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 11,
+                "col": 2,
+                "text": "aW5wdXQucG9kc1tpXS5wcml2aWxlZ2Vk"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 11,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 11,
+                    "col": 8,
+                    "text": "cG9kcw=="
+                  },
+                  "type": "string",
+                  "value": "pods"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 11,
+                    "col": 13,
+                    "text": "aQ=="
+                  },
+                  "type": "var",
+                  "value": "i"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 11,
+                    "col": 16,
+                    "text": "cHJpdmlsZWdlZA=="
+                  },
+                  "type": "string",
+                  "value": "privileged"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 11,
+                "col": 30,
+                "text": "dHJ1ZQ=="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "wildcard_undeclared",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 10,
+              "col": 1,
+              "text": "d2lsZGNhcmRfdW5kZWNsYXJlZA=="
+            },
+            "type": "var",
+            "value": "wildcard_undeclared"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 10,
+          "col": 1,
+          "text": "d2lsZGNhcmRfdW5kZWNsYXJlZA=="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 10,
+        "col": 1,
+        "text": "d2lsZGNhcmRfdW5kZWNsYXJlZCBpZiB7CglpbnB1dC5wb2RzW2ldLnByaXZpbGVnZWQgPT0gdHJ1ZQp9"
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "FI-002"
+          },
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 14,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBEZWNsYXJlZCBpbmRleCB1c2VkIG9uY2UKIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBGSS0wMDI="
+          },
+          "scope": "document",
+          "title": "Declared index used once"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 20,
+            "col": 2,
+            "text": "c29tZSBp"
+          },
+          "terms": {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 20,
+              "col": 2,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                  "row": 20,
+                  "col": 7,
+                  "text": "aQ=="
+                },
+                "type": "var",
+                "value": "i"
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 21,
+            "col": 2,
+            "text": "aW5wdXQucG9kc1tpXS5wcml2aWxlZ2VkID09IHRydWU="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 21,
+                "col": 27,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 21,
+                    "col": 27,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 21,
+                "col": 2,
+                "text": "aW5wdXQucG9kc1tpXS5wcml2aWxlZ2Vk"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 21,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 21,
+                    "col": 8,
+                    "text": "cG9kcw=="
+                  },
+                  "type": "string",
+                  "value": "pods"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 21,
+                    "col": 13,
+                    "text": "aQ=="
+                  },
+                  "type": "var",
+                  "value": "i"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 21,
+                    "col": 16,
+                    "text": "cHJpdmlsZWdlZA=="
+                  },
+                  "type": "string",
+                  "value": "privileged"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 21,
+                "col": 30,
+                "text": "dHJ1ZQ=="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "wildcard_declared",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 19,
+              "col": 1,
+              "text": "d2lsZGNhcmRfZGVjbGFyZWQ="
+            },
+            "type": "var",
+            "value": "wildcard_declared"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 19,
+          "col": 1,
+          "text": "d2lsZGNhcmRfZGVjbGFyZWQ="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 19,
+        "col": 1,
+        "text": "d2lsZGNhcmRfZGVjbGFyZWQgaWYgewoJc29tZSBpCglpbnB1dC5wb2RzW2ldLnByaXZpbGVnZWQgPT0gdHJ1ZQp9"
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "FI-003"
+          },
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 24,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBJbmRleCBzaGFyZWQgYnkgdHdvIGNvbGxlY3Rpb25zCiMgY3VzdG9tOgojICAgY29udHJvbC1pZDogRkktMDAz"
+          },
+          "scope": "document",
+          "title": "Index shared by two collections"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 30,
+            "col": 2,
+            "text": "c29tZSBp"
+          },
+          "terms": {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 30,
+              "col": 2,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                  "row": 30,
+                  "col": 7,
+                  "text": "aQ=="
+                },
+                "type": "var",
+                "value": "i"
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 31,
+            "col": 2,
+            "text": "aW5wdXQucG9kc1tpXS5uYW1lID09IGlucHV0Lm5hbWVzW2ld"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 31,
+                "col": 21,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 31,
+                    "col": 21,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 31,
+                "col": 2,
+                "text": "aW5wdXQucG9kc1tpXS5uYW1l"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 31,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 31,
+                    "col": 8,
+                    "text": "cG9kcw=="
+                  },
+                  "type": "string",
+                  "value": "pods"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 31,
+                    "col": 13,
+                    "text": "aQ=="
+                  },
+                  "type": "var",
+                  "value": "i"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 31,
+                    "col": 16,
+                    "text": "bmFtZQ=="
+                  },
+                  "type": "string",
+                  "value": "name"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 31,
+                "col": 24,
+                "text": "aW5wdXQubmFtZXNbaV0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 31,
+                    "col": 24,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 31,
+                    "col": 30,
+                    "text": "bmFtZXM="
+                  },
+                  "type": "string",
+                  "value": "names"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 31,
+                    "col": 36,
+                    "text": "aQ=="
+                  },
+                  "type": "var",
+                  "value": "i"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "join_index",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 29,
+              "col": 1,
+              "text": "am9pbl9pbmRleA=="
+            },
+            "type": "var",
+            "value": "join_index"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 29,
+          "col": 1,
+          "text": "am9pbl9pbmRleA=="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 29,
+        "col": 1,
+        "text": "am9pbl9pbmRleCBpZiB7Cglzb21lIGkKCWlucHV0LnBvZHNbaV0ubmFtZSA9PSBpbnB1dC5uYW1lc1tpXQp9"
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "FI-004"
+          },
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 34,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBJbmRleCBhbHNvIHVzZWQgYXMgYSB2YWx1ZQojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwNA=="
+          },
+          "scope": "document",
+          "title": "Index also used as a value"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 40,
+            "col": 2,
+            "text": "c29tZSBp"
+          },
+          "terms": {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 40,
+              "col": 2,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                  "row": 40,
+                  "col": 7,
+                  "text": "aQ=="
+                },
+                "type": "var",
+                "value": "i"
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 41,
+            "col": 2,
+            "text": "aW5wdXQucG9kc1tpXS5wcml2aWxlZ2VkID09IHRydWU="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 41,
+                "col": 27,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 41,
+                    "col": 27,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 41,
+                "col": 2,
+                "text": "aW5wdXQucG9kc1tpXS5wcml2aWxlZ2Vk"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 41,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 41,
+                    "col": 8,
+                    "text": "cG9kcw=="
+                  },
+                  "type": "string",
+                  "value": "pods"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 41,
+                    "col": 13,
+                    "text": "aQ=="
+                  },
+                  "type": "var",
+                  "value": "i"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 41,
+                    "col": 16,
+                    "text": "cHJpdmlsZWdlZA=="
+                  },
+                  "type": "string",
+                  "value": "privileged"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 41,
+                "col": 30,
+                "text": "dHJ1ZQ=="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 42,
+            "col": 2,
+            "text": "aSA+IDA="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 42,
+                "col": 4,
+                "text": "Pg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 42,
+                    "col": 4,
+                    "text": "Pg=="
+                  },
+                  "type": "var",
+                  "value": "gt"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 42,
+                "col": 2,
+                "text": "aQ=="
+              },
+              "type": "var",
+              "value": "i"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 42,
+                "col": 6,
+                "text": "MA=="
+              },
+              "type": "number",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "value_use",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 39,
+              "col": 1,
+              "text": "dmFsdWVfdXNl"
+            },
+            "type": "var",
+            "value": "value_use"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 39,
+          "col": 1,
+          "text": "dmFsdWVfdXNl"
+        }
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 39,
+        "col": 1,
+        "text": "dmFsdWVfdXNlIGlmIHsKCXNvbWUgaQoJaW5wdXQucG9kc1tpXS5wcml2aWxlZ2VkID09IHRydWUKCWkgPiAwCn0="
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "FI-005"
+          },
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 45,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBGcmVlIGtleSB0aGVuIHdpbGRjYXJkIGVsZW1lbnQKIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBGSS0wMDU="
+          },
+          "scope": "document",
+          "title": "Free key then wildcard element"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 51,
+            "col": 2,
+            "text": "Y29udGFpbmVyIDo9IGlucHV0LnJldmlldy5vYmplY3Quc3BlY1tmaWVsZF1bX10="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 51,
+                "col": 12,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 51,
+                    "col": 12,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 51,
+                "col": 2,
+                "text": "Y29udGFpbmVy"
+              },
+              "type": "var",
+              "value": "container"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 51,
+                "col": 15,
+                "text": "aW5wdXQucmV2aWV3Lm9iamVjdC5zcGVjW2ZpZWxkXVtfXQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 51,
+                    "col": 15,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 51,
+                    "col": 21,
+                    "text": "cmV2aWV3"
+                  },
+                  "type": "string",
+                  "value": "review"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 51,
+                    "col": 28,
+                    "text": "b2JqZWN0"
+                  },
+                  "type": "string",
+                  "value": "object"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 51,
+                    "col": 35,
+                    "text": "c3BlYw=="
+                  },
+                  "type": "string",
+                  "value": "spec"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 51,
+                    "col": 40,
+                    "text": "ZmllbGQ="
+                  },
+                  "type": "var",
+                  "value": "field"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 51,
+                    "col": 47,
+                    "text": "Xw=="
+                  },
+                  "type": "var",
+                  "value": "$0"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 52,
+            "col": 2,
+            "text": "Y29udGFpbmVyLnByaXZpbGVnZWQgPT0gdHJ1ZQ=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 52,
+                "col": 23,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 52,
+                    "col": 23,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 52,
+                "col": 2,
+                "text": "Y29udGFpbmVyLnByaXZpbGVnZWQ="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 52,
+                    "col": 2,
+                    "text": "Y29udGFpbmVy"
+                  },
+                  "type": "var",
+                  "value": "container"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 52,
+                    "col": 12,
+                    "text": "cHJpdmlsZWdlZA=="
+                  },
+                  "type": "string",
+                  "value": "privileged"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 52,
+                "col": 26,
+                "text": "dHJ1ZQ=="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 53,
+            "col": 2,
+            "text": "ZmllbGQgIT0gInZvbHVtZXMi"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 53,
+                "col": 8,
+                "text": "IT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 53,
+                    "col": 8,
+                    "text": "IT0="
+                  },
+                  "type": "var",
+                  "value": "neq"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 53,
+                "col": 2,
+                "text": "ZmllbGQ="
+              },
+              "type": "var",
+              "value": "field"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 53,
+                "col": 11,
+                "text": "InZvbHVtZXMi"
+              },
+              "type": "string",
+              "value": "volumes"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "map_key",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 50,
+              "col": 1,
+              "text": "bWFwX2tleQ=="
+            },
+            "type": "var",
+            "value": "map_key"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 50,
+          "col": 1,
+          "text": "bWFwX2tleQ=="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 50,
+        "col": 1,
+        "text": "bWFwX2tleSBpZiB7Cgljb250YWluZXIgOj0gaW5wdXQucmV2aWV3Lm9iamVjdC5zcGVjW2ZpZWxkXVtfXQoJY29udGFpbmVyLnByaXZpbGVnZWQgPT0gdHJ1ZQoJZmllbGQgIT0gInZvbHVtZXMiCn0="
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "FI-006"
+          },
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 56,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBGaXJzdCB1c2UgdW5kZXIgYSBuZWdhdGlvbgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwNg=="
+          },
+          "scope": "document",
+          "title": "First use under a negation"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 62,
+            "col": 2,
+            "text": "bm90IGlucHV0LnBvZHNbaV0ub2s="
+          },
+          "negated": true,
+          "terms": {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 62,
+              "col": 6,
+              "text": "aW5wdXQucG9kc1tpXS5vaw=="
+            },
+            "type": "ref",
+            "value": [
+              {
+                "location": {
+                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                  "row": 62,
+                  "col": 6,
+                  "text": "aW5wdXQ="
+                },
+                "type": "var",
+                "value": "input"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                  "row": 62,
+                  "col": 12,
+                  "text": "cG9kcw=="
+                },
+                "type": "string",
+                "value": "pods"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                  "row": 62,
+                  "col": 17,
+                  "text": "aQ=="
+                },
+                "type": "var",
+                "value": "i"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                  "row": 62,
+                  "col": 20,
+                  "text": "b2s="
+                },
+                "type": "string",
+                "value": "ok"
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 63,
+            "col": 2,
+            "text": "aW5wdXQuYWxsb3dlZFtpXSA9PSB0cnVl"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 63,
+                "col": 19,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 63,
+                    "col": 19,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 63,
+                "col": 2,
+                "text": "aW5wdXQuYWxsb3dlZFtpXQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 63,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 63,
+                    "col": 8,
+                    "text": "YWxsb3dlZA=="
+                  },
+                  "type": "string",
+                  "value": "allowed"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 63,
+                    "col": 16,
+                    "text": "aQ=="
+                  },
+                  "type": "var",
+                  "value": "i"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 63,
+                "col": 22,
+                "text": "dHJ1ZQ=="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "negated_first",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 61,
+              "col": 1,
+              "text": "bmVnYXRlZF9maXJzdA=="
+            },
+            "type": "var",
+            "value": "negated_first"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 61,
+          "col": 1,
+          "text": "bmVnYXRlZF9maXJzdA=="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 61,
+        "col": 1,
+        "text": "bmVnYXRlZF9maXJzdCBpZiB7Cglub3QgaW5wdXQucG9kc1tpXS5vawoJaW5wdXQuYWxsb3dlZFtpXSA9PSB0cnVlCn0="
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "FI-007"
+          },
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 66,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBTaGFyZWQgaW5kZXggaW5zaWRlIGEgY29tcHJlaGVuc2lvbgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwNw=="
+          },
+          "scope": "document",
+          "title": "Shared index inside a comprehension"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 72,
+            "col": 2,
+            "text": "Y291bnQoe3ggfCB4IDo9IGlucHV0LnBvZHNbaV07IGlucHV0Lm5hbWVzW2ldID09IHgubmFtZX0pID4gMA=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 72,
+                "col": 60,
+                "text": "Pg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 72,
+                    "col": 60,
+                    "text": "Pg=="
+                  },
+                  "type": "var",
+                  "value": "gt"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 72,
+                "col": 2,
+                "text": "Y291bnQoe3ggfCB4IDo9IGlucHV0LnBvZHNbaV07IGlucHV0Lm5hbWVzW2ldID09IHgubmFtZX0p"
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 72,
+                    "col": 2,
+                    "text": "Y291bnQ="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                        "row": 72,
+                        "col": 2,
+                        "text": "Y291bnQ="
+                      },
+                      "type": "var",
+                      "value": "count"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 72,
+                    "col": 8,
+                    "text": "e3ggfCB4IDo9IGlucHV0LnBvZHNbaV07IGlucHV0Lm5hbWVzW2ldID09IHgubmFtZX0="
+                  },
+                  "type": "setcomprehension",
+                  "value": {
+                    "term": {
+                      "location": {
+                        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                        "row": 72,
+                        "col": 9,
+                        "text": "eA=="
+                      },
+                      "type": "var",
+                      "value": "x"
+                    },
+                    "body": [
+                      {
+                        "index": 0,
+                        "location": {
+                          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                          "row": 72,
+                          "col": 13,
+                          "text": "eCA6PSBpbnB1dC5wb2RzW2ld"
+                        },
+                        "terms": [
+                          {
+                            "location": {
+                              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                              "row": 72,
+                              "col": 15,
+                              "text": "Oj0="
+                            },
+                            "type": "ref",
+                            "value": [
+                              {
+                                "location": {
+                                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                                  "row": 72,
+                                  "col": 15,
+                                  "text": "Oj0="
+                                },
+                                "type": "var",
+                                "value": "assign"
+                              }
+                            ]
+                          },
+                          {
+                            "location": {
+                              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                              "row": 72,
+                              "col": 13,
+                              "text": "eA=="
+                            },
+                            "type": "var",
+                            "value": "x"
+                          },
+                          {
+                            "location": {
+                              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                              "row": 72,
+                              "col": 18,
+                              "text": "aW5wdXQucG9kc1tpXQ=="
+                            },
+                            "type": "ref",
+                            "value": [
+                              {
+                                "location": {
+                                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                                  "row": 72,
+                                  "col": 18,
+                                  "text": "aW5wdXQ="
+                                },
+                                "type": "var",
+                                "value": "input"
+                              },
+                              {
+                                "location": {
+                                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                                  "row": 72,
+                                  "col": 24,
+                                  "text": "cG9kcw=="
+                                },
+                                "type": "string",
+                                "value": "pods"
+                              },
+                              {
+                                "location": {
+                                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                                  "row": 72,
+                                  "col": 29,
+                                  "text": "aQ=="
+                                },
+                                "type": "var",
+                                "value": "i"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "index": 1,
+                        "location": {
+                          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                          "row": 72,
+                          "col": 33,
+                          "text": "aW5wdXQubmFtZXNbaV0gPT0geC5uYW1l"
+                        },
+                        "terms": [
+                          {
+                            "location": {
+                              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                              "row": 72,
+                              "col": 48,
+                              "text": "PT0="
+                            },
+                            "type": "ref",
+                            "value": [
+                              {
+                                "location": {
+                                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                                  "row": 72,
+                                  "col": 48,
+                                  "text": "PT0="
+                                },
+                                "type": "var",
+                                "value": "equal"
+                              }
+                            ]
+                          },
+                          {
+                            "location": {
+                              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                              "row": 72,
+                              "col": 33,
+                              "text": "aW5wdXQubmFtZXNbaV0="
+                            },
+                            "type": "ref",
+                            "value": [
+                              {
+                                "location": {
+                                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                                  "row": 72,
+                                  "col": 33,
+                                  "text": "aW5wdXQ="
+                                },
+                                "type": "var",
+                                "value": "input"
+                              },
+                              {
+                                "location": {
+                                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                                  "row": 72,
+                                  "col": 39,
+                                  "text": "bmFtZXM="
+                                },
+                                "type": "string",
+                                "value": "names"
+                              },
+                              {
+                                "location": {
+                                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                                  "row": 72,
+                                  "col": 45,
+                                  "text": "aQ=="
+                                },
+                                "type": "var",
+                                "value": "i"
+                              }
+                            ]
+                          },
+                          {
+                            "location": {
+                              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                              "row": 72,
+                              "col": 51,
+                              "text": "eC5uYW1l"
+                            },
+                            "type": "ref",
+                            "value": [
+                              {
+                                "location": {
+                                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                                  "row": 72,
+                                  "col": 51,
+                                  "text": "eA=="
+                                },
+                                "type": "var",
+                                "value": "x"
+                              },
+                              {
+                                "location": {
+                                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                                  "row": 72,
+                                  "col": 53,
+                                  "text": "bmFtZQ=="
+                                },
+                                "type": "string",
+                                "value": "name"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 72,
+                "col": 62,
+                "text": "MA=="
+              },
+              "type": "number",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "comprehension_multi",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 71,
+              "col": 1,
+              "text": "Y29tcHJlaGVuc2lvbl9tdWx0aQ=="
+            },
+            "type": "var",
+            "value": "comprehension_multi"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 71,
+          "col": 1,
+          "text": "Y29tcHJlaGVuc2lvbl9tdWx0aQ=="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 71,
+        "col": 1,
+        "text": "Y29tcHJlaGVuc2lvbl9tdWx0aSBpZiB7Cgljb3VudCh7eCB8IHggOj0gaW5wdXQucG9kc1tpXTsgaW5wdXQubmFtZXNbaV0gPT0geC5uYW1lfSkgPiAwCn0="
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "FI-008"
+          },
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 75,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBJbmRleCBzaGFyZWQgd2l0aCB0aGUgcnVsZSBoZWFkCiMgY3VzdG9tOgojICAgY29udHJvbC1pZDogRkktMDA4"
+          },
+          "scope": "document",
+          "title": "Index shared with the rule head"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 81,
+            "col": 2,
+            "text": "aW5wdXQucG9kc1tpXS5wcml2aWxlZ2VkID09IHRydWU="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 81,
+                "col": 27,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 81,
+                    "col": 27,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 81,
+                "col": 2,
+                "text": "aW5wdXQucG9kc1tpXS5wcml2aWxlZ2Vk"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 81,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 81,
+                    "col": 8,
+                    "text": "cG9kcw=="
+                  },
+                  "type": "string",
+                  "value": "pods"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 81,
+                    "col": 13,
+                    "text": "aQ=="
+                  },
+                  "type": "var",
+                  "value": "i"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 81,
+                    "col": 16,
+                    "text": "cHJpdmlsZWdlZA=="
+                  },
+                  "type": "string",
+                  "value": "privileged"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 81,
+                "col": 30,
+                "text": "dHJ1ZQ=="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "head_use",
+        "key": {
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 80,
+            "col": 19,
+            "text": "aQ=="
+          },
+          "type": "var",
+          "value": "i"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 80,
+              "col": 1,
+              "text": "aGVhZF91c2U="
+            },
+            "type": "var",
+            "value": "head_use"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 80,
+          "col": 1,
+          "text": "aGVhZF91c2UgY29udGFpbnMgaQ=="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 80,
+        "col": 1,
+        "text": "aGVhZF91c2UgY29udGFpbnMgaSBpZiB7CglpbnB1dC5wb2RzW2ldLnByaXZpbGVnZWQgPT0gdHJ1ZQp9"
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "FI-009"
+          },
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 84,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBJbmRleCB1bmRlciBhIGZ1bmN0aW9uIHBhcmFtZXRlcgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwOQ=="
+          },
+          "scope": "document",
+          "title": "Index under a function parameter"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 90,
+            "col": 2,
+            "text": "cC5pdGVtc1tpXS5iYWQgPT0gdHJ1ZQ=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 90,
+                "col": 17,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 90,
+                    "col": 17,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 90,
+                "col": 2,
+                "text": "cC5pdGVtc1tpXS5iYWQ="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 90,
+                    "col": 2,
+                    "text": "cA=="
+                  },
+                  "type": "var",
+                  "value": "p"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 90,
+                    "col": 4,
+                    "text": "aXRlbXM="
+                  },
+                  "type": "string",
+                  "value": "items"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 90,
+                    "col": 10,
+                    "text": "aQ=="
+                  },
+                  "type": "var",
+                  "value": "i"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 90,
+                    "col": 13,
+                    "text": "YmFk"
+                  },
+                  "type": "string",
+                  "value": "bad"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 90,
+                "col": 20,
+                "text": "dHJ1ZQ=="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 91,
+            "col": 2,
+            "text": "cC5uYW1lc1tpXSA9PSAieCI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 91,
+                "col": 13,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 91,
+                    "col": 13,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 91,
+                "col": 2,
+                "text": "cC5uYW1lc1tpXQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 91,
+                    "col": 2,
+                    "text": "cA=="
+                  },
+                  "type": "var",
+                  "value": "p"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 91,
+                    "col": 4,
+                    "text": "bmFtZXM="
+                  },
+                  "type": "string",
+                  "value": "names"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 91,
+                    "col": 10,
+                    "text": "aQ=="
+                  },
+                  "type": "var",
+                  "value": "i"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 91,
+                "col": 16,
+                "text": "Ingi"
+              },
+              "type": "string",
+              "value": "x"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "param_rooted",
+        "args": [
+          {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 89,
+              "col": 14,
+              "text": "cA=="
+            },
+            "type": "var",
+            "value": "p"
+          }
+        ],
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 89,
+              "col": 1,
+              "text": "cGFyYW1fcm9vdGVk"
+            },
+            "type": "var",
+            "value": "param_rooted"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 89,
+          "col": 1,
+          "text": "cGFyYW1fcm9vdGVkKHAp"
+        }
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 89,
+        "col": 1,
+        "text": "cGFyYW1fcm9vdGVkKHApIGlmIHsKCXAuaXRlbXNbaV0uYmFkID09IHRydWUKCXAubmFtZXNbaV0gPT0gIngiCn0="
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "FI-010"
+          },
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 94,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBXaWxkY2FyZCBzdHJhaWdodCB1bmRlciB0aGUgcm9vdAojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAxMA=="
+          },
+          "scope": "document",
+          "title": "Wildcard straight under the root"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 100,
+            "col": 2,
+            "text": "aW5wdXRbX10gPT0gImZvcmJpZGRlbiI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 100,
+                "col": 11,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 100,
+                    "col": 11,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 100,
+                "col": 2,
+                "text": "aW5wdXRbX10="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 100,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 100,
+                    "col": 8,
+                    "text": "Xw=="
+                  },
+                  "type": "var",
+                  "value": "$1"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 100,
+                "col": 14,
+                "text": "ImZvcmJpZGRlbiI="
+              },
+              "type": "string",
+              "value": "forbidden"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "root_wildcard",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 99,
+              "col": 1,
+              "text": "cm9vdF93aWxkY2FyZA=="
+            },
+            "type": "var",
+            "value": "root_wildcard"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 99,
+          "col": 1,
+          "text": "cm9vdF93aWxkY2FyZA=="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 99,
+        "col": 1,
+        "text": "cm9vdF93aWxkY2FyZCBpZiB7CglpbnB1dFtfXSA9PSAiZm9yYmlkZGVuIgp9"
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "FI-011"
+          },
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 103,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBTaGFyZWQgaW5kZXggYXMgYW4gZXZlcnkgZG9tYWluCiMgY3VzdG9tOgojICAgY29udHJvbC1pZDogRkktMDEx"
+          },
+          "scope": "document",
+          "title": "Shared index as an every domain"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 109,
+            "col": 2,
+            "text": "c29tZSBp"
+          },
+          "terms": {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 109,
+              "col": 2,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                  "row": 109,
+                  "col": 7,
+                  "text": "aQ=="
+                },
+                "type": "var",
+                "value": "i"
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 110,
+            "col": 2,
+            "text": "aW5wdXQuZ3JvdXBzW2ldLmVuYWJsZWQgPT0gdHJ1ZQ=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 110,
+                "col": 26,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 110,
+                    "col": 26,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 110,
+                "col": 2,
+                "text": "aW5wdXQuZ3JvdXBzW2ldLmVuYWJsZWQ="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 110,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 110,
+                    "col": 8,
+                    "text": "Z3JvdXBz"
+                  },
+                  "type": "string",
+                  "value": "groups"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 110,
+                    "col": 15,
+                    "text": "aQ=="
+                  },
+                  "type": "var",
+                  "value": "i"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 110,
+                    "col": 18,
+                    "text": "ZW5hYmxlZA=="
+                  },
+                  "type": "string",
+                  "value": "enabled"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 110,
+                "col": 29,
+                "text": "dHJ1ZQ=="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "location": {
+            "file": "src/test/resources/realistic/free-index/policies/free.rego",
+            "row": 111,
+            "col": 2,
+            "text": "ZXZlcnkgbSBpbiBpbnB1dC5tZW1iZXJzW2ldIHsKCQltLm9rID09IHRydWUKCX0="
+          },
+          "terms": {
+            "body": [
+              {
+                "index": 0,
+                "location": {
+                  "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                  "row": 112,
+                  "col": 3,
+                  "text": "bS5vayA9PSB0cnVl"
+                },
+                "terms": [
+                  {
+                    "location": {
+                      "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                      "row": 112,
+                      "col": 8,
+                      "text": "PT0="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                          "row": 112,
+                          "col": 8,
+                          "text": "PT0="
+                        },
+                        "type": "var",
+                        "value": "equal"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                      "row": 112,
+                      "col": 3,
+                      "text": "bS5vaw=="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                          "row": 112,
+                          "col": 3,
+                          "text": "bQ=="
+                        },
+                        "type": "var",
+                        "value": "m"
+                      },
+                      {
+                        "location": {
+                          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                          "row": 112,
+                          "col": 5,
+                          "text": "b2s="
+                        },
+                        "type": "string",
+                        "value": "ok"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                      "row": 112,
+                      "col": 11,
+                      "text": "dHJ1ZQ=="
+                    },
+                    "type": "boolean",
+                    "value": true
+                  }
+                ]
+              }
+            ],
+            "domain": {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 111,
+                "col": 13,
+                "text": "aW5wdXQubWVtYmVyc1tpXQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 111,
+                    "col": 13,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 111,
+                    "col": 19,
+                    "text": "bWVtYmVycw=="
+                  },
+                  "type": "string",
+                  "value": "members"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                    "row": 111,
+                    "col": 27,
+                    "text": "aQ=="
+                  },
+                  "type": "var",
+                  "value": "i"
+                }
+              ]
+            },
+            "key": null,
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 111,
+              "col": 2,
+              "text": "ZXZlcnk="
+            },
+            "value": {
+              "location": {
+                "file": "src/test/resources/realistic/free-index/policies/free.rego",
+                "row": 111,
+                "col": 8,
+                "text": "bQ=="
+              },
+              "type": "var",
+              "value": "m"
+            }
+          }
+        }
+      ],
+      "head": {
+        "name": "every_domain",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/realistic/free-index/policies/free.rego",
+              "row": 108,
+              "col": 1,
+              "text": "ZXZlcnlfZG9tYWlu"
+            },
+            "type": "var",
+            "value": "every_domain"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/realistic/free-index/policies/free.rego",
+          "row": 108,
+          "col": 1,
+          "text": "ZXZlcnlfZG9tYWlu"
+        }
+      },
+      "location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 108,
+        "col": 1,
+        "text": "ZXZlcnlfZG9tYWluIGlmIHsKCXNvbWUgaQoJaW5wdXQuZ3JvdXBzW2ldLmVuYWJsZWQgPT0gdHJ1ZQoJZXZlcnkgbSBpbiBpbnB1dC5tZW1iZXJzW2ldIHsKCQltLm9rID09IHRydWUKCX0KfQ=="
+      }
+    }
+  ],
+  "comments": [
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 5,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBVbmRlY2xhcmVkIGluZGV4IHVzZWQgb25jZQojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwMQ=="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 6,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBVbmRlY2xhcmVkIGluZGV4IHVzZWQgb25jZQ==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 7,
+        "col": 1,
+        "text": "IyB0aXRsZTogVW5kZWNsYXJlZCBpbmRleCB1c2VkIG9uY2U="
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 8,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogRkktMDAx",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 9,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IEZJLTAwMQ=="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 14,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBEZWNsYXJlZCBpbmRleCB1c2VkIG9uY2UKIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBGSS0wMDI="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 15,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBEZWNsYXJlZCBpbmRleCB1c2VkIG9uY2U=",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 16,
+        "col": 1,
+        "text": "IyB0aXRsZTogRGVjbGFyZWQgaW5kZXggdXNlZCBvbmNl"
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 17,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogRkktMDAy",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 18,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IEZJLTAwMg=="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 24,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBJbmRleCBzaGFyZWQgYnkgdHdvIGNvbGxlY3Rpb25zCiMgY3VzdG9tOgojICAgY29udHJvbC1pZDogRkktMDAz"
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 25,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBJbmRleCBzaGFyZWQgYnkgdHdvIGNvbGxlY3Rpb25z",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 26,
+        "col": 1,
+        "text": "IyB0aXRsZTogSW5kZXggc2hhcmVkIGJ5IHR3byBjb2xsZWN0aW9ucw=="
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 27,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogRkktMDAz",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 28,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IEZJLTAwMw=="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 34,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBJbmRleCBhbHNvIHVzZWQgYXMgYSB2YWx1ZQojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwNA=="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 35,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBJbmRleCBhbHNvIHVzZWQgYXMgYSB2YWx1ZQ==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 36,
+        "col": 1,
+        "text": "IyB0aXRsZTogSW5kZXggYWxzbyB1c2VkIGFzIGEgdmFsdWU="
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 37,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogRkktMDA0",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 38,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IEZJLTAwNA=="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 45,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBGcmVlIGtleSB0aGVuIHdpbGRjYXJkIGVsZW1lbnQKIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBGSS0wMDU="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 46,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBGcmVlIGtleSB0aGVuIHdpbGRjYXJkIGVsZW1lbnQ=",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 47,
+        "col": 1,
+        "text": "IyB0aXRsZTogRnJlZSBrZXkgdGhlbiB3aWxkY2FyZCBlbGVtZW50"
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 48,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogRkktMDA1",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 49,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IEZJLTAwNQ=="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 56,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBGaXJzdCB1c2UgdW5kZXIgYSBuZWdhdGlvbgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwNg=="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 57,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBGaXJzdCB1c2UgdW5kZXIgYSBuZWdhdGlvbg==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 58,
+        "col": 1,
+        "text": "IyB0aXRsZTogRmlyc3QgdXNlIHVuZGVyIGEgbmVnYXRpb24="
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 59,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogRkktMDA2",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 60,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IEZJLTAwNg=="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 66,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBTaGFyZWQgaW5kZXggaW5zaWRlIGEgY29tcHJlaGVuc2lvbgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwNw=="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 67,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBTaGFyZWQgaW5kZXggaW5zaWRlIGEgY29tcHJlaGVuc2lvbg==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 68,
+        "col": 1,
+        "text": "IyB0aXRsZTogU2hhcmVkIGluZGV4IGluc2lkZSBhIGNvbXByZWhlbnNpb24="
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 69,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogRkktMDA3",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 70,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IEZJLTAwNw=="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 75,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBJbmRleCBzaGFyZWQgd2l0aCB0aGUgcnVsZSBoZWFkCiMgY3VzdG9tOgojICAgY29udHJvbC1pZDogRkktMDA4"
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 76,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBJbmRleCBzaGFyZWQgd2l0aCB0aGUgcnVsZSBoZWFk",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 77,
+        "col": 1,
+        "text": "IyB0aXRsZTogSW5kZXggc2hhcmVkIHdpdGggdGhlIHJ1bGUgaGVhZA=="
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 78,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogRkktMDA4",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 79,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IEZJLTAwOA=="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 84,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBJbmRleCB1bmRlciBhIGZ1bmN0aW9uIHBhcmFtZXRlcgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAwOQ=="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 85,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBJbmRleCB1bmRlciBhIGZ1bmN0aW9uIHBhcmFtZXRlcg==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 86,
+        "col": 1,
+        "text": "IyB0aXRsZTogSW5kZXggdW5kZXIgYSBmdW5jdGlvbiBwYXJhbWV0ZXI="
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 87,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogRkktMDA5",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 88,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IEZJLTAwOQ=="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 94,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBXaWxkY2FyZCBzdHJhaWdodCB1bmRlciB0aGUgcm9vdAojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IEZJLTAxMA=="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 95,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBXaWxkY2FyZCBzdHJhaWdodCB1bmRlciB0aGUgcm9vdA==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 96,
+        "col": 1,
+        "text": "IyB0aXRsZTogV2lsZGNhcmQgc3RyYWlnaHQgdW5kZXIgdGhlIHJvb3Q="
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 97,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogRkktMDEw",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 98,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IEZJLTAxMA=="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 103,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBTaGFyZWQgaW5kZXggYXMgYW4gZXZlcnkgZG9tYWluCiMgY3VzdG9tOgojICAgY29udHJvbC1pZDogRkktMDEx"
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 104,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBTaGFyZWQgaW5kZXggYXMgYW4gZXZlcnkgZG9tYWlu",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 105,
+        "col": 1,
+        "text": "IyB0aXRsZTogU2hhcmVkIGluZGV4IGFzIGFuIGV2ZXJ5IGRvbWFpbg=="
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 106,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogRkktMDEx",
+      "Location": {
+        "file": "src/test/resources/realistic/free-index/policies/free.rego",
+        "row": 107,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IEZJLTAxMQ=="
+      }
+    }
+  ]
+}

@@ -73,6 +73,8 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.Base64
 
@@ -563,7 +565,8 @@ internal object AstMapper {
             )
         }
 
-    private fun mapBody(rule: OpaRule, ctx: MappingContext): RuleBody {
+    private fun mapBody(rule: OpaRule, baseCtx: MappingContext): RuleBody {
+        val ctx = baseCtx.copy(varCounts = countVariables(rule), freeKeys = FreeKeys())
         // An else-chain (spec §14 finding): opa's own top-level `rule.location` already spans the
         // WHOLE chain (every branch), confirmed empirically against real opa parse output -- so the
         // existing whole-rule source slice is already the correct fallback text, no extra decoding
@@ -602,7 +605,7 @@ internal object AstMapper {
                 if (assigned != null && produced != null) {
                     producesValue = produced
                     messageTemplate = computeMessageTemplate(assigned)
-                    messageArguments = messageArgumentPaths(assigned, symbolTable, ctx)
+                    messageArguments = messageArgumentPaths(assigned, symbolTable, ctx.copy(freeKeys = null))
                     consumedValueMessage = true
                     continue
                 }
@@ -614,7 +617,7 @@ internal object AstMapper {
                 if (assignedMessage != null) {
                     producesValue = renderProducesValue(assignedMessage, symbolTable)
                     messageTemplate = computeMessageTemplate(assignedMessage)
-                    messageArguments = messageArgumentPaths(assignedMessage, symbolTable, ctx)
+                    messageArguments = messageArgumentPaths(assignedMessage, symbolTable, ctx.copy(freeKeys = null))
                     continue
                 }
             }
@@ -630,7 +633,7 @@ internal object AstMapper {
             // Computed AFTER the loop above, so a `n := input.limit`-style local assignment is
             // already in `symbolTable` when `limit := n` itself is resolved (follow-up to review
             // item 10).
-            yieldsValue = if (consumedValueMessage) null else yieldsValueOrNull(rule, symbolTable, ctx),
+            yieldsValue = if (consumedValueMessage) null else yieldsValueOrNull(rule, symbolTable, ctx.copy(freeKeys = null)),
             messageArguments = messageArguments,
         )
     }
@@ -642,6 +645,23 @@ internal object AstMapper {
      * construct identically.
      */
     private fun mapBodyExpr(expr: OpaExpr, symbolTable: MutableMap<String, VarBinding>, ctx: MappingContext, conditions: MutableList<Condition>) {
+        val state = ctx.freeKeys
+        val before = conditions.size
+        val wasNegated = state?.negated ?: false
+        state?.negated = expr.negated
+        try {
+            mapBodyExprInner(expr, symbolTable, ctx, conditions)
+        } finally {
+            state?.negated = wasNegated
+        }
+        // Spec §14.51: a free index first used by this expression is introduced by a bullet BEFORE the conditions that use it.
+        if (state != null && state.pending.isNotEmpty()) {
+            conditions.addAll(before, state.pending)
+            state.pending.clear()
+        }
+    }
+
+    private fun mapBodyExprInner(expr: OpaExpr, symbolTable: MutableMap<String, VarBinding>, ctx: MappingContext, conditions: MutableList<Condition>) {
         // A `with` override (spec §14 finding): attaches to ANY expr shape, and silently
         // changes what's actually being evaluated (a modified, hypothetical input/data/function),
         // which no existing Condition template describes -- demoted before shape-dispatch so it
@@ -853,7 +873,9 @@ internal object AstMapper {
         val bodyExprs = opaJson.decodeFromJsonElement(ListSerializer(OpaExpr.serializer()), bodyJson)
         val local = symbolTable.toMutableMap()
         val conditions = mutableListOf<Condition>()
-        for (expr in bodyExprs) mapBodyExpr(expr, local, ctx, conditions)
+        // A free index is never BOUND inside a comprehension (its scope would leak into the enclosing rule); a single-use one is still `_`.
+        val inner = ctx.copy(freeKeys = null)
+        for (expr in bodyExprs) mapBodyExpr(expr, local, inner, conditions)
         val renderable = conditions.all { c ->
             c !is Condition.Unrendered && c !is Condition.RuleReference && c !is Condition.FunctionCall &&
                 // An `every` renders as a head bullet plus nested bullets; a comprehension phrase is one line, so it could only show the head (spec §14.49).
@@ -864,7 +886,7 @@ internal object AstMapper {
 
         fun head(key: String): Operand? {
             val headTerm = parts[key] ?: return null
-            val mapped = mapOperand(opaJson.decodeFromJsonElement(OpaTerm.serializer(), headTerm), local, ctx)
+            val mapped = mapOperand(opaJson.decodeFromJsonElement(OpaTerm.serializer(), headTerm), local, inner)
             return (mapped as? ConstructResult.Ok)?.operand?.takeIf { isFullyRendered(it) }
         }
         val first = head(if (kind == ComprehensionKind.OBJECT) "key" else "term") ?: return ConstructResult.Unsupported("comprehension")
@@ -1072,7 +1094,8 @@ internal object AstMapper {
         keyTerm?.let { local[stringValueOf(it)] = VarBinding.IterationKey(collection) }
         local[stringValueOf(value)] = VarBinding.Iteration(collection)
         val conditions = mutableListOf<Condition>()
-        for (bodyExpr in opaJson.decodeFromJsonElement(ListSerializer(OpaExpr.serializer()), bodyJson)) mapBodyExpr(bodyExpr, local, ctx, conditions)
+        val inner = ctx.copy(freeKeys = null)
+        for (bodyExpr in opaJson.decodeFromJsonElement(ListSerializer(OpaExpr.serializer()), bodyJson)) mapBodyExpr(bodyExpr, local, inner, conditions)
         if (conditions.isEmpty()) return fallback
         val renderable = Coverage.flatten(conditions).all { c ->
             c !is Condition.Unrendered && Coverage.operandsOf(c).all { isFullyRendered(it) }
@@ -1136,6 +1159,52 @@ internal object AstMapper {
         if (ctx.registry[packagePath]?.contains(ruleName) != true) return null
         if (ctx.partialRegistry[packagePath]?.contains(ruleName) == true) return null
         return Condition.RuleReference(packagePath, ruleName, negated)
+    }
+
+    /**
+     * A bracket-key variable with no binding at all (spec §14.51): a FREE index or key. Used exactly once in the whole rule it is the wildcard `_`
+     * ([PathSegment.AnyIndex]) -- what `_` is. Used more than once it is bound here, at its first use, to the collection indexed so far
+     * ([prefix], null when there is no plain path to index) -- never under a `not`, never inside a comprehension/`every` (those have no [FreeKeys]),
+     * never when the name could be a rule, function or import. Anything else is null: the caller keeps the raw operand.
+     */
+    private fun freeIndexSegment(name: String, symbolTable: Map<String, VarBinding>, ctx: MappingContext, prefix: List<PathSegment>?): PathSegment? {
+        if (symbolTable[name] != null) return null
+        if (ctx.importAliases.containsKey(name) || ctx.registry[ctx.currentPackage]?.contains(name) == true ||
+            ctx.functionRegistry[ctx.currentPackage]?.containsKey(name) == true || ctx.refHeadRegistry[ctx.currentPackage]?.contains(name) == true
+        ) return null
+        val uses = ctx.varCounts[name] ?: return null
+        if (uses == 1) return PathSegment.AnyIndex
+        val state = ctx.freeKeys ?: return null
+        if (state.negated || prefix == null) return null
+        val collection = Operand.Path(prefix)
+        state.bound[name] = collection
+        state.pending += Condition.SomeKey(name, collection)
+        return PathSegment.VarIndex(name)
+    }
+
+    /**
+     * How many times each variable name occurs in [rule] (head, body, nested terms), as `var` terms in opa's own JSON -- no Rego is parsed here.
+     * The symbols of a declare-only `some i, j` are excluded: they declare, they do not use.
+     */
+    private fun countVariables(rule: OpaRule): Map<String, Int> {
+        val counts = HashMap<String, Int>()
+        fun walk(element: JsonElement) {
+            when (element) {
+                is JsonObject -> {
+                    if (element["type"]?.jsonPrimitive?.contentOrNull == "var") {
+                        element["value"]?.let { (it as? JsonPrimitive)?.contentOrNull }?.let { counts.merge(it, 1, Int::plus) }
+                        return
+                    }
+                    val symbols = element["symbols"] as? JsonArray
+                    val declareOnly = symbols != null && symbols.isNotEmpty() && symbols.all { (it as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull == "var" }
+                    for ((key, value) in element) if (!(declareOnly && key == "symbols")) walk(value)
+                }
+                is JsonArray -> element.forEach { walk(it) }
+                else -> {}
+            }
+        }
+        walk(opaJson.encodeToJsonElement(OpaRule.serializer(), rule))
+        return counts
     }
 
     /**
@@ -1213,6 +1282,7 @@ internal object AstMapper {
             is VarBinding.Expression -> ConstructResult.Ok(binding.operand)
             null -> {
                 val name = stringValueOf(term)
+                if (ctx.freeKeys?.bound?.containsKey(name) == true) return ConstructResult.Ok(Operand.Variable(name))
                 val reference = ruleValueReferenceIfKnown(ctx.currentPackage, name, ctx)
                     ?: importedMember(name, ctx)?.let { (pkg, member) -> ruleValueReferenceIfKnown(pkg, member, ctx) }
                 ConstructResult.Ok(reference ?: Operand.Unrendered(sourceText(term.location)))
@@ -1265,7 +1335,10 @@ internal object AstMapper {
             ruleValueReferenceIfKnown(candidatePackage, candidateRule, ctx)?.let { return ConstructResult.Ok(it) }
         }
         if (rootName == "input" || rootName == "data") {
-            val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+            val segments = mapPathSegments(remaining, symbolTable, ctx, listOf(PathSegment.Field(rootName))) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+            // `input[_]` / `input[key]` (a single-use index): with nothing named after the root the breadcrumb would be EMPTY ("any of: `` is ..."), a
+            // statement with no subject. The raw operand says what it is.
+            if (segments.isNotEmpty() && segments.all { it == PathSegment.AnyIndex }) return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
             return ConstructResult.Ok(Operand.Path(listOf(PathSegment.Field(rootName)) + segments))
         }
         // Review item 10: an import-alias-rooted chain (`config.max_items`) is a reference to that
@@ -1290,17 +1363,18 @@ internal object AstMapper {
             // segment (`x[input.k]`) cannot, and stringValueOf would throw on it.
             val dottedPath = if (allPlainStringSegments(remaining)) chain.joinToString(".") { stringValueOf(it) } else null
             if (dottedPath != null && ctx.refHeadRegistry[ctx.currentPackage]?.contains(dottedPath) == true) {
-                val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+                val segments = mapPathSegments(remaining, symbolTable, ctx, listOf(PathSegment.Field(rootName))) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
                 return ConstructResult.Ok(Operand.Path(listOf(PathSegment.Field(rootName)) + segments))
             }
         }
         return when (val binding = symbolTable[rootName]) {
             is VarBinding.Iteration -> {
-                val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
-                ConstructResult.Ok(Operand.Path(binding.collection.segments + PathSegment.VarIndex(rootName) + segments))
+                val prefix = binding.collection.segments + PathSegment.VarIndex(rootName)
+                val segments = mapPathSegments(remaining, symbolTable, ctx, prefix) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+                ConstructResult.Ok(Operand.Path(prefix + segments))
             }
             is VarBinding.Substitution -> {
-                val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+                val segments = mapPathSegments(remaining, symbolTable, ctx, binding.path.segments) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
                 ConstructResult.Ok(Operand.Path(binding.path.segments + segments))
             }
             // A parameter used as a ref-chain ROOT (`ns.subfield`), spec §14.26 (coverage audit
@@ -1341,8 +1415,8 @@ internal object AstMapper {
             else -> return null
         }
         if (ctx.partialRegistry[packagePath]?.contains(ruleName) != true) return null
-        val tailSegments = mapPathSegments(tail, symbolTable, ctx) ?: return null
         val rulePath = (packagePath.split('.') + ruleName).map { PathSegment.Field(it) }
+        val tailSegments = mapPathSegments(tail, symbolTable, ctx, listOf<PathSegment>(PathSegment.Field("data")) + rulePath) ?: return null
         return Operand.Path(listOf<PathSegment>(PathSegment.Field("data")) + rulePath + tailSegments)
     }
 
@@ -1374,7 +1448,7 @@ internal object AstMapper {
      * other segment kind here. Needs [ctx] (not required by any other branch) to make that
      * recursive call.
      */
-    private fun mapPathSegments(terms: List<OpaTerm>, symbolTable: Map<String, VarBinding>, ctx: MappingContext): List<PathSegment>? {
+    private fun mapPathSegments(terms: List<OpaTerm>, symbolTable: Map<String, VarBinding>, ctx: MappingContext, prefix: List<PathSegment>? = null): List<PathSegment>? {
         val segments = mutableListOf<PathSegment>()
         for (term in terms) {
             when (term.type) {
@@ -1387,7 +1461,8 @@ internal object AstMapper {
                     segments += when {
                         sourceText(term.location) == "_" -> PathSegment.AnyIndex
                         symbolTable[name] is VarBinding.Iteration || symbolTable[name] is VarBinding.IterationKey -> PathSegment.VarIndex(name)
-                        else -> return null
+                        ctx.freeKeys?.bound?.containsKey(name) == true -> PathSegment.VarIndex(name)
+                        else -> freeIndexSegment(name, symbolTable, ctx, prefix?.let { it + segments }) ?: return null
                     }
                 }
                 "ref" -> {
@@ -1661,4 +1736,19 @@ private data class MappingContext(
     val refHeadRegistry: Map<String, Set<String>>,
     val functionRegistry: Map<String, Map<String, List<String>>>,
     val sourceFile: String,
+    /** How many times each variable name occurs in the rule being mapped (declare-only `some` excluded): 1 means a free index is just `_` (spec §14.51). */
+    val varCounts: Map<String, Int> = emptyMap(),
+    /** Free index/key bindings of the rule body being mapped; null where binding is not allowed (comprehension, `every`, message/value operands). */
+    val freeKeys: FreeKeys? = null,
 )
+
+/**
+ * The free index/key variables bound so far in one rule body (spec §14.51). [bound] maps each to the collection indexed at its first use;
+ * [pending] holds the [Condition.SomeKey]s created while mapping the current body expression, inserted before the conditions it produced;
+ * [negated] is true while mapping a `not` expression, where a first use must never become a binding.
+ */
+private class FreeKeys {
+    val bound = LinkedHashMap<String, Operand.Path>()
+    val pending = mutableListOf<Condition.SomeKey>()
+    var negated = false
+}

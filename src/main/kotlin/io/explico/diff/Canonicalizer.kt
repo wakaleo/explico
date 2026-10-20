@@ -106,6 +106,12 @@ internal object Canonicalizer {
             put("type", JsonPrimitive("Every"))
             put("variable", JsonPrimitive(alias))
         }
+        is Condition.SomeKey -> buildJsonObject {
+            val alias = aliasFor(condition.variable, aliases)
+            put("collection", canonicalOperand(condition.collection, aliases))
+            put("type", JsonPrimitive("SomeKey"))
+            put("variable", JsonPrimitive(alias))
+        }
         is Condition.RuleReference -> buildJsonObject {
             put("negated", JsonPrimitive(condition.negated))
             put("packagePath", JsonPrimitive(condition.packagePath))

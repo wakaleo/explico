@@ -89,4 +89,14 @@ class EveryRenderingTest {
     fun theOperandsOfAnEveryAreItsCollectionOnly_theNestedOnesComeFromFlatten() {
         assertThat(Coverage.operandsOf(every)).containsExactly(items)
     }
+
+    @Test
+    @DisplayName("spec §14.51: a SomeKey reads 'for some index or key `i` of <collection>', counts as one condition, and a wildcard collection keeps its 'any of' prefix")
+    fun someKeyPhraseAndCoverage() {
+        assertThat(render(Condition.SomeKey("i", items))).isEqualTo("for some index or key `i` of `items`")
+        val wildcard = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("a"), PathSegment.AnyIndex, PathSegment.Field("b")))
+        assertThat(render(Condition.SomeKey("k", wildcard))).startsWith("any of: for some index or key `k` of ")
+        assertThat(Coverage.flatten(listOf(Condition.SomeKey("i", items)))).hasSize(1)
+        assertThat(Coverage.operandsOf(Condition.SomeKey("i", items))).containsExactly(items)
+    }
 }

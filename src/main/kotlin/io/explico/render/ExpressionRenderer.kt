@@ -91,6 +91,11 @@ internal object ExpressionRenderer {
             val vars = if (condition.key != null) "${condition.key}, ${condition.variable}" else condition.variable
             withAnyOfPrefix("for every $vars in $text, all of the following are true (vacuously true when there are none)", hasAnyIndex)
         }
+        // Spec §14.51: a free index/key variable shared by several uses. The collection is the path indexed at its first use.
+        is Condition.SomeKey -> {
+            val (text, hasAnyIndex) = renderOperand(condition.collection, ruleValueAnchorFor)
+            withAnyOfPrefix("for some index or key `${condition.variable}` of $text", hasAnyIndex)
+        }
         is Condition.RuleReference -> renderRuleReference(condition, anchorFor)
         is Condition.FunctionCall -> renderFunctionCall(condition, functionAnchorFor, ruleValueAnchorFor)
         is Condition.Unrendered -> throw IllegalArgumentException(

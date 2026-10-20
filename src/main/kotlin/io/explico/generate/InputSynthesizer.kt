@@ -265,6 +265,7 @@ internal object InputSynthesizer {
                 is Condition.FunctionCall -> unsolvable("FunctionCall is not modelled")
                 is Condition.Unrendered -> unsolvable("Unrendered (${condition.reason}) is not modelled")
                 is Condition.Every -> unsolvable("every is not modelled")
+                is Condition.SomeKey -> unsolvable("a free index variable is not modelled")
             }
         }
 

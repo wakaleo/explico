@@ -16,7 +16,7 @@ has_label(res) if {
 }
 
 bad(res) if {
-	res.items[idx].ok
+	res.items[idx].ok == res.flags[idx]
 }
 
 in_set(x) if {

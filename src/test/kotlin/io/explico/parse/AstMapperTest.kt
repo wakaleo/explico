@@ -522,8 +522,11 @@ class AstMapperTest {
             )
             val policySet = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module)))
             val condition = policySet.packages[0].rules[0].bodies[0].conditions[0] as Condition.Comparison
-            val unrendered = condition.left as Operand.Unrendered
-            assertThat(unrendered.sourceText).isEqualTo("input.pipeline.checks[i].status")
+            // Superseded (spec §14.51): `i` is used ONCE in the rule, which is exactly the wildcard `_`, so it maps to AnyIndex.
+            val path = condition.left as Operand.Path
+            assertThat(path.segments).containsExactly(
+                PathSegment.Field("input"), PathSegment.Field("pipeline"), PathSegment.Field("checks"), PathSegment.AnyIndex, PathSegment.Field("status"),
+            )
         }
 
         @Test
@@ -2913,12 +2916,13 @@ class AstMapperTest {
         }
 
         @Test
-        fun anUnboundDynamicIndexAfterTheRuleKeepsTheWholeAssignmentAsAFallback() {
+        fun aSingleUseDynamicIndexAfterTheRuleIsTheWildcardSoTheAssignmentSubstitutes() {
             val conditions = callerBody(
                 "containers", true,
                 assign("x := kube.containers[i].name", """{"type":"ref","value":[{"type":"var","value":"kube"},${seg("containers")},{"type":"var","value":"i"},${seg("name")}]}"""),
             )
-            assertThat((conditions.single() as Condition.Unrendered).reason).isEqualTo("helper-assignment")
+            // Superseded (spec §14.51): `i` is used once, so it is `_`; the assignment substitutes and leaves no condition.
+            assertThat(conditions).isEmpty()
         }
 
         @Test
@@ -4678,7 +4682,7 @@ class AstMapperTest {
         }
 
         @Test
-        @DisplayName("guard: an unmappable tail (unbound dynamic index) keeps the whole-operand raw fallback, not a partial ParameterPath")
+        @DisplayName("a single-use dynamic index in a parameter tail is the wildcard, so the tail maps (spec §14.51; the raw-fallback guard moved to realistic/parameter-paths)")
         fun unmappableTailFallsBackWhole() {
             // `res.items[idx].ok` with `idx` unbound -- a bare path used as a boolean condition.
             val chain = """{"type":"ref","location":{"text":"${b64("res.items[idx].ok")}"},"value":[
@@ -4695,8 +4699,10 @@ class AstMapperTest {
             )
             val rule = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.single()
             val condition = rule.bodies.single().conditions.single() as Condition.Truthy
-            val unrendered = condition.operand as Operand.Unrendered
-            assertThat(unrendered.sourceText).isEqualTo("res.items[idx].ok")
+            // Superseded (spec §14.51): `idx` is used ONCE, which is the wildcard `_`, so the tail maps. The "shared index under a parameter stays raw" guard
+            // is the acceptance fixture `realistic/parameter-paths` (`bad`).
+            val path = condition.operand as Operand.ParameterPath
+            assertThat(path.segments).containsExactly(PathSegment.Field("items"), PathSegment.AnyIndex, PathSegment.Field("ok"))
         }
 
         @Test
