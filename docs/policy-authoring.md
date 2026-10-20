@@ -404,12 +404,14 @@ that is also a hint for how to write policies that document well:
 
 ### The invariants
 
-- **Examples are committed fixture files, never generated at render time.**
-  explico contains no fixture generator of any kind — every `*.json` file
-  under `--examples <dir>` is something a person wrote and checked in
-  before `render` ever ran. There is no "auto-generate a few examples for
-  me" mode, and none is planned; the sourcing ladder below is a manual
-  workflow, not a preview of upcoming tooling.
+- **Your examples are committed fixture files, never generated at render time.**
+  Every `*.json` file under `--examples <dir>` is something a person wrote
+  and checked in before `render` ever ran, and nothing ever replaces or
+  reorders them. `--generate-examples` (above) can *add* inputs derived from
+  a rule's conditions where yours leave a gap, but they are computed at
+  render time, verified by `opa eval`, shown in a separate, labelled
+  section, and never stored as fixtures; the sourcing ladder below is the
+  manual workflow for the examples that carry meaning.
 - **Every verdict shown is `opa`'s own, evaluated against the current
   policy version at render time.** A fixture's outcome, its produced
   messages, and every referenced path value are computed fresh by a real

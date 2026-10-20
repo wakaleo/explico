@@ -70,6 +70,16 @@ path. The footer states that the examples were evaluated by OPA at generation ti
 `--generate-examples` adds a separate **Generated examples** section for gaps your fixtures leave; every candidate is verified by
 `opa eval` before it is shown, and the names are mechanical ("satisfies every condition", "breaks only: …"), never invented.
 
+A few facts about how a package page is laid out:
+
+- **Order.** Cards in a package page are ordered by rule name; `index.md` lists controls by control id. They can differ.
+- **Which examples.** Every example is evaluated against every rule, so an example normally shows as *not matched* on the cards it does not
+  exercise. A card shows at most three matching and two non-matching examples, in file-name order; the index's *Example coverage* counts all.
+- **Which inputs are listed under an example.** The values of every `input` path the card's conditions read, including a path that is only
+  an argument of a call such as `count(input.reviewers)`. A path read only inside a comprehension is not listed separately.
+- **Where it is defined.** The card says *defined in `approval.rego`* (the file name); the package header above it gives the path relative
+  to your policy directory.
+
 ## The footer
 
 `*Rendering coverage: 4 of 4 conditions*` — how many of this card's conditions were rendered rather than shown as source. See

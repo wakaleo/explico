@@ -7,6 +7,8 @@ on every run, the document does not just describe the rule: it shows what the ru
 
 This guide is the whole loop, with a real repository you can reproduce in a few minutes.
 
+Before you start you need a JDK (17+), `opa` 1.x and the explico jar: see [Install and first run](../install.md).
+
 ```text
 policies/*.rego ──┐
 examples/*.json ──┼──►  explico render  ──►  docs/policy-docs/*.md  ──►  review, CI, a published site
@@ -55,6 +57,14 @@ deny contains msg if {
 The control id is also how `explico diff` recognises a control across versions, so renaming a rule does not look like a removal. The
 full field-by-field walkthrough is in [Writing policies](../policy-authoring.md).
 
+Two things worth knowing before you write your rules:
+
+- **Rule names carry meaning.** A rule named exactly `deny` or `violation` is described on its card as ❌ denied when it matches, and `allow`
+  as ✅ allowed. Any other name (`deny_reviews`, say) renders its examples as simply *matched* or *not matched*. The card's
+  **Effect of a match** line states which convention it rests on.
+- **Write plain conditions.** Comparisons, `not`, `in`, `count`, `startswith`, `some … in`, `every` and the like render as sentences;
+  see [What explico renders](../reference/constructs.md) for the full table. Anything else is shown as verbatim Rego and counted.
+
 ## 3. Add examples: one file per scenario
 
 An example is an `input` document plus a name. explico evaluates it against **every** rule and shows the result on each card it touches.
@@ -79,6 +89,11 @@ Name the scenario, not the data:
   }
 }
 ```
+
+Each example is evaluated against **every** rule in the set. On a card it appears with the outcome for that rule, so one input is normally
+*matched* on the control it exercises and *not matched* on the others; that is expected, not an error. A card shows up to three matching
+and two non-matching examples (in file-name order), so with many fixtures prefix them `01-`, `02-` to control which appear; all of them
+still count toward the *Example coverage* column.
 
 A good set has, for each control, at least one input that **triggers** it and one that **passes**. `index.md` has an *Example coverage*
 column (`✓ / ✓` means both directions are shown, `✓ / –` means only one), so a thin set shows up as a visible gap instead of false
@@ -120,6 +135,16 @@ Commit `docs/policy-docs/`. Then have CI regenerate it and fail if anything diff
     git diff --exit-code -- docs/policy-docs
 ```
 
+!!! warning "Use exactly the flags you committed with"
+    The drift check re-renders, so it must pass **the same flags** you used to produce the committed files. If you commit documents rendered
+    with `--requirements requirements.txt` (which adds a *Requirements coverage* section to `index.md`) and check them without it, the
+    check reports a permanent difference. Keep one `render` command and run it for both the gates and the drift check, as in the
+    [combined workflow](ci-recipes.md#one-workflow-gates-and-drift-together).
+
+    **Do not pass `--source-url` to the render you commit.** Pinning the link to a commit (the right thing for a published document) makes
+    the package pages differ on every commit, so the drift check could never pass. Commit the plain render; add `--source-url` only in the
+    job that publishes.
+
 The output is **byte-identical for identical inputs** (files, rules and fixtures are sorted; nothing depends on the clock), so a
 difference always means a policy, an example, or the data changed without the document being refreshed. This single check is what makes
 the documentation *living*: it can never be quietly out of date.
@@ -158,10 +183,22 @@ permissive and exactly which scenario changed outcome. Two things to expect in s
 *policy digest*) changes, because the digest covers the whole policy set; and an example that reads a newly referenced path gains a line
 for it.
 
-For a summary instead of a full diff, compare the two policy directories:
+Two surprises to expect in a diff like this:
+
+- **Examples can appear and disappear.** A card shows at most three matching and two non-matching examples, so when a change flips one
+  example's outcome, a neighbour may take its place or vanish from the card. The *Example coverage* column in `index.md` is not capped.
+- **An absent field can silence a rule.** In Rego, `not startswith(input.artifact.source_branch, "hotfix/")` is *undefined*, not true,
+  when `source_branch` is missing, so the whole rule stops matching for inputs without it. The card says "does not start with", which reads
+  as true for an absent field; the example (`artifact ▸ source branch`: absent, now ✅ allowed) is the clue. Include an input that lacks
+  the field you are testing.
+
+For a summary instead of a full diff, compare the two policy directories. You need the old version on disk; a git worktree gives you one
+without touching your working copy:
 
 ```sh
-java -jar explico.jar diff old/policies policies --out policy-diff.md
+git worktree add ../policies-before main      # the version you are comparing against
+java -jar explico.jar diff ../policies-before/policies policies --out policy-diff.md
+git worktree remove ../policies-before
 ```
 
 ```markdown
@@ -187,9 +224,12 @@ The generated files are ordinary Markdown with working links, so you have three 
       name: material
     ```
 
-    `mkdocs build --strict` builds the generated documents with their navigation and search, and fails on a broken link or anchor. (This
-    is the configuration that was run against the sample set; it needs no changes to the generated files.) Deploy the result with GitHub
-    Pages from the same workflow that regenerates the documents.
+    Install with `pip install mkdocs-material`, then `mkdocs build --strict` builds the generated documents with their navigation and
+    search, and fails on a broken link or anchor. (This is the configuration that was run against the sample set; it needs no changes to
+    the generated files.) A GitHub Pages workflow is the usual next step; the one this project uses for its own site is
+    [`docs.yml`](https://github.com/wakaleo/explico/blob/main/.github/workflows/docs.yml), and a publish job for your documents looks
+    the same: render with `--source-url` pinned to the commit (so the published cards link to the code they describe), build with MkDocs,
+    then `actions/upload-pages-artifact` and `actions/deploy-pages`. Enable Pages once in the repository settings (source: GitHub Actions).
 3. **Feed other tools.** Add `--json` for a machine-readable result of every rule, condition, verdict and coverage figure, for
    dashboards and GRC tools. See [JSON output](../json-output.md).
 

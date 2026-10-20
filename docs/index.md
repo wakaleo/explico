@@ -9,7 +9,8 @@ quietly out of date.
 
 ## From this
 
-A rule, as the policy author wrote it:
+A rule, as the policy author wrote it. (A **card** is the section generated for one rule; a **situation** is one way the rule can match.
+Terms like these are in the [glossary](glossary.md).)
 
 <!-- excerpt: samples/policies/approvals/change_approval.rego -->
 ```rego
@@ -86,12 +87,16 @@ cost of the example.
 
 | If you want to… | Go to |
 |---|---|
-| See it work in a minute | [Install and quick demo](readme.md) |
+| See it work in a minute | [Install and first run](install.md) |
 | Set up living documentation for your own policies | [From Rego to living documentation](guides/living-documentation.md) |
 | See real output for Kubernetes, storage, API and more | [Showcase](showcase/README.md) |
 | Follow a guided walkthrough | [Tutorial](tutorial.md) |
 | Understand a card | [Reading a card](concepts/reading-a-card.md) |
 | Run it in a pipeline | [CI recipes](guides/ci-recipes.md) |
+
+You need a JDK (17 or newer) and the `opa` binary (1.x); explico is one jar and writes Markdown. The worked-example verdicts are evaluated,
+not asserted: a changed outcome shows up in the diff and fails a drift check, but explico does not decide whether it is the outcome you
+wanted ([what the examples do and do not prove](guides/living-documentation.md#8-what-the-examples-do-and-do-not-prove)).
 
 explico documents and diffs policies; it is not a linter and not a replacement for OPA. It is not affiliated with or endorsed by the Open
 Policy Agent project or Styra.

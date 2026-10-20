@@ -51,7 +51,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting started:
-      - Install and quick demo: readme.md
+      - Install and first run: install.md
       - Tutorial: tutorial.md
   - Concepts:
       - True by construction: concepts/true-by-construction.md
@@ -85,6 +85,8 @@ nav:
           - Release exemptions: sample-output/release-exemptions.md
   - Project:
       - Limits and FAQ: limits-and-faq.md
+      - Glossary: glossary.md
+      - README: readme.md
       - Architecture: architecture.md
       - Changelog: changelog.md
       - Security: security.md

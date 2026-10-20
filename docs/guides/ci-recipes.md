@@ -4,9 +4,9 @@ explico is built to run in a pipeline: it is deterministic, it writes its output
 codes say why it stopped.
 
 !!! note "Versions"
-    The gate flags (`--fail-under`, `--fail-on-gaps`, `--requirements`, `diff --fail-on`) and exit code `5` arrive in **0.2.0**. Until
-    that release is published, build the jar yourself (`./gradlew shadowJar`) or use the 0.1.1 jar for plain rendering. Set
-    `EXPLICO_VERSION` below to the version you use.
+    The gate flags (`--fail-under`, `--fail-on-gaps`, `--requirements`, `diff --fail-on`) and exit code `5` are in **0.2.0**. If that
+    release is not yet published when you read this, build the jar yourself (`./gradlew shadowJar`, then use
+    `build/libs/explico-0.2.0-all.jar`); 0.1.1 renders and diffs but has no gates. Set `EXPLICO_VERSION` below to the version you use.
 
 ## Exit codes
 
@@ -24,6 +24,24 @@ codes say why it stopped.
 - A JDK, version 17 or newer.
 - `opa` 1.x. CI for explico pins **1.19.0**.
 - The explico jar. Releases attach `explico-<version>-all.jar`.
+
+## One workflow: gates and drift together
+
+If you commit the rendered documents (see [From Rego to living documentation](living-documentation.md)), use **one** `render` command for
+both the gates and the drift check. They must use the same flags, and must not include `--source-url` (a commit-pinned link changes on
+every commit):
+
+```yaml
+      - name: Render, enforce the gates, and fail if the committed documents are stale
+        run: |
+          java -jar explico.jar render policies --out docs/policy-docs \
+            --examples examples --data data \
+            --requirements requirements.txt \
+            --fail-under 90 --fail-on-gaps
+          git diff --exit-code -- docs/policy-docs
+```
+
+Publish the commit-pinned version separately (next section), where nothing is compared against a committed file.
 
 ## GitHub Actions: render, gate and publish the documents
 
@@ -137,7 +155,8 @@ If you commit the rendered documents (as this project does for its own samples),
           git diff --exit-code -- docs/policy-docs
 ```
 
-Because output is byte-identical for identical inputs, any difference means the policy changed without its document being refreshed.
+Because output is byte-identical for identical inputs, any difference means the policy changed without its document being refreshed. Use
+the same flags as the gate step, and no `--source-url`; see [One workflow](#one-workflow-gates-and-drift-together).
 
 ## GitLab CI
 
