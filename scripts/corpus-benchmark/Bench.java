@@ -43,7 +43,8 @@ public class Bench {
         Pattern fence = Pattern.compile("not rendered[^\\n]*\\n\\n\\s*```rego\\n(.*?)\\n\\s*```", Pattern.DOTALL);
         try (PrintWriter tsv = new PrintWriter(out.resolve("results.tsv").toFile());
              PrintWriter fb = new PrintWriter(out.resolve("fallbacks.txt").toFile());
-             PrintWriter wr = new PrintWriter(out.resolve("warnings.txt").toFile())) {
+             PrintWriter wr = new PrintWriter(out.resolve("warnings.txt").toFile());
+             PrintWriter rs = new PrintWriter(out.resolve("reasons.tsv").toFile())) {
             tsv.println("file\tstatus\trendered\ttotal\tclass\tmessage");
             for (Map.Entry<String, List<Path>> unit : units.entrySet()) {
                 Path f = Path.of(unit.getKey());
@@ -60,8 +61,11 @@ public class Bench {
                     try {
                         var ps = Explico.load(tmp, version);
                         try {
-                            RenderedDocs d = Explico.render(ps, tmp);
+                            RenderedDocs d = Explico.render(ps, tmp, null, null, false, true);
                             status = "OK"; r = d.getCoverage().getRendered(); t = d.getCoverage().getTotal();
+                            String js = d.getFiles().getOrDefault("explico.json", "");
+                            Matcher rm = REASON.matcher(js);
+                            while (rm.find()) rs.println(f + "\t" + rm.group(2) + "\t" + rm.group(1).replace("\\n", "\n").lines().findFirst().orElse("").strip());
                             for (String md : d.getFiles().values()) {
                                 Matcher m = fence.matcher(md);
                                 while (m.find()) fb.println(f + "\t" + m.group(1).strip().lines().findFirst().orElse(""));
@@ -77,6 +81,7 @@ public class Bench {
             }
         }
     }
+    static final Pattern REASON = Pattern.compile("\"source\": \"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"reason\": \"([^\"]*)\"");
     static String where(Throwable e) {
         String top = Arrays.stream(e.getStackTrace()).filter(x -> x.getClassName().startsWith("io.explico")).findFirst().map(StackTraceElement::toString).orElse("?");
         String m = String.valueOf(e.getMessage()); if (m.length() > 160) m = m.substring(0, 160);

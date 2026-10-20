@@ -1,0 +1,1088 @@
+{
+  "package": {
+    "location": {
+      "file": "/tmp/ev/sm.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "/tmp/ev/sm.rego",
+          "row": 1,
+          "col": 9,
+          "text": "c20="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "/tmp/ev/sm.rego",
+          "row": 1,
+          "col": 9,
+          "text": "c20="
+        },
+        "type": "string",
+        "value": "sm"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "/tmp/ev/sm.rego",
+        "row": 3,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "/tmp/ev/sm.rego",
+          "row": 3,
+          "col": 8,
+          "text": "cmVnby52MQ=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 3,
+              "col": 8,
+              "text": "cmVnbw=="
+            },
+            "type": "var",
+            "value": "rego"
+          },
+          {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 3,
+              "col": 13,
+              "text": "djE="
+            },
+            "type": "string",
+            "value": "v1"
+          }
+        ]
+      }
+    }
+  ],
+  "rules": [
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "/tmp/ev/sm.rego",
+            "row": 6,
+            "col": 2,
+            "text": "c29tZSBp"
+          },
+          "terms": {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 6,
+              "col": 2,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "/tmp/ev/sm.rego",
+                  "row": 6,
+                  "col": 7,
+                  "text": "aQ=="
+                },
+                "type": "var",
+                "value": "i"
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "/tmp/ev/sm.rego",
+            "row": 7,
+            "col": 2,
+            "text": "aW5wdXQueFtpXSA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 7,
+                "col": 13,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 7,
+                    "col": 13,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 7,
+                "col": 2,
+                "text": "aW5wdXQueFtpXQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 7,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 7,
+                    "col": 8,
+                    "text": "eA=="
+                  },
+                  "type": "string",
+                  "value": "x"
+                },
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 7,
+                    "col": 10,
+                    "text": "aQ=="
+                  },
+                  "type": "var",
+                  "value": "i"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 7,
+                "col": 16,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "a",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 5,
+              "col": 1,
+              "text": "YQ=="
+            },
+            "type": "var",
+            "value": "a"
+          }
+        ],
+        "location": {
+          "file": "/tmp/ev/sm.rego",
+          "row": 5,
+          "col": 1,
+          "text": "YQ=="
+        }
+      },
+      "location": {
+        "file": "/tmp/ev/sm.rego",
+        "row": 5,
+        "col": 1,
+        "text": "YSBpZiB7Cglzb21lIGkKCWlucHV0LnhbaV0gPT0gMQp9"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "/tmp/ev/sm.rego",
+            "row": 11,
+            "col": 2,
+            "text": "c29tZSBpLCBq"
+          },
+          "terms": {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 11,
+              "col": 2,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "/tmp/ev/sm.rego",
+                  "row": 11,
+                  "col": 7,
+                  "text": "aQ=="
+                },
+                "type": "var",
+                "value": "i"
+              },
+              {
+                "location": {
+                  "file": "/tmp/ev/sm.rego",
+                  "row": 11,
+                  "col": 10,
+                  "text": "ag=="
+                },
+                "type": "var",
+                "value": "j"
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "/tmp/ev/sm.rego",
+            "row": 12,
+            "col": 2,
+            "text": "aW5wdXQueFtpXSA9PSBpbnB1dC55W2pd"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 12,
+                "col": 13,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 12,
+                    "col": 13,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 12,
+                "col": 2,
+                "text": "aW5wdXQueFtpXQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 12,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 12,
+                    "col": 8,
+                    "text": "eA=="
+                  },
+                  "type": "string",
+                  "value": "x"
+                },
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 12,
+                    "col": 10,
+                    "text": "aQ=="
+                  },
+                  "type": "var",
+                  "value": "i"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 12,
+                "col": 16,
+                "text": "aW5wdXQueVtqXQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 12,
+                    "col": 16,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 12,
+                    "col": 22,
+                    "text": "eQ=="
+                  },
+                  "type": "string",
+                  "value": "y"
+                },
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 12,
+                    "col": 24,
+                    "text": "ag=="
+                  },
+                  "type": "var",
+                  "value": "j"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "b",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 10,
+              "col": 1,
+              "text": "Yg=="
+            },
+            "type": "var",
+            "value": "b"
+          }
+        ],
+        "location": {
+          "file": "/tmp/ev/sm.rego",
+          "row": 10,
+          "col": 1,
+          "text": "Yg=="
+        }
+      },
+      "location": {
+        "file": "/tmp/ev/sm.rego",
+        "row": 10,
+        "col": 1,
+        "text": "YiBpZiB7Cglzb21lIGksIGoKCWlucHV0LnhbaV0gPT0gaW5wdXQueVtqXQp9"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "/tmp/ev/sm.rego",
+            "row": 16,
+            "col": 2,
+            "text": "Yy5iYWQ="
+          },
+          "terms": {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 16,
+              "col": 2,
+              "text": "Yy5iYWQ="
+            },
+            "type": "ref",
+            "value": [
+              {
+                "location": {
+                  "file": "/tmp/ev/sm.rego",
+                  "row": 16,
+                  "col": 2,
+                  "text": "Yw=="
+                },
+                "type": "var",
+                "value": "c"
+              },
+              {
+                "location": {
+                  "file": "/tmp/ev/sm.rego",
+                  "row": 16,
+                  "col": 4,
+                  "text": "YmFk"
+                },
+                "type": "string",
+                "value": "bad"
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "/tmp/ev/sm.rego",
+            "row": 17,
+            "col": 2,
+            "text": "bXNnIDo9IHNwcmludGYoImNvbnRhaW5lciAldiBpcyBiYWQiLCBbYy5uYW1lXSk="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 17,
+                "col": 6,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 17,
+                    "col": 6,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 17,
+                "col": 2,
+                "text": "bXNn"
+              },
+              "type": "var",
+              "value": "msg"
+            },
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 17,
+                "col": 9,
+                "text": "c3ByaW50ZigiY29udGFpbmVyICV2IGlzIGJhZCIsIFtjLm5hbWVdKQ=="
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 17,
+                    "col": 9,
+                    "text": "c3ByaW50Zg=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "/tmp/ev/sm.rego",
+                        "row": 17,
+                        "col": 9,
+                        "text": "c3ByaW50Zg=="
+                      },
+                      "type": "var",
+                      "value": "sprintf"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 17,
+                    "col": 17,
+                    "text": "ImNvbnRhaW5lciAldiBpcyBiYWQi"
+                  },
+                  "type": "string",
+                  "value": "container %v is bad"
+                },
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 17,
+                    "col": 40,
+                    "text": "W2MubmFtZV0="
+                  },
+                  "type": "array",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "/tmp/ev/sm.rego",
+                        "row": 17,
+                        "col": 41,
+                        "text": "Yy5uYW1l"
+                      },
+                      "type": "ref",
+                      "value": [
+                        {
+                          "location": {
+                            "file": "/tmp/ev/sm.rego",
+                            "row": 17,
+                            "col": 41,
+                            "text": "Yw=="
+                          },
+                          "type": "var",
+                          "value": "c"
+                        },
+                        {
+                          "location": {
+                            "file": "/tmp/ev/sm.rego",
+                            "row": 17,
+                            "col": 43,
+                            "text": "bmFtZQ=="
+                          },
+                          "type": "string",
+                          "value": "name"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "message_of",
+        "args": [
+          {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 15,
+              "col": 12,
+              "text": "Yw=="
+            },
+            "type": "var",
+            "value": "c"
+          }
+        ],
+        "value": {
+          "location": {
+            "file": "/tmp/ev/sm.rego",
+            "row": 15,
+            "col": 17,
+            "text": "bXNn"
+          },
+          "type": "var",
+          "value": "msg"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 15,
+              "col": 1,
+              "text": "bWVzc2FnZV9vZg=="
+            },
+            "type": "var",
+            "value": "message_of"
+          }
+        ],
+        "location": {
+          "file": "/tmp/ev/sm.rego",
+          "row": 15,
+          "col": 1,
+          "text": "bWVzc2FnZV9vZihjKSA9IG1zZw=="
+        }
+      },
+      "location": {
+        "file": "/tmp/ev/sm.rego",
+        "row": 15,
+        "col": 1,
+        "text": "bWVzc2FnZV9vZihjKSA9IG1zZyBpZiB7CgljLmJhZAoJbXNnIDo9IHNwcmludGYoImNvbnRhaW5lciAldiBpcyBiYWQiLCBbYy5uYW1lXSkKfQ=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "/tmp/ev/sm.rego",
+            "row": 21,
+            "col": 2,
+            "text": "bXNnIDo9IHNwcmludGYoImNvbnRhaW5lciAldiBpcyBiYWQiLCBbYy5uYW1lXSk="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 21,
+                "col": 6,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 21,
+                    "col": 6,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 21,
+                "col": 2,
+                "text": "bXNn"
+              },
+              "type": "var",
+              "value": "msg"
+            },
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 21,
+                "col": 9,
+                "text": "c3ByaW50ZigiY29udGFpbmVyICV2IGlzIGJhZCIsIFtjLm5hbWVdKQ=="
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 21,
+                    "col": 9,
+                    "text": "c3ByaW50Zg=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "/tmp/ev/sm.rego",
+                        "row": 21,
+                        "col": 9,
+                        "text": "c3ByaW50Zg=="
+                      },
+                      "type": "var",
+                      "value": "sprintf"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 21,
+                    "col": 17,
+                    "text": "ImNvbnRhaW5lciAldiBpcyBiYWQi"
+                  },
+                  "type": "string",
+                  "value": "container %v is bad"
+                },
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 21,
+                    "col": 40,
+                    "text": "W2MubmFtZV0="
+                  },
+                  "type": "array",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "/tmp/ev/sm.rego",
+                        "row": 21,
+                        "col": 41,
+                        "text": "Yy5uYW1l"
+                      },
+                      "type": "ref",
+                      "value": [
+                        {
+                          "location": {
+                            "file": "/tmp/ev/sm.rego",
+                            "row": 21,
+                            "col": 41,
+                            "text": "Yw=="
+                          },
+                          "type": "var",
+                          "value": "c"
+                        },
+                        {
+                          "location": {
+                            "file": "/tmp/ev/sm.rego",
+                            "row": 21,
+                            "col": 43,
+                            "text": "bmFtZQ=="
+                          },
+                          "type": "string",
+                          "value": "name"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "/tmp/ev/sm.rego",
+            "row": 22,
+            "col": 2,
+            "text": "Yy5iYWQ="
+          },
+          "terms": {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 22,
+              "col": 2,
+              "text": "Yy5iYWQ="
+            },
+            "type": "ref",
+            "value": [
+              {
+                "location": {
+                  "file": "/tmp/ev/sm.rego",
+                  "row": 22,
+                  "col": 2,
+                  "text": "Yw=="
+                },
+                "type": "var",
+                "value": "c"
+              },
+              {
+                "location": {
+                  "file": "/tmp/ev/sm.rego",
+                  "row": 22,
+                  "col": 4,
+                  "text": "YmFk"
+                },
+                "type": "string",
+                "value": "bad"
+              }
+            ]
+          }
+        }
+      ],
+      "head": {
+        "name": "message_not_last",
+        "args": [
+          {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 20,
+              "col": 18,
+              "text": "Yw=="
+            },
+            "type": "var",
+            "value": "c"
+          }
+        ],
+        "value": {
+          "location": {
+            "file": "/tmp/ev/sm.rego",
+            "row": 20,
+            "col": 23,
+            "text": "bXNn"
+          },
+          "type": "var",
+          "value": "msg"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 20,
+              "col": 1,
+              "text": "bWVzc2FnZV9ub3RfbGFzdA=="
+            },
+            "type": "var",
+            "value": "message_not_last"
+          }
+        ],
+        "location": {
+          "file": "/tmp/ev/sm.rego",
+          "row": 20,
+          "col": 1,
+          "text": "bWVzc2FnZV9ub3RfbGFzdChjKSA9IG1zZw=="
+        }
+      },
+      "location": {
+        "file": "/tmp/ev/sm.rego",
+        "row": 20,
+        "col": 1,
+        "text": "bWVzc2FnZV9ub3RfbGFzdChjKSA9IG1zZyBpZiB7Cgltc2cgOj0gc3ByaW50ZigiY29udGFpbmVyICV2IGlzIGJhZCIsIFtjLm5hbWVdKQoJYy5iYWQKfQ=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "/tmp/ev/sm.rego",
+            "row": 26,
+            "col": 2,
+            "text": "eC5vaw=="
+          },
+          "terms": {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 26,
+              "col": 2,
+              "text": "eC5vaw=="
+            },
+            "type": "ref",
+            "value": [
+              {
+                "location": {
+                  "file": "/tmp/ev/sm.rego",
+                  "row": 26,
+                  "col": 2,
+                  "text": "eA=="
+                },
+                "type": "var",
+                "value": "x"
+              },
+              {
+                "location": {
+                  "file": "/tmp/ev/sm.rego",
+                  "row": 26,
+                  "col": 4,
+                  "text": "b2s="
+                },
+                "type": "string",
+                "value": "ok"
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "/tmp/ev/sm.rego",
+            "row": 27,
+            "col": 2,
+            "text": "ciA6PSBjb3VudCh4Lml0ZW1zKSArIDE="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 27,
+                "col": 4,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 27,
+                    "col": 4,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 27,
+                "col": 2,
+                "text": "cg=="
+              },
+              "type": "var",
+              "value": "r"
+            },
+            {
+              "location": {
+                "file": "/tmp/ev/sm.rego",
+                "row": 27,
+                "col": 7,
+                "text": "Y291bnQoeC5pdGVtcykgKyAx"
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 27,
+                    "col": 22,
+                    "text": "Kw=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "/tmp/ev/sm.rego",
+                        "row": 27,
+                        "col": 22,
+                        "text": "Kw=="
+                      },
+                      "type": "var",
+                      "value": "plus"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 27,
+                    "col": 7,
+                    "text": "Y291bnQoeC5pdGVtcyk="
+                  },
+                  "type": "call",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "/tmp/ev/sm.rego",
+                        "row": 27,
+                        "col": 7,
+                        "text": "Y291bnQ="
+                      },
+                      "type": "ref",
+                      "value": [
+                        {
+                          "location": {
+                            "file": "/tmp/ev/sm.rego",
+                            "row": 27,
+                            "col": 7,
+                            "text": "Y291bnQ="
+                          },
+                          "type": "var",
+                          "value": "count"
+                        }
+                      ]
+                    },
+                    {
+                      "location": {
+                        "file": "/tmp/ev/sm.rego",
+                        "row": 27,
+                        "col": 13,
+                        "text": "eC5pdGVtcw=="
+                      },
+                      "type": "ref",
+                      "value": [
+                        {
+                          "location": {
+                            "file": "/tmp/ev/sm.rego",
+                            "row": 27,
+                            "col": 13,
+                            "text": "eA=="
+                          },
+                          "type": "var",
+                          "value": "x"
+                        },
+                        {
+                          "location": {
+                            "file": "/tmp/ev/sm.rego",
+                            "row": 27,
+                            "col": 15,
+                            "text": "aXRlbXM="
+                          },
+                          "type": "string",
+                          "value": "items"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "/tmp/ev/sm.rego",
+                    "row": 27,
+                    "col": 24,
+                    "text": "MQ=="
+                  },
+                  "type": "number",
+                  "value": 1
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "computed",
+        "args": [
+          {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 25,
+              "col": 10,
+              "text": "eA=="
+            },
+            "type": "var",
+            "value": "x"
+          }
+        ],
+        "value": {
+          "location": {
+            "file": "/tmp/ev/sm.rego",
+            "row": 25,
+            "col": 15,
+            "text": "cg=="
+          },
+          "type": "var",
+          "value": "r"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "/tmp/ev/sm.rego",
+              "row": 25,
+              "col": 1,
+              "text": "Y29tcHV0ZWQ="
+            },
+            "type": "var",
+            "value": "computed"
+          }
+        ],
+        "location": {
+          "file": "/tmp/ev/sm.rego",
+          "row": 25,
+          "col": 1,
+          "text": "Y29tcHV0ZWQoeCkgPSBy"
+        }
+      },
+      "location": {
+        "file": "/tmp/ev/sm.rego",
+        "row": 25,
+        "col": 1,
+        "text": "Y29tcHV0ZWQoeCkgPSByIGlmIHsKCXgub2sKCXIgOj0gY291bnQoeC5pdGVtcykgKyAxCn0="
+      }
+    }
+  ]
+}

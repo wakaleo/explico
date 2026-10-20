@@ -24,6 +24,7 @@ Outputs, in `<out-dir>`:
 |---|---|
 | `results.tsv` | `file status rendered total class message` per file. `status` is `OK`, `LOAD_FAIL` or `RENDER_CRASH`. |
 | `warnings.txt` | One line per rule body whose mapping threw and was isolated (spec §14.29): file and the stderr warning. Should be empty; any line is a mapper bug worth a test. |
+| `reasons.tsv` | `file reason first-line-of-source` for every unrendered condition (from the JSON export): rank by reason, then by shape. |
 | `fallbacks.txt` | The first line of every `⚠ not rendered` block, for ranking which constructs to promote next. |
 
 **Rego v0 corpora** (e.g. the Gatekeeper library) are rejected by OPA 1.x by default. Pass `v0` as the
@@ -52,3 +53,8 @@ correct rendering there. The real, resolvable gap is alias-qualified calls into 
 
 Measured effect of resolving cross-package calls (Trivy's Kubernetes checks plus `lib/kubernetes`, loaded whole
 with `all`, a one-line stub for Trivy's Go-side `result.new`): condition coverage 49% -> 63%, fallbacks 509 -> 352.
+
+## Measuring Trivy properly
+
+Per-file Trivy numbers understate coverage: most remaining fallbacks are calls into `lib/` that a one-file load cannot resolve. Copy `lib/` (minus `lib/cloud`, which OPA rejects as a unit, and all test files) plus
+`checks/kubernetes` into one directory and render it whole: `explico render <dir> --out <out> --json`, then rank the `reason`/`source` of unrendered conditions in `explico.json`. 83% at the time of spec §14.50.

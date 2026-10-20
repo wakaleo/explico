@@ -1515,3 +1515,10 @@ table); otherwise the whole block stays one `Unrendered` with reason `every`. Ne
 one count); `Examples`/`ReferenceData`/`ChangeSummary` use it too. The acceptance pack's `all_checks_passed` is now 2 of 2 and the pack 24 of 24 (100%) -- README "Amendment 2",
 `ReleaseGovernanceAcceptanceIT`/`IndexAcceptanceIT` amended with explicit notes; goldens `index.md`/`release-governance.md` regenerated after line-by-line review. Fallback guards that used
 `every` as their example were repointed (to an `every` with an unrenderable body, `with`, `else`); do not relax the all-or-nothing rule.
+
+## Real-world benchmark promotions (spec §14.50)
+
+`scripts/corpus-benchmark/Bench.java` now writes `reasons.tsv` (every unrendered condition: file, reason, first line) -- rank by reason, then by shape, BEFORE choosing what to promote. Run Trivy as one whole unit
+(`lib/` + `checks/kubernetes`, test files removed) to measure it: one-file loads understate it. Promoted: declare-only `some` and a bare `true` statement (not conditions), imports of a function or rule by name
+(`AstMapper.importedMember` is the single resolution rule, used by function calls, rule references and rule values), and a function's last-statement `msg := sprintf(...)` as its produced value. Do not widen the last
+two beyond what a test proves: the message assignment is consumed ONLY when last and fully understood.

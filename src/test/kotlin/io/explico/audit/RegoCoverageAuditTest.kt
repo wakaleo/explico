@@ -148,11 +148,11 @@ class RegoCoverageAuditTest {
         // from the conditions list -- but `arr[i]`/`arr[j]` still fall back, since `i`/`j` themselves
         // stay unbound (`some i, j` with no `in` never registers them as iteration variables).
         val conditions = conditionsOf(loadProbe("07-some-declare-multiple-no-in.rego"), "deny")
-        assertThat(conditions).hasSize(4)
-        assertUnrendered(conditions[0], "unclassified")
-        assertThat(render(conditions[1])).isEqualTo("`arr[i].role` is `\"release-manager\"`")
-        assertThat(render(conditions[2])).isEqualTo("`arr[j].role` is `\"security\"`")
-        assertThat(render(conditions[3])).isEqualTo("`i` is not `j`")
+        // The declare-only `some i, j` is no longer a condition (real-world benchmark promotion): it tests nothing.
+        assertThat(conditions).hasSize(3)
+        assertThat(render(conditions[0])).isEqualTo("`arr[i].role` is `\"release-manager\"`")
+        assertThat(render(conditions[1])).isEqualTo("`arr[j].role` is `\"security\"`")
+        assertThat(render(conditions[2])).isEqualTo("`i` is not `j`")
     }
 
     @Test
@@ -185,10 +185,10 @@ class RegoCoverageAuditTest {
     @Test
     fun walkBuiltinFallsBackForBindingAndCallButRendersFollowUpComparison() {
         val conditions = conditionsOf(loadProbe("11-walk-builtin.rego"), "deny")
-        assertThat(conditions).hasSize(3)
-        assertUnrendered(conditions[0], "unclassified")
-        assertUnrendered(conditions[1], "function-call")
-        assertThat(render(conditions[2])).isEqualTo("`value` is `\"secret\"`")
+        // The declare-only `some path, value` is no longer a condition (it tests nothing; real-world benchmark promotion).
+        assertThat(conditions).hasSize(2)
+        assertUnrendered(conditions[0], "function-call")
+        assertThat(render(conditions[1])).isEqualTo("`value` is `\"secret\"`")
     }
 
     @Test
@@ -197,9 +197,9 @@ class RegoCoverageAuditTest {
         // JsonDecodingException and take down the entire render. The follow-up dynamic-ref
         // comparison itself still renders fine once the crash is fixed.
         val conditions = conditionsOf(loadProbe("12-dynamic-ref-root-var.rego"), "deny")
-        assertThat(conditions).hasSize(2)
-        assertUnrendered(conditions[0], "unclassified")
-        assertThat(render(conditions[1])).isEqualTo("`input[key]` is `\"forbidden\"`")
+        // The declare-only `some key` is no longer a condition (real-world benchmark promotion); it still must not crash.
+        assertThat(conditions).hasSize(1)
+        assertThat(render(conditions[0])).isEqualTo("`input[key]` is `\"forbidden\"`")
     }
 
     @Test

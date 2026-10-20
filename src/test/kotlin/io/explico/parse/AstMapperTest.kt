@@ -4098,7 +4098,7 @@ class AstMapperTest {
         }
 
         @Test
-        @DisplayName("guard: `x := 10 if true` written explicitly keeps the ordinary (unclassified) body rendering -- the body expr's own source text is \"true\", not \"10\"")
+        @DisplayName("guard: `x := 10 if true` written explicitly is still an ordinary body, not a constant: its literal `true` is dropped (it tests nothing) and the body yields 10")
         fun explicitIfTrueIsNotTreatedAsAConstant() {
             val module = moduleOf(
                 """
@@ -4119,8 +4119,9 @@ class AstMapperTest {
             val rule = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "max_items" }
             assertThat(rule.constantValue).isNull()
             assertThat(rule.bodies).hasSize(1)
-            val fallback = rule.bodies.single().conditions.single() as Condition.Unrendered
-            assertThat(fallback.reason).isEqualTo("unclassified")
+            // A literal `true` statement tests nothing, so it is not a condition any more (real-world benchmark promotion).
+            assertThat(rule.bodies.single().conditions).isEmpty()
+            assertThat(rule.bodies.single().yieldsValue).isNotNull()
         }
 
         @Test

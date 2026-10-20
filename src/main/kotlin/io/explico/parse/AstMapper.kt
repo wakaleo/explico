@@ -585,12 +585,28 @@ internal object AstMapper {
         // Operand.Unrendered.
         rule.head.args?.forEach { arg -> if (arg.type == "var") symbolTable[stringValueOf(arg)] = VarBinding.Parameter }
         val messageVar = messageVarOf(rule.head)
+        // A function or complete rule whose VALUE variable is assigned its message as the LAST statement (`f(c) = msg { ...; msg := sprintf(...) }`):
+        // the text is what it produces, so it is shown like a rule's own message instead of a helper-assignment fallback. Only when it is the
+        // last statement (nothing after can use the variable) and the text is fully understood -- otherwise nothing is consumed.
+        val valueMessageVar = rule.head.value?.takeIf { rule.head.key == null && it.type == "var" && it.location != null }?.let { stringValueOf(it) }
         var producesValue: String? = null
         var messageTemplate: String? = null
         var messageArguments: List<Operand.Path> = emptyList()
         val conditions = mutableListOf<Condition>()
+        var consumedValueMessage = false
 
-        for (expr in rule.body) {
+        for ((index, expr) in rule.body.withIndex()) {
+            if (expr.with == null && valueMessageVar != null && index == rule.body.lastIndex) {
+                val assigned = matchMessageAssignment(expr, valueMessageVar, symbolTable, ctx)
+                val produced = assigned?.let { renderProducesValue(it, symbolTable) }
+                if (assigned != null && produced != null) {
+                    producesValue = produced
+                    messageTemplate = computeMessageTemplate(assigned)
+                    messageArguments = messageArgumentPaths(assigned, symbolTable, ctx)
+                    consumedValueMessage = true
+                    continue
+                }
+            }
             // The message assignment (`msg := sprintf(...)`) is a RULE-level notion; a `with`-qualified
             // expression is never treated as one (it falls to [mapBodyExpr], which demotes it).
             if (expr.with == null) {
@@ -614,7 +630,7 @@ internal object AstMapper {
             // Computed AFTER the loop above, so a `n := input.limit`-style local assignment is
             // already in `symbolTable` when `limit := n` itself is resolved (follow-up to review
             // item 10).
-            yieldsValue = yieldsValueOrNull(rule, symbolTable, ctx),
+            yieldsValue = if (consumedValueMessage) null else yieldsValueOrNull(rule, symbolTable, ctx),
             messageArguments = messageArguments,
         )
     }
@@ -634,6 +650,12 @@ internal object AstMapper {
             conditions += Condition.Unrendered(sourceText(expr.location), "with-override")
             return
         }
+        // A declare-only `some i, j` (no `in`) only introduces local names: it tests nothing, so it is not a condition (real-world benchmark:
+        // the single most common "unclassified" construct). Later uses of the names are mapped as before.
+        if (isDeclareOnlySome(expr)) return
+        // A bare literal `true` statement (`f(x) = 1 { true }`, common in Gatekeeper's lookup tables) always succeeds: it tests nothing. A `false`
+        // (or a negated true) makes the body unsatisfiable, which IS meaningful, so only the plain non-negated `true` is dropped.
+        if (!expr.negated && isLiteralTrue(expr)) return
         // A local-variable assignment (spec §5 promotion, spec §14 backlog): `x := <plain
         // path>` records the binding and disappears from the output entirely -- no fallback
         // bullet, substituted inline wherever `x` is used later in this body. Anything else on
@@ -923,7 +945,9 @@ internal object AstMapper {
         val segments = name.split('.')
         val functionName = segments.last()
         val packagePath = when {
-            segments.size == 1 -> ctx.currentPackage
+            segments.size == 1 ->
+                if (ctx.functionRegistry[ctx.currentPackage]?.get(functionName)?.size == argCount) ctx.currentPackage
+                else importedMember(functionName, ctx)?.takeIf { (pkg, member) -> ctx.functionRegistry[pkg]?.get(member)?.size == argCount }?.let { return it }
             segments[0] == "data" && segments.size >= 3 -> segments.subList(1, segments.size - 1).joinToString(".")
             else -> ctx.importAliases[segments[0]]?.let { (listOf(it) + segments.subList(1, segments.size - 1)).joinToString(".") }
         } ?: return null
@@ -982,6 +1006,19 @@ internal object AstMapper {
             } else null
         } else null
         return if (ruleCollection != null) ConstructResult.Ok(ruleCollection) else mapOperand(collectionTerm, symbolTable, ctx)
+    }
+
+    private fun isLiteralTrue(expr: OpaExpr): Boolean {
+        val terms = expr.terms as? JsonObject ?: return false
+        return terms["type"]?.jsonPrimitive?.content == "boolean" && terms["value"]?.jsonPrimitive?.content == "true"
+    }
+
+    /** `some a, b` with no `in`: every symbol is a bare variable (an `in` form carries one call-shaped symbol instead). */
+    private fun isDeclareOnlySome(expr: OpaExpr): Boolean {
+        val terms = expr.terms as? JsonObject ?: return false
+        val symbols = terms["symbols"] as? JsonArray ?: return false
+        if (symbols.isEmpty()) return false
+        return opaJson.decodeFromJsonElement(ListSerializer(OpaTerm.serializer()), symbols).all { it.type == "var" }
     }
 
     private fun mapSomeIn(expr: OpaExpr, terms: JsonObject, symbolTable: MutableMap<String, VarBinding>, ctx: MappingContext): Condition {
@@ -1053,6 +1090,7 @@ internal object AstMapper {
         if (term.type == "var") {
             val name = stringValueOf(term)
             return ruleReferenceIfKnown(ctx.currentPackage, name, ctx, expr.negated)
+                ?: importedMember(name, ctx)?.let { (pkg, member) -> ruleReferenceIfKnown(pkg, member, ctx, expr.negated) }
                 ?: Condition.Unrendered(sourceText(expr.location), fallbackReasonFor(ctx.currentPackage, name, ctx))
         }
         if (term.type != "ref") return Condition.Unrendered(sourceText(expr.location), "unclassified")
@@ -1098,6 +1136,18 @@ internal object AstMapper {
         if (ctx.registry[packagePath]?.contains(ruleName) != true) return null
         if (ctx.partialRegistry[packagePath]?.contains(ruleName) == true) return null
         return Condition.RuleReference(packagePath, ruleName, negated)
+    }
+
+    /**
+     * `import data.lib.pkg.name` (optionally `as other`) imports the FUNCTION or RULE `name` of package `lib.pkg`, so a bare `name(...)` / `name`
+     * (or `other(...)` / `other`) refers to it. Returns (package, member) -- the import path split at its last segment -- or null when [name]
+     * is not an import. Callers still check the registries, so an import of a whole package (`import data.lib.kubernetes`) never matches.
+     */
+    private fun importedMember(name: String, ctx: MappingContext): Pair<String, String>? {
+        val path = ctx.importAliases[name] ?: return null
+        val split = path.lastIndexOf('.')
+        if (split <= 0) return null
+        return path.substring(0, split) to path.substring(split + 1)
     }
 
     private fun fallbackReasonFor(packagePath: String, ruleName: String, ctx: MappingContext): String =
@@ -1164,6 +1214,7 @@ internal object AstMapper {
             null -> {
                 val name = stringValueOf(term)
                 val reference = ruleValueReferenceIfKnown(ctx.currentPackage, name, ctx)
+                    ?: importedMember(name, ctx)?.let { (pkg, member) -> ruleValueReferenceIfKnown(pkg, member, ctx) }
                 ConstructResult.Ok(reference ?: Operand.Unrendered(sourceText(term.location)))
             }
         }

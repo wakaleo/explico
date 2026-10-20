@@ -1904,3 +1904,12 @@ nested, linked bullet. Anything else keeps the WHOLE block as one `Condition.Unr
 coverage as below 100%. With the operator's approval those assertions changed (Situation 3 shows `for every check in` with its nested condition; the helper is `2 of 2`; the package
 and the index are 100%), recorded as "Amendment 2" in the README and in `ReleaseGovernanceAcceptanceIT`/`IndexAcceptanceIT`. The Tier-2 goldens `index.md` and `release-governance.md`
 were regenerated after line-by-line review (overall coverage 22 of 23 -> 24 of 24). The index legend's example of a construct left as source changed from `every` to a `with` override.
+
+### 14.50 Real-world benchmark promotions (corpus: Gatekeeper, Trivy, Regal, conftest)
+
+Ranked from `scripts/corpus-benchmark` (now writes `reasons.tsv`: every unrendered condition with its reason and first source line). Four mechanical changes, each a construct that asserted or tested nothing, or a name explico failed to resolve:
+- **Declare-only `some i, j`** (no `in`) is not a condition: it only introduces names. It was the most common `unclassified` construct (~190 sites). Later uses of the names map exactly as before.
+- **A bare literal `true` statement** (`f(x) = 1 { true }`, Gatekeeper's lookup tables) always succeeds and is not a condition. A `false` or `not true` is NOT dropped: it makes the body unsatisfiable.
+- **Imports of a function or rule by name** (`import data.lib.exempt_container.is_exempt`, optionally `as other`): a bare `is_exempt(x)` / `flag` / `limit` resolves to the function or rule of that package, in condition and operand position, when the loaded set defines it with that arity (~100 Gatekeeper calls). A local definition wins; an import of a whole package never matches.
+- **A function's (or complete rule's) message**: `f(c) = msg { ...; msg := sprintf(...) }`, when the assignment is the LAST statement and the text is fully understood (the strict `%v`/`%s`/`%%` rule), is its produced value (`*Produces:*`), exactly like a rule's own message, instead of a helper-assignment fallback plus `**Value:** msg`. Anything else (not last, a computed value, an argument that cannot be humanised) is untouched.
+Measured: Gatekeeper 67% -> 81%, conftest 72% -> 79%, Regal 51% -> 55%, Trivy (one file at a time) 64% -> 65%; Trivy's Kubernetes checks loaded as one unit with `lib/` 83%. Per-file Trivy numbers understate: most remaining fallbacks there are calls into `lib/` or Go-side builtins that a one-file load cannot resolve.
