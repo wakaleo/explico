@@ -380,6 +380,7 @@ against the coverage percentage reported on every card and package.
 ## Documentation
 
 - [`docs/showcase/`](docs/showcase/README.md) — **start here to see it in action**: six example policies (Kubernetes admission, storage, API authorization, helpers/functions, `every`, and what a fallback looks like), each with the Rego source beside the real rendered output.
+- [`docs/guides/living-documentation.md`](docs/guides/living-documentation.md) — **from Rego to living documentation**: layout, METADATA, example inputs, CI regeneration with a drift check, what a policy change looks like in review, and publishing a site.
 - [`docs/user-guide.md`](docs/user-guide.md) — every CLI flag, every exit code, every public library function.
 - [`docs/json-output.md`](docs/json-output.md) — the machine-readable result (`render --json`, `diff --json`): what every field means and what it promises, for dashboards, GRC tools and scripts.
 - [`docs/policy-authoring.md`](docs/policy-authoring.md) — writing Rego policies explico renders well: METADATA conventions, the distinct-message/Situation-label convention, control-id/frameworks, fallback and coverage as design, fixture authoring.

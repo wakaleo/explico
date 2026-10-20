@@ -51,12 +51,14 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting started:
+      - Install and quick demo: readme.md
       - Tutorial: tutorial.md
   - Concepts:
       - True by construction: concepts/true-by-construction.md
       - Reading a card: concepts/reading-a-card.md
       - Coverage: concepts/coverage.md
   - Guides:
+      - From Rego to living documentation: guides/living-documentation.md
       - Writing policies: policy-authoring.md
       - CI recipes: guides/ci-recipes.md
   - Reference:

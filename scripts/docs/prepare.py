@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Stage the documentation site's source (standard library only).
 
-The site is built from `docs/` plus four files that live at the repository root (README, ARCHITECTURE, CHANGELOG, SECURITY).
+The site is built from `docs/` (its home page is docs/index.md) plus four files that live at the repository root (README, ARCHITECTURE, CHANGELOG, SECURITY;
+the README becomes the "Install and quick demo" page, readme.md).
 Those files link to each other and to source files using repository-relative paths that are right on GitHub and wrong on the site.
 This copies the Markdown into a staging directory and rewrites every relative link:
   * to a page that is part of the site  -> a path relative to that page's new location;
@@ -17,7 +18,7 @@ import shutil
 import sys
 from pathlib import Path
 
-ROOT_PAGES = {"README.md": "index.md", "ARCHITECTURE.md": "architecture.md", "CHANGELOG.md": "changelog.md", "SECURITY.md": "security.md"}
+ROOT_PAGES = {"README.md": "readme.md", "ARCHITECTURE.md": "architecture.md", "CHANGELOG.md": "changelog.md", "SECURITY.md": "security.md"}
 # One pass per (non-fenced) line: an inline code span of any backtick count is kept verbatim, otherwise a Markdown link target is rewritten.
 INLINE = re.compile(r"(?P<code>(?P<ticks>`+).+?(?P=ticks))|(?P<open>\]\()(?P<target>[^)\s]+)(?P<close>\))")
 

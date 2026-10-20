@@ -20,8 +20,9 @@ class RewriteLinks(unittest.TestCase):
     def rewrite(self, source, text):
         return prepare.rewrite(text, source, self.site, self.root, "https://github.com/o/r", "main")
 
-    def test_readme_becomes_the_home_page_and_docs_lose_their_prefix(self):
-        self.assertEqual(self.site["README.md"], "index.md")
+    def test_readme_becomes_a_page_of_its_own_and_docs_lose_their_prefix(self):
+        # docs/index.md is the home page; the README is the install-and-quick-demo page.
+        self.assertEqual(self.site["README.md"], "readme.md")
         self.assertEqual(self.site["docs/tutorial.md"], "tutorial.md")
         self.assertEqual(self.site["docs/showcase/every.md"], "showcase/every.md")
         self.assertEqual(self.site["CHANGELOG.md"], "changelog.md")
@@ -73,7 +74,7 @@ class Stage(unittest.TestCase):
         out = Path(tempfile.mkdtemp())
         prepare.stage(root, out, "https://github.com/o/r", "main")
         self.assertEqual(sorted(p.name for p in out.rglob("*") if p.is_file()),
-                         ["a.md", "architecture.md", "changelog.md", "index.md", "security.md"])
+                         ["a.md", "architecture.md", "changelog.md", "readme.md", "security.md"])
 
 
 if __name__ == "__main__":
