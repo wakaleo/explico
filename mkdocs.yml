@@ -1,0 +1,80 @@
+# The documentation site. Source is docs/ plus README/ARCHITECTURE/CHANGELOG/SECURITY, staged by scripts/docs/prepare.py into build/site-src
+# (links rewritten for the site). Build locally:
+#   python3 scripts/docs/prepare.py . build/site-src && mkdocs build --strict
+site_name: explico
+site_description: Render OPA Rego policies as plain-language documentation that is true by construction.
+site_url: https://wakaleo.github.io/explico/
+repo_url: https://github.com/wakaleo/explico
+repo_name: wakaleo/explico
+docs_dir: build/site-src
+site_dir: build/site
+strict: true
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: indigo
+      toggle: { icon: material/weather-night, name: Switch to dark mode }
+    - scheme: slate
+      primary: indigo
+      toggle: { icon: material/weather-sunny, name: Switch to light mode }
+
+# Strict mode turns every warning into a failure: a broken link or anchor, or a page missing from the navigation, fails the build.
+validation:
+  nav:
+    omitted_files: warn
+    not_found: warn
+    absolute_links: warn
+  links:
+    not_found: warn
+    absolute_links: warn
+    unrecognized_links: warn
+    anchors: warn
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+      # GitHub's heading anchors, so a link that works on GitHub (README, docs/*.md) works on the site too.
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds: { case: lower }
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Tutorial: tutorial.md
+  - Guides:
+      - Writing policies: policy-authoring.md
+  - Reference:
+      - CLI and library: user-guide.md
+      - JSON output: json-output.md
+      - Rego coverage: rego-coverage.md
+  - Showcase:
+      - Overview: showcase/README.md
+      - Kubernetes admission: showcase/kubernetes-admission.md
+      - Storage encryption: showcase/storage-encryption.md
+      - API authorization: showcase/api-authorization.md
+      - Helpers and functions: showcase/helpers-and-functions.md
+      - Comprehensions: showcase/comprehensions.md
+      - Every element: showcase/every.md
+      - When explico will not paraphrase: showcase/fallbacks.md
+      - Acceptance pack output:
+          - Index: sample-output/index.md
+          - Release approvals: sample-output/release-approvals.md
+          - Release evidence: sample-output/release-evidence.md
+          - Release provenance: sample-output/release-provenance.md
+          - Release governance: sample-output/release-governance.md
+          - Release exemptions: sample-output/release-exemptions.md
+  - Project:
+      - Architecture: architecture.md
+      - Changelog: changelog.md
+      - Security: security.md

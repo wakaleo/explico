@@ -728,7 +728,7 @@ Found by re-auditing the realistic and probe corpora. Fixtures `realistic/functi
 
 | Finding | Was | Now |
 |---|---|---|
-| A same-package user-function call inside a comparison, e.g. `severity_of(input.finding.level) >= 2` (probes 16, 28) | Review item 8 only handled a call as a whole condition; in operand position it rendered as the raw call in backticks, visually path-like, and counted as an unrendered operand. | New `Operand.FunctionCall(packagePath, functionName, args)`, rendered "result of function [`severity_of`](#...) for `finding ▸ level`". Same resolution rule as the condition-position call (shared `isKnownFunctionCall`: same package, registered name, matching arity); arguments render through the ordinary operand pipeline, nested calls work, and an expression assignment from a call (`s := f(x)`) now substitutes inline. An unmappable (unbound) argument stays wrapped inside the call and still counts toward the footer's unrendered-value total (same as `BuiltinCall`); a comprehension argument still falls the whole condition back. |
+| A same-package user-function call inside a comparison, e.g. `severity_of(input.finding.level) >= 2` (probes 16, 28) | Review item 8 only handled a call as a whole condition; in operand position it rendered as the raw call in backticks, visually path-like, and counted as an unrendered operand. | New `Operand.FunctionCall(packagePath, functionName, args)`, rendered `` result of function [`severity_of`](#...) for `finding ▸ level` ``. Same resolution rule as the condition-position call (shared `isKnownFunctionCall`: same package, registered name, matching arity); arguments render through the ordinary operand pipeline, nested calls work, and an expression assignment from a call (`s := f(x)`) now substitutes inline. An unmappable (unbound) argument stays wrapped inside the call and still counts toward the footer's unrendered-value total (same as `BuiltinCall`); a comprehension argument still falls the whole condition back. |
 
 The anchor reuses `ruleValueAnchorFor` (identical convention), so a function with no card in the
 document -- a diff report where it is unchanged -- renders unlinked. Hash: function name, package and
@@ -1068,7 +1068,7 @@ list to begin with, since it's a bug fix rather than a coverage promotion.)
 ## Cross-package function calls
 
 A call into an imported package's function now renders exactly like a same-package one (condition position:
-"function [`f`](other-doc.md#anchor) is satisfied for ..."; operand position: "result of function ..."), linked into
+`` function [`f`](other-doc.md#anchor) is satisfied for ... ``; operand position: "result of function ..."), linked into
 the defining package's document. Three spellings resolve, all via the loaded policy set: `alias.fn(...)` (an
 `import data.x.y`), `alias.fn(...)` with `import data.x.y as alias`, and a full `data.x.y.fn(...)` path; a parent-package
 import extends through the remaining segments (`lib.kube.fn` after `import data.lib`). Anything that names no loaded

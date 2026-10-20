@@ -11,3 +11,4 @@ journal/
 
 # Office lock files left while a .pptx/.docx is open
 ~$*
+__pycache__/
