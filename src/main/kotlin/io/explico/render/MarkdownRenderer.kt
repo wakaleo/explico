@@ -205,6 +205,8 @@ internal object MarkdownRenderer {
             "`${location?.file?.substringAfterLast('/') ?: "?"}`"
         }
         sb.appendLine("*Rule `${rule.name}` in package `${pkg.path}` — defined in $definedIn*")
+        // Spec §14.55: an id taken from the file name is a mechanical reading, not an attested METADATA value -- the card says so.
+        metadata?.controlIdDerivedFrom?.let { sb.appendLine("*Control id derived from the file name ${MarkdownText.codeSpan(it)}*") }
         if (!metadata?.frameworks.isNullOrEmpty()) {
             sb.appendLine("*Frameworks: ${metadata.frameworks.joinToString(", ")}*")
         }
@@ -689,6 +691,12 @@ internal object MarkdownRenderer {
             sb.appendLine(
                 "- **Example coverage** — `✓ / ✓` means at least one worked example where the rule matches and " +
                     "at least one where it does not; `–` means none.",
+            )
+        }
+        if (policySet.packages.any { pkg -> pkg.rules.any { it.metadata?.controlIdDerivedFrom != null } }) {
+            sb.appendLine(
+                "- **Derived control ids** — a control id marked \"derived from the file name\" on its card was read from the rule's file name by " +
+                    "the `--control-id-from` option; it is not declared in METADATA.",
             )
         }
         return sb.toString()

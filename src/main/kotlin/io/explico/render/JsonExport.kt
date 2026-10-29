@@ -137,6 +137,8 @@ internal object JsonExport {
         val metadata = rule.metadata
         put("name", rule.name)
         put("controlId", nullable(metadata?.controlId))
+        // Spec §14.55: present (true) only when the id was derived from the file name rather than declared; absent otherwise.
+        if (metadata?.controlIdDerivedFrom != null) put("controlIdDerived", true)
         put("title", nullable(metadata?.title))
         put("description", nullable(metadata?.description?.trimEnd()))
         put("anchor", nullable(anchor))

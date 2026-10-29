@@ -2000,3 +2000,27 @@ custom:
 - **Tests.** `RealisticDeclaredProjectionsAcceptanceIT` (fixtures `realistic/declared-projections/`), `OpaProjectionDeclarationTest`, `ProjectionMetadataMappingTest`,
   `ExampleProjectionsTest`, `MarkdownTextTest`, `MarkdownRendererTest.DeclaredProjectionExamples`, `ProjectionDiffTest`.
 
+### 14.55 Control id derived from the source file name (`--control-id-from`, `--control-id-template`)
+
+For a corpus that names its controls by file (`ctrl_1123.rego`) and carries little METADATA. Operator decisions: two options (a regex plus a template), `render` only, off by default.
+
+- **Options.** `Explico.render(..., controlIdFrom: String? = null, controlIdTemplate: String = "{id}")`; CLI `render --control-id-from <regex>` and `--control-id-template <template>`.
+  `controlIdFrom` is a regex with a named group `id`, applied with `find` to the BASE name of the rule's source file (separators `/` and `\`; a directory name never counts);
+  `controlIdTemplate` writes the id, `{id}` replaced literally (no `$1` substitution). Validated up front, before any `opa` work, as `IllegalArgumentException` (CLI: usage error, exit 1,
+  nothing written): not a regular expression; no group `id` (checked exactly by compiling `(?:pattern\n)\k<id>`, since `Pattern.namedGroups()` is Java 20+ and the target is 17); a template without `{id}`
+  or containing `|` or a line break; a template given WITHOUT a pattern (it would silently do nothing).
+- **Derived only when** the match succeeded, the `id` group took part, and it captured a non-empty string. An id containing `|` or a line break (it would break an index row or a heading) is NOT
+  derived, with one stderr warning per file. METADATA's `control-id` always wins; only the id is derived, never a title.
+- **Application** (`render/ControlIdFromFilename.applyTo`): a post-load pass at the top of `render`, returning a new `PolicySet` in which every rule without a control id gets one
+  (`RuleMetadata(null, null, id, [])` when it had no METADATA, else `metadata.copy(controlId = id)`). The source file is `MarkdownRenderer.ruleLocation(rule).file`, the single definition of "where a rule is
+  defined"; a split-default entry is left alone (an id would replace its "Default for ..." heading); a rule with no location is left alone. Everything downstream reads the model, so the heading
+  (`## <id> — <title or rule name>`), anchor, links, the index (controls table vs "Rules without a control id"), `explico.json`, quality findings and requirements need no special case.
+- **Shared ids.** Rules in one file share the file's id, and two files may derive the same id. This is not an error in `render`; a page keeps anchors unique (the first card with an id claims it,
+  as for any duplicate id), so a later card with the same id is not a link target. Giving shared ids a real home (grouping them) is a separate, later feature (FR-7). `diff` is untouched and still throws `DuplicateControlIdException` for shared ids.
+- **Provenance** (operator decision, from review): a derived id is a mechanical reading of a file name, not an attested METADATA value, so it is marked wherever it appears. `RuleMetadata.controlIdDerivedFrom` (last, defaulted; the BASE name) is
+  set by the pass; the card gains `*Control id derived from the file name `<file>`*` after the "defined in" line; `explico.json` gains `controlIdDerived: true` on that rule (absent otherwise); the index legend gains a "Derived control ids" bullet only when
+  one exists. A METADATA id is never marked. Not part of the diff identity or the metadata hash (`diff` derives nothing).
+- **Not in `diff`.** The options are not accepted there; a rule without a METADATA id keeps its `package.rule` identity. Disclosed in the docs.
+- **Quality.** A derived-id control has no description or framework, so `Quality` lists it like any such control (and `--fail-on-gaps` fails on it). Intended: it is mechanically true.
+- **Tests.** `RealisticControlIdFromFilenameAcceptanceIT` (fixtures `realistic/control-id-from-filename/`), `ControlIdFromFilenameTest`, `ControlIdFromFilenameRenderTest`, `CliControlIdProcessTest`.
+

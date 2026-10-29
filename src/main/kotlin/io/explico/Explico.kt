@@ -13,6 +13,7 @@ import io.explico.model.RegoVersion
 import io.explico.opa.OpaRunner
 import io.explico.parse.AstMapper
 import io.explico.parse.ParsedFile
+import io.explico.render.ControlIdFromFilename
 import io.explico.render.Coverage
 import io.explico.render.CoverageSummary
 import io.explico.render.JsonExport
@@ -131,39 +132,52 @@ public object Explico {
         requirements: List<String> = emptyList(),
         /** A URL template (`{file}`, `{line}`) that links cards, package pages and the index to the Rego source (spec §14.48). Off by default. */
         sourceUrl: String? = null,
+        /**
+         * A regular expression with a named group `id`, matched against each rule's source FILE NAME (base name, not the directory), that derives a
+         * control id for a rule whose METADATA does not declare one (spec §14.55). Null (the default) derives nothing and the output is unchanged.
+         * METADATA's `control-id` always wins; only the id is derived, never a title. Must contain `(?<id>...)`, else [IllegalArgumentException].
+         */
+        controlIdFrom: String? = null,
+        /** How a derived id is written: `{id}` is replaced by the `id` group, e.g. `CTRL-{id}` (default `{id}`). Must contain `{id}`, else [IllegalArgumentException]. */
+        controlIdTemplate: String = "{id}",
     ): RenderedDocs {
         // Validate the URL template before any (slow) opa work: a template without {file} is the caller's mistake.
         val sourceLinks = SourceLinks.of(sourceUrl)
-        val examplesByPackage = evaluateWorkedExamples(policySet, policyDir, examples, dataDir)
-        val generated = if (generateExamples) generateWorkedExamples(policySet, policyDir, dataDir, examplesByPackage) else null
+        // Spec §14.55: likewise the control-id options -- an invalid pattern or template is the caller's mistake, found before any opa work.
+        val controlIds = ControlIdFromFilename.of(controlIdFrom, controlIdTemplate)
+        // From here on everything reads this set: a derived id is just a control-id on the model, so headings, anchors, links, the index and
+        // the JSON need no special case. Without a pattern it IS the caller's set, unchanged.
+        val set = controlIds?.applyTo(policySet) ?: policySet
+        val examplesByPackage = evaluateWorkedExamples(set, policyDir, examples, dataDir)
+        val generated = if (generateExamples) generateWorkedExamples(set, policyDir, dataDir, examplesByPackage) else null
         // Spec §14.40: ties every document to an exact policy version. Computed from policyDir alone -- never
         // examples, data, or explico's own version -- so it is independent of how render() was called.
         val policyDigest = PolicyDigest.of(policyDir)
         // Spec §14.41: null (not just empty) when no dataDir was supplied -- the whole "Reference data" section
         // is off, not merely empty, which is how MarkdownRenderer tells the two apart.
-        val dataValues = dataDir?.let { resolveReferenceDataValues(policySet, policyDir, it) }
+        val dataValues = dataDir?.let { resolveReferenceDataValues(set, policyDir, it) }
 
-        val files = policySet.packages.associate { pkg ->
+        val files = set.packages.associate { pkg ->
             "${pkg.path.replace('.', '-')}.md" to MarkdownRenderer.renderPackage(
                 pkg,
-                policySet,
+                set,
                 examplesByPackage[pkg.path] ?: emptyMap(),
                 generated?.byPackage?.get(pkg.path) ?: emptyMap(),
                 policyDigest,
                 dataValues,
                 sourceLinks,
             )
-        } + ("index.md" to MarkdownRenderer.renderIndex(policySet, examplesByPackage, policyDigest, requirements, sourceLinks)) +
-            (if (json) mapOf("explico.json" to JsonExport.render(policySet, policyDigest, examplesByPackage, generated?.byPackage ?: emptyMap(), dataValues, requirements, sourceLinks)) else emptyMap())
+        } + ("index.md" to MarkdownRenderer.renderIndex(set, examplesByPackage, policyDigest, requirements, sourceLinks)) +
+            (if (json) mapOf("explico.json" to JsonExport.render(set, policyDigest, examplesByPackage, generated?.byPackage ?: emptyMap(), dataValues, requirements, sourceLinks)) else emptyMap())
 
-        val packageCoverages = policySet.packages.map { Coverage.of(it) }
+        val packageCoverages = set.packages.map { Coverage.of(it) }
         val overallCoverage = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })
         val normalisedRequirements = Quality.normalise(requirements)
         return RenderedDocs(
             files = files,
             coverage = overallCoverage,
             generatedExamples = generated?.let { GeneratedExamplesSummary(it.rulesWithExamples, it.rulesConsidered) },
-            gaps = Quality.gapDescriptions(Quality.findingsOf(policySet), normalisedRequirements.takeIf { it.isNotEmpty() }?.let { Quality.coverageOf(policySet, it) }),
+            gaps = Quality.gapDescriptions(Quality.findingsOf(set), normalisedRequirements.takeIf { it.isNotEmpty() }?.let { Quality.coverageOf(set, it) }),
         )
     }
 

@@ -1584,3 +1584,16 @@ field PATHS only, STRICT per example (null when the value does not fully support
 - Not supported on purpose: a `kind` for an action ("complete form" would be inferred); package-scope declarations. A function rule or a name shared by several cards gets no
   projected examples (functions are not evaluated; a whole-name value cannot be credited to one card).
 
+## Control id from the file name (spec §14.55)
+
+`--control-id-from <regex-with-(?<id>...)>` + `--control-id-template` (default `{id}`), `render` ONLY (operator decision: `diff` does not take them). `ControlIdFromFilename` is pure: validated up front in
+`Explico.render` next to `SourceLinks.of`, then `applyTo(policySet)` returns a NEW set where each rule without a control id gets one, and everything downstream just reads the model.
+- The file is `MarkdownRenderer.ruleLocation(rule).file` (do not invent a second definition); only the BASE name is matched (both `/` and `\`). Derived only for a non-empty `id` capture. METADATA's id wins. A
+  split-default entry is never touched (its heading would lose "Default for ..."). An id with `|` or a line break is refused with one warning per file (it would break an index row).
+- The `id`-group check compiles `(?:pattern\n)\k<id>`: `Pattern.namedGroups()` is Java 20+ and the bytecode target is 17; the newline keeps a `(?x)` `#` comment from swallowing the suffix.
+- Rules sharing a derived id (one file with many rules, or same id in two files) must not break the render: `cardAnchorIds` keeps anchors unique by giving the FIRST card the anchor and later ones none (so they are
+  unlinked in the index). That is existing behaviour for any duplicate id; FR-7 (`--group-by-control`) is where shared ids get a real home. `diff` still throws on shared ids.
+- A derived-id control has no description/frameworks, so `Quality`/`--fail-on-gaps` list it. Intended and documented.
+- PROVENANCE (review decision): a derived id is marked, never presented as attested. `RuleMetadata.controlIdDerivedFrom` (the base name) drives the card line, JSON `controlIdDerived` and the index legend bullet;
+  the marker exists only when the option was used. Do not add it to `Canonicalizer`/`diff` (diff derives nothing).
+

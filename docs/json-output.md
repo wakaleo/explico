@@ -43,6 +43,7 @@ Library: `Explico.render(policySet, policyDir, examples, dataDir, generateExampl
 |---|---|---|
 | `name` | string | The Rego rule name |
 | `controlId`, `title`, `description` | string or null | From METADATA |
+| `controlIdDerived` | boolean | **Only when `true`**: the id was derived from the file name by `--control-id-from` rather than declared in METADATA (spec §14.55). Absent otherwise |
 | `anchor` | string or null | The card's anchor id in the package document (`#rel-001`); null for a duplicate that lost the claim |
 | `sourceFile` | string or null | The `.rego` file (relative to the policy directory) |
 | `sourceLine` | integer or null | The rule's first line in that file (its first body, else its `default`, else its constant value) |

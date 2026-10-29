@@ -8,6 +8,7 @@ import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.NoOpCliktCommand
 import com.github.ajalt.clikt.core.ProgramResult
+import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.core.main
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
@@ -24,6 +25,7 @@ import io.explico.opa.OpaFetcher
 import io.explico.opa.OpaInvocationException
 import io.explico.opa.OpaRunner
 import io.explico.opa.OpaUnavailableException
+import io.explico.render.ControlIdFromFilename
 import io.explico.render.DuplicateFixtureNameException
 import io.explico.render.SourceLinks
 import java.nio.file.Files
@@ -75,6 +77,14 @@ private class RenderCommand : CliktCommand(name = "render") {
         "--source-url",
         help = "URL template linking every card to its Rego line, with {file} (required) and {line}, e.g. https://github.com/ORG/REPO/blob/COMMIT/policies/{file}#L{line}",
     ).convert { value -> try { SourceLinks.of(value); value } catch (e: IllegalArgumentException) { fail(e.message ?: "invalid template") } }
+    private val controlIdFrom by option(
+        "--control-id-from",
+        help = "Derive a control id from each rule's source FILE NAME when its METADATA has none: a regex with a named group, e.g. 'ctrl_(?<id>\\d+)' (METADATA's control-id always wins; `render` only)",
+    ).convert { value -> try { ControlIdFromFilename.validatePattern(value) } catch (e: IllegalArgumentException) { fail(e.message ?: "invalid pattern") } }
+    private val controlIdTemplate by option(
+        "--control-id-template",
+        help = "How a derived id is written, with {id} for the captured text, e.g. 'CTRL-{id}' (default: {id}); needs --control-id-from",
+    ).convert { value -> try { ControlIdFromFilename.validateTemplate(value) } catch (e: IllegalArgumentException) { fail(e.message ?: "invalid template") } }
     private val failUnder by option("--fail-under", help = "Exit 5 if overall rendering coverage is below this percent (0-100); the output is still written")
         .int().restrictTo(0..100)
     private val failOnGaps by option(
@@ -83,11 +93,16 @@ private class RenderCommand : CliktCommand(name = "render") {
     ).flag()
 
     override fun run() {
+        // A template says how a derived id is written; with no pattern it would silently do nothing, so it is a usage error (checked before anything else).
+        if (controlIdTemplate != null && controlIdFrom == null) throw UsageError("--control-id-template needs --control-id-from (it says how a derived id is written)")
         requireOpaOrExit()
         try {
             val policySet = Explico.load(policyDir, parseRegoVersion(regoVersion))
             val examples = examplesDir?.let { Explico.loadExamples(it) }
-            val rendered = Explico.render(policySet, policyDir, examples, dataDir, generateExamples, json, requirementsFile?.let { parseRequirements(Files.readString(it)) } ?: emptyList(), sourceUrl)
+            val rendered = Explico.render(
+                policySet, policyDir, examples, dataDir, generateExamples, json, requirementsFile?.let { parseRequirements(Files.readString(it)) } ?: emptyList(), sourceUrl,
+                controlIdFrom, controlIdTemplate ?: ControlIdFromFilename.DEFAULT_TEMPLATE,
+            )
             replaceOutputDirectory(out, rendered.files)
             echo("Rendering coverage: ${rendered.coverage.rendered} of ${rendered.coverage.total} conditions (${rendered.coverage.percent}%)")
             rendered.generatedExamples?.let { echo("Generated examples for ${it.rulesWithExamples} of ${it.rulesConsidered} rules") }

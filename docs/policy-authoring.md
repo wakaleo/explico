@@ -168,6 +168,36 @@ with logic is the policy author's job, not something explico's honesty
 guarantee extends to — that guarantee is specifically about the *logic*,
 never about auditing the prose a human attached to it.
 
+## Naming controls by file name
+
+If your corpus already names its controls by file (`ctrl_1123.rego`, `team_a/ctrl_19_signoff.rego`) and has little or no METADATA, you do not have to
+edit every file to get control cards. Tell `render` how to read the id out of the name:
+
+```
+explico render policies --out docs --control-id-from 'ctrl_(?<id>\d+)' --control-id-template 'CTRL-{id}'
+```
+
+`ctrl_1123.rego` becomes **`CTRL-1123`**, `team_a/ctrl_19_signoff.rego` becomes `CTRL-19`: the card is headed `## CTRL-1123 — <rule name>`, the index lists it in
+the *controls* table, and other cards link to it by that id.
+
+- **The pattern** is a regular expression with a named group `id`, matched anywhere in the file's **base name** (not its directory). It is case-sensitive; use
+  `(?i)` for the other. `--control-id-template` writes the result (`{id}` is the captured text; default: just the text).
+- **METADATA always wins.** A rule that declares `custom.control-id` keeps it, and a rule with METADATA but no id keeps its title, description and frameworks and
+  only gains the id. **Only the id is derived**, never a title: an untitled card is headed with its rule name.
+- Nothing is derived when the name does not match, when the `id` group took no part, or when it captured an empty string. An id that would break a Markdown table
+  (a `|` or a line break) is not derived, with a warning on stderr.
+- **A rule takes the id of the file it is defined in** -- the file the card shows as *defined in*, which for a rule whose definitions are spread over several files is the one holding its first body.
+  A backslash in a file name counts as a path separator (so Windows paths work), which means only the part after the last `/` or `\` is matched.
+- **Every rule in a file gets the file's id.** Two files, or two packages, may derive the same id; the render does not fail, but a page keeps each anchor unique, so
+  only the first card with an id is a link target (a later card with the same id is not linked from the index). Grouping such cards is a separate feature.
+- **A derived id says it is derived.** A name pattern is a mechanical reading, not something an author attested, so the card carries `*Control id derived from the file name `ctrl_1123.rego`*`,
+  `explico.json` has `controlIdDerived: true` on that rule, and the index legend gains a *Derived control ids* note. A METADATA-declared id is never marked.
+- **A derived-id control is a control with no description and no framework**, so the index's *Documentation quality* section and `--fail-on-gaps` list it, exactly
+  as they list any control without them. Add METADATA (`description`, `custom.frameworks`) to the files that matter.
+- **`diff` does not take these options.** A rule with no METADATA id keeps its `package.rule` identity in a diff, so the report still compares old and new correctly,
+  but labels such a rule by its package and name rather than by the derived id.
+- Off by default: without the options, or with a pattern that matches nothing, the output is exactly what it was.
+
 ## Keeping your documentation complete
 
 explico checks the documentation it can see, and tells you what is missing — it never invents anything to fill a gap.

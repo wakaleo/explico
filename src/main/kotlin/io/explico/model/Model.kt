@@ -102,6 +102,12 @@ public data class RuleMetadata @JvmOverloads constructor(
      * valid was declared. explico never infers any of it: it reads the declared field names and nothing else.
      */
     val projection: DeclaredProjection? = null,
+    /**
+     * The BASE name of the source file this rule's [controlId] was derived from (`--control-id-from`, spec §14.55), or null when the id was declared in
+     * METADATA or there is none. A derived id is a mechanical reading of a file name, not something an author attested; the card, the index and the
+     * JSON say so.
+     */
+    val controlIdDerivedFrom: String? = null,
 )
 
 /**
