@@ -105,7 +105,11 @@ internal object ChangeSummary {
         if ((old?.authors.orEmpty()) != (new?.authors.orEmpty())) fields += "authors"
         if ((old?.relatedResources.orEmpty()) != (new?.relatedResources.orEmpty())) fields += "related resources"
         if ((old?.customFields ?: emptyMap<String, String>()) != (new?.customFields ?: emptyMap<String, String>())) fields += "custom fields"
-        if (old?.projection != new?.projection) fields += "verdict"
+        // Spec §14.53, §14.54: each declared projection on its own, in a fixed order.
+        if (old?.projection?.verdict != new?.projection?.verdict) fields += "verdict"
+        if (old?.projection?.actions != new?.projection?.actions) fields += "actions"
+        if (old?.projection?.annotations != new?.projection?.annotations) fields += "annotations"
+        if (old?.projection?.timing != new?.projection?.timing) fields += "timing"
         return fields
     }
 

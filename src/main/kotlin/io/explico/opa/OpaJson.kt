@@ -16,6 +16,9 @@
  */
 package io.explico.opa
 
+import io.explico.model.ActionsProjection
+import io.explico.model.AnnotationsProjection
+import io.explico.model.TimingProjection
 import io.explico.model.VerdictProjection
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -76,7 +79,7 @@ internal data class OpaExpr(
  * never fatal; a list keeps only its string entries, which are exactly what it declares. A `custom` that is not an object
  * at all reads as empty.
  *
- * Reads `control-id`, `frameworks` and `verdict` (spec §14.53); [customFields] (spec §14.43) surfaces every OTHER key whose value is a scalar or a
+ * Reads `control-id`, `frameworks`, `verdict` (spec §14.53), `actions`, `annotations` and `timing` (spec §14.54); [customFields] (spec §14.43) surfaces every OTHER key whose value is a scalar or a
  * list of scalars, and silently skips anything with structure -- never a guess at what a nested object means.
  */
 @Serializable(with = OpaCustomAnnotationSerializer::class)
@@ -100,6 +103,41 @@ internal data class OpaCustomAnnotation(val raw: JsonObject = JsonObject(emptyMa
             return VerdictDeclaration(VerdictProjection(outcome, reason))
         }
 
+    /** The declared `actions` (spec §14.54): `at` (an array) and `label` (within each element) are both required field paths. */
+    val actions: Declaration<ActionsProjection>
+        get() {
+            val declared = mappingOrNull("actions") ?: return absentOrNotAMapping("actions", "`actions` must be a mapping with `at` and `label` fields")
+            val at = fieldPathOrNull(declared["at"]) ?: return Declaration(problem = "`actions.at` is required and must name a field (a non-empty string)")
+            val label = fieldPathOrNull(declared["label"]) ?: return Declaration(problem = "`actions.label` is required and must name a field (a non-empty string)")
+            return Declaration(ActionsProjection(at, label))
+        }
+
+    /** The declared `annotations` (spec §14.54): `at` is a required field path. */
+    val annotations: Declaration<AnnotationsProjection>
+        get() {
+            val declared = mappingOrNull("annotations") ?: return absentOrNotAMapping("annotations", "`annotations` must be a mapping with an `at` field")
+            val at = fieldPathOrNull(declared["at"]) ?: return Declaration(problem = "`annotations.at` is required and must name a field (a non-empty string)")
+            return Declaration(AnnotationsProjection(at))
+        }
+
+    /** The declared `timing` (spec §14.54): `dueBy` and/or `startBefore`, at least one; a given field must be a valid path (no half a declaration). */
+    val timing: Declaration<TimingProjection>
+        get() {
+            val declared = mappingOrNull("timing") ?: return absentOrNotAMapping("timing", "`timing` must be a mapping with `dueBy` and/or `startBefore`")
+            val fields = listOf("dueBy", "startBefore").map { key ->
+                if (!declared.containsKey(key)) null
+                else fieldPathOrNull(declared[key]) ?: return Declaration(problem = "`timing.$key` must name a field (a non-empty string) when given")
+            }
+            if (fields.all { it == null }) return Declaration(problem = "`timing` needs at least one of `dueBy` and `startBefore`")
+            return Declaration(TimingProjection(fields[0], fields[1]))
+        }
+
+    private fun mappingOrNull(key: String): JsonObject? = raw[key] as? JsonObject
+
+    /** Not a mapping: undeclared when the key is absent, otherwise a wrongly-shaped declaration worth a warning. */
+    private fun <T> absentOrNotAMapping(key: String, problem: String): Declaration<T> =
+        if (raw.containsKey(key)) Declaration(problem = problem) else Declaration()
+
     /** A field path: a non-empty string whose dot-separated segments are all non-empty; anything else is null. */
     private fun fieldPathOrNull(value: JsonElement?): String? =
         (value as? JsonPrimitive)?.takeIf { it.isString }?.content?.takeIf { path -> path.split('.').all { it.isNotEmpty() } }
@@ -107,7 +145,7 @@ internal data class OpaCustomAnnotation(val raw: JsonObject = JsonObject(emptyMa
     /** Every other key with a scalar / scalar-list value, as display text (a list comma-joined), sorted by key. */
     val customFields: Map<String, String>
         get() = raw.entries
-            .filter { it.key != "control-id" && it.key != "frameworks" && it.key != "verdict" }
+            .filter { it.key !in RESERVED_KEYS }
             .mapNotNull { (key, value) -> scalarText(value)?.let { key to it } }
             .sortedBy { it.first }
             .toMap(LinkedHashMap())
@@ -119,8 +157,14 @@ internal data class OpaCustomAnnotation(val raw: JsonObject = JsonObject(emptyMa
     }
 }
 
+/** Keys explico itself interprets (§14.43, §14.53, §14.54): never repeated in the 'Custom:' passthrough line, even when malformed. */
+private val RESERVED_KEYS = setOf("control-id", "frameworks", "verdict", "actions", "annotations", "timing")
+
 /** The outcome of reading `custom.verdict`: a [projection], a [problem] (declared but wrongly shaped), or neither (not declared). */
 internal data class VerdictDeclaration(val projection: VerdictProjection? = null, val problem: String? = null)
+
+/** The same outcome for `custom.actions`, `custom.annotations` and `custom.timing` (spec §14.54). */
+internal data class Declaration<T>(val projection: T? = null, val problem: String? = null)
 
 internal object OpaCustomAnnotationSerializer : KSerializer<OpaCustomAnnotation> {
     override val descriptor: SerialDescriptor = JsonElement.serializer().descriptor

@@ -1567,3 +1567,20 @@ returns null otherwise, in which case that one example keeps its raw JSON. Never
 - Public model additions go LAST with a default; `ModelBinaryCompatibilityTest` now pins the 0.2.0 constructors of `RuleMetadata` and `RuleBody` as well as 0.1.1.
 - Not done on purpose: a package-scope `custom.verdict` is silently unused (no rule to apply it to); FR-3/4/5 (actions, annotations, timing) extend `DeclaredProjection`.
 
+## Declared actions, annotations and timing (spec §14.54)
+
+`custom.actions {at,label}`, `custom.annotations {at}`, `custom.timing {dueBy,startBefore}` extend `DeclaredProjection` (§14.53) and follow the SAME rules: explico reads declared
+field PATHS only, STRICT per example (null when the value does not fully support it), never a partial list, never coerced, a malformed declaration ignored with ONE warning per key.
+- `ExampleProjections.of(projection, example)` is the single per-example result: the card (`appendExampleEntry`) and `JsonExport.exampleObject` BOTH read it, so they cannot disagree.
+  A new projection goes there first. Only for a matched example with a value.
+- One path validator (`OpaCustomAnnotation.fieldPathOrNull`) and one walker (`FieldPath`). `RuleMetadata.projection` stays NULL unless a valid declaration exists (hashes and JSON of every
+  other rule are unchanged -- pinned in `VerdictProjectionDiffTest`/`ProjectionDiffTest`). `actions`/`annotations`/`timing`/`verdict` are reserved `custom` keys.
+- Free text from a value is shown through `MarkdownText` (`codeSpan`, `emphasisText`): a line break must never end a list item, a backtick never end a code span.
+  The reason line of a verdict is NOT yet escaped like this (a pre-existing, disclosed asymmetry).
+- Remediation labels are indented FOUR spaces, the referenced-path bullets TWO: at the same indent they merge into one list and a path value reads as another remediation item (found in review, pinned by
+  `remediationIsNotMergedWithPathValues`). Keep any new sub-list under an example at a different level from the path bullets.
+- Reserved `custom` keys (`verdict`, `actions`, `annotations`, `timing`) changed what a plain scalar of that name does (warning, hidden from `*Custom:*`); disclosed in the CHANGELOG. Do not add reserved names lightly.
+- Absent is not empty: no `at` field => nothing shown; an empty array => "No remediation offered." / no status. In JSON an unusable projection has NO key, an empty one has `[]`.
+- Not supported on purpose: a `kind` for an action ("complete form" would be inferred); package-scope declarations. A function rule or a name shared by several cards gets no
+  projected examples (functions are not evaluated; a whole-name value cannot be credited to one card).
+

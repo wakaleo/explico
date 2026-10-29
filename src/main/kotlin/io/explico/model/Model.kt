@@ -105,10 +105,15 @@ public data class RuleMetadata @JvmOverloads constructor(
 )
 
 /**
- * The projections a rule's author declared in `custom:` METADATA (spec §14.53). Today only [verdict]; further declared projections are
- * added here as defaulted fields.
+ * The projections a rule's author declared in `custom:` METADATA (spec §14.53, §14.54). Each is independent of the others and null when
+ * not declared (or declared wrongly); a [DeclaredProjection] is itself only present when at least one is.
  */
-public data class DeclaredProjection(val verdict: VerdictProjection? = null)
+public data class DeclaredProjection @JvmOverloads constructor(
+    val verdict: VerdictProjection? = null,
+    val actions: ActionsProjection? = null,
+    val annotations: AnnotationsProjection? = null,
+    val timing: TimingProjection? = null,
+)
 
 /**
  * `custom.verdict`: which fields of the rule's evaluated OBJECT value are the verdict. [outcome] names a boolean field (a dotted path
@@ -116,6 +121,22 @@ public data class DeclaredProjection(val verdict: VerdictProjection? = null)
  * `✅ <outcome>` / `❌ not <outcome>` followed by the quoted reason; a value that does not have these fields keeps its raw JSON.
  */
 public data class VerdictProjection(val outcome: String, val reason: String? = null)
+
+/**
+ * `custom.actions` (spec §14.54): [at] is the field path of an ARRAY of remediation actions in the rule's evaluated object, [label] the path,
+ * within each element, of a string naming it. A worked example lists the labels under "Remediation offered". Only the declared label is shown --
+ * explico never words what an action means.
+ */
+public data class ActionsProjection(val at: String, val label: String)
+
+/** `custom.annotations` (spec §14.54): [at] is the field path of an array of STRINGS, shown as the example's status. */
+public data class AnnotationsProjection(val at: String)
+
+/**
+ * `custom.timing` (spec §14.54): the field paths of two instants in the rule's evaluated object, at least one declared. Their string values are
+ * printed exactly as evaluated -- explico never reformats a date.
+ */
+public data class TimingProjection(val dueBy: String? = null, val startBefore: String? = null)
 
 /** One entry of `authors:` METADATA; opa parses a bare `"Name <email>"` string into both fields. */
 public data class Author(val name: String?, val email: String?)

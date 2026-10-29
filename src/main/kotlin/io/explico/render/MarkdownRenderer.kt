@@ -365,37 +365,66 @@ internal object MarkdownRenderer {
     }
 
     /**
-     * One worked-example entry: the name line with its verdict word, the produced message(s), then the values of the input
-     * paths the rule reads. Shared by the author's examples and generated ones, so both read identically.
+     * One worked-example entry: the name line with its verdict word, the produced message(s), then what the rule's author DECLARED about its
+     * object value (spec §14.53/§14.54: timing, remediation), then the values of the input paths the rule reads. Shared by the author's
+     * examples and generated ones, so both read identically.
+     *
+     * Every declared part comes from [ExampleProjections.of], the same result `explico.json` reads, and is independent of the others: what the
+     * evaluated value does not fully support is simply absent, and the example is rendered exactly as it always was.
      */
     private fun appendExampleEntry(sb: StringBuilder, rule: RuleGroup, name: String, outcome: WorkedExample, referencedPaths: List<Operand.Path>) {
-        // Spec §14.53: a declared verdict replaces the generic "matched" word and the raw JSON; anything the evaluated value does not support
-        // projects to null and the example is rendered exactly as it always was.
-        val verdict = if (outcome.matched) VerdictProjector.project(rule.metadata?.projection?.verdict, outcome.value) else null
+        val projected = ExampleProjections.of(rule.metadata?.projection, outcome)
+        // The status goes on the summary line, after the verdict words (or after "matched").
+        val status = projected.annotations?.takeIf { it.isNotEmpty() }
+            ?.let { " · *status: ${it.joinToString(", ") { s -> MarkdownText.emphasisText(s) }}*" } ?: ""
+        val verdict = projected.verdict
         if (verdict != null) {
-            sb.appendLine("- **$name** — ${verdict.summary}")
+            sb.appendLine("- **$name** — ${verdict.summary}$status")
             // A reason may span lines; continuation lines are indented so they stay inside this list item.
             verdict.reason?.let { sb.appendLine("  *\"${it.lines().joinToString("\n  ")}\"*") }
-            appendReferencedPathValues(sb, outcome, referencedPaths)
-            return
-        }
-        val outcomeWord = WorkedExamples.outcomeWord(rule.name, outcome.matched)
-        // A single message's situation label goes on the summary line, matching spec's own
-        // example. Multiple messages (a fixture matching more than one body at once) each get
-        // their own label instead -- there's no single "the" situation to put on the summary
-        // line in that case. Not spec-pinned; no pack fixture exercises single-message
-        // multi-body attribution differently than this.
-        val summaryLabel = if (outcome.messages.size == 1) outcome.situationLabels.single()?.let { " *(Situation $it)*" } ?: "" else ""
-        sb.appendLine("- **$name** — $outcomeWord$summaryLabel")
-        if (outcome.messages.size == 1) {
-            sb.appendLine("  *\"${outcome.messages.single()}\"*")
-        } else if (outcome.messages.size > 1) {
-            outcome.messages.zip(outcome.situationLabels).forEach { (message, label) ->
-                val label2 = label?.let { " *(Situation $it)*" } ?: ""
-                sb.appendLine("  *\"$message\"*$label2")
+        } else {
+            val outcomeWord = WorkedExamples.outcomeWord(rule.name, outcome.matched)
+            // A single message's situation label goes on the summary line, matching spec's own
+            // example. Multiple messages (a fixture matching more than one body at once) each get
+            // their own label instead -- there's no single "the" situation to put on the summary
+            // line in that case. Not spec-pinned; no pack fixture exercises single-message
+            // multi-body attribution differently than this.
+            val summaryLabel = if (outcome.messages.size == 1) outcome.situationLabels.single()?.let { " *(Situation $it)*" } ?: "" else ""
+            sb.appendLine("- **$name** — $outcomeWord$summaryLabel$status")
+            if (outcome.messages.size == 1) {
+                sb.appendLine("  *\"${outcome.messages.single()}\"*")
+            } else if (outcome.messages.size > 1) {
+                outcome.messages.zip(outcome.situationLabels).forEach { (message, label) ->
+                    val label2 = label?.let { " *(Situation $it)*" } ?: ""
+                    sb.appendLine("  *\"$message\"*$label2")
+                }
             }
         }
+        appendTimingLine(sb, projected.timing)
+        appendRemediationLines(sb, projected.remediation)
         appendReferencedPathValues(sb, outcome, referencedPaths)
+    }
+
+    /** `*Timing:* due by `x`; start before `y``: the instants exactly as evaluated, each clause only when it has a usable value, no line when neither has. */
+    private fun appendTimingLine(sb: StringBuilder, timing: ProjectedTiming?) {
+        val clauses = listOfNotNull(
+            timing?.dueBy?.let { "due by ${MarkdownText.codeSpan(it)}" },
+            timing?.startBefore?.let { "start before ${MarkdownText.codeSpan(it)}" },
+        )
+        if (clauses.isNotEmpty()) sb.appendLine("  *Timing:* ${clauses.joinToString("; ")}")
+    }
+
+    /** The declared label of each remediation action, in order, or "No remediation offered." when the value says the list is empty; nothing when it could not be read. */
+    private fun appendRemediationLines(sb: StringBuilder, remediation: List<String>?) {
+        if (remediation == null) return
+        if (remediation.isEmpty()) {
+            sb.appendLine("  *No remediation offered.*")
+            return
+        }
+        sb.appendLine("  *Remediation offered:*")
+        // One level deeper than the example's own sub-bullets (the input-path values that follow): at the same indent the two would be ONE list
+        // and a path value (`form`: absent) would read as one more remediation item.
+        remediation.forEach { sb.appendLine("    - ${MarkdownText.codeSpan(it)}") }
     }
 
     /** The values the fixture gave to the input paths the rule reads, one indented bullet each (or "absent"). */

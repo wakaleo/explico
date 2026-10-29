@@ -1965,3 +1965,38 @@ custom:
 - **Tests.** `RealisticVerdictProjectionAcceptanceIT` (fixtures `realistic/verdict-projection/`), `OpaVerdictDeclarationTest`, `VerdictMetadataMappingTest`,
   `VerdictProjectorTest`, `VerdictProjectionDiffTest`, `ExamplesTest.EvaluatedValue`, `MarkdownRendererTest.DeclaredVerdictExamples`.
 
+### 14.54 Declared actions, annotations and timing (`custom.actions`, `custom.annotations`, `custom.timing`)
+
+Three more DECLARED projections of an object-valued rule's evaluated value, built exactly like the verdict (§14.53): explico reads declared field paths and the
+values `opa eval` produced, never meaning. All optional, independent of each other and of the verdict.
+
+```yaml
+custom:
+  actions:     {at: <path to an ARRAY>, label: <path, within each element, to a STRING>}
+  annotations: {at: <path to an array of STRINGS>}
+  timing:      {dueBy: <path>, startBefore: <path>}     # at least one
+```
+
+- **Model.** `DeclaredProjection(verdict, actions, annotations, timing)` (all defaulted; `@JvmOverloads` keeps the one-argument constructor), `ActionsProjection(at, label)`,
+  `AnnotationsProjection(at)`, `TimingProjection(dueBy?, startBefore?)`, all public and KDoc'd. `RuleMetadata.projection` is null unless at least one VALID declaration exists.
+  `OpaCustomAnnotation.actions/annotations/timing` return a `Declaration<T>(projection, problem)`; ONE path validator is shared (non-empty string, no empty dot segment).
+  `actions`, `annotations`, `timing` (like `verdict`) are reserved `custom` keys: never in the `*Custom:*` line, even malformed.
+- **Malformed** (not a mapping; a missing, non-string or invalid `at`/`label`; a `timing` with neither field, or ANY given field invalid -- no half a declaration):
+  no projection and ONE `explico: warning: ignoring custom.<key> on rule '<pkg>.<rule>': <problem>` per key, in the fixed order verdict, actions, annotations, timing.
+- **Projection** (`render/ExampleProjections`, pure, STRICT, one result per example consumed by BOTH the card and `explico.json`):
+  `remediation` = the label of EVERY element when the value is an object whose `at` is an array and every element has a non-empty string at `label`, else null (never a
+  partial list; an empty array is an empty list; a missing field is null, not empty). `annotations` = an array of non-empty strings, else null. `timing` = the
+  non-empty string at each DECLARED field, else null for that field (present overall whenever the value is an object). Only for a MATCHED example with a value.
+- **Card.** The status goes on the summary line after the verdict words (or after `— matched`): ` · *status: a, b*`. Then, after the reason/message lines and before the
+  referenced-path bullets: `  *Timing:* due by `x`; start before `y`` (each clause only when usable, no line when neither), then `  *Remediation offered:*` with one
+  `` - `label` `` line per action, indented FOUR spaces (one level deeper than the referenced-path bullets that follow, so the two are separate lists), or `  *No remediation offered.*` for an empty array. Free text goes through `MarkdownText` (a line break becomes a space, a code-span fence longer
+  than any backtick run inside, markdown specials escaped in a status) so a value can never break the list item.
+- **JSON.** Rule: `actions {at,label}`, `annotations {at}`, `timing {dueBy,startBefore}` (null for an undeclared field), only when declared. Example: `remediation` (labels, possibly `[]`),
+  `annotations` (possibly `[]`), `timing {dueBy,startBefore}` (nulls where unusable), only when that projection applied. `docs/json-output.md`.
+- **Diff.** In `canonicalMetadata` only when present, each part only when declared (a rule with no declaration, or with only a verdict, hashes exactly as before -- both pinned),
+  so editing any is DOCS_CHANGED. `ChangeSummary` names them in the order verdict, actions, annotations, timing; the docs table gains an `Actions`/`Annotations`/`Timing` row only when it differs.
+- **Behaviour change (disclosed in the CHANGELOG):** `verdict`, `actions`, `annotations` and `timing` are reserved. A policy that used one as a plain scalar note previously saw it in the `*Custom:*` line (§14.43); it now gets the one warning (not a mapping) and the line omits it.
+- **Not supported on purpose:** a `kind` for an action (the wording "complete form" would be inferred); package-scope declarations; literal keys containing a dot.
+- **Tests.** `RealisticDeclaredProjectionsAcceptanceIT` (fixtures `realistic/declared-projections/`), `OpaProjectionDeclarationTest`, `ProjectionMetadataMappingTest`,
+  `ExampleProjectionsTest`, `MarkdownTextTest`, `MarkdownRendererTest.DeclaredProjectionExamples`, `ProjectionDiffTest`.
+

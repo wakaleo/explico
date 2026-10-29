@@ -172,6 +172,16 @@ internal object DiffRenderer {
         val oldVerdict = oldMeta?.projection?.verdict
         val newVerdict = newMeta?.projection?.verdict
         if (oldVerdict != newVerdict) sb.appendLine("| Verdict | ${verdictText(oldVerdict)} | ${verdictText(newVerdict)} |")
+        // Spec §14.54: likewise one row each for the declared actions, annotations and timing.
+        val oldActions = oldMeta?.projection?.actions
+        val newActions = newMeta?.projection?.actions
+        if (oldActions != newActions) sb.appendLine("| Actions | ${actionsText(oldActions)} | ${actionsText(newActions)} |")
+        val oldAnnotations = oldMeta?.projection?.annotations
+        val newAnnotations = newMeta?.projection?.annotations
+        if (oldAnnotations != newAnnotations) sb.appendLine("| Annotations | ${annotationsText(oldAnnotations)} | ${annotationsText(newAnnotations)} |")
+        val oldTiming = oldMeta?.projection?.timing
+        val newTiming = newMeta?.projection?.timing
+        if (oldTiming != newTiming) sb.appendLine("| Timing | ${timingText(oldTiming)} | ${timingText(newTiming)} |")
     }
 
     private fun authorsText(authors: List<io.explico.model.Author>): String =
@@ -182,6 +192,13 @@ internal object DiffRenderer {
 
     private fun verdictText(verdict: io.explico.model.VerdictProjection?): String =
         verdict?.let { "outcome `${it.outcome}`" + (it.reason?.let { r -> ", reason `$r`" } ?: "") } ?: "—"
+
+    private fun actionsText(actions: io.explico.model.ActionsProjection?): String = actions?.let { "at `${it.at}`, label `${it.label}`" } ?: "—"
+
+    private fun annotationsText(annotations: io.explico.model.AnnotationsProjection?): String = annotations?.let { "at `${it.at}`" } ?: "—"
+
+    private fun timingText(timing: io.explico.model.TimingProjection?): String =
+        timing?.let { listOfNotNull(it.dueBy?.let { f -> "dueBy `$f`" }, it.startBefore?.let { f -> "startBefore `$f`" }).joinToString(", ") } ?: "—"
 
     private fun customText(fields: Map<String, String>): String =
         fields.takeIf { it.isNotEmpty() }?.entries?.joinToString(", ") { "${it.key}: ${it.value}" } ?: "—"

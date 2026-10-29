@@ -34,7 +34,8 @@ OPA-compliant reader can see.
 | `authors` | Yes | The `*Authors: ...*` line: `name <email>`, a bare name, or a bare email, exactly as declared (opa itself splits a `"Name <email>"` string) |
 | `related_resources` | Yes | The `*Related resources: ...*` line: each entry a link, labelled by its `description` (or by the `ref` itself when it has none) |
 | `custom.verdict` | Yes | Declares which fields of an object-valued rule are its verdict, so worked examples read `✅ compliant` instead of a JSON blob; see "Declaring a verdict for an object-valued rule" below. Never shown in the `*Custom:*` line |
-| Any other `custom.*` key besides `control-id`/`frameworks`/`verdict` | Yes, if its value is a scalar or a list of scalars | The `*Custom: key: value, ...*` line, keys sorted alphabetically (a list is comma-joined). A key whose value has structure (an object, a list containing an object) is skipped entirely — explico never guesses at what it means |
+| `custom.actions`, `custom.annotations`, `custom.timing` | Yes | Declare more fields of an object-valued rule's decision, shown under each worked example; see "Declaring a verdict for an object-valued rule" below. Never shown in the `*Custom:*` line |
+| Any other `custom.*` key besides `control-id`/`frameworks`/`verdict`/`actions`/`annotations`/`timing` | Yes, if its value is a scalar or a list of scalars | The `*Custom: key: value, ...*` line, keys sorted alphabetically (a list is comma-joined). A key whose value has structure (an object, a list containing an object) is skipped entirely — explico never guesses at what it means |
 | The same `authors` / `related_resources` / `custom.*` fields on a `scope: package` block | Yes | The same three lines on the package page, after the description and before the first card. A package-scope `control-id`/`frameworks` is not used |
 | `organizations`, `schemas` | **No** | Valid, standard OPA fields — `opa parse` itself parses and preserves them — explico's own JSON decoding just doesn't model them, so they're silently unused, never an error |
 
@@ -422,6 +423,48 @@ The examples then read:
   examples stay raw (a single value cannot be credited to one card).
 - Editing the declaration is a documentation change in `explico diff` (DOCS_CHANGED), never a logic change.
 - `explico.json` carries the same facts: see [JSON output](json-output.md).
+
+### Remediation, status and timing
+
+The same object can carry more. Three more declarations, all optional and independent of each other and of `verdict`, show more of it under each worked example:
+
+```rego
+# custom:
+#   actions:                       # what should be done: the array, and the label inside each element
+#     at: actions
+#     label: action.predicate
+#   annotations:                   # a status: an array of strings
+#     at: annotations
+#   timing:                        # two instants, printed exactly as evaluated
+#     dueBy: dueBy
+#     startBefore: startBefore
+```
+
+```markdown
+- **expired attestation** — ❌ not compliant · *status: expired, overdue*
+  *"Attestation has expired"*
+  *Timing:* due by `2025-01-01T00:00:00Z`
+  *Remediation offered:*
+    - `attest.renew`
+```
+
+- **`actions`** needs both `at` (a path to an **array**) and `label` (a path, inside each element, to a **string**). Each label is listed in array order.
+  An empty array reads `*No remediation offered.*`. A value with **no** `actions` field shows nothing at all: absent is not the same as empty.
+  Only the declared label is shown; explico adds no words about what an action means.
+- **`annotations`** needs `at`, a path to an array of **strings**. They are appended to the summary line as `· *status: a, b*`; an empty array adds nothing.
+- **`timing`** needs at least one of `dueBy` and `startBefore`. Their string values are printed **verbatim** (explico never reformats a date). A `null`, empty
+  or non-string value is left out, and with nothing to show there is no Timing line.
+- **Strict, per example.** If an example's value does not fit (the field is missing, a different type, an array element without a label, one non-string
+  status) that projection is simply not shown for that example. There is never a partial list and nothing is coerced; the other projections and the
+  verdict are unaffected.
+- A wrongly-shaped declaration (a missing `at` or `label`, a non-string path, an empty path segment, a `timing` with neither field) is ignored with one
+  warning on stderr naming the key (`custom.actions`, `custom.annotations` or `custom.timing`) and the rule.
+- The same rules for paths as the verdict: a dot is a separator, and a literal key containing a dot cannot be named.
+- Free text is shown safely: a line break in a label becomes a space and a backtick cannot end its code span; markdown characters in a status are escaped.
+- Editing any of them is a documentation change in `explico diff` (DOCS_CHANGED), with a row in the report for each one that changed.
+- **Reserved names.** `verdict`, `actions`, `annotations` and `timing` are reserved `custom:` keys. If you already used one of them as a plain note (say `timing: quarterly`), it is no longer
+  shown in the card's `*Custom:*` line and explico warns once that the value is not the mapping it expects: rename your key (for example `review-timing`) to keep showing it.
+- The remediation labels are nested one level deeper than the input-path values that follow them, so the two read as two lists.
 
 ## Generated examples: what explico can derive for you
 

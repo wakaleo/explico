@@ -282,8 +282,14 @@ internal object AstMapper {
             // Spec §14.53: a declared verdict is read here, once per annotated rule (an inspect entry is already deduplicated across a
             // multi-body document-scoped rule). A wrongly-shaped one is ignored with ONE warning -- the author declared it, so silence
             // would hide the mistake -- and the rule then renders exactly as if nothing had been declared.
-            val verdict = entry.annotations.custom?.verdict
-            verdict?.problem?.let { System.err.println("explico: warning: ignoring custom.verdict on rule '$entryPackage.$ruleName': $it") }
+            val custom = entry.annotations.custom
+            val verdict = custom?.verdict
+            val actions = custom?.actions
+            val annotations = custom?.annotations
+            val timing = custom?.timing
+            // Spec §14.54: actions / annotations / timing are read the same way; one warning per wrongly-shaped key, in this fixed order.
+            listOf("verdict" to verdict?.problem, "actions" to actions?.problem, "annotations" to annotations?.problem, "timing" to timing?.problem)
+                .forEach { (key, problem) -> problem?.let { System.err.println("explico: warning: ignoring custom.$key on rule '$entryPackage.$ruleName': $it") } }
             val metadata = RuleMetadata(
                 title = entry.annotations.title,
                 description = entry.annotations.description,
@@ -292,7 +298,9 @@ internal object AstMapper {
                 authors = entry.annotations.authors.filter { it.name != null || it.email != null }.map { Author(it.name, it.email) },
                 relatedResources = entry.annotations.relatedResources.mapNotNull { r -> r.ref?.let { RelatedResource(it, r.description) } },
                 customFields = entry.annotations.custom?.customFields ?: emptyMap(),
-                projection = verdict?.projection?.let { DeclaredProjection(verdict = it) },
+                // Null unless at least one valid declaration exists, so a rule without any renders and hashes exactly as before.
+                projection = DeclaredProjection(verdict?.projection, actions?.projection, annotations?.projection, timing?.projection)
+                    .takeIf { it != DeclaredProjection() },
             )
             val candidateFiles = (filesByPackage[entryPackage] ?: emptyList())
                 .filter { entryFile == null || entryFile.endsWith(it.sourceFile) }

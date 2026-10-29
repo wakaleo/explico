@@ -1226,4 +1226,96 @@ class MarkdownRendererTest {
             assertThat(render(declared, json("""{"ok":true,"why":"fine"}"""), matched = false)).contains("— not matched").doesNotContain("✅")
         }
     }
+
+    @Nested
+    inner class DeclaredProjectionExamples {
+
+        private val fixture = io.explico.render.Fixture("a fixture", null, buildJsonObject { })
+
+        private fun render(projection: io.explico.model.DeclaredProjection?, value: String?, matched: Boolean = true): String {
+            val metadata = RuleMetadata("T", "d", "C-1", emptyList(), projection = projection)
+            val rule = RuleGroup("decision", metadata, null, listOf(RuleBody(emptyList(), null, null, SourceRef("f.rego", 1), "")))
+            val pkg = PolicyPackage("p", listOf(rule), listOf("f.rego"))
+            val json = value?.let { kotlinx.serialization.json.Json.parseToJsonElement(it) }
+            val example = WorkedExample(fixture, matched, if (matched && json != null) listOf(json.toString()) else emptyList(), listOf(null), json)
+            return MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)), listOf(example))
+        }
+
+        private fun bullet(markdown: String): List<String> {
+            val lines = markdown.lines()
+            val start = lines.indexOfFirst { it.startsWith("- **a fixture**") }
+            return lines.drop(start).let { rest -> listOf(rest.first()) + rest.drop(1).takeWhile { it.startsWith("  ") } }
+        }
+
+        private val verdict = io.explico.model.VerdictProjection("ok", "why")
+        private val actions = io.explico.model.ActionsProjection("actions", "p")
+        private val annotations = io.explico.model.AnnotationsProjection("status")
+        private val timing = io.explico.model.TimingProjection("dueBy", "startBefore")
+        private fun declared(v: io.explico.model.VerdictProjection? = null, a: io.explico.model.ActionsProjection? = null, n: io.explico.model.AnnotationsProjection? = null, t: io.explico.model.TimingProjection? = null) =
+            io.explico.model.DeclaredProjection(v, a, n, t)
+
+        @Test
+        @DisplayName("the status follows the verdict words on the summary line")
+        fun statusAfterVerdict() {
+            val lines = bullet(render(declared(v = verdict, n = annotations), """{"ok":false,"why":"nope","status":["late","blocked"]}"""))
+            assertThat(lines[0]).isEqualTo("- **a fixture** — ❌ not ok · *status: late, blocked*")
+            assertThat(lines[1]).isEqualTo("  *\"nope\"*")
+        }
+
+        @Test
+        @DisplayName("without a verdict the status follows '— matched', and the raw JSON line stays")
+        fun statusAfterMatched() {
+            val lines = bullet(render(declared(n = annotations), """{"status":["late"]}"""))
+            assertThat(lines[0]).isEqualTo("- **a fixture** — matched · *status: late*")
+            assertThat(lines[1]).startsWith("  *\"{")
+        }
+
+        @Test
+        @DisplayName("an empty status list adds nothing to the summary line")
+        fun emptyStatus() {
+            assertThat(bullet(render(declared(n = annotations), """{"status":[]}"""))[0]).isEqualTo("- **a fixture** — matched")
+        }
+
+        @Test
+        @DisplayName("the Timing line: both clauses, one clause, or no line at all")
+        fun timingLine() {
+            assertThat(bullet(render(declared(t = timing), """{"dueBy":"d","startBefore":"s"}"""))).contains("  *Timing:* due by `d`; start before `s`")
+            assertThat(bullet(render(declared(t = timing), """{"dueBy":"d","startBefore":null}"""))).contains("  *Timing:* due by `d`")
+            assertThat(bullet(render(declared(t = timing), """{"dueBy":null,"startBefore":"s"}"""))).contains("  *Timing:* start before `s`")
+            assertThat(bullet(render(declared(t = timing), """{"dueBy":"","startBefore":null}""")).none { it.startsWith("  *Timing:*") }).isTrue()
+        }
+
+        @Test
+        @DisplayName("remediation: one bullet per label in order, '*No remediation offered.*' for an empty array, nothing when unusable")
+        fun remediationLines() {
+            assertThat(bullet(render(declared(a = actions), """{"actions":[{"p":"x"},{"p":"y"}]}"""))).containsSubsequence("  *Remediation offered:*", "    - `x`", "    - `y`")
+            assertThat(bullet(render(declared(a = actions), """{"actions":[]}"""))).contains("  *No remediation offered.*").doesNotContain("  *Remediation offered:*")
+            val unusable = bullet(render(declared(a = actions), """{"actions":"none"}""")).joinToString("\n")
+            assertThat(unusable).doesNotContain("emediation")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE: a label with a backtick or a line break cannot break the list item; a status with markdown specials is escaped")
+        fun freeTextIsShownSafely() {
+            val lines = bullet(render(declared(a = actions, n = annotations), """{"actions":[{"p":"a`b\nc"}],"status":["a*b","_x_"]}"""))
+            assertThat(lines).contains("    - ``a`b c``")
+            assertThat(lines[0]).endsWith("· *status: a\\*b, \\_x\\_*")
+            assertThat(lines.drop(1)).allMatch { it.startsWith("  ") }
+        }
+
+        @Test
+        @DisplayName("an example where the rule did not match shows none of it, even with a stale value")
+        fun notMatched() {
+            val lines = bullet(render(declared(a = actions, n = annotations, t = timing), """{"actions":[],"status":["a"],"dueBy":"d"}""", matched = false))
+            assertThat(lines.joinToString("\n")).doesNotContain("emediation").doesNotContain("status:").doesNotContain("Timing")
+        }
+
+        @Test
+        @DisplayName("nothing declared: the example is exactly as it always was")
+        fun nothingDeclared() {
+            val lines = bullet(render(null, """{"actions":[{"p":"x"}],"status":["a"],"dueBy":"d"}"""))
+            assertThat(lines[0]).isEqualTo("- **a fixture** — matched")
+            assertThat(lines.joinToString("\n")).doesNotContain("emediation").doesNotContain("status:").doesNotContain("Timing")
+        }
+    }
 }

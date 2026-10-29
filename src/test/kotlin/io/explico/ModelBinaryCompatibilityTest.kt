@@ -60,4 +60,14 @@ class ModelBinaryCompatibilityTest {
         val b = ctor.newInstance(emptyList<Any>(), null, null, SourceRef("f.rego", 1), "", null, emptyList<Any>())
         assertThat(b.elseBranches).isEmpty()
     }
+
+    @Test
+    @DisplayName("DeclaredProjection keeps its one-argument (verdict) constructor after actions, annotations and timing were added (spec §14.54)")
+    fun declaredProjectionKeepsItsVerdictConstructor() {
+        val ctor = io.explico.model.DeclaredProjection::class.java.getConstructor(io.explico.model.VerdictProjection::class.java)
+        val p = ctor.newInstance(io.explico.model.VerdictProjection("ok"))
+        assertThat(p.actions).isNull()
+        assertThat(p.annotations).isNull()
+        assertThat(p.timing).isNull()
+    }
 }

@@ -236,14 +236,25 @@ internal object Canonicalizer {
                 }) }
             })
             put("customFields", buildJsonObject { metadata.customFields.entries.sortedBy { it.key }.forEach { put(it.key, JsonPrimitive(it.value)) } })
-            // Spec §14.53: the declared verdict changes how a rule's examples read, never what it decides -- documentation. Emitted only
-            // when declared, so the hash of every rule without one is exactly what it was before.
-            metadata.projection?.verdict?.let { v ->
+            // Spec §14.53, §14.54: the declared projections change how a rule's examples read, never what it decides -- documentation. Emitted only
+            // when something is declared, and each part only when declared (keys alphabetical), so the hash of every rule without any -- and of one with
+            // only a verdict -- is exactly what it was before the others existed.
+            metadata.projection?.let { projection ->
                 put("projection", buildJsonObject {
-                    put("verdict", buildJsonObject {
-                        put("outcome", JsonPrimitive(v.outcome))
-                        put("reason", v.reason?.let { JsonPrimitive(it) } ?: JsonNull)
-                    })
+                    projection.actions?.let { a -> put("actions", buildJsonObject { put("at", JsonPrimitive(a.at)); put("label", JsonPrimitive(a.label)) }) }
+                    projection.annotations?.let { n -> put("annotations", buildJsonObject { put("at", JsonPrimitive(n.at)) }) }
+                    projection.timing?.let { t ->
+                        put("timing", buildJsonObject {
+                            put("dueBy", t.dueBy?.let { JsonPrimitive(it) } ?: JsonNull)
+                            put("startBefore", t.startBefore?.let { JsonPrimitive(it) } ?: JsonNull)
+                        })
+                    }
+                    projection.verdict?.let { v ->
+                        put("verdict", buildJsonObject {
+                            put("outcome", JsonPrimitive(v.outcome))
+                            put("reason", v.reason?.let { JsonPrimitive(it) } ?: JsonNull)
+                        })
+                    }
                 })
             }
             put("relatedResources", buildJsonArray {

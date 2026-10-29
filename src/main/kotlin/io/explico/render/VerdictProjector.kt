@@ -28,14 +28,10 @@ internal object VerdictProjector {
      */
     fun project(projection: VerdictProjection?, value: JsonElement?): ProjectedVerdict? {
         if (projection == null || value !is JsonObject) return null
-        val outcome = (fieldAt(value, projection.outcome) as? JsonPrimitive)?.takeIf { !it.isString }?.booleanOrNull ?: return null
+        val outcome = (FieldPath.at(value, projection.outcome) as? JsonPrimitive)?.takeIf { !it.isString }?.booleanOrNull ?: return null
         val reason = projection.reason?.let { path ->
-            (fieldAt(value, path) as? JsonPrimitive)?.takeIf { it.isString }?.content ?: return null
+            (FieldPath.at(value, path) as? JsonPrimitive)?.takeIf { it.isString }?.content ?: return null
         }
         return ProjectedVerdict(outcome, if (outcome) projection.outcome else "not ${projection.outcome}", reason)
     }
-
-    /** Walks [path] (dot-separated object keys) from [root]; null when any step is missing or passes through something that is not an object. */
-    private fun fieldAt(root: JsonObject, path: String): JsonElement? =
-        path.split('.').fold(root as JsonElement?) { current, key -> (current as? JsonObject)?.get(key) }
 }
