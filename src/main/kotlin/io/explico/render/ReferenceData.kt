@@ -28,7 +28,7 @@ internal object ReferenceData {
     fun referencedDataPaths(rule: RuleGroup, policySet: PolicySet): List<Operand.Path> {
         val seen = LinkedHashSet<Operand.Path>()
         for (body in rule.bodies) {
-            for (condition in Coverage.flatten(body.conditions)) {
+            for (condition in Coverage.flatten(Coverage.conditionsOf(body))) {
                 for (operand in Coverage.operandsOf(condition)) {
                     collectDataPaths(operand, seen)
                 }

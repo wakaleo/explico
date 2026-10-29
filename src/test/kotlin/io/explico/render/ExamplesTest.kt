@@ -408,6 +408,21 @@ class ExamplesTest {
         }
 
         @Test
+        @org.junit.jupiter.api.DisplayName("spec §14.52: a path read only by a LATER branch of an else chain is listed -- it is why that branch decided")
+        fun pathsOfLaterElseBranchesAreListed() {
+            val first = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("a")))
+            val later = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("b")))
+            val chain = RuleBody(
+                listOf(Condition.Truthy(first, negated = false)), null, null, SourceRef("f.rego", 1), "",
+                yieldsValue = Operand.Literal("1"),
+                elseBranches = listOf(io.explico.model.ElseBranch(listOf(Condition.Truthy(later, negated = false)), Operand.Literal("2"), SourceRef("f.rego", 3))),
+            )
+            val rule = RuleGroup("verdict", null, null, bodies = listOf(chain))
+
+            assertThat(WorkedExamples.referencedPaths(rule)).containsExactly(first, later)
+        }
+
+        @Test
         fun resolvesAPresentScalarValue() {
             val path = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("deployment"), PathSegment.Field("environment")))
             val input = buildJsonObject { put("deployment", buildJsonObject { put("environment", "production") }) }

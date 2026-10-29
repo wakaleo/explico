@@ -122,7 +122,7 @@ internal object ChangeSummary {
         val seen = LinkedHashSet<String>()
         for (body in rule.bodies) {
             // Flattened: the nested conditions of an `every` are shown on the card, so a change inside one is a removed/added condition (spec §14.49).
-            for (condition in Coverage.flatten(body.conditions)) {
+            for (condition in Coverage.flatten(Coverage.conditionsOf(body))) {
                 if (condition is Condition.Unrendered) continue
                 seen.add(ExpressionRenderer.render(condition, NO_RULE_LINK, NO_FUNCTION_LINK, NO_RULE_VALUE_LINK))
             }

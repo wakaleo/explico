@@ -48,6 +48,7 @@ import io.explico.model.Author
 import io.explico.model.Condition
 import io.explico.model.ConstantValue
 import io.explico.model.DefaultValue
+import io.explico.model.ElseBranch
 import io.explico.model.LiteralCollection
 import io.explico.model.Operand
 import io.explico.model.Operator
@@ -452,7 +453,7 @@ internal object AstMapper {
                     name = name,
                     metadata = metadata,
                     default = null,
-                    bodies = if (constant != null) emptyList() else orderedRules.map { mapBodyIsolated(it, name, ctx) },
+                    bodies = if (constant != null) emptyList() else orderedRules.map { mapBodyIsolated(it, name, ctx, chainAllowed = orderedRules.size == 1) },
                     // review item 8: a function's own declared parameters, for its card's own
                     // "Parameters" line. `head.args` is consistent across a function's overloaded
                     // bodies (same arity/names), so the first is as good as any.
@@ -549,9 +550,9 @@ internal object AstMapper {
      * other rule still render. The failure is NEVER swallowed: a one-line warning naming the rule,
      * file, row and exception goes to stderr (the project's only logging channel).
      */
-    private fun mapBodyIsolated(rule: OpaRule, ruleName: String, ctx: MappingContext): RuleBody =
+    private fun mapBodyIsolated(rule: OpaRule, ruleName: String, ctx: MappingContext, chainAllowed: Boolean): RuleBody =
         try {
-            mapBody(rule, ctx)
+            mapBody(rule, ctx, chainAllowed)
         } catch (e: Exception) {
             val row = rule.location?.row ?: 0
             val thrownIn = e.stackTrace.filter { it.className.startsWith("io.explico") }.take(2).joinToString(" <- ") { it.methodName }.ifEmpty { "?" }
@@ -565,22 +566,9 @@ internal object AstMapper {
             )
         }
 
-    private fun mapBody(rule: OpaRule, baseCtx: MappingContext): RuleBody {
+    private fun mapBody(rule: OpaRule, baseCtx: MappingContext, chainAllowed: Boolean): RuleBody {
         val ctx = baseCtx.copy(varCounts = countVariables(rule), freeKeys = FreeKeys())
-        // An else-chain (spec §14 finding): opa's own top-level `rule.location` already spans the
-        // WHOLE chain (every branch), confirmed empirically against real opa parse output -- so the
-        // existing whole-rule source slice is already the correct fallback text, no extra decoding
-        // needed. The chain's later branches are a priority-ordered alternative, not a simple OR of
-        // situations, so this demotes the entire body rather than attempting a per-branch rendering.
-        if (rule.elseBranch != null) {
-            return RuleBody(
-                conditions = listOf(Condition.Unrendered(sourceText(rule.location), "else-chain")),
-                producesValue = null,
-                messageTemplate = null,
-                sourceLocation = SourceRef(ctx.sourceFile, rule.location?.row ?: 0),
-                sourceText = sourceText(rule.location),
-            )
-        }
+        if (rule.elseBranch != null) return mapElseChain(rule, ctx, chainAllowed)
 
         val symbolTable = mutableMapOf<String, VarBinding>()
         // A function's own declared parameters (review item 8) are in scope for its WHOLE body,
@@ -637,6 +625,68 @@ internal object AstMapper {
             messageArguments = messageArguments,
         )
     }
+
+    /**
+     * An `else` chain (spec §14.52): the head body plus every `else` branch after it, each mapped in its OWN scope (own variable counts, own
+     * local assignments, own free-index state -- a variable assigned in one branch is not visible in another), with the function's parameters
+     * in scope in all of them. ALL-OR-NOTHING, like `every`: if any branch cannot be mapped faithfully the result is the single
+     * `else-chain` fallback holding the whole chain's source (opa's top-level `rule.location` already spans every branch, confirmed against
+     * a real capture). Falling back also covers the shapes where "Situation N ... Otherwise" would mislead: a branch with NO conditions
+     * anywhere but last (later branches are unreachable) and a first branch with none (nothing to call Situation 1), and a chain that is
+     * one of SEVERAL definitions of the same name ([chainAllowed] false): sibling bodies are shown as OR-ed situations, which could not
+     * show a chain's later branches without dropping them.
+     */
+    private fun mapElseChain(rule: OpaRule, ctx: MappingContext, chainAllowed: Boolean): RuleBody {
+        val chain = generateSequence(rule) { it.elseBranch }.toList()
+        val mapped = chain.map { mapChainBranch(it, rule.head.args, ctx) }
+        val renderable = chainAllowed && mapped.none { it == null } &&
+            mapped.dropLast(1).all { it!!.conditions.isNotEmpty() } &&
+            allFullyRendered(mapped.flatMap { it!!.conditions })
+        if (!renderable) {
+            return RuleBody(
+                conditions = listOf(Condition.Unrendered(sourceText(rule.location), "else-chain")),
+                producesValue = null,
+                messageTemplate = null,
+                sourceLocation = SourceRef(ctx.sourceFile, rule.location?.row ?: 0),
+                sourceText = sourceText(rule.location),
+            )
+        }
+        val first = mapped.first()!!
+        return RuleBody(
+            conditions = first.conditions,
+            producesValue = null,
+            messageTemplate = null,
+            sourceLocation = SourceRef(ctx.sourceFile, rule.location?.row ?: 0),
+            sourceText = sourceText(rule.location),
+            yieldsValue = first.value,
+            elseBranches = mapped.drop(1).map { ElseBranch(it!!.conditions, it.value, SourceRef(ctx.sourceFile, it.row)) },
+        )
+    }
+
+    private class MappedBranch(val conditions: List<Condition>, val value: Operand, val row: Int)
+
+    /**
+     * ONE branch of an `else` chain, or null when it is not a shape a chain can describe (a partial rule, or no head value). The value is the
+     * mapped head value, or `Literal("true")` for opa's IMPLICIT head `true` (no source location -- the same mechanical signal
+     * [yieldsValueOrNull] uses to NOT show it on an ordinary card; inside a chain it is stated so that "Then true / Otherwise false" reads
+     * symmetrically). A message assignment is deliberately not consumed here: a `msg := sprintf(...)` statement stays an ordinary
+     * helper-assignment fallback, which makes the whole chain fall back.
+     */
+    private fun mapChainBranch(branch: OpaRule, args: List<OpaTerm>?, baseCtx: MappingContext): MappedBranch? {
+        if (branch.head.key != null) return null
+        val value = branch.head.value ?: return null
+        val ctx = baseCtx.copy(varCounts = countVariables(branch.copy(elseBranch = null)), freeKeys = FreeKeys())
+        val symbolTable = mutableMapOf<String, VarBinding>()
+        args?.forEach { arg -> if (arg.type == "var") symbolTable[stringValueOf(arg)] = VarBinding.Parameter }
+        val conditions = mutableListOf<Condition>()
+        for (expr in branch.body) mapBodyExpr(expr, symbolTable, ctx, conditions)
+        val yielded = if (value.location == null) Operand.Literal("true") else yieldsValueOrNull(branch, symbolTable, ctx.copy(freeKeys = null)) ?: return null
+        return MappedBranch(conditions, yielded, branch.location?.row ?: 0)
+    }
+
+    /** No condition (nested ones included) is a fallback and none holds an unrendered operand: the test every all-or-nothing construct applies. */
+    private fun allFullyRendered(conditions: List<Condition>): Boolean =
+        Coverage.flatten(conditions).all { c -> c !is Condition.Unrendered && Coverage.operandsOf(c).all { isFullyRendered(it) } }
 
     /**
      * Maps ONE body expression into [conditions]: a `with`-override demotes to a fallback, a local
@@ -1097,10 +1147,7 @@ internal object AstMapper {
         val inner = ctx.copy(freeKeys = null)
         for (bodyExpr in opaJson.decodeFromJsonElement(ListSerializer(OpaExpr.serializer()), bodyJson)) mapBodyExpr(bodyExpr, local, inner, conditions)
         if (conditions.isEmpty()) return fallback
-        val renderable = Coverage.flatten(conditions).all { c ->
-            c !is Condition.Unrendered && Coverage.operandsOf(c).all { isFullyRendered(it) }
-        }
-        if (!renderable) return fallback
+        if (!allFullyRendered(conditions)) return fallback
         return Condition.Every(stringValueOf(value), collection, conditions, keyTerm?.let { stringValueOf(it) })
     }
 

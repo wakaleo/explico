@@ -49,6 +49,20 @@ internal object Canonicalizer {
         val aliases = mutableMapOf<String, String>()
         return buildJsonObject {
             put("conditions", buildJsonArray { body.conditions.forEach { add(canonicalCondition(it, aliases)) } })
+            // Spec §14.52: the branches of an `else` chain, in order (order IS the semantics). Emitted only for a chain, so the hash of every
+            // other rule is exactly what it was before chains were rendered. Each branch is its own variable scope, so it gets a FRESH alias
+            // map: a map shared across branches would make a rename in one branch (e.g. to stop reusing a name) change the hash.
+            if (body.elseBranches.isNotEmpty()) {
+                put("elseBranches", buildJsonArray {
+                    body.elseBranches.forEach { branch ->
+                        val branchAliases = mutableMapOf<String, String>()
+                        add(buildJsonObject {
+                            put("conditions", buildJsonArray { branch.conditions.forEach { add(canonicalCondition(it, branchAliases)) } })
+                            put("yieldsValue", canonicalOperand(branch.yieldsValue, branchAliases))
+                        })
+                    }
+                })
+            }
             put("messageArguments", buildJsonArray { body.messageArguments.forEach { add(canonicalOperand(it, aliases)) } })
             put("messageTemplate", body.messageTemplate?.let { JsonPrimitive(it) } ?: JsonNull)
             // Follow-up to review item 10: the value a conditional rule's body yields is part of

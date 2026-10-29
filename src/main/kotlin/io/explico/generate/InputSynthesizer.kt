@@ -46,7 +46,10 @@ internal object InputSynthesizer {
      * @param violate index into [RuleBody.conditions] of the ONE condition to make false (a near-miss), or null to
      * satisfy them all.
      */
-    fun synthesize(body: RuleBody, violate: Int? = null): Synthesis = try {
+    fun synthesize(body: RuleBody, violate: Int? = null): Synthesis = if (body.elseBranches.isNotEmpty()) {
+        // Spec §14.52: a later `else` branch applies only when every earlier one fails; the solver models one body's conditions only.
+        Synthesis.NotSolvable("else-chain")
+    } else try {
         val tree = Tree()
         body.conditions.forEachIndexed { index, condition -> tree.apply(condition, violate == index) }
         body.messageArguments.forEach { tree.fillIfUndefined(it) }

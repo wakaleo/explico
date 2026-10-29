@@ -1,0 +1,526 @@
+{
+  "package": {
+    "location": {
+      "file": "src/test/resources/ast/else-chain-multi.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "src/test/resources/ast/else-chain-multi.rego",
+          "row": 1,
+          "col": 9,
+          "text": "Y2hhaW5tdWx0aQ=="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "src/test/resources/ast/else-chain-multi.rego",
+          "row": 1,
+          "col": 9,
+          "text": "Y2hhaW5tdWx0aQ=="
+        },
+        "type": "string",
+        "value": "chainmulti"
+      }
+    ]
+  },
+  "rules": [
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/ast/else-chain-multi.rego",
+            "row": 4,
+            "col": 5,
+            "text": "eCA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-multi.rego",
+                "row": 4,
+                "col": 7,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-multi.rego",
+                    "row": 4,
+                    "col": 7,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-multi.rego",
+                "row": 4,
+                "col": 5,
+                "text": "eA=="
+              },
+              "type": "var",
+              "value": "x"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-multi.rego",
+                "row": 4,
+                "col": 10,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "else": {
+        "body": [
+          {
+            "index": 0,
+            "location": {
+              "file": "src/test/resources/ast/else-chain-multi.rego",
+              "row": 6,
+              "col": 5,
+              "text": "eCA9PSAy"
+            },
+            "terms": [
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-multi.rego",
+                  "row": 6,
+                  "col": 7,
+                  "text": "PT0="
+                },
+                "type": "ref",
+                "value": [
+                  {
+                    "location": {
+                      "file": "src/test/resources/ast/else-chain-multi.rego",
+                      "row": 6,
+                      "col": 7,
+                      "text": "PT0="
+                    },
+                    "type": "var",
+                    "value": "equal"
+                  }
+                ]
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-multi.rego",
+                  "row": 6,
+                  "col": 5,
+                  "text": "eA=="
+                },
+                "type": "var",
+                "value": "x"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-multi.rego",
+                  "row": 6,
+                  "col": 10,
+                  "text": "Mg=="
+                },
+                "type": "number",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "head": {
+          "name": "pick",
+          "args": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-multi.rego",
+                "row": 3,
+                "col": 6,
+                "text": "eA=="
+              },
+              "type": "var",
+              "value": "x"
+            }
+          ],
+          "value": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-multi.rego",
+              "row": 5,
+              "col": 10,
+              "text": "ImIi"
+            },
+            "type": "string",
+            "value": "b"
+          },
+          "ref": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-multi.rego",
+                "row": 3,
+                "col": 1,
+                "text": "cGljaw=="
+              },
+              "type": "var",
+              "value": "pick"
+            }
+          ],
+          "location": {
+            "file": "src/test/resources/ast/else-chain-multi.rego",
+            "row": 5,
+            "col": 3,
+            "text": "ZWxzZSA9ICJiIg=="
+          }
+        },
+        "location": {
+          "file": "src/test/resources/ast/else-chain-multi.rego",
+          "row": 5,
+          "col": 3,
+          "text": "ZWxzZSA9ICJiIiBpZiB7CiAgICB4ID09IDIKfQ=="
+        }
+      },
+      "head": {
+        "name": "pick",
+        "args": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-multi.rego",
+              "row": 3,
+              "col": 6,
+              "text": "eA=="
+            },
+            "type": "var",
+            "value": "x"
+          }
+        ],
+        "value": {
+          "location": {
+            "file": "src/test/resources/ast/else-chain-multi.rego",
+            "row": 3,
+            "col": 11,
+            "text": "ImEi"
+          },
+          "type": "string",
+          "value": "a"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-multi.rego",
+              "row": 3,
+              "col": 1,
+              "text": "cGljaw=="
+            },
+            "type": "var",
+            "value": "pick"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/ast/else-chain-multi.rego",
+          "row": 3,
+          "col": 1,
+          "text": "cGljayh4KSA9ICJhIg=="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/ast/else-chain-multi.rego",
+        "row": 3,
+        "col": 1,
+        "text": "cGljayh4KSA9ICJhIiBpZiB7CiAgICB4ID09IDEKfSBlbHNlID0gImIiIGlmIHsKICAgIHggPT0gMgp9"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/ast/else-chain-multi.rego",
+            "row": 10,
+            "col": 5,
+            "text": "eCA9PSAz"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-multi.rego",
+                "row": 10,
+                "col": 7,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-multi.rego",
+                    "row": 10,
+                    "col": 7,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-multi.rego",
+                "row": 10,
+                "col": 5,
+                "text": "eA=="
+              },
+              "type": "var",
+              "value": "x"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-multi.rego",
+                "row": 10,
+                "col": 10,
+                "text": "Mw=="
+              },
+              "type": "number",
+              "value": 3
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "pick",
+        "args": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-multi.rego",
+              "row": 9,
+              "col": 6,
+              "text": "eA=="
+            },
+            "type": "var",
+            "value": "x"
+          }
+        ],
+        "value": {
+          "location": {
+            "file": "src/test/resources/ast/else-chain-multi.rego",
+            "row": 9,
+            "col": 11,
+            "text": "ImMi"
+          },
+          "type": "string",
+          "value": "c"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-multi.rego",
+              "row": 9,
+              "col": 1,
+              "text": "cGljaw=="
+            },
+            "type": "var",
+            "value": "pick"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/ast/else-chain-multi.rego",
+          "row": 9,
+          "col": 1,
+          "text": "cGljayh4KSA9ICJjIg=="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/ast/else-chain-multi.rego",
+        "row": 9,
+        "col": 1,
+        "text": "cGljayh4KSA9ICJjIiBpZiB7CiAgICB4ID09IDMKfQ=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/ast/else-chain-multi.rego",
+            "row": 14,
+            "col": 5,
+            "text": "eCA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-multi.rego",
+                "row": 14,
+                "col": 7,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-multi.rego",
+                    "row": 14,
+                    "col": 7,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-multi.rego",
+                "row": 14,
+                "col": 5,
+                "text": "eA=="
+              },
+              "type": "var",
+              "value": "x"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-multi.rego",
+                "row": 14,
+                "col": 10,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "else": {
+        "body": [
+          {
+            "index": 0,
+            "location": {
+              "file": "src/test/resources/ast/else-chain-multi.rego",
+              "row": 15,
+              "col": 3,
+              "text": "ZWxzZSA9ICJiIg=="
+            },
+            "terms": {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-multi.rego",
+                "row": 15,
+                "col": 3,
+                "text": "ZWxzZSA9ICJiIg=="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "head": {
+          "name": "solo",
+          "args": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-multi.rego",
+                "row": 13,
+                "col": 6,
+                "text": "eA=="
+              },
+              "type": "var",
+              "value": "x"
+            }
+          ],
+          "value": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-multi.rego",
+              "row": 15,
+              "col": 10,
+              "text": "ImIi"
+            },
+            "type": "string",
+            "value": "b"
+          },
+          "ref": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-multi.rego",
+                "row": 13,
+                "col": 1,
+                "text": "c29sbw=="
+              },
+              "type": "var",
+              "value": "solo"
+            }
+          ],
+          "location": {
+            "file": "src/test/resources/ast/else-chain-multi.rego",
+            "row": 15,
+            "col": 3,
+            "text": "ZWxzZSA9ICJiIg=="
+          }
+        },
+        "location": {
+          "file": "src/test/resources/ast/else-chain-multi.rego",
+          "row": 15,
+          "col": 3,
+          "text": "ZWxzZSA9ICJiIg=="
+        }
+      },
+      "head": {
+        "name": "solo",
+        "args": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-multi.rego",
+              "row": 13,
+              "col": 6,
+              "text": "eA=="
+            },
+            "type": "var",
+            "value": "x"
+          }
+        ],
+        "value": {
+          "location": {
+            "file": "src/test/resources/ast/else-chain-multi.rego",
+            "row": 13,
+            "col": 11,
+            "text": "ImEi"
+          },
+          "type": "string",
+          "value": "a"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-multi.rego",
+              "row": 13,
+              "col": 1,
+              "text": "c29sbw=="
+            },
+            "type": "var",
+            "value": "solo"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/ast/else-chain-multi.rego",
+          "row": 13,
+          "col": 1,
+          "text": "c29sbyh4KSA9ICJhIg=="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/ast/else-chain-multi.rego",
+        "row": 13,
+        "col": 1,
+        "text": "c29sbyh4KSA9ICJhIiBpZiB7CiAgICB4ID09IDEKfSBlbHNlID0gImIi"
+      }
+    }
+  ]
+}

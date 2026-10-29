@@ -130,7 +130,7 @@ a machine-readable tag, available in the [JSON output](../json-output.md).
 
 Two more cases are shown as source and are not rows above because they are not a single statement:
 
-- an **`else` chain** (`else` branches are tried in order, which a list of situations would misstate), reason `else-chain`;
+- an **`else` chain** with anything in it explico cannot render, reason `else-chain`. The whole chain stays source, because half a decision would misstate it. A chain whose every branch renders is shown as numbered situations decided in order ("no earlier situation applies and ..."), each with a `*Then:*` value, and a closing *Otherwise* for a bodiless final `else`;
 - a body that could not be mapped at all, reason `mapping-error`, with a warning on stderr. This should not happen on valid Rego; if it
   does, it is a bug worth reporting.
 

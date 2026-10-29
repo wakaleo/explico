@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Added:** `else` chains are rendered. A chain whose every branch can be rendered is now shown as ordered situations -- "This rule is decided in order; the first matching situation wins", then `Situation 1`, `Situation 2 -- no earlier situation applies and ...`, each with a `*Then:*` value, and `Otherwise` for a bodiless final `else` -- instead of a source block. All-or-nothing: one unrenderable branch keeps the whole chain as source. Every branch's conditions count towards coverage, are hashed by `diff` in order (so a reordered or edited later branch is a logic change) and appear in `explico.json` as `elseBranches` on the body. Not rendered as a chain: one of several definitions of the same name. This changes the output of any policy that uses `else`. Public model: `RuleBody` gains `elseBranches` (a new `ElseBranch` class). Spec §14.52.
+- **Changed:** no "Effect of a match" line on an `allow`/`deny` written as an `else` chain (it is always defined, so "a match" is ambiguous; its `*Then:*` lines say what each branch yields).
+
 ## 0.2.0
 
 A new opt-in feature, and fixes for two defects found while building it. Recommended over 0.1.1, especially on Windows.

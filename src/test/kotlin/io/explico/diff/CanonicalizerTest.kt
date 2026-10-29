@@ -305,4 +305,51 @@ class CanonicalizerTest {
         val byName = denyRule("dynamic-key-different-field")
         assertThat(Canonicalizer.logicHash(byName)).isNotEqualTo(Canonicalizer.logicHash(byId))
     }
+
+    // Spec §14.52: an `else` chain is hashed branch by branch, in order. Without that a change to any branch after the first would hash
+    // identically and diff as UNCHANGED -- a silent miss, the worst thing a diff can do.
+    private fun verdictRule(variant: String): RuleGroup =
+        Explico.load(fixturesRoot.resolve(variant)).packages.single().rules.single { it.name == "verdict" }
+
+    @Test
+    @DisplayName("else chain: the fixtures really are chains (not fallback blocks), so the hash tests below test the structural path")
+    fun elseChainFixturesAreStructural() {
+        assertThat(verdictRule("else-chain-base").bodies.single().elseBranches).hasSize(2)
+    }
+
+    @Test
+    @DisplayName("else chain: reformatting and comments inside a chain do not change the hash")
+    fun elseChainReformattingYieldsTheSameLogicHash() {
+        assertThat(Canonicalizer.logicHash(verdictRule("else-chain-reformatted"))).isEqualTo(Canonicalizer.logicHash(verdictRule("else-chain-base")))
+    }
+
+    @Test
+    @DisplayName("else chain: changing a condition of a LATER branch changes the hash")
+    fun elseChainLaterBranchConditionChangeYieldsADifferentHash() {
+        assertThat(Canonicalizer.logicHash(verdictRule("else-chain-condition-changed"))).isNotEqualTo(Canonicalizer.logicHash(verdictRule("else-chain-base")))
+    }
+
+    @Test
+    @DisplayName("else chain: changing the value of the closing 'Otherwise' branch changes the hash")
+    fun elseChainLaterBranchValueChangeYieldsADifferentHash() {
+        assertThat(Canonicalizer.logicHash(verdictRule("else-chain-value-changed"))).isNotEqualTo(Canonicalizer.logicHash(verdictRule("else-chain-base")))
+    }
+
+    @Test
+    @DisplayName("else chain: reordering the branches changes the hash (order IS the semantics)")
+    fun elseChainReorderingYieldsADifferentHash() {
+        assertThat(Canonicalizer.logicHash(verdictRule("else-chain-reordered"))).isNotEqualTo(Canonicalizer.logicHash(verdictRule("else-chain-base")))
+    }
+
+    @Test
+    @DisplayName("else chain: removing the closing branch changes the hash")
+    fun elseChainBranchRemovalYieldsADifferentHash() {
+        assertThat(Canonicalizer.logicHash(verdictRule("else-chain-branch-removed"))).isNotEqualTo(Canonicalizer.logicHash(verdictRule("else-chain-base")))
+    }
+
+    @Test
+    @DisplayName("else chain: each branch is its own scope, so renaming a variable in ONE later branch (even to stop reusing a name) keeps the hash")
+    fun elseChainVariableRenameInALaterBranchYieldsTheSameLogicHash() {
+        assertThat(Canonicalizer.logicHash(verdictRule("else-chain-renamed-var"))).isEqualTo(Canonicalizer.logicHash(verdictRule("else-chain-reused-var")))
+    }
 }

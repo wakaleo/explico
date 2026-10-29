@@ -267,4 +267,32 @@ class ChangeSummaryTest {
             assertThat(ChangeSummary.subBulletsFor(e)).isEmpty()
         }
     }
+
+    @Nested
+    inner class ElseChains {
+
+        private fun chain(laterValue: String) = RuleBody(
+            listOf(Condition.Comparison(path("input", "a"), Operator.EQ, Operand.Literal("1"))), null, null, SourceRef("f.rego", 1), "",
+            yieldsValue = Operand.Literal("\"x\""),
+            elseBranches = listOf(
+                io.explico.model.ElseBranch(
+                    listOf(Condition.Comparison(path("input", "b"), Operator.EQ, Operand.Literal(laterValue))),
+                    Operand.Literal("\"y\""), SourceRef("f.rego", 3),
+                ),
+            ),
+        )
+
+        @Test
+        @DisplayName("spec §14.52: a changed condition in a LATER branch is named as a removed + added condition, not left to the generic structure-changed line")
+        fun aLaterBranchConditionChangeIsNamed() {
+            val oldRule = rule(bodies = listOf(chain("1")))
+            val newRule = rule(bodies = listOf(chain("2")))
+            val e = entry(DiffCategory.LOGIC_CHANGED, "C-1", pkg("p", oldRule), oldRule, pkg("p", newRule), newRule)
+
+            assertThat(ChangeSummary.subBulletsFor(e)).containsExactly(
+                "condition removed: `b` is `1`",
+                "condition added: `b` is `2`",
+            )
+        }
+    }
 }

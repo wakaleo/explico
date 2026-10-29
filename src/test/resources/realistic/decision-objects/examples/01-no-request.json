@@ -1,0 +1,5 @@
+{ "name": "subject with no waiver requested",
+  "input": { "subjectId": "SUBJ-12345", "now": 1736899200000000000,
+    "config": { "thresholds": { "requireSeniorAfterDays": 30, "requireBoardAfterDays": 90,
+      "selfCoversDays": 90, "seniorCoversDays": 180 } },
+    "waiverRequestHistory": [], "selfSignoffs": [], "seniorSignoffs": [], "boardSignoffs": [] } }

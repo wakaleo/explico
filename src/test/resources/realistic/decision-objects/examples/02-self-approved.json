@@ -1,0 +1,8 @@
+{ "name": "waiver covered by an approved self-attestation",
+  "input": { "subjectId": "SUBJ-12345", "now": 1736899200000000000,
+    "config": { "thresholds": { "requireSeniorAfterDays": 30, "requireBoardAfterDays": 90,
+      "selfCoversDays": 90, "seniorCoversDays": 180 } },
+    "waiverRequestHistory": [ { "id": "req-1", "timestamp": "2025-01-10T00:00:00Z",
+      "value": { "targetDate": "2026-09-18" } } ],
+    "selfSignoffs": [ { "subject": "fact:req-1", "value": { "decision": "approved" } } ],
+    "seniorSignoffs": [], "boardSignoffs": [] } }

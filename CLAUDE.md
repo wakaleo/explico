@@ -1537,3 +1537,18 @@ repository files by their real repo-relative path (the script turns them into Gi
 against the real renderer: change a phrase or promote a construct and the test names the rows to update; the page is declared a test input in `build.gradle.kts`
 (without that, Gradle would call the test up to date after an edit). Applying the Dokka plugin makes the publishing plugin attach a real 1 MB javadoc jar; `build.gradle.kts`
 pins the empty one and `ci.yml` fails if it grows. Pages must be enabled once: `gh api -X POST repos/wakaleo/explico/pages -f build_type=workflow`.
+
+## `else` chains as ordered situations (spec §14.52) -- an operator-approved amendment of an earlier deferral
+
+`RuleBody.elseBranches` holds the branches AFTER the first (the body's own `conditions`/`yieldsValue` are branch 1); `AstMapper.mapElseChain` builds them,
+each branch in its OWN scope. **All-or-nothing** like `every`: any unrenderable condition/operand (`allFullyRendered`, shared with `mapEvery`), a non-last
+branch with no conditions, an empty first branch, or a chain among SIBLING definitions of one name (`chainAllowed`) keeps the whole chain as one `else-chain`
+`Unrendered`. Never render half of a decision; never relax this.
+- Anything that walks a body's conditions must use `Coverage.conditionsOf(body)`, not `body.conditions`: a reader that forgets silently ignores later
+  branches. Found this way: `Canonicalizer` (a later-branch edit hashed as UNCHANGED -- a silent miss in `diff`), `ChangeSummary`, `ReferenceData`, `Examples`.
+- `InputSynthesizer` returns `NotSolvable("else-chain")`; `effectOfMatchWord` returns null for a chain. Both were found by CHALLENGE, not by a failing acceptance test.
+- Opa gives a bodiless `else` a synthetic `true` body and an implicit head `true` NO location; inside a chain the implicit value is stated as `Literal("true")`.
+- `explico.json` `elseBranches` and the `Canonicalizer` `elseBranches` key exist ONLY for a chain, so every other rule's output and hash are unchanged.
+- Fixtures: `realistic/decision-objects/` (the requester's anonymised policies + one extra chain with a `with`), captures `ast/else-chain*.json`, probes 17 and 43.
+- Still falling back on real code (Trivy Kubernetes, 6 of 169 files): `else := msg if { msg := sprintf(...) }` (a branch value that is a local assigned in its body) and
+  unmodelled value expressions. Both honest; the first is a candidate promotion.

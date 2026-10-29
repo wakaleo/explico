@@ -21,7 +21,7 @@ explico renders a construct only as deep as it can classify it *exactly*:
 **leaf conditions are rendered, a reference to another rule is followed one
 level deep (as a link, never inlined), and anything requiring deeper
 structural understanding — comprehensions, `every`, arbitrary function
-bodies, `else`-chains, `with`-overrides — is deliberately shown as clearly
+bodies, `else`-chains with an unrenderable branch, `with`-overrides — is deliberately shown as clearly
 marked, verbatim source instead.** This is not a shortcoming to work around;
 it is the mechanism that makes the one-sentence guarantee ("every statement
 in the output is true by construction") possible at all. A construct landing
@@ -1039,7 +1039,7 @@ list to begin with, since it's a bug fix rather than a coverage promotion.)
 
 | Rank | Construct | Proposed template | Risk |
 |---|---|---|---|
-| — | `else`-chains rendered as multiple "Situation N" entries | *Not recommended near-term* | **High — explicitly deferred.** An else-chain's branches are priority-ordered and mutually exclusive (first match wins), not a simple OR of situations the way multiple `deny` bodies are. Modeling this incorrectly would reintroduce a MISLEADING finding of exactly the kind this session just fixed; needs its own design pass, not an incremental template tweak. |
+| ✔ | `else`-chains rendered as ordered "Situation N" entries | *Done: spec §14.52, with the ordering stated up front and all-or-nothing* | ~~High — explicitly deferred.~~ Originally deferred (**superseded**). An else-chain's branches are priority-ordered and mutually exclusive (first match wins), not a simple OR of situations the way multiple `deny` bodies are. Modeling this incorrectly would reintroduce a MISLEADING finding of exactly the kind this session just fixed; needs its own design pass, not an incremental template tweak. |
 | — | `walk()` builtin | *Not recommended* | Niche in this project's target domain (compliance/authz policies rarely need generic tree traversal); low estimated frequency doesn't justify the design cost. |
 
 ## Methodology

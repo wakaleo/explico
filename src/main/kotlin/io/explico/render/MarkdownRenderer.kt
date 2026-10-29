@@ -125,6 +125,9 @@ internal object MarkdownRenderer {
             // A rule that's only ever a `default` declaration (review item 3) has no body at all --
             // nothing to say beyond the heading/metadata/default lines already appended above.
             rule.bodies.isEmpty() -> Unit
+            // Spec §14.52: an `else` chain is only ever mapped as the SOLE definition of its name, so a group of one body is all that can carry it.
+            rule.bodies.size == 1 && rule.bodies.single().elseBranches.isNotEmpty() ->
+                appendElseChain(sb, rule.bodies.single(), anchorFor, functionAnchorFor, ruleValueAnchorFor)
             rule.bodies.size > 1 -> appendMultiBodySituations(sb, rule, anchorFor, functionAnchorFor, ruleValueAnchorFor)
             else -> appendSingleBody(sb, rule.bodies.single(), anchorFor, functionAnchorFor, ruleValueAnchorFor)
         }
@@ -158,7 +161,7 @@ internal object MarkdownRenderer {
     /**
      * Spec §14.44: what a match means, by the SAME name-based convention worked examples use ([WorkedExamples.outcomeWord],
      * spec §6.7), with that basis stated in the line itself so it is true by construction. Exact, case-sensitive names only;
-     * no line for any other name, a function, a split default or a rule with no body -- an effect is never guessed.
+     * no line for any other name, a function, a split default, a rule with no body or an else chain -- an effect is never guessed.
      */
     private fun effectOfMatchLine(rule: RuleGroup): String? =
         effectOfMatchWord(rule)?.let { "**Effect of a match:** $it *(by the `${rule.name}` naming convention)*" }
@@ -166,6 +169,9 @@ internal object MarkdownRenderer {
     /** The outcome word (`❌ denied` / `✅ allowed`) when [rule] has an effect by naming convention, else null. Shared by the card and the JSON export. */
     internal fun effectOfMatchWord(rule: RuleGroup): String? {
         if (rule.name !in setOf("deny", "violation", "allow") || rule.parameters.isNotEmpty() || rule.isSplitDefaultEntry || rule.bodies.isEmpty()) return null
+        // Spec §14.52: an else chain is always defined (its last branch applies when the others do not), so "a match" has no single meaning --
+        // its *Then:* lines state what each branch yields.
+        if (rule.bodies.any { it.elseBranches.isNotEmpty() }) return null
         return WorkedExamples.outcomeWord(rule.name, matched = true)
     }
 
@@ -245,6 +251,41 @@ internal object MarkdownRenderer {
                 sb.appendLine("*Produces:* \"${body.producesValue}\"")
                 sb.appendLine()
             }
+        }
+    }
+
+    /**
+     * An `else` chain (spec §14.52), ALL branches rendered: the head body and each `else` in source order, decided in order -- stated once, up
+     * front, because a numbered list of situations would otherwise read as the OR-ed kind above. Every situation after the first says that no
+     * earlier one applies (its conditions are only consulted then). A branch with no conditions applies whenever the ones before it did not,
+     * so it is "Otherwise" (the mapper only ever allows that for the last branch). Each branch ends with the value it yields.
+     */
+    private fun appendElseChain(
+        sb: StringBuilder,
+        body: RuleBody,
+        anchorFor: (Condition.RuleReference) -> String?,
+        functionAnchorFor: (Condition.FunctionCall) -> String?,
+        ruleValueAnchorFor: (Operand.RuleValueReference) -> String?,
+    ) {
+        sb.appendLine("This rule is decided in order; the first matching situation wins.")
+        sb.appendLine()
+        val branches = listOf(body.conditions to body.yieldsValue!!) + body.elseBranches.map { it.conditions to it.yieldsValue }
+        var situation = 0
+        branches.forEachIndexed { index, (conditions, value) ->
+            if (conditions.isEmpty()) {
+                sb.appendLine("### Otherwise")
+            } else {
+                situation++
+                val clause = if (index == 0) "all of the following are true" else "no earlier situation applies and all of the following are true"
+                sb.appendLine("### Situation $situation — $clause")
+            }
+            sb.appendLine()
+            if (conditions.isNotEmpty()) {
+                appendConditions(sb, conditions, anchorFor, functionAnchorFor, ruleValueAnchorFor)
+                sb.appendLine()
+            }
+            sb.appendLine("*Then:* ${ExpressionRenderer.renderValue(value, ruleValueAnchorFor)}")
+            sb.appendLine()
         }
     }
 

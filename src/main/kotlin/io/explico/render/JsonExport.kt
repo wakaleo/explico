@@ -178,6 +178,19 @@ internal object JsonExport {
         put("conditions", buildJsonArray { body.conditions.forEach { add(conditionObject(it)) } })
         put("produces", nullable(body.producesValue))
         put("yields", nullable(body.yieldsValue?.let { ExpressionRenderer.renderValue(it) { null } }))
+        // Spec §14.52: present only for an `else` chain (so every other export is unchanged). `conditions`/`yields` above are the chain's first
+        // branch; these are the ones after it, in order. An empty `conditions` is the closing "Otherwise" branch.
+        if (body.elseBranches.isNotEmpty()) {
+            put("elseBranches", buildJsonArray {
+                body.elseBranches.forEach { branch ->
+                    add(buildJsonObject {
+                        put("conditions", buildJsonArray { branch.conditions.forEach { add(conditionObject(it)) } })
+                        put("yields", ExpressionRenderer.renderValue(branch.yieldsValue) { null })
+                        put("sourceLine", branch.sourceLocation.row)
+                    })
+                }
+            })
+        }
     }
 
     private fun conditionObject(condition: Condition): JsonObject = buildJsonObject {

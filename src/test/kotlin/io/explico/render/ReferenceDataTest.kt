@@ -6,6 +6,7 @@
 package io.explico.render
 
 import io.explico.model.Condition
+import io.explico.model.ElseBranch
 import io.explico.model.Operand
 import io.explico.model.PathSegment
 import io.explico.model.PolicyPackage
@@ -35,6 +36,20 @@ class ReferenceDataTest {
             val policySet = PolicySet(listOf(PolicyPackage("p", listOf(rule("deny", condition)), listOf("f.rego"))))
 
             assertThat(ReferenceData.referencedDataPaths(policySet.packages[0].rules[0], policySet)).containsExactly(path("data", "limits", "max"))
+        }
+
+        @Test
+        @DisplayName("spec §14.52: a data path read only by a LATER branch of an else chain is reference data too")
+        fun aDataPathInALaterElseBranchIsCollected() {
+            val chain = RuleBody(
+                listOf(truthy(path("input", "x"))), null, null, SourceRef("f.rego", 1), "",
+                yieldsValue = Operand.Literal("1"),
+                elseBranches = listOf(ElseBranch(listOf(truthy(path("data", "limits", "max"))), Operand.Literal("2"), SourceRef("f.rego", 3))),
+            )
+            val ruleGroup = RuleGroup("verdict", metadata = null, default = null, bodies = listOf(chain))
+            val policySet = PolicySet(listOf(PolicyPackage("p", listOf(ruleGroup), listOf("f.rego"))))
+
+            assertThat(ReferenceData.referencedDataPaths(ruleGroup, policySet)).containsExactly(path("data", "limits", "max"))
         }
 
         @Test

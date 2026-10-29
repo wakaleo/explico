@@ -153,15 +153,14 @@ internal data class OpaRule(
     val default: Boolean = false,
     val location: OpaLocation? = null,
     /**
-     * Presence-only (spec §14): an `else := ... if {...}` branch is a nested, rule-shaped sibling
-     * structure under the `else` key, entirely separate from `body` -- before this field existed,
-     * `ignoreUnknownKeys` silently dropped it, and the else-branch's logic simply vanished from the
-     * rendered card with no fallback marker at all, not even "shown as source". Only used to detect
-     * non-null and demote the whole rule body to `Condition.Unrendered`; the branch's own nested
-     * body/head is never decoded, since correctly modeling "which branch's value applies" (a
-     * priority-ordered alternative, not a simple OR of situations) is out of scope.
+     * The next branch of an `else` chain (spec §14.52). Confirmed against a real `opa parse` capture
+     * (`src/test/resources/ast/else-chain.json`): the branch is a nested, rule-shaped object -- its own
+     * `head` (value, no annotations), `body` and `location`, and its own `else` for the branch after it, so
+     * a chain is a linked list. A bodiless final `else = v` has a synthetic single `true` body expr whose
+     * location equals the branch's own. Before spec §14 this was presence-only (and before that silently
+     * dropped by `ignoreUnknownKeys`).
      */
-    @SerialName("else") val elseBranch: JsonElement? = null,
+    @SerialName("else") val elseBranch: OpaRule? = null,
 )
 
 @Serializable

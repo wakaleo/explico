@@ -1,0 +1,1624 @@
+{
+  "package": {
+    "location": {
+      "file": "src/test/resources/ast/else-chain-edge.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 1,
+          "col": 9,
+          "text": "Y2hhaW5lZGdl"
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 1,
+          "col": 9,
+          "text": "Y2hhaW5lZGdl"
+        },
+        "type": "string",
+        "value": "chainedge"
+      }
+    ]
+  },
+  "rules": [
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 4,
+            "col": 5,
+            "text": "aW5wdXQuc2NvcmUgPj0gOTA="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 4,
+                "col": 17,
+                "text": "Pj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 4,
+                    "col": 17,
+                    "text": "Pj0="
+                  },
+                  "type": "var",
+                  "value": "gte"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 4,
+                "col": 5,
+                "text": "aW5wdXQuc2NvcmU="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 4,
+                    "col": 5,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 4,
+                    "col": 11,
+                    "text": "c2NvcmU="
+                  },
+                  "type": "string",
+                  "value": "score"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 4,
+                "col": 20,
+                "text": "OTA="
+              },
+              "type": "number",
+              "value": 90
+            }
+          ]
+        }
+      ],
+      "else": {
+        "body": [
+          {
+            "index": 0,
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 6,
+              "col": 5,
+              "text": "aW5wdXQuc2NvcmUgPj0gNTAgd2l0aCBpbnB1dC5zY29yZSBhcyA2MA=="
+            },
+            "terms": [
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 6,
+                  "col": 17,
+                  "text": "Pj0="
+                },
+                "type": "ref",
+                "value": [
+                  {
+                    "location": {
+                      "file": "src/test/resources/ast/else-chain-edge.rego",
+                      "row": 6,
+                      "col": 17,
+                      "text": "Pj0="
+                    },
+                    "type": "var",
+                    "value": "gte"
+                  }
+                ]
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 6,
+                  "col": 5,
+                  "text": "aW5wdXQuc2NvcmU="
+                },
+                "type": "ref",
+                "value": [
+                  {
+                    "location": {
+                      "file": "src/test/resources/ast/else-chain-edge.rego",
+                      "row": 6,
+                      "col": 5,
+                      "text": "aW5wdXQ="
+                    },
+                    "type": "var",
+                    "value": "input"
+                  },
+                  {
+                    "location": {
+                      "file": "src/test/resources/ast/else-chain-edge.rego",
+                      "row": 6,
+                      "col": 11,
+                      "text": "c2NvcmU="
+                    },
+                    "type": "string",
+                    "value": "score"
+                  }
+                ]
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 6,
+                  "col": 20,
+                  "text": "NTA="
+                },
+                "type": "number",
+                "value": 50
+              }
+            ],
+            "with": [
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 6,
+                  "col": 23,
+                  "text": "d2l0aCBpbnB1dC5zY29yZSBhcyA2MA=="
+                },
+                "target": {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 6,
+                    "col": 28,
+                    "text": "aW5wdXQuc2NvcmU="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "src/test/resources/ast/else-chain-edge.rego",
+                        "row": 6,
+                        "col": 28,
+                        "text": "aW5wdXQ="
+                      },
+                      "type": "var",
+                      "value": "input"
+                    },
+                    {
+                      "location": {
+                        "file": "src/test/resources/ast/else-chain-edge.rego",
+                        "row": 6,
+                        "col": 34,
+                        "text": "c2NvcmU="
+                      },
+                      "type": "string",
+                      "value": "score"
+                    }
+                  ]
+                },
+                "value": {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 6,
+                    "col": 43,
+                    "text": "NjA="
+                  },
+                  "type": "number",
+                  "value": 60
+                }
+              }
+            ]
+          }
+        ],
+        "else": {
+          "body": [
+            {
+              "index": 0,
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 7,
+                "col": 3,
+                "text": "ZWxzZSA9ICJicm9uemUi"
+              },
+              "terms": {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 7,
+                  "col": 3,
+                  "text": "ZWxzZSA9ICJicm9uemUi"
+                },
+                "type": "boolean",
+                "value": true
+              }
+            }
+          ],
+          "head": {
+            "name": "tier",
+            "value": {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 7,
+                "col": 10,
+                "text": "ImJyb256ZSI="
+              },
+              "type": "string",
+              "value": "bronze"
+            },
+            "ref": [
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 3,
+                  "col": 1,
+                  "text": "dGllcg=="
+                },
+                "type": "var",
+                "value": "tier"
+              }
+            ],
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 7,
+              "col": 3,
+              "text": "ZWxzZSA9ICJicm9uemUi"
+            }
+          },
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 7,
+            "col": 3,
+            "text": "ZWxzZSA9ICJicm9uemUi"
+          }
+        },
+        "head": {
+          "name": "tier",
+          "value": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 5,
+              "col": 10,
+              "text": "InNpbHZlciI="
+            },
+            "type": "string",
+            "value": "silver"
+          },
+          "ref": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 3,
+                "col": 1,
+                "text": "dGllcg=="
+              },
+              "type": "var",
+              "value": "tier"
+            }
+          ],
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 5,
+            "col": 3,
+            "text": "ZWxzZSA9ICJzaWx2ZXIi"
+          }
+        },
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 5,
+          "col": 3,
+          "text": "ZWxzZSA9ICJzaWx2ZXIiIGlmIHsKICAgIGlucHV0LnNjb3JlID49IDUwIHdpdGggaW5wdXQuc2NvcmUgYXMgNjAKfSBlbHNlID0gImJyb256ZSI="
+        }
+      },
+      "head": {
+        "name": "tier",
+        "value": {
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 3,
+            "col": 8,
+            "text": "ImdvbGQi"
+          },
+          "type": "string",
+          "value": "gold"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 3,
+              "col": 1,
+              "text": "dGllcg=="
+            },
+            "type": "var",
+            "value": "tier"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 3,
+          "col": 1,
+          "text": "dGllciA9ICJnb2xkIg=="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/ast/else-chain-edge.rego",
+        "row": 3,
+        "col": 1,
+        "text": "dGllciA9ICJnb2xkIiBpZiB7CiAgICBpbnB1dC5zY29yZSA+PSA5MAp9IGVsc2UgPSAic2lsdmVyIiBpZiB7CiAgICBpbnB1dC5zY29yZSA+PSA1MCB3aXRoIGlucHV0LnNjb3JlIGFzIDYwCn0gZWxzZSA9ICJicm9uemUi"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 10,
+            "col": 5,
+            "text": "aW5wdXQuYQ=="
+          },
+          "terms": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 10,
+              "col": 5,
+              "text": "aW5wdXQuYQ=="
+            },
+            "type": "ref",
+            "value": [
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 10,
+                  "col": 5,
+                  "text": "aW5wdXQ="
+                },
+                "type": "var",
+                "value": "input"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 10,
+                  "col": 11,
+                  "text": "YQ=="
+                },
+                "type": "string",
+                "value": "a"
+              }
+            ]
+          }
+        }
+      ],
+      "else": {
+        "body": [
+          {
+            "index": 0,
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 11,
+              "col": 3,
+              "text": "ZWxzZSA9IDIgaWYgdHJ1ZSBlbHNlID0gMw=="
+            },
+            "terms": {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 11,
+                "col": 3,
+                "text": "ZWxzZSA9IDIgaWYgdHJ1ZSBlbHNlID0gMw=="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "else": {
+          "body": [
+            {
+              "index": 0,
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 11,
+                "col": 20,
+                "text": "ZWxzZSA9IDM="
+              },
+              "terms": {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 11,
+                  "col": 20,
+                  "text": "ZWxzZSA9IDM="
+                },
+                "type": "boolean",
+                "value": true
+              }
+            }
+          ],
+          "head": {
+            "name": "early",
+            "value": {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 11,
+                "col": 27,
+                "text": "Mw=="
+              },
+              "type": "number",
+              "value": 3
+            },
+            "ref": [
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 9,
+                  "col": 1,
+                  "text": "ZWFybHk="
+                },
+                "type": "var",
+                "value": "early"
+              }
+            ],
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 11,
+              "col": 20,
+              "text": "ZWxzZSA9IDM="
+            }
+          },
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 11,
+            "col": 20,
+            "text": "ZWxzZSA9IDM="
+          }
+        },
+        "head": {
+          "name": "early",
+          "value": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 11,
+              "col": 10,
+              "text": "Mg=="
+            },
+            "type": "number",
+            "value": 2
+          },
+          "ref": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 9,
+                "col": 1,
+                "text": "ZWFybHk="
+              },
+              "type": "var",
+              "value": "early"
+            }
+          ],
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 11,
+            "col": 3,
+            "text": "ZWxzZSA9IDI="
+          }
+        },
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 11,
+          "col": 3,
+          "text": "ZWxzZSA9IDIgaWYgdHJ1ZSBlbHNlID0gMw=="
+        }
+      },
+      "head": {
+        "name": "early",
+        "value": {
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 9,
+            "col": 9,
+            "text": "MQ=="
+          },
+          "type": "number",
+          "value": 1
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 9,
+              "col": 1,
+              "text": "ZWFybHk="
+            },
+            "type": "var",
+            "value": "early"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 9,
+          "col": 1,
+          "text": "ZWFybHkgPSAx"
+        }
+      },
+      "location": {
+        "file": "src/test/resources/ast/else-chain-edge.rego",
+        "row": 9,
+        "col": 1,
+        "text": "ZWFybHkgPSAxIGlmIHsKICAgIGlucHV0LmEKfSBlbHNlID0gMiBpZiB0cnVlIGVsc2UgPSAz"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 13,
+            "col": 20,
+            "text": "dHJ1ZQ=="
+          },
+          "terms": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 13,
+              "col": 20,
+              "text": "dHJ1ZQ=="
+            },
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "else": {
+        "body": [
+          {
+            "index": 0,
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 13,
+              "col": 25,
+              "text": "ZWxzZSA9IDI="
+            },
+            "terms": {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 13,
+                "col": 25,
+                "text": "ZWxzZSA9IDI="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "head": {
+          "name": "first_empty",
+          "value": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 13,
+              "col": 32,
+              "text": "Mg=="
+            },
+            "type": "number",
+            "value": 2
+          },
+          "ref": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 13,
+                "col": 1,
+                "text": "Zmlyc3RfZW1wdHk="
+              },
+              "type": "var",
+              "value": "first_empty"
+            }
+          ],
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 13,
+            "col": 25,
+            "text": "ZWxzZSA9IDI="
+          }
+        },
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 13,
+          "col": 25,
+          "text": "ZWxzZSA9IDI="
+        }
+      },
+      "head": {
+        "name": "first_empty",
+        "value": {
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 13,
+            "col": 15,
+            "text": "MQ=="
+          },
+          "type": "number",
+          "value": 1
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 13,
+              "col": 1,
+              "text": "Zmlyc3RfZW1wdHk="
+            },
+            "type": "var",
+            "value": "first_empty"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 13,
+          "col": 1,
+          "text": "Zmlyc3RfZW1wdHkgPSAx"
+        }
+      },
+      "location": {
+        "file": "src/test/resources/ast/else-chain-edge.rego",
+        "row": 13,
+        "col": 1,
+        "text": "Zmlyc3RfZW1wdHkgPSAxIGlmIHRydWUgZWxzZSA9IDI="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 16,
+            "col": 5,
+            "text": "eCA+IDE="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 16,
+                "col": 7,
+                "text": "Pg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 16,
+                    "col": 7,
+                    "text": "Pg=="
+                  },
+                  "type": "var",
+                  "value": "gt"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 16,
+                "col": 5,
+                "text": "eA=="
+              },
+              "type": "var",
+              "value": "x"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 16,
+                "col": 9,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "else": {
+        "body": [
+          {
+            "index": 0,
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 17,
+              "col": 3,
+              "text": "ZWxzZSA9IDI="
+            },
+            "terms": {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 17,
+                "col": 3,
+                "text": "ZWxzZSA9IDI="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "head": {
+          "name": "f",
+          "args": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 15,
+                "col": 3,
+                "text": "eA=="
+              },
+              "type": "var",
+              "value": "x"
+            }
+          ],
+          "value": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 17,
+              "col": 10,
+              "text": "Mg=="
+            },
+            "type": "number",
+            "value": 2
+          },
+          "ref": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 15,
+                "col": 1,
+                "text": "Zg=="
+              },
+              "type": "var",
+              "value": "f"
+            }
+          ],
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 17,
+            "col": 3,
+            "text": "ZWxzZSA9IDI="
+          }
+        },
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 17,
+          "col": 3,
+          "text": "ZWxzZSA9IDI="
+        }
+      },
+      "head": {
+        "name": "f",
+        "args": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 15,
+              "col": 3,
+              "text": "eA=="
+            },
+            "type": "var",
+            "value": "x"
+          }
+        ],
+        "value": {
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 15,
+            "col": 8,
+            "text": "MQ=="
+          },
+          "type": "number",
+          "value": 1
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 15,
+              "col": 1,
+              "text": "Zg=="
+            },
+            "type": "var",
+            "value": "f"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 15,
+          "col": 1,
+          "text": "Zih4KSA9IDE="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/ast/else-chain-edge.rego",
+        "row": 15,
+        "col": 1,
+        "text": "Zih4KSA9IDEgaWYgewogICAgeCA+IDEKfSBlbHNlID0gMg=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 19,
+            "col": 12,
+            "text": "aW5wdXQuYQ=="
+          },
+          "terms": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 19,
+              "col": 12,
+              "text": "aW5wdXQuYQ=="
+            },
+            "type": "ref",
+            "value": [
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 19,
+                  "col": 12,
+                  "text": "aW5wdXQ="
+                },
+                "type": "var",
+                "value": "input"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 19,
+                  "col": 18,
+                  "text": "YQ=="
+                },
+                "type": "string",
+                "value": "a"
+              }
+            ]
+          }
+        }
+      ],
+      "else": {
+        "body": [
+          {
+            "index": 0,
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 19,
+              "col": 36,
+              "text": "aW5wdXQuYg=="
+            },
+            "terms": {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 19,
+                "col": 36,
+                "text": "aW5wdXQuYg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 19,
+                    "col": 36,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 19,
+                    "col": 42,
+                    "text": "Yg=="
+                  },
+                  "type": "string",
+                  "value": "b"
+                }
+              ]
+            }
+          }
+        ],
+        "head": {
+          "name": "g",
+          "value": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 19,
+              "col": 29,
+              "text": "Mg=="
+            },
+            "type": "number",
+            "value": 2
+          },
+          "ref": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 19,
+                "col": 1,
+                "text": "Zw=="
+              },
+              "type": "var",
+              "value": "g"
+            }
+          ],
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 19,
+            "col": 22,
+            "text": "ZWxzZSA9IDI="
+          }
+        },
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 19,
+          "col": 22,
+          "text": "ZWxzZSA9IDIgaWYgeyBpbnB1dC5iIH0="
+        }
+      },
+      "head": {
+        "name": "g",
+        "value": {
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 19,
+            "col": 5,
+            "text": "MQ=="
+          },
+          "type": "number",
+          "value": 1
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 19,
+              "col": 1,
+              "text": "Zw=="
+            },
+            "type": "var",
+            "value": "g"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 19,
+          "col": 1,
+          "text": "ZyA9IDE="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/ast/else-chain-edge.rego",
+        "row": 19,
+        "col": 1,
+        "text": "ZyA9IDEgaWYgeyBpbnB1dC5hIH0gZWxzZSA9IDIgaWYgeyBpbnB1dC5iIH0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 22,
+            "col": 5,
+            "text": "biA6PSBpbnB1dC5h"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 22,
+                "col": 7,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 22,
+                    "col": 7,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 22,
+                "col": 5,
+                "text": "bg=="
+              },
+              "type": "var",
+              "value": "n"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 22,
+                "col": 10,
+                "text": "aW5wdXQuYQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 22,
+                    "col": 10,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 22,
+                    "col": 16,
+                    "text": "YQ=="
+                  },
+                  "type": "string",
+                  "value": "a"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 23,
+            "col": 5,
+            "text": "biA+IDE="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 23,
+                "col": 7,
+                "text": "Pg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 23,
+                    "col": 7,
+                    "text": "Pg=="
+                  },
+                  "type": "var",
+                  "value": "gt"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 23,
+                "col": 5,
+                "text": "bg=="
+              },
+              "type": "var",
+              "value": "n"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 23,
+                "col": 9,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "else": {
+        "body": [
+          {
+            "index": 0,
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 25,
+              "col": 5,
+              "text": "biA+IDI="
+            },
+            "terms": [
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 25,
+                  "col": 7,
+                  "text": "Pg=="
+                },
+                "type": "ref",
+                "value": [
+                  {
+                    "location": {
+                      "file": "src/test/resources/ast/else-chain-edge.rego",
+                      "row": 25,
+                      "col": 7,
+                      "text": "Pg=="
+                    },
+                    "type": "var",
+                    "value": "gt"
+                  }
+                ]
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 25,
+                  "col": 5,
+                  "text": "bg=="
+                },
+                "type": "var",
+                "value": "n"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 25,
+                  "col": 9,
+                  "text": "Mg=="
+                },
+                "type": "number",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "head": {
+          "name": "scope",
+          "value": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 24,
+              "col": 10,
+              "text": "Mg=="
+            },
+            "type": "number",
+            "value": 2
+          },
+          "ref": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 21,
+                "col": 1,
+                "text": "c2NvcGU="
+              },
+              "type": "var",
+              "value": "scope"
+            }
+          ],
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 24,
+            "col": 3,
+            "text": "ZWxzZSA9IDI="
+          }
+        },
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 24,
+          "col": 3,
+          "text": "ZWxzZSA9IDIgaWYgewogICAgbiA+IDIKfQ=="
+        }
+      },
+      "head": {
+        "name": "scope",
+        "value": {
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 21,
+            "col": 9,
+            "text": "MQ=="
+          },
+          "type": "number",
+          "value": 1
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 21,
+              "col": 1,
+              "text": "c2NvcGU="
+            },
+            "type": "var",
+            "value": "scope"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 21,
+          "col": 1,
+          "text": "c2NvcGUgPSAx"
+        }
+      },
+      "location": {
+        "file": "src/test/resources/ast/else-chain-edge.rego",
+        "row": 21,
+        "col": 1,
+        "text": "c2NvcGUgPSAxIGlmIHsKICAgIG4gOj0gaW5wdXQuYQogICAgbiA+IDEKfSBlbHNlID0gMiBpZiB7CiAgICBuID4gMgp9"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 29,
+            "col": 5,
+            "text": "biA6PSBpbnB1dC5h"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 29,
+                "col": 7,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 29,
+                    "col": 7,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 29,
+                "col": 5,
+                "text": "bg=="
+              },
+              "type": "var",
+              "value": "n"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 29,
+                "col": 10,
+                "text": "aW5wdXQuYQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 29,
+                    "col": 10,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 29,
+                    "col": 16,
+                    "text": "YQ=="
+                  },
+                  "type": "string",
+                  "value": "a"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 30,
+            "col": 5,
+            "text": "biA+IDE="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 30,
+                "col": 7,
+                "text": "Pg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain-edge.rego",
+                    "row": 30,
+                    "col": 7,
+                    "text": "Pg=="
+                  },
+                  "type": "var",
+                  "value": "gt"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 30,
+                "col": 5,
+                "text": "bg=="
+              },
+              "type": "var",
+              "value": "n"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 30,
+                "col": 9,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "else": {
+        "body": [
+          {
+            "index": 0,
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 32,
+              "col": 5,
+              "text": "biA6PSBpbnB1dC5i"
+            },
+            "terms": [
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 32,
+                  "col": 7,
+                  "text": "Oj0="
+                },
+                "type": "ref",
+                "value": [
+                  {
+                    "location": {
+                      "file": "src/test/resources/ast/else-chain-edge.rego",
+                      "row": 32,
+                      "col": 7,
+                      "text": "Oj0="
+                    },
+                    "type": "var",
+                    "value": "assign"
+                  }
+                ]
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 32,
+                  "col": 5,
+                  "text": "bg=="
+                },
+                "type": "var",
+                "value": "n"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 32,
+                  "col": 10,
+                  "text": "aW5wdXQuYg=="
+                },
+                "type": "ref",
+                "value": [
+                  {
+                    "location": {
+                      "file": "src/test/resources/ast/else-chain-edge.rego",
+                      "row": 32,
+                      "col": 10,
+                      "text": "aW5wdXQ="
+                    },
+                    "type": "var",
+                    "value": "input"
+                  },
+                  {
+                    "location": {
+                      "file": "src/test/resources/ast/else-chain-edge.rego",
+                      "row": 32,
+                      "col": 16,
+                      "text": "Yg=="
+                    },
+                    "type": "string",
+                    "value": "b"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "index": 1,
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 33,
+              "col": 5,
+              "text": "biA+IDI="
+            },
+            "terms": [
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 33,
+                  "col": 7,
+                  "text": "Pg=="
+                },
+                "type": "ref",
+                "value": [
+                  {
+                    "location": {
+                      "file": "src/test/resources/ast/else-chain-edge.rego",
+                      "row": 33,
+                      "col": 7,
+                      "text": "Pg=="
+                    },
+                    "type": "var",
+                    "value": "gt"
+                  }
+                ]
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 33,
+                  "col": 5,
+                  "text": "bg=="
+                },
+                "type": "var",
+                "value": "n"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain-edge.rego",
+                  "row": 33,
+                  "col": 9,
+                  "text": "Mg=="
+                },
+                "type": "number",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "head": {
+          "name": "per_branch_binding",
+          "value": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 31,
+              "col": 10,
+              "text": "Mg=="
+            },
+            "type": "number",
+            "value": 2
+          },
+          "ref": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain-edge.rego",
+                "row": 28,
+                "col": 1,
+                "text": "cGVyX2JyYW5jaF9iaW5kaW5n"
+              },
+              "type": "var",
+              "value": "per_branch_binding"
+            }
+          ],
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 31,
+            "col": 3,
+            "text": "ZWxzZSA9IDI="
+          }
+        },
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 31,
+          "col": 3,
+          "text": "ZWxzZSA9IDIgaWYgewogICAgbiA6PSBpbnB1dC5iCiAgICBuID4gMgp9"
+        }
+      },
+      "head": {
+        "name": "per_branch_binding",
+        "value": {
+          "location": {
+            "file": "src/test/resources/ast/else-chain-edge.rego",
+            "row": 28,
+            "col": 22,
+            "text": "MQ=="
+          },
+          "type": "number",
+          "value": 1
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain-edge.rego",
+              "row": 28,
+              "col": 1,
+              "text": "cGVyX2JyYW5jaF9iaW5kaW5n"
+            },
+            "type": "var",
+            "value": "per_branch_binding"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/ast/else-chain-edge.rego",
+          "row": 28,
+          "col": 1,
+          "text": "cGVyX2JyYW5jaF9iaW5kaW5nID0gMQ=="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/ast/else-chain-edge.rego",
+        "row": 28,
+        "col": 1,
+        "text": "cGVyX2JyYW5jaF9iaW5kaW5nID0gMSBpZiB7CiAgICBuIDo9IGlucHV0LmEKICAgIG4gPiAxCn0gZWxzZSA9IDIgaWYgewogICAgbiA6PSBpbnB1dC5iCiAgICBuID4gMgp9"
+      }
+    }
+  ]
+}

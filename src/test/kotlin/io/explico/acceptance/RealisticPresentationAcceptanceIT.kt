@@ -27,6 +27,7 @@ class RealisticPresentationAcceptanceIT {
     companion object {
         private lateinit var files: Map<String, String>
         private lateinit var builtinFiles: Map<String, String>
+        private lateinit var chainFiles: Map<String, String>
         private var messageFiles: Map<String, String> = emptyMap()
         private var messagesError: Throwable? = null
 
@@ -41,6 +42,7 @@ class RealisticPresentationAcceptanceIT {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             files = render("src/test/resources/realistic/policies")
             builtinFiles = render("src/test/resources/realistic/builtins")
+            chainFiles = render("src/test/resources/realistic/decision-objects/policies")
             // Item 16: rendering object-valued sets with worked examples crashes today -- capture it so
             // the failure is an assertion, not an exception.
             try {
@@ -101,7 +103,10 @@ class RealisticPresentationAcceptanceIT {
     @DisplayName("Item 13 — else-chain header")
     inner class ElseChain {
 
-        private val card get() = section(files["authz.md"] ?: "", "authz.risk_level")
+        // Spec §14.52 repoint: this class used `authz.risk_level` -- a chain whose every branch is renderable, so it is now shown as ordered
+        // situations (RealisticDecisionObjectsAcceptanceIT). The generic else-chain header is still what a chain with ONE unrenderable branch
+        // gets, so the same assertions now pin that chain: decision-objects' CTRL-FALLBACK, whose middle branch uses `with`.
+        private val card get() = section(chainFiles["decision_fallback.md"] ?: "", "CTRL-FALLBACK")
 
         @Test
         @DisplayName("the ⚠ bullet's header says it is an else chain whose branches are tried in order")
@@ -116,7 +121,7 @@ class RealisticPresentationAcceptanceIT {
         @DisplayName("the fenced source still holds the whole chain verbatim, and coverage stays 0 of 1")
         fun sourceAndCoverageUnchanged() {
             val fence = fencedBlocks(card).joinToString("\n")
-            assertThat(fence).contains("risk_level := \"high\" if {").contains("} else := \"medium\" if {").contains("} else := \"low\"")
+            assertThat(fence).contains("tier = \"gold\" if {").contains("} else = \"silver\" if {").contains("} else = \"bronze\"")
             assertThat(card).contains("0 of 1 conditions")
         }
 

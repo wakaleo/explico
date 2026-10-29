@@ -11,6 +11,7 @@ package io.explico.audit
 
 import io.explico.Explico
 import io.explico.model.Condition
+import io.explico.model.Operand
 import io.explico.model.PolicySet
 import io.explico.opa.OpaRunner
 import io.explico.render.ExpressionRenderer
@@ -267,17 +268,35 @@ class RegoCoverageAuditTest {
     }
 
     @Test
-    fun elseChainFallsBackAsOneWholeBlockCoveringEveryBranch() {
-        // The confirmed silent-data-loss finding (spec §14): before OpaRule modeled `else`, the
-        // whole else-branch simply vanished (ignoreUnknownKeys), and the card showed only the `if`
-        // branch as though it were the rule's entire logic. Now demoted to a single Unrendered
-        // condition whose source spans the whole chain (opa's own rule.location already does).
-        val conditions = conditionsOf(loadProbe("17-else-chain.rego"), "verdict")
-        assertThat(conditions).hasSize(1)
-        assertUnrendered(conditions.single(), "else-chain")
-        val source = (conditions.single() as Condition.Unrendered).sourceText
-        assertThat(source).contains("\"blocked\"").contains("\"allowed\"").contains("else")
+    fun elseChainWithEveryBranchRenderableBecomesOrderedBranches() {
+        // Spec §14.52 (supersedes the §14 finding that demoted EVERY else-chain to one fallback block -- that finding was about
+        // silent data loss, which stays fixed: no branch ever vanishes). A chain whose branches all map is now the head body plus
+        // `elseBranches` in source order; the explicit-`true` last branch applies always (no conditions) and yields "allowed".
+        val body = policySetBody(loadProbe("17-else-chain.rego"), "verdict")
+        assertThat(body.conditions.map { render(it) }).containsExactly(
+            "`deployment ▸ environment` is `\"production\"`",
+            "`change ▸ ticket ▸ approved` is absent or false",
+        )
+        assertThat(body.yieldsValue).isEqualTo(Operand.Literal("\"blocked\""))
+        val last = body.elseBranches.single()
+        assertThat(last.conditions).isEmpty()
+        assertThat(last.yieldsValue).isEqualTo(Operand.Literal("\"allowed\""))
     }
+
+    @Test
+    fun elseChainWithOneUnrenderableBranchStaysOneWholeBlockCoveringEveryBranch() {
+        // The confirmed silent-data-loss finding (spec §14): before OpaRule modeled `else`, the whole else-branch simply vanished and
+        // the card showed only the `if` branch as though it were the rule's entire logic. A chain with ONE unrenderable condition
+        // (here a `with` in the middle branch) is still all-or-nothing: a single Unrendered whose source spans the whole chain.
+        val body = policySetBody(loadProbe("43-else-chain-unrenderable.rego"), "verdict")
+        assertThat(body.elseBranches).isEmpty()
+        assertUnrendered(body.conditions.single(), "else-chain")
+        val source = (body.conditions.single() as Condition.Unrendered).sourceText
+        assertThat(source).contains("\"blocked\"").contains("\"review\"").contains("\"allowed\"").contains("with input.deployment.size as 5")
+    }
+
+    private fun policySetBody(policySet: PolicySet, ruleName: String) =
+        policySet.packages.single().rules.single { it.name == ruleName }.bodies.single()
 
     @Test
     fun partialObjectRuleWithPlainStringValueRendersFaithfully() {

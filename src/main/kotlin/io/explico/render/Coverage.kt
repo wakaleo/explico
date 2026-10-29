@@ -7,6 +7,7 @@ package io.explico.render
 import io.explico.model.Condition
 import io.explico.model.Operand
 import io.explico.model.PolicyPackage
+import io.explico.model.RuleBody
 import io.explico.model.RuleGroup
 
 /**
@@ -70,7 +71,10 @@ internal object Coverage {
         else -> 0
     }
 
-    private fun conditionsOf(rule: RuleGroup): List<Condition> = rule.bodies.flatMap { it.conditions }
+    private fun conditionsOf(rule: RuleGroup): List<Condition> = rule.bodies.flatMap { conditionsOf(it) }
+
+    /** Every condition of [body]: its own AND the conditions of every branch of its `else` chain (spec §14.52), each shown on the card and so each counted. */
+    fun conditionsOf(body: RuleBody): List<Condition> = body.conditions + body.elseBranches.flatMap { it.conditions }
 
     /** Exposed (not private) so §6.7's referenced-path collection can reuse this instead of a third copy. */
     fun operandsOf(condition: Condition): List<Operand> = when (condition) {

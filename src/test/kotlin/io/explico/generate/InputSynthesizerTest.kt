@@ -397,4 +397,17 @@ class InputSynthesizerTest {
         assertThat(solved(b).toString()).isEqualTo(solved(b).toString())
         assertThat(solved(b).toString()).isEqualTo("""{"env":"production","containers":[{"privileged":true,"name":"sample"}],"node":"sample"}""")
     }
+
+    @Test
+    fun anElseChainIsNotSolvableEvenWhenItsFirstBranchIs() {
+        // Spec §14.52: the solver models one body's conditions. A later branch applies only when every earlier one fails, which it does not
+        // model, so a "satisfies every condition" input for the first branch alone would misdescribe what the rule does -- never a guess.
+        val chain = RuleBody(
+            listOf(eq(path("a"), lit("1"))), null, null, SourceRef("f.rego", 1), "",
+            yieldsValue = lit("\"x\""),
+            elseBranches = listOf(io.explico.model.ElseBranch(emptyList(), lit("\"y\""), SourceRef("f.rego", 3))),
+        )
+        assertThat(reason(chain)).isEqualTo("else-chain")
+        assertThat(reason(chain, violate = 0)).isEqualTo("else-chain")
+    }
 }

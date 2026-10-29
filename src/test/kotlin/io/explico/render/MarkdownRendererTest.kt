@@ -1146,4 +1146,33 @@ class MarkdownRendererTest {
             assertThat(card).doesNotContain("](").contains("`sibling`")
         }
     }
+
+    @Nested
+    inner class ElseChainEffectOfMatch {
+
+        private fun allowRule(elseBranches: List<io.explico.model.ElseBranch>) = RuleGroup(
+            "allow", null, null,
+            bodies = listOf(
+                RuleBody(
+                    listOf(Condition.Truthy(Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("admin"))), negated = false)),
+                    null, null, SourceRef("f.rego", 1), "",
+                    yieldsValue = Operand.Literal("true"), elseBranches = elseBranches,
+                ),
+            ),
+        )
+
+        @Test
+        @DisplayName("spec §14.52: an `allow` written as an else chain gets no 'Effect of a match' line -- the rule is always defined, so 'matched' is ambiguous and the *Then:* lines already say what each branch yields")
+        fun noEffectLineForAChain() {
+            val chain = allowRule(listOf(io.explico.model.ElseBranch(emptyList(), Operand.Literal("false"), SourceRef("f.rego", 3))))
+
+            assertThat(MarkdownRenderer.effectOfMatchWord(chain)).isNull()
+        }
+
+        @Test
+        @DisplayName("guard: the same rule without an else keeps its effect line")
+        fun plainAllowKeepsItsEffectLine() {
+            assertThat(MarkdownRenderer.effectOfMatchWord(allowRule(emptyList()))).isNotNull()
+        }
+    }
 }

@@ -181,10 +181,11 @@ class RealisticRuleValuesAcceptanceIT {
         }
 
         @Test
-        @DisplayName("guard: the authz.risk_level else-chain card is unchanged -- still one ⚠ bullet")
-        fun elseChainCardUnchanged() {
+        @DisplayName("guard: the authz.risk_level else-chain card is not broken by rule-value links -- since spec §14.52 it is rendered as ordered situations, no ⚠ bullet")
+        fun elseChainCardRendersAsOrderedSituations() {
             val card = section(corpus["authz.md"] ?: "", "## authz.risk_level")
-            assertThat(bullets(card).filter { it.startsWith("- ⚠") }).hasSize(1)
+            assertThat(bullets(card).filter { it.startsWith("- ⚠") }).isEmpty()
+            assertThat(card).contains("### Situation 1").contains("### Situation 2").contains("### Otherwise")
         }
     }
 }

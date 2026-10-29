@@ -11,8 +11,7 @@
 
 ## What it shows as source
 
-These are rendered as a marked, verbatim-source block, never as prose: a `with` override, an `else` chain (its branches are tried in
-order, which a list of situations would misstate), and a comprehension or `every` block that contains anything explico cannot render.
+These are rendered as a marked, verbatim-source block, never as prose: a `with` override, an `else` chain that contains anything explico cannot render (one that renders fully is shown as ordered situations: "decided in order; the first matching situation wins"), and a comprehension or `every` block that contains anything explico cannot render.
 The [Rego coverage reference](rego-coverage.md) lists every construct and builtin, what it does today and why.
 
 ## Frequently asked questions

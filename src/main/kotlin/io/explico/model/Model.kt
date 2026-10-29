@@ -154,7 +154,23 @@ public data class RuleBody @JvmOverloads constructor(
      * message arguments are undefined produces no message at all, so a derived input must define them.
      */
     val messageArguments: List<Operand.Path> = emptyList(),
+    /**
+     * The branches AFTER this body in an `else` chain (spec §14.52), in source order; empty for every rule that
+     * has no `else`. When non-empty this body IS the chain's first branch -- its [conditions] and [yieldsValue]
+     * are branch 1 -- and the rule is decided in order: the first branch whose conditions all hold wins, unlike
+     * sibling bodies, which are OR-ed. Only ever populated when EVERY condition of EVERY branch was rendered
+     * (all-or-nothing, like `every`); otherwise the whole chain is one [Condition.Unrendered] `else-chain`.
+     * Inside a chain [yieldsValue] is never null: an implicit `true` head value is stated as `Literal("true")`.
+     */
+    val elseBranches: List<ElseBranch> = emptyList(),
 )
+
+/**
+ * One later branch of an `else` chain (spec §14.52). An empty [conditions] list means the branch always applies
+ * (a bodiless `else = v`), which is only ever the LAST branch -- the mapper refuses to build a chain otherwise.
+ * [yieldsValue] is the value the branch produces; [sourceLocation] is the branch's own row.
+ */
+public data class ElseBranch(val conditions: List<Condition>, val yieldsValue: Operand, val sourceLocation: SourceRef)
 
 /** A single leaf condition within a rule body. */
 public sealed interface Condition {

@@ -56,7 +56,7 @@ Library: `Explico.render(policySet, policyDir, examples, dataDir, generateExampl
 | `default`, `constantValue` | string or null | The rule's `default` outcome / constant value, as the card shows it |
 | `isSplitDefaultEntry` | boolean | True for the separate "Default for ..." card |
 | `coverage` | object | `{rendered, total, percent}` for this rule |
-| `bodies` | array | Each body: `conditions`, `produces` (the message, or null), `yields` (a conditional rule's value, or null) |
+| `bodies` | array | Each body: `conditions`, `produces` (the message, or null), `yields` (a conditional rule's value, or null). A rule written as an `else` chain whose every branch could be rendered also has `elseBranches`: the branches after the first, in order, each `{conditions, yields, sourceLine}` (the body's own `conditions`/`yields` are the first branch; an empty `conditions` is the closing "Otherwise"). Absent for every other rule |
 | `referenceData` | array | `data.*` documents the rule reads: `path` (`data.release.exempt_services`), `breadcrumb`, `defined`, `value` (OPA's resolved value, or null when undefined). **Empty unless a data directory was supplied** |
 | `workedExamples` | array | Every author fixture, in fixture order: `name`, `matched`, `outcome` (`"❌ denied"`), `messages`, `situations` (body numbers; null when attribution is impossible) |
 | `generatedExamples` | array | Only with `generateExamples`: the same shape plus `generated: true`, named as on the card |

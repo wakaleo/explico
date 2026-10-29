@@ -1,0 +1,589 @@
+{
+  "package": {
+    "location": {
+      "file": "src/test/resources/ast/else-chain.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "src/test/resources/ast/else-chain.rego",
+          "row": 1,
+          "col": 9,
+          "text": "Y2hhaW4="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "src/test/resources/ast/else-chain.rego",
+          "row": 1,
+          "col": 9,
+          "text": "Y2hhaW4="
+        },
+        "type": "string",
+        "value": "chain"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "src/test/resources/ast/else-chain.rego",
+        "row": 3,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "src/test/resources/ast/else-chain.rego",
+          "row": 3,
+          "col": 8,
+          "text": "ZGF0YS5zaGFyZWQubm9uX2NvbXBsaWFudA=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain.rego",
+              "row": 3,
+              "col": 8,
+              "text": "ZGF0YQ=="
+            },
+            "type": "var",
+            "value": "data"
+          },
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain.rego",
+              "row": 3,
+              "col": 13,
+              "text": "c2hhcmVk"
+            },
+            "type": "string",
+            "value": "shared"
+          },
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain.rego",
+              "row": 3,
+              "col": 20,
+              "text": "bm9uX2NvbXBsaWFudA=="
+            },
+            "type": "string",
+            "value": "non_compliant"
+          }
+        ]
+      }
+    }
+  ],
+  "rules": [
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/ast/else-chain.rego",
+            "row": 6,
+            "col": 5,
+            "text": "bm90IGlucHV0LmE="
+          },
+          "negated": true,
+          "terms": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain.rego",
+              "row": 6,
+              "col": 9,
+              "text": "aW5wdXQuYQ=="
+            },
+            "type": "ref",
+            "value": [
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain.rego",
+                  "row": 6,
+                  "col": 9,
+                  "text": "aW5wdXQ="
+                },
+                "type": "var",
+                "value": "input"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain.rego",
+                  "row": 6,
+                  "col": 15,
+                  "text": "YQ=="
+                },
+                "type": "string",
+                "value": "a"
+              }
+            ]
+          }
+        }
+      ],
+      "else": {
+        "body": [
+          {
+            "index": 0,
+            "location": {
+              "file": "src/test/resources/ast/else-chain.rego",
+              "row": 8,
+              "col": 5,
+              "text": "aW5wdXQuYg=="
+            },
+            "terms": {
+              "location": {
+                "file": "src/test/resources/ast/else-chain.rego",
+                "row": 8,
+                "col": 5,
+                "text": "aW5wdXQuYg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain.rego",
+                    "row": 8,
+                    "col": 5,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain.rego",
+                    "row": 8,
+                    "col": 11,
+                    "text": "Yg=="
+                  },
+                  "type": "string",
+                  "value": "b"
+                }
+              ]
+            }
+          },
+          {
+            "index": 1,
+            "location": {
+              "file": "src/test/resources/ast/else-chain.rego",
+              "row": 9,
+              "col": 5,
+              "text": "bm90IGlucHV0LmM="
+            },
+            "negated": true,
+            "terms": {
+              "location": {
+                "file": "src/test/resources/ast/else-chain.rego",
+                "row": 9,
+                "col": 9,
+                "text": "aW5wdXQuYw=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain.rego",
+                    "row": 9,
+                    "col": 9,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain.rego",
+                    "row": 9,
+                    "col": 15,
+                    "text": "Yw=="
+                  },
+                  "type": "string",
+                  "value": "c"
+                }
+              ]
+            }
+          }
+        ],
+        "else": {
+          "body": [
+            {
+              "index": 0,
+              "location": {
+                "file": "src/test/resources/ast/else-chain.rego",
+                "row": 10,
+                "col": 3,
+                "text": "ZWxzZSA9ICJsYXN0Ig=="
+              },
+              "terms": {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain.rego",
+                  "row": 10,
+                  "col": 3,
+                  "text": "ZWxzZSA9ICJsYXN0Ig=="
+                },
+                "type": "boolean",
+                "value": true
+              }
+            }
+          ],
+          "head": {
+            "name": "decision",
+            "value": {
+              "location": {
+                "file": "src/test/resources/ast/else-chain.rego",
+                "row": 10,
+                "col": 10,
+                "text": "Imxhc3Qi"
+              },
+              "type": "string",
+              "value": "last"
+            },
+            "ref": [
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain.rego",
+                  "row": 5,
+                  "col": 1,
+                  "text": "ZGVjaXNpb24="
+                },
+                "type": "var",
+                "value": "decision"
+              }
+            ],
+            "location": {
+              "file": "src/test/resources/ast/else-chain.rego",
+              "row": 10,
+              "col": 3,
+              "text": "ZWxzZSA9ICJsYXN0Ig=="
+            }
+          },
+          "location": {
+            "file": "src/test/resources/ast/else-chain.rego",
+            "row": 10,
+            "col": 3,
+            "text": "ZWxzZSA9ICJsYXN0Ig=="
+          }
+        },
+        "head": {
+          "name": "decision",
+          "value": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain.rego",
+              "row": 7,
+              "col": 10,
+              "text": "bm9uX2NvbXBsaWFudCgiQiIsIFtdLCBbXSk="
+            },
+            "type": "call",
+            "value": [
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain.rego",
+                  "row": 7,
+                  "col": 10,
+                  "text": "bm9uX2NvbXBsaWFudA=="
+                },
+                "type": "ref",
+                "value": [
+                  {
+                    "location": {
+                      "file": "src/test/resources/ast/else-chain.rego",
+                      "row": 7,
+                      "col": 10,
+                      "text": "bm9uX2NvbXBsaWFudA=="
+                    },
+                    "type": "var",
+                    "value": "non_compliant"
+                  }
+                ]
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain.rego",
+                  "row": 7,
+                  "col": 24,
+                  "text": "IkIi"
+                },
+                "type": "string",
+                "value": "B"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain.rego",
+                  "row": 7,
+                  "col": 29,
+                  "text": "W10="
+                },
+                "type": "array",
+                "value": []
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain.rego",
+                  "row": 7,
+                  "col": 33,
+                  "text": "W10="
+                },
+                "type": "array",
+                "value": []
+              }
+            ]
+          },
+          "ref": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain.rego",
+                "row": 5,
+                "col": 1,
+                "text": "ZGVjaXNpb24="
+              },
+              "type": "var",
+              "value": "decision"
+            }
+          ],
+          "location": {
+            "file": "src/test/resources/ast/else-chain.rego",
+            "row": 7,
+            "col": 3,
+            "text": "ZWxzZSA9IG5vbl9jb21wbGlhbnQoIkIiLCBbXSwgW10p"
+          }
+        },
+        "location": {
+          "file": "src/test/resources/ast/else-chain.rego",
+          "row": 7,
+          "col": 3,
+          "text": "ZWxzZSA9IG5vbl9jb21wbGlhbnQoIkIiLCBbXSwgW10pIGlmIHsKICAgIGlucHV0LmIKICAgIG5vdCBpbnB1dC5jCn0gZWxzZSA9ICJsYXN0Ig=="
+        }
+      },
+      "head": {
+        "name": "decision",
+        "value": {
+          "location": {
+            "file": "src/test/resources/ast/else-chain.rego",
+            "row": 5,
+            "col": 12,
+            "text": "bm9uX2NvbXBsaWFudCgiQSIsIFtdLCBbXSk="
+          },
+          "type": "call",
+          "value": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain.rego",
+                "row": 5,
+                "col": 12,
+                "text": "bm9uX2NvbXBsaWFudA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "src/test/resources/ast/else-chain.rego",
+                    "row": 5,
+                    "col": 12,
+                    "text": "bm9uX2NvbXBsaWFudA=="
+                  },
+                  "type": "var",
+                  "value": "non_compliant"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain.rego",
+                "row": 5,
+                "col": 26,
+                "text": "IkEi"
+              },
+              "type": "string",
+              "value": "A"
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain.rego",
+                "row": 5,
+                "col": 31,
+                "text": "W10="
+              },
+              "type": "array",
+              "value": []
+            },
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain.rego",
+                "row": 5,
+                "col": 35,
+                "text": "W10="
+              },
+              "type": "array",
+              "value": []
+            }
+          ]
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain.rego",
+              "row": 5,
+              "col": 1,
+              "text": "ZGVjaXNpb24="
+            },
+            "type": "var",
+            "value": "decision"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/ast/else-chain.rego",
+          "row": 5,
+          "col": 1,
+          "text": "ZGVjaXNpb24gPSBub25fY29tcGxpYW50KCJBIiwgW10sIFtdKQ=="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/ast/else-chain.rego",
+        "row": 5,
+        "col": 1,
+        "text": "ZGVjaXNpb24gPSBub25fY29tcGxpYW50KCJBIiwgW10sIFtdKSBpZiB7CiAgICBub3QgaW5wdXQuYQp9IGVsc2UgPSBub25fY29tcGxpYW50KCJCIiwgW10sIFtdKSBpZiB7CiAgICBpbnB1dC5iCiAgICBub3QgaW5wdXQuYwp9IGVsc2UgPSAibGFzdCI="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "src/test/resources/ast/else-chain.rego",
+            "row": 12,
+            "col": 11,
+            "text": "aW5wdXQueA=="
+          },
+          "terms": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain.rego",
+              "row": 12,
+              "col": 11,
+              "text": "aW5wdXQueA=="
+            },
+            "type": "ref",
+            "value": [
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain.rego",
+                  "row": 12,
+                  "col": 11,
+                  "text": "aW5wdXQ="
+                },
+                "type": "var",
+                "value": "input"
+              },
+              {
+                "location": {
+                  "file": "src/test/resources/ast/else-chain.rego",
+                  "row": 12,
+                  "col": 17,
+                  "text": "eA=="
+                },
+                "type": "string",
+                "value": "x"
+              }
+            ]
+          }
+        }
+      ],
+      "else": {
+        "body": [
+          {
+            "index": 0,
+            "location": {
+              "file": "src/test/resources/ast/else-chain.rego",
+              "row": 12,
+              "col": 21,
+              "text": "ZWxzZSA6PSBmYWxzZQ=="
+            },
+            "terms": {
+              "location": {
+                "file": "src/test/resources/ast/else-chain.rego",
+                "row": 12,
+                "col": 21,
+                "text": "ZWxzZSA6PSBmYWxzZQ=="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          }
+        ],
+        "head": {
+          "name": "flag",
+          "value": {
+            "location": {
+              "file": "src/test/resources/ast/else-chain.rego",
+              "row": 12,
+              "col": 29,
+              "text": "ZmFsc2U="
+            },
+            "type": "boolean",
+            "value": false
+          },
+          "assign": true,
+          "ref": [
+            {
+              "location": {
+                "file": "src/test/resources/ast/else-chain.rego",
+                "row": 12,
+                "col": 1,
+                "text": "ZmxhZw=="
+              },
+              "type": "var",
+              "value": "flag"
+            }
+          ],
+          "location": {
+            "file": "src/test/resources/ast/else-chain.rego",
+            "row": 12,
+            "col": 21,
+            "text": "ZWxzZSA6PSBmYWxzZQ=="
+          }
+        },
+        "location": {
+          "file": "src/test/resources/ast/else-chain.rego",
+          "row": 12,
+          "col": 21,
+          "text": "ZWxzZSA6PSBmYWxzZQ=="
+        }
+      },
+      "head": {
+        "name": "flag",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "src/test/resources/ast/else-chain.rego",
+              "row": 12,
+              "col": 1,
+              "text": "ZmxhZw=="
+            },
+            "type": "var",
+            "value": "flag"
+          }
+        ],
+        "location": {
+          "file": "src/test/resources/ast/else-chain.rego",
+          "row": 12,
+          "col": 1,
+          "text": "ZmxhZw=="
+        }
+      },
+      "location": {
+        "file": "src/test/resources/ast/else-chain.rego",
+        "row": 12,
+        "col": 1,
+        "text": "ZmxhZyBpZiB7IGlucHV0LnggfSBlbHNlIDo9IGZhbHNl"
+      }
+    }
+  ]
+}
