@@ -13,6 +13,7 @@ import io.explico.model.RegoVersion
 import io.explico.opa.OpaRunner
 import io.explico.parse.AstMapper
 import io.explico.parse.ParsedFile
+import io.explico.render.ControlGroups
 import io.explico.render.ControlIdFromFilename
 import io.explico.render.Coverage
 import io.explico.render.CoverageSummary
@@ -140,6 +141,12 @@ public object Explico {
         controlIdFrom: String? = null,
         /** How a derived id is written: `{id}` is replaced by the `id` group, e.g. `CTRL-{id}` (default `{id}`). Must contain `{id}`, else [IllegalArgumentException]. */
         controlIdTemplate: String = "{id}",
+        /**
+         * When true, every control id shared by two or more rules gets ONE page, `controls/<id>.md`, with each rule as a sub-section (sorted by source path), instead
+         * of its cards being scattered over the package pages; the index lists the control once and `explico.json` gains a `controls` array (spec §14.56). Off by
+         * default, and the output is then unchanged. The returned `files` then contain keys with a `controls/` prefix, so a caller writing them must create the directory.
+         */
+        groupByControl: Boolean = false,
     ): RenderedDocs {
         // Validate the URL template before any (slow) opa work: a template without {file} is the caller's mistake.
         val sourceLinks = SourceLinks.of(sourceUrl)
@@ -157,6 +164,8 @@ public object Explico {
         // is off, not merely empty, which is how MarkdownRenderer tells the two apart.
         val dataValues = dataDir?.let { resolveReferenceDataValues(set, policyDir, it) }
 
+        // Spec §14.56: null unless asked for; every renderer below treats null as "no grouping", so the output is then exactly what it always was.
+        val groups = if (groupByControl) ControlGroups.of(set) else null
         val files = set.packages.associate { pkg ->
             "${pkg.path.replace('.', '-')}.md" to MarkdownRenderer.renderPackage(
                 pkg,
@@ -166,9 +175,12 @@ public object Explico {
                 policyDigest,
                 dataValues,
                 sourceLinks,
+                groups,
             )
-        } + ("index.md" to MarkdownRenderer.renderIndex(set, examplesByPackage, policyDigest, requirements, sourceLinks)) +
-            (if (json) mapOf("explico.json" to JsonExport.render(set, policyDigest, examplesByPackage, generated?.byPackage ?: emptyMap(), dataValues, requirements, sourceLinks)) else emptyMap())
+        } + groups?.groups.orEmpty().associate { group ->
+            group.page to MarkdownRenderer.renderControlPage(group, set, groups!!, examplesByPackage, generated?.byPackage ?: emptyMap(), policyDigest, dataValues, sourceLinks)
+        } + ("index.md" to MarkdownRenderer.renderIndex(set, examplesByPackage, policyDigest, requirements, sourceLinks, groups)) +
+            (if (json) mapOf("explico.json" to JsonExport.render(set, policyDigest, examplesByPackage, generated?.byPackage ?: emptyMap(), dataValues, requirements, sourceLinks, groups)) else emptyMap())
 
         val packageCoverages = set.packages.map { Coverage.of(it) }
         val overallCoverage = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })
@@ -177,7 +189,7 @@ public object Explico {
             files = files,
             coverage = overallCoverage,
             generatedExamples = generated?.let { GeneratedExamplesSummary(it.rulesWithExamples, it.rulesConsidered) },
-            gaps = Quality.gapDescriptions(Quality.findingsOf(set), normalisedRequirements.takeIf { it.isNotEmpty() }?.let { Quality.coverageOf(set, it) }),
+            gaps = Quality.gapDescriptions(Quality.findingsOf(set, groups), normalisedRequirements.takeIf { it.isNotEmpty() }?.let { Quality.coverageOf(set, it, groups) }),
         )
     }
 

@@ -29,6 +29,8 @@ internal object MarkdownRenderer {
         dataValues: Map<Operand.Path, JsonElement?>? = null,
         /** Links to the Rego source (spec §14.48); null leaves every location as plain text. */
         sourceLinks: SourceLinks? = null,
+        /** Spec §14.56: with grouping on, a grouped control's cards are not repeated here -- one pointer to its page stands in for them. */
+        groups: ControlGroups? = null,
     ): String {
         val sb = StringBuilder()
         sb.appendLine("# Package `${pkg.path}`")
@@ -55,24 +57,101 @@ internal object MarkdownRenderer {
             }
         }
 
-        val anchorIds = cardAnchorIds(pkg)
+        val anchorIds = cardAnchorIds(pkg, groups)
+        val pointedTo = mutableSetOf<ControlGroups.Group>()
         for ((index, rule) in pkg.rules.withIndex()) {
-            sb.append(
-                renderCard(
-                    rule, pkg, policySet,
-                    WorkedExamples.forGroup(rule, pkg, examplesByRule[rule.name] ?: emptyList()),
-                    anchorIds[index],
-                    generatedExamples = generatedByRuleIndex[index],
-                    dataValues = dataValues,
-                    sourceLinks = sourceLinks,
-                ),
-            )
+            val placement = groups?.placementOf(pkg.path, index)
+            if (placement != null && !pointedTo.add(placement.group)) continue
+            if (placement != null) {
+                sb.append(controlPointer(placement.group, pkg))
+            } else {
+                sb.append(
+                    renderCard(
+                        rule, pkg, policySet,
+                        WorkedExamples.forGroup(rule, pkg, examplesByRule[rule.name] ?: emptyList()),
+                        anchorIds[index],
+                        generatedExamples = generatedByRuleIndex[index],
+                        dataValues = dataValues,
+                        sourceLinks = sourceLinks,
+                        groups = groups,
+                    ),
+                )
+            }
             sb.appendLine()
             sb.appendLine("---")
             sb.appendLine()
         }
         val coverage = Coverage.of(pkg)
         sb.appendLine("*Package rendering coverage: ${coverage.rendered} of ${coverage.total} conditions (${coverage.percent}%)*")
+        if (policyDigest != null) {
+            sb.appendLine()
+            sb.appendLine("*Policy digest: `sha256:${policyDigest.take(12)}…` (full value in index.md)*")
+        }
+        return sb.toString()
+    }
+
+    /** A line break would end a heading early; the headings this feature adds put an id and a title on ONE line. */
+    private fun oneLine(text: String): String = text.replace(Regex("\\s*[\\r\\n]+\\s*"), " ")
+
+    /**
+     * Spec §14.56: what a package page shows in place of a grouped control's cards -- ONE entry, however many of the control's rules this package holds,
+     * saying where the control is documented and linking each of this package's rules to its section there.
+     */
+    private fun controlPointer(group: ControlGroups.Group, pkg: PolicyPackage): String {
+        val sb = StringBuilder()
+        sb.appendLine("## ${oneLine(group.controlId)}${group.title?.let { " — ${oneLine(it)}" } ?: ""}")
+        sb.appendLine()
+        val from = docFileName(pkg.path)
+        val here = group.members.filter { it.packagePath == pkg.path }.joinToString(", ") { member ->
+            val name = "`${member.rule.name}`"
+            member.anchor?.let { "[$name](${pageLink(from, group.page)}#$it)" } ?: name
+        }
+        sb.appendLine("*This control is documented on [its own page](${pageLink(from, group.page)}), together with its other rules. In this package: $here.*")
+        return sb.toString()
+    }
+
+    /**
+     * Spec §14.56: one grouped control's page -- the control's title, then each rule as a full card (the card is exactly what the package page would have
+     * shown, headed `package.rule`), in source-path order, then the coverage of the control as a whole. Worked examples, generated examples and reference
+     * data travel with their rule's card.
+     */
+    fun renderControlPage(
+        group: ControlGroups.Group,
+        policySet: PolicySet,
+        groups: ControlGroups,
+        examplesByPackage: Map<String, Map<String, List<WorkedExample>>> = emptyMap(),
+        generatedByPackage: Map<String, Map<Int, GeneratedExamples>> = emptyMap(),
+        policyDigest: String? = null,
+        dataValues: Map<Operand.Path, JsonElement?>? = null,
+        sourceLinks: SourceLinks? = null,
+    ): String {
+        val sb = StringBuilder()
+        sb.appendLine("<a id=\"${group.anchor}\"></a>")
+        sb.appendLine()
+        sb.appendLine("# Control ${oneLine(group.controlId)}${group.title?.let { " — ${oneLine(it)}" } ?: ""}")
+        sb.appendLine()
+        for (member in group.members) {
+            val pkg = policySet.packages.first { it.path == member.packagePath }
+            val title = member.rule.metadata?.title?.let { " — $it" } ?: ""
+            sb.append(
+                renderCard(
+                    member.rule, pkg, policySet,
+                    WorkedExamples.forGroup(member.rule, pkg, examplesByPackage[pkg.path]?.get(member.rule.name) ?: emptyList()),
+                    member.anchor,
+                    generatedExamples = generatedByPackage[pkg.path]?.get(member.ruleIndex),
+                    dataValues = dataValues,
+                    sourceLinks = sourceLinks,
+                    page = group.page,
+                    groups = groups,
+                    heading = "${pkg.path}.${member.rule.name}$title",
+                ),
+            )
+            sb.appendLine()
+            sb.appendLine("---")
+            sb.appendLine()
+        }
+        val coverage = group.members.map { Coverage.of(it.rule) }.let { CoverageSummary(it.sumOf { c -> c.rendered }, it.sumOf { c -> c.total }) }
+        sb.appendLine("*Control rendering coverage: ${coverage.rendered} of ${coverage.total} conditions (${coverage.percent}%)*")
         if (policyDigest != null) {
             sb.appendLine()
             sb.appendLine("*Policy digest: `sha256:${policyDigest.take(12)}…` (full value in index.md)*")
@@ -103,8 +182,15 @@ internal object MarkdownRenderer {
         dataValues: Map<Operand.Path, JsonElement?>? = null,
         /** Links to the Rego source (spec §14.48); null leaves the location as plain text. */
         sourceLinks: SourceLinks? = null,
+        /** The page this card is written on, e.g. `controls/sec-28.md`; null means [pkg]'s own package page (every card but a grouped one). Links are made relative to it. */
+        page: String? = null,
+        /** Spec §14.56: where grouped rules live, so a link to one goes to its control page; null when grouping is off. */
+        groups: ControlGroups? = null,
+        /** Replaces the default `## <control id> — <title>` / `## <package>.<rule>` heading text (a rule on its control page is headed by its package and name). */
+        heading: String? = null,
     ): String {
         val sb = StringBuilder()
+        val currentPage = page ?: docFileName(pkg.path)
         // Review item 18: an explicit anchor, because links target the control-id / package-rulename
         // slug (spec §6.5) while a heading's own GitHub slug is something else entirely. A blank line
         // follows it: an HTML block would otherwise swallow the `##` line and stop it being a heading.
@@ -112,12 +198,12 @@ internal object MarkdownRenderer {
             sb.appendLine("<a id=\"$anchorId\"></a>")
             sb.appendLine()
         }
-        appendHeading(sb, rule, pkg)
+        appendHeading(sb, rule, pkg, heading)
         appendMetadataLines(sb, rule, pkg, sourceLinks)
 
-        val anchorFor: (Condition.RuleReference) -> String? = { ref -> resolveAnchor(pkg.path, ref, policySet, isLinkable) }
-        val functionAnchorFor: (Condition.FunctionCall) -> String? = { call -> resolveFunctionAnchor(pkg.path, call, policySet, isLinkable) }
-        val ruleValueAnchorFor: (Operand.RuleValueReference) -> String? = { ref -> resolveRuleValueAnchor(pkg.path, ref, policySet, isLinkable) }
+        val anchorFor: (Condition.RuleReference) -> String? = { ref -> anchorForTarget(currentPage, ref.packagePath, ref.ruleName, policySet, groups, isLinkable) }
+        val functionAnchorFor: (Condition.FunctionCall) -> String? = { call -> anchorForTarget(currentPage, call.packagePath, call.functionName, policySet, groups, isLinkable) }
+        val ruleValueAnchorFor: (Operand.RuleValueReference) -> String? = { ref -> anchorForTarget(currentPage, ref.packagePath, ref.ruleName, policySet, groups, isLinkable) }
         when {
             // A complete rule's unconditional constant value (review item 10, finding 4) has no
             // real body at all -- just its own value line.
@@ -139,9 +225,10 @@ internal object MarkdownRenderer {
         return sb.toString()
     }
 
-    private fun appendHeading(sb: StringBuilder, rule: RuleGroup, pkg: PolicyPackage) {
+    private fun appendHeading(sb: StringBuilder, rule: RuleGroup, pkg: PolicyPackage, text: String? = null) {
         val controlId = rule.metadata?.controlId
         val heading = when {
+            text != null -> "## $text"
             controlId != null -> "## $controlId — ${rule.metadata.title ?: rule.name}"
             // Review item 14's follow-up: a split-out default entry gets its own recognisable
             // heading rather than looking like an ordinary id-less card.
@@ -572,37 +659,61 @@ internal object MarkdownRenderer {
         requirements: List<String> = emptyList(),
         /** Links to the Rego source (spec §14.48); null leaves the Source file column as plain text. */
         sourceLinks: SourceLinks? = null,
+        /** Spec §14.56: grouped controls; null when grouping is off. */
+        groups: ControlGroups? = null,
     ): String {
+        // One row per card, except that (spec §14.56, only with grouping on) the rules of a grouped control are ONE row: its packages, rules and
+        // source files listed together, linking to the control's page.
         data class Row(
-            val controlId: String?, val title: String, val packagePath: String, val ruleName: String,
-            val coverage: CoverageSummary, val sourceFile: String, val sourceRow: Int?, val hasMatching: Boolean, val hasNotMatching: Boolean,
-            // Compliance quick wins (a policy-owner review of the real output, not spec-pinned): the real anchor
-            // id this row's card claimed (null for a duplicate name that lost the claim -- see cardAnchorIds --
-            // so the title never links to a nonexistent anchor), and the frameworks its METADATA names, for the
-            // title link and the "Controls by framework" matrix below.
-            val anchorId: String?, val frameworks: List<String>,
-        )
+            val controlId: String?, val title: String, val packages: List<String>, val rules: List<String>,
+            val coverage: CoverageSummary, val sources: List<Pair<String, Int?>>, val hasMatching: Boolean, val hasNotMatching: Boolean,
+            // Compliance quick wins (a policy-owner review of the real output, not spec-pinned): the link target of this row's
+            // card (`file#anchor`; null for a duplicate name that lost the anchor claim -- see cardAnchorIds -- so the title never
+            // links to a nonexistent anchor), and the frameworks its METADATA names, for the title link and the "Controls by framework" matrix below.
+            val href: String?, val frameworks: List<String>,
+        ) {
+            val titleCell: String get() = href?.let { "[$title]($it)" } ?: title
+        }
 
         val hasExamples = examplesByPackage.isNotEmpty()
-        val rows = policySet.packages.flatMap { pkg ->
-            val anchorIds = cardAnchorIds(pkg)
-            pkg.rules.mapIndexed { index, rule ->
-                val outcomes = WorkedExamples.forGroup(rule, pkg, examplesByPackage[pkg.path]?.get(rule.name) ?: emptyList())
+        fun outcomesOf(pkg: PolicyPackage, rule: RuleGroup) = WorkedExamples.forGroup(rule, pkg, examplesByPackage[pkg.path]?.get(rule.name) ?: emptyList())
+        val ungroupedRows = policySet.packages.flatMap { pkg ->
+            val anchorIds = cardAnchorIds(pkg, groups)
+            pkg.rules.mapIndexedNotNull { index, rule ->
+                if (groups?.placementOf(pkg.path, index) != null) return@mapIndexedNotNull null
+                val outcomes = outcomesOf(pkg, rule)
                 Row(
                     controlId = rule.metadata?.controlId,
                     title = rule.metadata?.title ?: rule.name,
-                    packagePath = pkg.path,
-                    ruleName = rule.name,
+                    packages = listOf(pkg.path),
+                    rules = listOf(rule.name),
                     coverage = Coverage.of(rule),
-                    sourceFile = ruleLocation(rule)?.file ?: "?",
-                    sourceRow = ruleLocation(rule)?.row,
+                    sources = listOf((ruleLocation(rule)?.file ?: "?") to ruleLocation(rule)?.row),
                     hasMatching = outcomes.any { it.matched },
                     hasNotMatching = outcomes.any { !it.matched },
-                    anchorId = anchorIds[index],
+                    href = anchorIds[index]?.let { "${docFileName(pkg.path)}#$it" },
                     frameworks = rule.metadata?.frameworks ?: emptyList(),
                 )
             }
-        }.sortedWith(compareBy({ it.controlId == null }, { it.controlId }, { it.packagePath }, { it.ruleName }))
+        }
+        val groupedRows = groups?.groups.orEmpty().map { group ->
+            val members = group.members
+            val outcomes = members.map { m -> outcomesOf(policySet.packages.first { it.path == m.packagePath }, m.rule) }
+            val coverages = members.map { Coverage.of(it.rule) }
+            Row(
+                controlId = group.controlId,
+                title = group.title ?: members.first().rule.name,
+                packages = members.map { it.packagePath }.distinct(),
+                rules = members.map { it.rule.name }.distinct(),
+                coverage = CoverageSummary(coverages.sumOf { it.rendered }, coverages.sumOf { it.total }),
+                sources = members.map { (ruleLocation(it.rule)?.file ?: "?") to ruleLocation(it.rule)?.row },
+                hasMatching = outcomes.any { list -> list.any { it.matched } },
+                hasNotMatching = outcomes.any { list -> list.any { !it.matched } },
+                href = "${group.page}#${group.anchor}",
+                frameworks = members.flatMap { it.rule.metadata?.frameworks.orEmpty() }.distinct(),
+            )
+        }
+        val rows = (ungroupedRows + groupedRows).sortedWith(compareBy({ it.controlId == null }, { it.controlId }, { it.packages.first() }, { it.rules.first() }))
 
         val sb = StringBuilder()
         sb.appendLine("# Control index")
@@ -630,13 +741,15 @@ internal object MarkdownRenderer {
             tableRows.forEach { row ->
                 // Compliance quick win: the title links to the row's own card, the same anchor convention a
                 // RuleReference already uses -- a reader scanning the index can jump straight to a control.
-                val titleCell = titleLink(row.title, row.packagePath, row.anchorId)
-                val prefix = "| ${row.controlId ?: "—"} | $titleCell | `${row.packagePath}` | `${row.ruleName}` | ${row.coverage.percent}%"
+                val packages = row.packages.joinToString(", ") { "`$it`" }
+                val rules = row.rules.joinToString(", ") { "`$it`" }
+                val prefix = "| ${row.controlId ?: "—"} | ${row.titleCell} | $packages | $rules | ${row.coverage.percent}%"
+                val sources = row.sources.map { (file, line) -> sourceCell(file, line) }.distinct().joinToString(", ")
                 if (hasExamples) {
                     val exampleColumn = "${if (row.hasMatching) "✓" else "–"} / ${if (row.hasNotMatching) "✓" else "–"}"
-                    sb.appendLine("$prefix | $exampleColumn | ${sourceCell(row.sourceFile, row.sourceRow)} |")
+                    sb.appendLine("$prefix | $exampleColumn | $sources |")
                 } else {
-                    sb.appendLine("$prefix | ${sourceCell(row.sourceFile, row.sourceRow)} |")
+                    sb.appendLine("$prefix | $sources |")
                 }
             }
             sb.appendLine()
@@ -649,8 +762,8 @@ internal object MarkdownRenderer {
             appendTable(withoutId)
         }
 
-        appendFrameworkMatrix(sb, rows.map { FrameworkRow(it.controlId, it.ruleName, it.packagePath, it.anchorId, it.frameworks) })
-        appendRequirementsCoverage(sb, Quality.normalise(requirements).takeIf { it.isNotEmpty() }?.let { Quality.coverageOf(policySet, it) })
+        appendFrameworkMatrix(sb, rows.map { FrameworkRow(it.controlId, it.rules.first(), it.href, it.frameworks) })
+        appendRequirementsCoverage(sb, Quality.normalise(requirements).takeIf { it.isNotEmpty() }?.let { Quality.coverageOf(policySet, it, groups) })
 
         val overall = CoverageSummary(rows.sumOf { it.coverage.rendered }, rows.sumOf { it.coverage.total })
         sb.appendLine("*Overall rendering coverage: ${overall.rendered} of ${overall.total} conditions (${overall.percent}%)*")
@@ -669,12 +782,12 @@ internal object MarkdownRenderer {
         if (belowFull.isNotEmpty()) {
             sb.appendLine()
             sb.appendLine(
-                "*Below 100%: ${belowFull.joinToString(", ") { titleLink(it.title, it.packagePath, it.anchorId) }} -- " +
+                "*Below 100%: ${belowFull.joinToString(", ") { it.titleCell }} -- " +
                     "each shows the constructs it could not render as source on its own card.*",
             )
         }
 
-        appendQualityFindings(sb, Quality.findingsOf(policySet))
+        appendQualityFindings(sb, Quality.findingsOf(policySet, groups))
 
         // Compliance quick win: a closing legend, so "Rendered" is never mistaken for a statement about the
         // control itself -- it measures how much of the rule's logic explico could turn into prose, nothing more.
@@ -699,54 +812,59 @@ internal object MarkdownRenderer {
                     "the `--control-id-from` option; it is not declared in METADATA.",
             )
         }
+        if (groups != null && groups.groups.isNotEmpty()) {
+            sb.appendLine(
+                "- **Control pages** — a control id used by several rules has ONE page under `controls/` (the `--group-by-control` option); its row lists every " +
+                    "package, rule and source file it spans, and \"Rendered\" covers all of its rules' conditions.",
+            )
+        }
         return sb.toString()
     }
-
-    /** RuleReference anchors (spec §6.5): control-id or package-rulename, same-file bare `#anchor` vs cross-file `<package>.md#anchor`. */
-    private fun resolveAnchor(currentPackagePath: String, ref: Condition.RuleReference, policySet: PolicySet, isLinkable: (String, String) -> Boolean): String? =
-        anchorForTarget(currentPackagePath, ref.packagePath, ref.ruleName, policySet, isLinkable)
-
-    /** Same anchor convention as a [Condition.RuleReference] (review item 8): a called function is just another card, link-targeted the same way. */
-    private fun resolveFunctionAnchor(currentPackagePath: String, call: Condition.FunctionCall, policySet: PolicySet, isLinkable: (String, String) -> Boolean): String? =
-        anchorForTarget(currentPackagePath, call.packagePath, call.functionName, policySet, isLinkable)
-
-    /** Same anchor convention as [Condition.RuleReference]/[Condition.FunctionCall] (review item 10): a referenced rule's VALUE is just another card, link-targeted the same way. */
-    private fun resolveRuleValueAnchor(currentPackagePath: String, reference: Operand.RuleValueReference, policySet: PolicySet, isLinkable: (String, String) -> Boolean): String? =
-        anchorForTarget(currentPackagePath, reference.packagePath, reference.ruleName, policySet, isLinkable)
 
     /**
      * Null when [isLinkable] says the target has no anchor in the document being assembled
      * (follow-up to review item 18) -- the caller renders a plain, unlinked name instead of a
      * dead link.
+     *
+     * RuleReference / FunctionCall / rule-value anchors (spec §6.5) all resolve here: control-id or package-rulename, as a bare `#anchor` on the
+     * page being written ([currentPage]), else a link RELATIVE to it (spec §14.56: a package page and a control page live in different directories).
+     * A target that [groups] moved to a control page is linked at its section there; one that lost the anchor claim there has no link.
      */
     private fun anchorForTarget(
-        currentPackagePath: String,
+        currentPage: String,
         targetPackagePath: String,
         targetName: String,
         policySet: PolicySet,
+        groups: ControlGroups?,
         isLinkable: (String, String) -> Boolean,
     ): String? {
         if (!isLinkable(targetPackagePath, targetName)) return null
         val targetPackage = policySet.packages.first { it.path == targetPackagePath }
         val candidates = targetPackage.rules.filter { it.name == targetName }
         val targetRule = candidates.firstOrNull { !it.isSplitDefaultEntry } ?: candidates.first()
-        val anchorId = anchorIdOf(targetRule, targetPackagePath)
-        return if (targetPackagePath == currentPackagePath) "#$anchorId" else "${docFileName(targetPackagePath)}#$anchorId"
+        val placement = groups?.placementOf(targetPackagePath, targetPackage.rules.indexOfFirst { it === targetRule })
+        val (targetPage, anchorId) = if (placement != null) placement.group.page to (placement.member.anchor ?: return null)
+        else docFileName(targetPackagePath) to anchorIdOf(targetRule, targetPackagePath)
+        return if (targetPage == currentPage) "#$anchorId" else "${pageLink(currentPage, targetPage)}#$anchorId"
+    }
+
+    /** The path from the page [from] to the page [to], both relative to the output directory: pages are either top-level or one level down in `controls/`. */
+    private fun pageLink(from: String, to: String): String {
+        val fromDirectory = from.substringBeforeLast('/', "")
+        return if (fromDirectory.isNotEmpty() && to.startsWith("$fromDirectory/")) to.removePrefix("$fromDirectory/")
+        else if (fromDirectory.isNotEmpty()) "../$to"
+        else to
     }
 
     /** Where [rule] is defined: its first body, else its `default`, else its constant value; null when it has no location at all. Shared by the card, the index and the JSON. */
     internal fun ruleLocation(rule: RuleGroup): io.explico.model.SourceRef? =
         rule.bodies.firstOrNull()?.sourceLocation ?: rule.default?.sourceLocation ?: rule.constantValue?.sourceLocation
 
-    /** `[title](file#anchor)`, or the plain title when the rule's card claimed no anchor (a duplicate name). */
-    private fun titleLink(title: String, packagePath: String, anchorId: String?): String =
-        anchorId?.let { "[$title](${docFileName(packagePath)}#$it)" } ?: title
-
     /** The `<package-path>.md` file a package's own cards live in (spec §6.1's naming: dots become dashes). */
     internal fun docFileName(packagePath: String): String = "${packagePath.replace('.', '-')}.md"
 
     /** One index row's identity, as the "Controls by framework" matrix needs it: nothing about coverage or title. */
-    private data class FrameworkRow(val controlId: String?, val ruleName: String, val packagePath: String, val anchorId: String?, val frameworks: List<String>)
+    private data class FrameworkRow(val controlId: String?, val ruleName: String, val href: String?, val frameworks: List<String>)
 
     /**
      * Compliance quick win: a requirement-to-controls matrix, grouped by the exact framework strings METADATA
@@ -768,7 +886,7 @@ internal object MarkdownRenderer {
                 .sortedWith(compareBy({ it.controlId == null }, { it.controlId }, { it.ruleName }))
                 .map { row ->
                     val label = row.controlId ?: row.ruleName
-                    row.anchorId?.let { "[$label](${docFileName(row.packagePath)}#$it)" } ?: label
+                    row.href?.let { "[$label]($it)" } ?: label
                 }
             sb.appendLine("| $framework | ${links.joinToString(", ")} |")
         }
@@ -825,16 +943,18 @@ internal object MarkdownRenderer {
      * so a split-default entry (which shares `package-rulename` with id-less siblings) can never
      * steal the id [anchorForTarget] resolves a link to.
      */
-    internal fun cardAnchorIds(pkg: PolicyPackage): List<String?> {
+    internal fun cardAnchorIds(pkg: PolicyPackage, groups: ControlGroups? = null): List<String?> {
         val claimed = mutableSetOf<String>()
         val result = arrayOfNulls<String>(pkg.rules.size)
         val order = pkg.rules.indices.sortedBy { pkg.rules[it].isSplitDefaultEntry }
         for (i in order) {
+            // Spec §14.56: a grouped rule has no card on this page, so it neither gets an anchor here nor takes one from a card that does.
+            if (groups?.placementOf(pkg.path, i) != null) continue
             val id = anchorIdOf(pkg.rules[i], pkg.path)
             if (claimed.add(id)) result[i] = id
         }
         return result.toList()
     }
 
-    private fun slug(text: String): String = text.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
+    internal fun slug(text: String): String = text.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-')
 }

@@ -33,4 +33,11 @@ class ControlIdApiJavaInteropTest {
         assertThat(Explico.class.getMethod("render", with(String.class, String.class))).isNotNull();
         assertThat(Explico.class.getMethod("render", with(String.class, String.class, String.class))).isNotNull();
     }
+
+    @Test
+    void groupByControlIsTheNewTrailingParameterAndTheSignatureBeforeItStillExists() throws Exception {
+        // Spec §14.56: `groupByControl` was appended last, so the full signature of the previous release (ending at controlIdTemplate) must still link.
+        assertThat(Explico.class.getMethod("render", with(String.class, String.class, String.class))).isNotNull();
+        assertThat(Explico.class.getMethod("render", with(String.class, String.class, String.class, boolean.class))).isNotNull();
+    }
 }

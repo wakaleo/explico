@@ -12,7 +12,7 @@ Four subcommands: `render`, `diff`, `version`, `demo`.
 ### `explico render`
 
 ```
-explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>] [--source-url <template>] [--control-id-from <regex> [--control-id-template <template>]] [--fail-under <percent>] [--fail-on-gaps]
+explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>] [--source-url <template>] [--control-id-from <regex> [--control-id-template <template>]] [--group-by-control] [--fail-under <percent>] [--fail-on-gaps]
 ```
 
 | Argument/flag | Required | Meaning |
@@ -26,6 +26,7 @@ explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--r
 | `--requirements <file>` | no | A text file listing the requirements your organisation must evidence, one per line (blank lines and `#` comments ignored, lines trimmed, duplicates collapsed). Adds a *Requirements coverage* table to `index.md`: each requirement in the file's order with the controls that name it, or **No control**; and the framework strings your controls use that are *not* on the list (a typo catcher). Matching is exact string equality with the METADATA `frameworks` strings. A missing file is a usage error (exit `1`). |
 | `--source-url <template>` | no | Link every card's *defined in*, every package page's source files and every index row's *Source file* to the Rego source in your repository. A URL template with `{file}` (**required**: the policy file's path relative to `<policyDir>`, each segment percent-encoded) and `{line}` (optional: the rule's 1-based line). A template without `{file}` is a usage error (exit `1`). See *Linking cards to your repository* in [`policy-authoring.md`](policy-authoring.md). |
 | `--control-id-from <regex>` | no | Derive a **control id** from each rule's source file name when its METADATA has none, for a corpus that names its controls by file (`ctrl_1123.rego`). A regular expression with a **named group `id`**, applied (`find`) to the file's *base name* — a directory called `ctrl_99/` does not count — e.g. `'ctrl_(?<id>\d+)'`. METADATA's `control-id` always wins; only the id is derived, never a title. Nothing is derived when the pattern does not match, the group took no part or captured nothing. The derived id is a control id everywhere (heading, anchor, links, the index's controls table, `explico.json`). **`render` only**: `diff` does not take it, so a rule with no METADATA id keeps its `package.rule` identity there. A pattern without `(?<id>...)` or that is not a regular expression is a usage error (exit `1`). A derived id is marked as derived on its card, in `explico.json` and in the index legend. See *Naming controls by file name* in [`policy-authoring.md`](policy-authoring.md). |
+| `--group-by-control` | no | Give every control id **shared by two or more rules** (one control split over several files and packages) ONE page, `controls/<slug>.md`, instead of scattering its cards over the package pages. Each rule is a sub-section (its whole card, worked examples included) in source-path order; package pages keep a one-line pointer; the index lists the control once, with every package, rule and source file it spans; the *Documentation quality* findings count it as one control (missing a description or framework only if none of its rules has one). A control id used by a single rule is untouched. Works with `--control-id-from` (derived ids group too). `explico.json` gains a `controls` array. Off by default (the output is then unchanged). **`render` only for now**: `diff` still treats a shared control id as an error (exit `4`). See *One control, several files* in [`policy-authoring.md`](policy-authoring.md). |
 | `--control-id-template <template>` | no | How a derived id is written; `{id}` stands for the captured text, e.g. `'CTRL-{id}'` turns `ctrl_1123.rego` into `CTRL-1123`. Default `{id}` (the captured text as is). Must contain `{id}`; may not contain `\|` or a line break; taken literally (no `$1`-style substitution). Giving it without `--control-id-from` is a usage error (exit `1`). |
 | `--fail-under <percent>` | no | CI gate: exit `5` if overall rendering coverage is below this integer (0-100). Compared exactly (18 of 20 conditions is exactly 90%: it passes 90 and fails 91). The output is still written. **The figure can change between explico versions with no change to your policies**, because a release may render a construct that used to be source, or stop counting a statement that tests nothing (the acceptance pack went from 22 of 23 to 24 of 24 between two 0.2.0 builds). Pin the explico version in CI and re-baseline the threshold when you upgrade; the CHANGELOG says when what counts as a condition changes. |
 | `--fail-on-gaps` | no | CI gate: exit `5` if the documentation has gaps — a control with no description or no framework, a title shared by controls, and (with `--requirements`) a requirement with no control or a framework string not on the list. Each gap is listed on stderr. |
@@ -188,7 +189,7 @@ object Explico {
   then `rulesWithExamples` of `rulesConsidered`. A trailing `json = true` also adds `explico.json` to `files`
   (see [`json-output.md`](json-output.md)); a further trailing `requirements: List<String>` and `sourceUrl: String?` add the *Requirements coverage* section (see
   *Keeping your documentation complete* in [`policy-authoring.md`](policy-authoring.md)). `RenderedDocs.gaps` is always filled: one line
-  per documentation gap, worded once for every consumer (empty when the documentation is complete). `controlIdFrom` / `controlIdTemplate` are the `--control-id-from` / `--control-id-template` options; an invalid value throws `IllegalArgumentException` before any `opa` work.
+  per documentation gap, worded once for every consumer (empty when the documentation is complete). `controlIdFrom` / `controlIdTemplate` are the `--control-id-from` / `--control-id-template` options; an invalid value throws `IllegalArgumentException` before any `opa` work. `groupByControl = true` is `--group-by-control`: `files` then also holds `controls/<slug>.md` pages, so **a caller writing the files must create parent directories** (the snippets below do).
 - **`diff(old, new)`** — returns `DiffReport(entries: List<DiffEntry>,
   markdown: String, json: String)`. Each `DiffEntry` carries its `category`
   (`DiffCategory`: `ADDED`/`REMOVED`/`LOGIC_CHANGED`/`DOCS_CHANGED`/`UNCHANGED`),
@@ -300,7 +301,11 @@ fun main() {
     val rendered = Explico.render(policySet, policyDir)
 
     Files.createDirectories(outDir)
-    rendered.files.forEach { (name, content) -> Files.writeString(outDir.resolve(name), content) }
+    rendered.files.forEach { (name, content) ->
+        val target = outDir.resolve(name)
+        Files.createDirectories(target.parent) // a name may carry a directory, e.g. controls/sec-28.md with groupByControl
+        Files.writeString(target, content)
+    }
 
     println("Wrote ${rendered.files.size} documents to $outDir (${rendered.coverage.percent}% coverage)")
 }
@@ -334,7 +339,9 @@ public final class LoadRenderWriteFilesJava {
 
         Files.createDirectories(outDir);
         for (Map.Entry<String, String> entry : rendered.getFiles().entrySet()) {
-            Files.writeString(outDir.resolve(entry.getKey()), entry.getValue());
+            Path target = outDir.resolve(entry.getKey());
+            Files.createDirectories(target.getParent()); // a name may carry a directory, e.g. controls/sec-28.md with groupByControl
+            Files.writeString(target, entry.getValue());
         }
 
         System.out.println("Wrote " + rendered.getFiles().size() + " documents to " + outDir

@@ -24,7 +24,9 @@ public final class LoadRenderWriteFilesJava {
 
         Files.createDirectories(outDir);
         for (Map.Entry<String, String> entry : rendered.getFiles().entrySet()) {
-            Files.writeString(outDir.resolve(entry.getKey()), entry.getValue());
+            Path target = outDir.resolve(entry.getKey());
+            Files.createDirectories(target.getParent()); // a name may carry a directory, e.g. controls/sec-28.md with groupByControl
+            Files.writeString(target, entry.getValue());
         }
 
         System.out.println("Wrote " + rendered.getFiles().size() + " documents to " + outDir

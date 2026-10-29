@@ -1597,3 +1597,13 @@ field PATHS only, STRICT per example (null when the value does not fully support
 - PROVENANCE (review decision): a derived id is marked, never presented as attested. `RuleMetadata.controlIdDerivedFrom` (the base name) drives the card line, JSON `controlIdDerived` and the index legend bullet;
   the marker exists only when the option was used. Do not add it to `Canonicalizer`/`diff` (diff derives nothing).
 
+## Group a multi-file control (spec §14.56)
+
+`--group-by-control` / `groupByControl`: a control id shared by two or more rules gets ONE page, `controls/<slug>.md`. `render/ControlGroups` is the single pure decision (which ids, page names, member order, anchors); the package renderer, `renderControlPage`,
+the index, `Quality`, `JsonExport` and `Explico.render` all read it, so they cannot disagree about where a card lives. Null groups = the old output, byte for byte.
+- Links are PAGE-RELATIVE: `anchorForTarget(currentPage, ...)` is the only link resolver (bare `#a` on the same page, `controls/` from a package page, `../` from a control page). Never build a cross-card link elsewhere.
+- A grouped rule has no card on its package page (`cardAnchorIds(pkg, groups)` skips it so it cannot steal an anchor); the package page keeps ONE pointer per grouped control.
+- Anything that counts or lists controls must go through `Quality.entries` (a grouped control is ONE entry). The index builds its rows the same way.
+- `RenderedDocs.files` now has `controls/...` keys: any code writing them must create parent directories (the CLI does; the docs snippets do).
+- Render only so far. `diff --group-by-control` (relaxed duplicate-id check, identity = id + package + rule) is a separate increment; until then shared ids still exit 4 in `diff`.
+

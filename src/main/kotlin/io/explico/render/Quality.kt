@@ -7,14 +7,16 @@
 package io.explico.render
 
 import io.explico.model.PolicySet
-import io.explico.model.RuleGroup
 
 internal object Quality {
 
     /** A control (or, for requirement coverage, any rule naming a framework) as the index links it. */
-    data class ControlRef(val label: String, val packagePath: String, val anchorId: String?) {
-        /** `[label](file#anchor)`, or the bare label when the card claimed no anchor (a duplicate name) -- never a dead link. */
-        fun link(): String = anchorId?.let { "[$label](${MarkdownRenderer.docFileName(packagePath)}#$it)" } ?: label
+    data class ControlRef(val label: String, val packagePath: String, val anchorId: String?, val page: String? = null) {
+        /**
+         * `[label](file#anchor)`, or the bare label when the card claimed no anchor (a duplicate name) -- never a dead link. [page] is the file the
+         * anchor lives on when that is not the package's own page (spec §14.56: a grouped control's page, `controls/<slug>.md`; the index is top-level).
+         */
+        fun link(): String = anchorId?.let { "[$label](${page ?: MarkdownRenderer.docFileName(packagePath)}#$it)" } ?: label
     }
 
     data class Findings(
@@ -33,24 +35,51 @@ internal object Quality {
         val covered: Int get() = items.count { it.controls.isNotEmpty() }
     }
 
-    private class Entry(val rule: RuleGroup, val ref: ControlRef, val packagePath: String)
+    /**
+     * What a finding is about: one control. Without grouping that is one rule; with it (spec §14.56) the rules of a grouped control are ONE entry --
+     * described if any of its rules is, naming a framework if any of its rules does -- so a control split over three files is not reported three times.
+     */
+    private class Entry(
+        val controlId: String?,
+        val title: String?,
+        val hasDescription: Boolean,
+        val frameworks: List<String>,
+        val isSplitDefault: Boolean,
+        val ref: ControlRef,
+        val packagePath: String,
+        val ruleName: String,
+    )
 
-    /** Every rule with its anchor, in index order: control id (ids first), then package, then rule name. */
-    private fun entries(policySet: PolicySet): List<Entry> =
-        policySet.packages.flatMap { pkg ->
-            val anchors = MarkdownRenderer.cardAnchorIds(pkg)
-            pkg.rules.mapIndexed { index, rule ->
-                Entry(rule, ControlRef(rule.metadata?.controlId ?: rule.name, pkg.path, anchors[index]), pkg.path)
+    /** Every control with its anchor, in index order: control id (ids first), then package, then rule name. */
+    private fun entries(policySet: PolicySet, groups: ControlGroups?): List<Entry> {
+        val ungrouped = policySet.packages.flatMap { pkg ->
+            val anchors = MarkdownRenderer.cardAnchorIds(pkg, groups)
+            pkg.rules.mapIndexedNotNull { index, rule ->
+                if (groups?.placementOf(pkg.path, index) != null) return@mapIndexedNotNull null
+                Entry(
+                    rule.metadata?.controlId, rule.metadata?.title, !rule.metadata?.description.isNullOrBlank(), rule.metadata?.frameworks.orEmpty(),
+                    rule.isSplitDefaultEntry, ControlRef(rule.metadata?.controlId ?: rule.name, pkg.path, anchors[index]), pkg.path, rule.name,
+                )
             }
-        }.sortedWith(compareBy({ it.rule.metadata?.controlId == null }, { it.rule.metadata?.controlId }, { it.packagePath }, { it.rule.name }))
+        }
+        val grouped = groups?.groups.orEmpty().map { group ->
+            val first = group.members.first()
+            Entry(
+                group.controlId, group.title, group.members.any { !it.rule.metadata?.description.isNullOrBlank() },
+                group.members.flatMap { it.rule.metadata?.frameworks.orEmpty() }.distinct(), false,
+                ControlRef(group.controlId, first.packagePath, group.anchor, group.page), first.packagePath, first.rule.name,
+            )
+        }
+        return (ungrouped + grouped).sortedWith(compareBy({ it.controlId == null }, { it.controlId }, { it.packagePath }, { it.ruleName }))
+    }
 
-    /** Findings are about CONTROLS only: a rule with a control id that is not a split-default entry. */
-    fun findingsOf(policySet: PolicySet): Findings {
-        val controls = entries(policySet).filter { it.rule.metadata?.controlId != null && !it.rule.isSplitDefaultEntry }
-        val byTitle = controls.filter { it.rule.metadata?.title != null }.groupBy { it.rule.metadata!!.title!! }
+    /** Findings are about CONTROLS only: a rule with a control id that is not a split-default entry (with [groups], a grouped control counts once). */
+    fun findingsOf(policySet: PolicySet, groups: ControlGroups? = null): Findings {
+        val controls = entries(policySet, groups).filter { it.controlId != null && !it.isSplitDefault }
+        val byTitle = controls.filter { it.title != null }.groupBy { it.title!! }
         return Findings(
-            missingDescription = controls.filter { it.rule.metadata?.description.isNullOrBlank() }.map { it.ref },
-            noFramework = controls.filter { it.rule.metadata?.frameworks.isNullOrEmpty() }.map { it.ref },
+            missingDescription = controls.filter { !it.hasDescription }.map { it.ref },
+            noFramework = controls.filter { it.frameworks.isEmpty() }.map { it.ref },
             duplicateTitles = byTitle.filterValues { it.size > 1 }.entries.sortedBy { it.key }.map { (title, group) -> title to group.map { it.ref } },
         )
     }
@@ -59,13 +88,13 @@ internal object Quality {
      * [requirements] is normalised (trimmed, blanks dropped, duplicates collapsed keeping first position) so the library and the CLI
      * agree. A rule counts when its METADATA names the requirement exactly; an id-less rule is labelled by its rule name, like the matrix.
      */
-    fun coverageOf(policySet: PolicySet, requirements: List<String>): RequirementsCoverage {
+    fun coverageOf(policySet: PolicySet, requirements: List<String>, groups: ControlGroups? = null): RequirementsCoverage {
         val listed = normalise(requirements)
-        val all = entries(policySet).filter { !it.rule.isSplitDefaultEntry }
+        val all = entries(policySet, groups).filter { !it.isSplitDefault }
         val items = listed.map { requirement ->
-            RequirementItem(requirement, all.filter { requirement in it.rule.metadata?.frameworks.orEmpty() }.map { it.ref })
+            RequirementItem(requirement, all.filter { requirement in it.frameworks }.map { it.ref })
         }
-        val unlisted = all.flatMap { it.rule.metadata?.frameworks.orEmpty() }.distinct().filterNot { it in listed }
+        val unlisted = all.flatMap { it.frameworks }.distinct().filterNot { it in listed }
             .sortedWith(compareBy({ it.lowercase() }, { it }))
         return RequirementsCoverage(items, unlisted)
     }

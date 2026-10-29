@@ -32,6 +32,7 @@ Library: `Explico.render(policySet, policyDir, examples, dataDir, generateExampl
 | `coverage` | object | `{rendered, total, percent}` over every condition |
 | `quality` | object | Documentation-quality findings over controls: `missingDescription` and `noFramework` (arrays of control ids) and `duplicateTitles` (`[{title, controls}]`). Always present; empty arrays when clean |
 | `requirements` | object or null | Null unless a requirements list was supplied. Otherwise `total`, `covered`, `items` (`[{requirement, controls}]` in the list's order; `controls` are control ids, or the rule name for a rule with no control id) and `unlisted` (framework strings used by the policy that are not on the list) |
+| `controls` | array | **Only with `--group-by-control`** (spec §14.56): one entry per control that has its own page, in control-id order: `controlId`, `page` (`controls/<slug>.md`), `anchor` (the page's own anchor), `title` (the first titled rule's, or null) and `rules` (in page order, each `{package, rule, sourceFile, anchor}`). Absent without the option |
 | `packages` | array | One entry per package document, sorted by `path` |
 
 **Package:** `path`, `file` (its Markdown document), `title`, `description` (package METADATA, or `null`), `authors`, `relatedResources`,
@@ -44,7 +45,8 @@ Library: `Explico.render(policySet, policyDir, examples, dataDir, generateExampl
 | `name` | string | The Rego rule name |
 | `controlId`, `title`, `description` | string or null | From METADATA |
 | `controlIdDerived` | boolean | **Only when `true`**: the id was derived from the file name by `--control-id-from` rather than declared in METADATA (spec §14.55). Absent otherwise |
-| `anchor` | string or null | The card's anchor id in the package document (`#rel-001`); null for a duplicate that lost the claim |
+| `anchor` | string or null | The card's anchor id in the package document (`#rel-001`); null for a duplicate that lost the claim. For a rule moved to a control page it is the id of its section THERE |
+| `controlPage` | string | **Only for a rule moved to a control page by `--group-by-control`**: that page (`controls/sec-28.md`). Absent otherwise |
 | `sourceFile` | string or null | The `.rego` file (relative to the policy directory) |
 | `sourceLine` | integer or null | The rule's first line in that file (its first body, else its `default`, else its constant value) |
 | `sourceUrl` | string or null | The link to that line when a `--source-url` template was given, else null |

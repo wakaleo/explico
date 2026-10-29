@@ -85,6 +85,10 @@ private class RenderCommand : CliktCommand(name = "render") {
         "--control-id-template",
         help = "How a derived id is written, with {id} for the captured text, e.g. 'CTRL-{id}' (default: {id}); needs --control-id-from",
     ).convert { value -> try { ControlIdFromFilename.validateTemplate(value) } catch (e: IllegalArgumentException) { fail(e.message ?: "invalid template") } }
+    private val groupByControl by option(
+        "--group-by-control",
+        help = "Give every control id shared by two or more rules ONE page, controls/<id>.md, instead of scattering its cards over the package pages (the index lists it once)",
+    ).flag()
     private val failUnder by option("--fail-under", help = "Exit 5 if overall rendering coverage is below this percent (0-100); the output is still written")
         .int().restrictTo(0..100)
     private val failOnGaps by option(
@@ -101,7 +105,7 @@ private class RenderCommand : CliktCommand(name = "render") {
             val examples = examplesDir?.let { Explico.loadExamples(it) }
             val rendered = Explico.render(
                 policySet, policyDir, examples, dataDir, generateExamples, json, requirementsFile?.let { parseRequirements(Files.readString(it)) } ?: emptyList(), sourceUrl,
-                controlIdFrom, controlIdTemplate ?: ControlIdFromFilename.DEFAULT_TEMPLATE,
+                controlIdFrom, controlIdTemplate ?: ControlIdFromFilename.DEFAULT_TEMPLATE, groupByControl,
             )
             replaceOutputDirectory(out, rendered.files)
             echo("Rendering coverage: ${rendered.coverage.rendered} of ${rendered.coverage.total} conditions (${rendered.coverage.percent}%)")
@@ -245,7 +249,12 @@ private fun replaceOutputDirectory(dir: Path, files: Map<String, String>) {
         Files.walk(dir).use { paths -> paths.sorted(Comparator.reverseOrder()).forEach(Files::delete) }
     }
     Files.createDirectories(dir)
-    files.forEach { (name, content) -> Files.writeString(dir.resolve(name), content) }
+    // A name may carry a directory (`controls/sec-28.md`, spec §14.56).
+    files.forEach { (name, content) ->
+        val target = dir.resolve(name)
+        Files.createDirectories(target.parent)
+        Files.writeString(target, content)
+    }
 }
 
 /**

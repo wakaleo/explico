@@ -43,6 +43,8 @@ internal object JsonExport {
         dataValues: Map<Operand.Path, JsonElement?>?,
         requirements: List<String> = emptyList(),
         sourceLinks: SourceLinks? = null,
+        /** Spec §14.56: grouped controls; null when grouping is off (then the document has no `controls` key and is unchanged). */
+        groups: ControlGroups? = null,
     ): String {
         val packageCoverages = policySet.packages.map { Coverage.of(it) }
         val overall = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })
@@ -50,10 +52,11 @@ internal object JsonExport {
             put("schema", SCHEMA)
             put("policyDigest", policyDigest)
             put("coverage", coverage(overall))
-            put("quality", qualityObject(Quality.findingsOf(policySet)))
-            put("requirements", Quality.normalise(requirements).takeIf { it.isNotEmpty() }?.let { requirementsObject(Quality.coverageOf(policySet, it)) } ?: JsonNull)
+            put("quality", qualityObject(Quality.findingsOf(policySet, groups)))
+            put("requirements", Quality.normalise(requirements).takeIf { it.isNotEmpty() }?.let { requirementsObject(Quality.coverageOf(policySet, it, groups)) } ?: JsonNull)
+            if (groups != null) put("controls", controlsArray(groups))
             put("packages", buildJsonArray {
-                for (pkg in policySet.packages) add(packageObject(pkg, policySet, examplesByPackage[pkg.path] ?: emptyMap(), generatedByPackage[pkg.path] ?: emptyMap(), dataValues, sourceLinks))
+                for (pkg in policySet.packages) add(packageObject(pkg, policySet, examplesByPackage[pkg.path] ?: emptyMap(), generatedByPackage[pkg.path] ?: emptyMap(), dataValues, sourceLinks, groups))
             })
         }
         return prettyJson(document)
@@ -67,6 +70,28 @@ internal object JsonExport {
                 add(buildJsonObject { put("title", title); put("controls", buildJsonArray { controls.forEach { add(JsonPrimitive(it.label)) } }) })
             }
         })
+    }
+
+    /** Spec §14.56: one entry per grouped control, in id order -- its page, the page-level anchor, its title, and its rules in the order the page shows them. */
+    private fun controlsArray(groups: ControlGroups) = buildJsonArray {
+        groups.groups.forEach { group ->
+            add(buildJsonObject {
+                put("controlId", group.controlId)
+                put("page", group.page)
+                put("anchor", group.anchor)
+                put("title", nullable(group.title))
+                put("rules", buildJsonArray {
+                    group.members.forEach { member ->
+                        add(buildJsonObject {
+                            put("package", member.packagePath)
+                            put("rule", member.rule.name)
+                            put("sourceFile", nullable(MarkdownRenderer.ruleLocation(member.rule)?.file))
+                            put("anchor", nullable(member.anchor))
+                        })
+                    }
+                })
+            })
+        }
     }
 
     private fun requirementsObject(c: Quality.RequirementsCoverage) = buildJsonObject {
@@ -105,8 +130,9 @@ internal object JsonExport {
         generated: Map<Int, GeneratedExamples>,
         dataValues: Map<Operand.Path, JsonElement?>?,
         sourceLinks: SourceLinks?,
+        groups: ControlGroups?,
     ): JsonObject {
-        val anchors = MarkdownRenderer.cardAnchorIds(pkg)
+        val anchors = MarkdownRenderer.cardAnchorIds(pkg, groups)
         return buildJsonObject {
             put("path", pkg.path)
             put("file", MarkdownRenderer.docFileName(pkg.path))
@@ -118,7 +144,8 @@ internal object JsonExport {
             put("coverage", coverage(Coverage.of(pkg)))
             put("rules", buildJsonArray {
                 pkg.rules.forEachIndexed { index, rule ->
-                    add(ruleObject(rule, pkg, policySet, anchors[index], WorkedExamples.forGroup(rule, pkg, examples[rule.name] ?: emptyList()), generated[index], dataValues, sourceLinks))
+                    val placement = groups?.placementOf(pkg.path, index)
+                    add(ruleObject(rule, pkg, policySet, placement?.member?.anchor ?: anchors[index], WorkedExamples.forGroup(rule, pkg, examples[rule.name] ?: emptyList()), generated[index], dataValues, sourceLinks, placement?.group?.page))
                 }
             })
         }
@@ -133,6 +160,7 @@ internal object JsonExport {
         generated: GeneratedExamples?,
         dataValues: Map<Operand.Path, JsonElement?>?,
         sourceLinks: SourceLinks?,
+        controlPage: String?,
     ): JsonObject = buildJsonObject {
         val metadata = rule.metadata
         put("name", rule.name)
@@ -142,6 +170,8 @@ internal object JsonExport {
         put("title", nullable(metadata?.title))
         put("description", nullable(metadata?.description?.trimEnd()))
         put("anchor", nullable(anchor))
+        // Spec §14.56: present only for a rule moved to a control page (its `anchor` is then the id of its section THERE).
+        if (controlPage != null) put("controlPage", controlPage)
         val location = MarkdownRenderer.ruleLocation(rule)
         put("sourceFile", nullable(location?.file))
         // Spec §14.48: always present (additive); the URL only when a template was given and the rule has a location.

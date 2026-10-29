@@ -13,7 +13,11 @@ fun main() {
     val rendered = Explico.render(policySet, policyDir)
 
     Files.createDirectories(outDir)
-    rendered.files.forEach { (name, content) -> Files.writeString(outDir.resolve(name), content) }
+    rendered.files.forEach { (name, content) ->
+        val target = outDir.resolve(name)
+        Files.createDirectories(target.parent) // a name may carry a directory, e.g. controls/sec-28.md with groupByControl
+        Files.writeString(target, content)
+    }
 
     println("Wrote ${rendered.files.size} documents to $outDir (${rendered.coverage.percent}% coverage)")
 }

@@ -189,7 +189,7 @@ the *controls* table, and other cards link to it by that id.
 - **A rule takes the id of the file it is defined in** -- the file the card shows as *defined in*, which for a rule whose definitions are spread over several files is the one holding its first body.
   A backslash in a file name counts as a path separator (so Windows paths work), which means only the part after the last `/` or `\` is matched.
 - **Every rule in a file gets the file's id.** Two files, or two packages, may derive the same id; the render does not fail, but a page keeps each anchor unique, so
-  only the first card with an id is a link target (a later card with the same id is not linked from the index). Grouping such cards is a separate feature.
+  only the first card with an id is a link target (a later card with the same id is not linked from the index). To give such rules one home, see *One control, several files* below.
 - **A derived id says it is derived.** A name pattern is a mechanical reading, not something an author attested, so the card carries `*Control id derived from the file name `ctrl_1123.rego`*`,
   `explico.json` has `controlIdDerived: true` on that rule, and the index legend gains a *Derived control ids* note. A METADATA-declared id is never marked.
 - **A derived-id control is a control with no description and no framework**, so the index's *Documentation quality* section and `--fail-on-gaps` list it, exactly
@@ -197,6 +197,28 @@ the *controls* table, and other cards link to it by that id.
 - **`diff` does not take these options.** A rule with no METADATA id keeps its `package.rule` identity in a diff, so the report still compares old and new correctly,
   but labels such a rule by its package and name rather than by the derived id.
 - Off by default: without the options, or with a pattern that matches nothing, the output is exactly what it was.
+
+## One control, several files
+
+A control is often split over several files and packages: `ctrl_28_signoff.rego`, `ctrl_28_signoff_validation.rego` and `ctrl_28_evidence.rego` all
+declare `control-id: SEC-28` (or all derive it with `--control-id-from`). Without any option each rule is its own card on its own package page and its own
+index row. With `--group-by-control` the control gets **one page**:
+
+```
+explico render policies --out docs --group-by-control
+```
+
+- Every control id shared by **two or more rules** gets `controls/<id>.md` (`SEC-28` becomes `controls/sec-28.md`; two ids that would get the same file name, such as `X-1` and
+  `x_1`, get `x-1.md` and `x-1-2.md`, in id order). A control id used by a single rule keeps its card where it is.
+- The page is titled `Control SEC-28 — <title>` (the title of the first titled rule, by source path) and has one sub-section per rule, headed `package.rule`, in the order of the
+  rules' **source paths**. Each sub-section is that rule's whole card, its worked examples included; the page ends with the coverage of the control as a whole.
+- Package pages no longer repeat those cards: each shows one entry for the control with a link to its page and to the rules it holds in that package.
+- Links between cards follow the cards, so a rule reference inside `ctrl_28_signoff.rego` still lands on the referenced rule, wherever it now lives.
+- The index lists the control **once**, with every package, rule and source file it spans. The *Documentation quality* findings treat it as **one control**: it is only
+  "missing a description" (or "no framework") when **none** of its rules has one, so documenting one rule is enough.
+- The returned files (library: `RenderedDocs.files`) include `controls/...` keys: write them with their directory (the CLI does).
+- Off by default; without the option the output is exactly what it was. `explico.json` gains a `controls` array when it is on.
+- **`diff` does not group yet**: it still reports a control id shared by several rules as an error (exit `4`).
 
 ## Keeping your documentation complete
 
