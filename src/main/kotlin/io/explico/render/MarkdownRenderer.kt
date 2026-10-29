@@ -369,6 +369,16 @@ internal object MarkdownRenderer {
      * paths the rule reads. Shared by the author's examples and generated ones, so both read identically.
      */
     private fun appendExampleEntry(sb: StringBuilder, rule: RuleGroup, name: String, outcome: WorkedExample, referencedPaths: List<Operand.Path>) {
+        // Spec §14.53: a declared verdict replaces the generic "matched" word and the raw JSON; anything the evaluated value does not support
+        // projects to null and the example is rendered exactly as it always was.
+        val verdict = if (outcome.matched) VerdictProjector.project(rule.metadata?.projection?.verdict, outcome.value) else null
+        if (verdict != null) {
+            sb.appendLine("- **$name** — ${verdict.summary}")
+            // A reason may span lines; continuation lines are indented so they stay inside this list item.
+            verdict.reason?.let { sb.appendLine("  *\"${it.lines().joinToString("\n  ")}\"*") }
+            appendReferencedPathValues(sb, outcome, referencedPaths)
+            return
+        }
         val outcomeWord = WorkedExamples.outcomeWord(rule.name, outcome.matched)
         // A single message's situation label goes on the summary line, matching spec's own
         // example. Multiple messages (a fixture matching more than one body at once) each get
@@ -385,6 +395,11 @@ internal object MarkdownRenderer {
                 sb.appendLine("  *\"$message\"*$label2")
             }
         }
+        appendReferencedPathValues(sb, outcome, referencedPaths)
+    }
+
+    /** The values the fixture gave to the input paths the rule reads, one indented bullet each (or "absent"). */
+    private fun appendReferencedPathValues(sb: StringBuilder, outcome: WorkedExample, referencedPaths: List<Operand.Path>) {
         for (path in referencedPaths) {
             val breadcrumb = PathHumanizer.humanize(path.segments).rendered
             val value = WorkedExamples.resolvePathValue(path, outcome.fixture.input)

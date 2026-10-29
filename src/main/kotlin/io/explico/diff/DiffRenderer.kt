@@ -168,6 +168,10 @@ internal object DiffRenderer {
         val oldCustom = oldMeta?.customFields ?: emptyMap()
         val newCustom = newMeta?.customFields ?: emptyMap()
         if (oldCustom != newCustom) sb.appendLine("| Custom fields | ${customText(oldCustom)} | ${customText(newCustom)} |")
+        // Spec §14.53: the declared verdict, only when it differs (same rule as the passthrough rows above).
+        val oldVerdict = oldMeta?.projection?.verdict
+        val newVerdict = newMeta?.projection?.verdict
+        if (oldVerdict != newVerdict) sb.appendLine("| Verdict | ${verdictText(oldVerdict)} | ${verdictText(newVerdict)} |")
     }
 
     private fun authorsText(authors: List<io.explico.model.Author>): String =
@@ -175,6 +179,9 @@ internal object DiffRenderer {
 
     private fun resourcesText(resources: List<io.explico.model.RelatedResource>): String =
         resources.takeIf { it.isNotEmpty() }?.joinToString(", ") { r -> if (r.description != null) "${r.description} (${r.ref})" else r.ref } ?: "—"
+
+    private fun verdictText(verdict: io.explico.model.VerdictProjection?): String =
+        verdict?.let { "outcome `${it.outcome}`" + (it.reason?.let { r -> ", reason `$r`" } ?: "") } ?: "—"
 
     private fun customText(fields: Map<String, String>): String =
         fields.takeIf { it.isNotEmpty() }?.entries?.joinToString(", ") { "${it.key}: ${it.value}" } ?: "—"

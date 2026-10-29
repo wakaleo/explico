@@ -1175,4 +1175,55 @@ class MarkdownRendererTest {
             assertThat(MarkdownRenderer.effectOfMatchWord(allowRule(emptyList()))).isNotNull()
         }
     }
+
+    @Nested
+    inner class DeclaredVerdictExamples {
+
+        private val fixture = io.explico.render.Fixture("a fixture", null, buildJsonObject { })
+
+        private fun render(projection: io.explico.model.VerdictProjection?, value: kotlinx.serialization.json.JsonElement?, matched: Boolean = true): String {
+            val metadata = RuleMetadata("T", "d", "C-1", emptyList(), projection = projection?.let { io.explico.model.DeclaredProjection(it) })
+            val rule = RuleGroup("decision", metadata, null, listOf(RuleBody(emptyList(), null, null, SourceRef("f.rego", 1), "")))
+            val pkg = PolicyPackage("p", listOf(rule), listOf("f.rego"))
+            val example = WorkedExample(fixture, matched, if (matched && value != null) listOf(value.toString()) else emptyList(), listOf(null), value)
+            return MarkdownRenderer.renderCard(rule, pkg, PolicySet(listOf(pkg)), listOf(example))
+        }
+
+        private fun json(text: String) = kotlinx.serialization.json.Json.parseToJsonElement(text)
+        private val declared = io.explico.model.VerdictProjection("ok", "why")
+
+        @Test
+        @DisplayName("a projected example: glyph and words on the summary line, the quoted reason beneath, no 'matched', no JSON")
+        fun projected() {
+            val markdown = render(declared, json("""{"ok":false,"why":"nope"}"""))
+            assertThat(markdown).contains("- **a fixture** — ❌ not ok\n  *\"nope\"*\n").doesNotContain("matched").doesNotContain("{\"")
+        }
+
+        @Test
+        @DisplayName("no reason declared: the summary line only")
+        fun noReasonLine() {
+            val markdown = render(io.explico.model.VerdictProjection("ok"), json("""{"ok":true,"why":"ignored"}"""))
+            assertThat(markdown).contains("- **a fixture** — ✅ ok\n").doesNotContain("ignored")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE: a multi-line reason keeps every line, each continuation indented so the list item is not broken")
+        fun multiLineReason() {
+            val markdown = render(declared, json("""{"ok":true,"why":"line one\nline two"}"""))
+            assertThat(markdown).contains("  *\"line one\n  line two\"*\n")
+        }
+
+        @Test
+        @DisplayName("an unusable value keeps the example exactly as without a declaration")
+        fun fallsBackToRaw() {
+            assertThat(render(declared, json("""{"ok":"yes","why":"nope"}"""))).contains("- **a fixture** — matched").doesNotContain("✅").doesNotContain("❌")
+            assertThat(render(null, json("""{"ok":true,"why":"fine"}"""))).contains("- **a fixture** — matched").doesNotContain("✅")
+        }
+
+        @Test
+        @DisplayName("CHALLENGE: an example where the rule was not matched is never projected, even with a stale value")
+        fun notMatchedIsNeverProjected() {
+            assertThat(render(declared, json("""{"ok":true,"why":"fine"}"""), matched = false)).contains("— not matched").doesNotContain("✅")
+        }
+    }
 }

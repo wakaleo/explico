@@ -16,6 +16,7 @@
  */
 package io.explico.opa
 
+import io.explico.model.VerdictProjection
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -75,7 +76,7 @@ internal data class OpaExpr(
  * never fatal; a list keeps only its string entries, which are exactly what it declares. A `custom` that is not an object
  * at all reads as empty.
  *
- * Reads `control-id` and `frameworks`; [customFields] (spec §14.43) surfaces every OTHER key whose value is a scalar or a
+ * Reads `control-id`, `frameworks` and `verdict` (spec §14.53); [customFields] (spec §14.43) surfaces every OTHER key whose value is a scalar or a
  * list of scalars, and silently skips anything with structure -- never a guess at what a nested object means.
  */
 @Serializable(with = OpaCustomAnnotationSerializer::class)
@@ -85,10 +86,28 @@ internal data class OpaCustomAnnotation(val raw: JsonObject = JsonObject(emptyMa
     val frameworks: List<String>
         get() = (raw["frameworks"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content } ?: emptyList()
 
+    /**
+     * The declared `verdict` (spec §14.53), read leniently: absent -> nothing declared; a wrongly-shaped one -> no projection and a
+     * [VerdictDeclaration.problem] for the caller to warn about once. Never fatal, never guessed at.
+     */
+    val verdict: VerdictDeclaration
+        get() {
+            if (!raw.containsKey("verdict")) return VerdictDeclaration()
+            val declared = raw["verdict"] as? JsonObject ?: return VerdictDeclaration(problem = "`verdict` must be a mapping with an `outcome` field")
+            val outcome = fieldPathOrNull(declared["outcome"]) ?: return VerdictDeclaration(problem = "`verdict.outcome` is required and must name a field (a non-empty string)")
+            if (!declared.containsKey("reason")) return VerdictDeclaration(VerdictProjection(outcome))
+            val reason = fieldPathOrNull(declared["reason"]) ?: return VerdictDeclaration(problem = "`verdict.reason` must name a field (a non-empty string) when given")
+            return VerdictDeclaration(VerdictProjection(outcome, reason))
+        }
+
+    /** A field path: a non-empty string whose dot-separated segments are all non-empty; anything else is null. */
+    private fun fieldPathOrNull(value: JsonElement?): String? =
+        (value as? JsonPrimitive)?.takeIf { it.isString }?.content?.takeIf { path -> path.split('.').all { it.isNotEmpty() } }
+
     /** Every other key with a scalar / scalar-list value, as display text (a list comma-joined), sorted by key. */
     val customFields: Map<String, String>
         get() = raw.entries
-            .filter { it.key != "control-id" && it.key != "frameworks" }
+            .filter { it.key != "control-id" && it.key != "frameworks" && it.key != "verdict" }
             .mapNotNull { (key, value) -> scalarText(value)?.let { key to it } }
             .sortedBy { it.first }
             .toMap(LinkedHashMap())
@@ -99,6 +118,9 @@ internal data class OpaCustomAnnotation(val raw: JsonObject = JsonObject(emptyMa
         else -> null
     }
 }
+
+/** The outcome of reading `custom.verdict`: a [projection], a [problem] (declared but wrongly shaped), or neither (not declared). */
+internal data class VerdictDeclaration(val projection: VerdictProjection? = null, val problem: String? = null)
 
 internal object OpaCustomAnnotationSerializer : KSerializer<OpaCustomAnnotation> {
     override val descriptor: SerialDescriptor = JsonElement.serializer().descriptor

@@ -52,6 +52,12 @@ internal data class WorkedExample(
     val matched: Boolean,
     val messages: List<String>,
     val situationLabels: List<Int?>,
+    /**
+     * The rule's evaluated value for this fixture, or null when the rule was undefined -- and null on an outcome re-attributed to one of
+     * several same-named cards by [WorkedExamples.forGroup], where a whole-name value cannot be credited to one card. Read only by a
+     * declared verdict projection (spec §14.53).
+     */
+    val value: JsonElement? = null,
 )
 
 internal object WorkedExamples {
@@ -83,7 +89,7 @@ internal object WorkedExamples {
             for (rule in rules) {
                 val (matched, messages) = verdictFor(rule.name, packageValue)
                 val labels = messages.map { situationFor(attributionByRule.getValue(rule.name), it) }
-                outcomesByRule.getValue(rule.name).add(WorkedExample(fixture, matched, messages, labels))
+                outcomesByRule.getValue(rule.name).add(WorkedExample(fixture, matched, messages, labels, packageValue[rule.name]))
             }
         }
         return outcomesByRule

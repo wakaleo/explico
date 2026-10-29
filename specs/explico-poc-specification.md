@@ -1932,3 +1932,36 @@ A bracket-key variable with no binding (`pods[i]`, declared with `some i` or not
 - **Every consumer.** Coverage counts every branch's conditions (`Coverage.conditionsOf(body)`); worked-example paths, reference data and the diff summary read all branches; `Canonicalizer` hashes `elseBranches` in order (only when present, so other rules' hashes are unchanged); the input solver reports `else-chain` as not solvable; `explico.json` bodies gain `elseBranches` (only when present); no "Effect of a match" line for a chain (it is always defined).
 - **Amended, not weakened** (none is a Tier-1/README assertion): `RegoCoverageAuditTest` probe 17 (now renders) plus new probe 43 (still falls back); `RealisticPresentationAcceptanceIT` item 13 and `RealisticRuleValuesAcceptanceIT`'s `risk_level` guard (premise superseded; item 13 repointed at a chain that still falls back). Goldens, `docs/sample-output` and `docs/showcase` are unchanged.
 - **Benchmark** (Trivy Kubernetes checks, 169 files): no crashes, no mapping warnings; 6 chains still fall back, all of the shape `else := msg if { msg := sprintf(...) }` or an unmodelled value expression.
+
+### 14.53 Declared verdict for object-valued rules (`custom.verdict`)
+
+Many policies return a decision OBJECT (`{compliant, commentary, ...}`) rather than a boolean or a set of messages. §6.7 shows such a value as
+raw JSON under the word "matched". explico must not guess which field is the verdict, so the author DECLARES it in `custom:` METADATA and explico
+reads only the declared field names, never meaning:
+
+```yaml
+custom:
+  verdict:
+    outcome: compliant   # required: a field PATH to a boolean
+    reason: commentary   # optional: a field PATH to a string
+```
+
+- **Model.** `RuleMetadata.projection: DeclaredProjection?` (last, defaulted; `@JvmOverloads` keeps the 0.2.0 constructor), `DeclaredProjection(verdict: VerdictProjection?)`
+  (further declared projections are added there), `VerdictProjection(outcome, reason?)`. All public, KDoc'd. `OpaCustomAnnotation.verdict` reads it leniently;
+  `verdict` is a reserved `custom` key (never in the `*Custom:*` line, even when malformed).
+- **Malformed** (not a mapping, no/empty/non-string `outcome`, a non-string/empty `reason`, an empty path segment): no projection and ONE stderr warning
+  `explico: warning: ignoring custom.verdict on rule '<pkg>.<rule>': <problem>`, emitted when the rule's metadata is built (one inspect entry per annotated rule,
+  already deduplicated across the bodies of a document-scoped rule). The rule renders as if nothing were declared. Only rule-scoped annotations are read.
+- **Projection** (`render/VerdictProjector`, pure): STRICT. [value] must be a JSON object; the outcome a real boolean (not the string `"true"`, not a number);
+  a declared reason a real string. Otherwise null and THAT example keeps today's rendering (`— matched` + raw JSON). A dot in a path is always a separator.
+  `WorkedExample.value` carries the evaluated value; it is null for an undefined rule and on an outcome re-attributed by `forGroup` (several same-named cards).
+- **Card.** `- **<fixture>** — ✅ <outcome path>` / `❌ not <outcome path>` (the declared name, `not ` before it when false), then `  *"<reason>"*` when a reason is
+  declared (continuation lines of a multi-line reason indented). The referenced-path bullets follow as before. Only for a MATCHED example; applies to author's and
+  generated examples alike (one function).
+- **JSON.** Rule: `verdict: {outcome, reason}` when declared. Example: `verdict: {outcome (boolean), text, reason}` when projected. Both absent otherwise
+  (additive; no schema bump). `docs/json-output.md`.
+- **Diff.** The declaration is in `Canonicalizer.canonicalMetadata` only when present (hashes of rules without one are unchanged -- pinned) so editing it is
+  DOCS_CHANGED, never LOGIC_CHANGED; `ChangeSummary` names it ("verdict"); the docs table gains a `Verdict` row only when it differs.
+- **Tests.** `RealisticVerdictProjectionAcceptanceIT` (fixtures `realistic/verdict-projection/`), `OpaVerdictDeclarationTest`, `VerdictMetadataMappingTest`,
+  `VerdictProjectorTest`, `VerdictProjectionDiffTest`, `ExamplesTest.EvaluatedValue`, `MarkdownRendererTest.DeclaredVerdictExamples`.
+

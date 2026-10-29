@@ -97,7 +97,25 @@ public data class RuleMetadata @JvmOverloads constructor(
      * (a list comma-joined), sorted by key (spec §14.43). A key holding anything with structure is not carried at all.
      */
     val customFields: Map<String, String> = emptyMap(),
+    /**
+     * What the author DECLARED about the shape of this rule's object value, in `custom:` METADATA (spec §14.53); null when nothing
+     * valid was declared. explico never infers any of it: it reads the declared field names and nothing else.
+     */
+    val projection: DeclaredProjection? = null,
 )
+
+/**
+ * The projections a rule's author declared in `custom:` METADATA (spec §14.53). Today only [verdict]; further declared projections are
+ * added here as defaulted fields.
+ */
+public data class DeclaredProjection(val verdict: VerdictProjection? = null)
+
+/**
+ * `custom.verdict`: which fields of the rule's evaluated OBJECT value are the verdict. [outcome] names a boolean field (a dotted path
+ * such as `result.allowed` walks nested objects), [reason] optionally a string field that explains it. A worked example reads
+ * `✅ <outcome>` / `❌ not <outcome>` followed by the quoted reason; a value that does not have these fields keeps its raw JSON.
+ */
+public data class VerdictProjection(val outcome: String, val reason: String? = null)
 
 /** One entry of `authors:` METADATA; opa parses a bare `"Name <email>"` string into both fields. */
 public data class Author(val name: String?, val email: String?)

@@ -40,4 +40,24 @@ class ModelBinaryCompatibilityTest {
         val b = ctor.newInstance(emptyList<Any>(), null, null, SourceRef("f.rego", 1), "", null)
         assertThat(b.messageArguments).isEmpty()
     }
+
+    @Test
+    @DisplayName("RuleMetadata keeps its 0.2.0 seven-argument constructor (before the declared projection, spec §14.53)")
+    fun ruleMetadataKeepsItsZeroTwoZeroConstructor() {
+        val ctor = RuleMetadata::class.java.getConstructor(
+            String::class.java, String::class.java, String::class.java, List::class.java, List::class.java, List::class.java, Map::class.java,
+        )
+        val m = ctor.newInstance("T", "D", "C-1", listOf("F"), emptyList<Any>(), emptyList<Any>(), emptyMap<String, String>())
+        assertThat(m.projection).isNull()
+    }
+
+    @Test
+    @DisplayName("RuleBody keeps its 0.2.0 seven-argument constructor (before else chains, spec §14.52)")
+    fun ruleBodyKeepsItsZeroTwoZeroConstructor() {
+        val ctor = RuleBody::class.java.getConstructor(
+            List::class.java, String::class.java, String::class.java, SourceRef::class.java, String::class.java, Operand::class.java, List::class.java,
+        )
+        val b = ctor.newInstance(emptyList<Any>(), null, null, SourceRef("f.rego", 1), "", null, emptyList<Any>())
+        assertThat(b.elseBranches).isEmpty()
+    }
 }

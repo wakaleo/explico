@@ -236,6 +236,16 @@ internal object Canonicalizer {
                 }) }
             })
             put("customFields", buildJsonObject { metadata.customFields.entries.sortedBy { it.key }.forEach { put(it.key, JsonPrimitive(it.value)) } })
+            // Spec §14.53: the declared verdict changes how a rule's examples read, never what it decides -- documentation. Emitted only
+            // when declared, so the hash of every rule without one is exactly what it was before.
+            metadata.projection?.verdict?.let { v ->
+                put("projection", buildJsonObject {
+                    put("verdict", buildJsonObject {
+                        put("outcome", JsonPrimitive(v.outcome))
+                        put("reason", v.reason?.let { JsonPrimitive(it) } ?: JsonNull)
+                    })
+                })
+            }
             put("relatedResources", buildJsonArray {
                 metadata.relatedResources.forEach { add(buildJsonObject {
                     put("description", it.description?.let { d -> JsonPrimitive(d) } ?: JsonNull)

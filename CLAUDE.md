@@ -1552,3 +1552,18 @@ branch with no conditions, an empty first branch, or a chain among SIBLING defin
 - Fixtures: `realistic/decision-objects/` (the requester's anonymised policies + one extra chain with a `with`), captures `ast/else-chain*.json`, probes 17 and 43.
 - Still falling back on real code (Trivy Kubernetes, 6 of 169 files): `else := msg if { msg := sprintf(...) }` (a branch value that is a local assigned in its body) and
   unmodelled value expressions. Both honest; the first is a candidate promotion.
+
+## Declared verdict projection (spec §14.53)
+
+`custom.verdict {outcome, reason?}` in a rule's METADATA tells explico which fields of an OBJECT-valued rule are the verdict. explico reads only the declared field NAMES
+(`OpaCustomAnnotation.verdict` -> `RuleMetadata.projection`), never meaning; `VerdictProjector.project` is pure and STRICT (real boolean, real string, an object) and
+returns null otherwise, in which case that one example keeps its raw JSON. Never coerce (`"true"` is not true), never half-project, never extend it to guess a field.
+- A declared-but-wrongly-shaped `verdict` is ignored with ONE `explico: warning: ignoring custom.verdict on rule ...` (the author declared it; silence hides the mistake).
+  `verdict` is a reserved `custom` key and must stay out of `customFields`.
+- `WorkedExample.value` exists only for this. It is null for an undefined rule and after `forGroup` (a whole-name value cannot be credited to one of several cards).
+- The projection is documentation: in `canonicalMetadata` only when present (existing hashes pinned by `VerdictProjectionDiffTest`), DOCS_CHANGED, a `Verdict` docs-table
+  row only when it differs. JSON `verdict` keys are absent unless declared / projected.
+- A dot in a field path is a separator; a literal key containing a dot cannot be named (documented limitation, never a silent mis-read).
+- Public model additions go LAST with a default; `ModelBinaryCompatibilityTest` now pins the 0.2.0 constructors of `RuleMetadata` and `RuleBody` as well as 0.1.1.
+- Not done on purpose: a package-scope `custom.verdict` is silently unused (no rule to apply it to); FR-3/4/5 (actions, annotations, timing) extend `DeclaredProjection`.
+

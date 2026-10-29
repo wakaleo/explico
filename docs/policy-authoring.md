@@ -33,7 +33,8 @@ OPA-compliant reader can see.
 | `custom.frameworks` | Yes | The `*Frameworks: ...*` line |
 | `authors` | Yes | The `*Authors: ...*` line: `name <email>`, a bare name, or a bare email, exactly as declared (opa itself splits a `"Name <email>"` string) |
 | `related_resources` | Yes | The `*Related resources: ...*` line: each entry a link, labelled by its `description` (or by the `ref` itself when it has none) |
-| Any other `custom.*` key besides `control-id`/`frameworks` | Yes, if its value is a scalar or a list of scalars | The `*Custom: key: value, ...*` line, keys sorted alphabetically (a list is comma-joined). A key whose value has structure (an object, a list containing an object) is skipped entirely — explico never guesses at what it means |
+| `custom.verdict` | Yes | Declares which fields of an object-valued rule are its verdict, so worked examples read `✅ compliant` instead of a JSON blob; see "Declaring a verdict for an object-valued rule" below. Never shown in the `*Custom:*` line |
+| Any other `custom.*` key besides `control-id`/`frameworks`/`verdict` | Yes, if its value is a scalar or a list of scalars | The `*Custom: key: value, ...*` line, keys sorted alphabetically (a list is comma-joined). A key whose value has structure (an object, a list containing an object) is skipped entirely — explico never guesses at what it means |
 | The same `authors` / `related_resources` / `custom.*` fields on a `scope: package` block | Yes | The same three lines on the package page, after the description and before the first card. A package-scope `control-id`/`frameworks` is not used |
 | `organizations`, `schemas` | **No** | Valid, standard OPA fields — `opa parse` itself parses and preserves them — explico's own JSON decoding just doesn't model them, so they're silently unused, never an error |
 
@@ -382,6 +383,45 @@ not a description of which fields are set:
 The test is: could someone deciding "is my situation covered by an existing
 example?" answer just by reading the list of `name`s, without opening a
 single fixture file? If not, the name is describing data, not a scenario.
+
+## Declaring a verdict for an object-valued rule
+
+Some policies do not return `true`/`false` or a set of messages; they return a **decision object**, such as
+`{"compliant": false, "commentary": "No owner recorded", ...}`. explico cannot know which field of that object is the verdict (guessing
+would break the "true by construction" rule), so by default a worked example shows the whole object as JSON and the word *matched*.
+Tell it which fields to read, in the rule's METADATA:
+
+```rego
+# METADATA
+# scope: document
+# custom:
+#   control-id: CTRL-OWNER
+#   verdict:
+#     outcome: compliant      # a boolean field
+#     reason: commentary      # optional: a string field that explains it
+decision := {"compliant": false, "commentary": "No owner recorded"} if { not input.owner } else := {"compliant": true, "commentary": "Owner recorded"}
+```
+
+The examples then read:
+
+```markdown
+- **subject without an owner** — ❌ not compliant
+  *"No owner recorded"*
+```
+
+- The words are the **declared field's own name**: `✅ compliant` when the field is `true`, `❌ not compliant` when it is `false`. Choose a
+  field name that reads well after "not". explico invents no vocabulary.
+- `outcome` is required. `reason` is optional; without it only the first line is shown.
+- A dot is a path separator: `outcome: result.allowed` reads `{"result": {"allowed": true}}`. A key that itself contains a dot cannot be named.
+- **Strict, per example.** The outcome must be a real JSON boolean (the string `"true"` is not) and a declared reason a real string, in an object.
+  An example whose value is not like that (a field missing, a different type, not an object at all) keeps its raw JSON, exactly as without the
+  declaration. The rule's other examples are unaffected.
+- A **wrongly-shaped declaration** (`verdict:` a plain string, no `outcome`, a non-string `reason`, an empty path segment) is ignored, with one
+  warning on stderr naming `custom.verdict` and the rule; the rule renders as if nothing were declared.
+- It applies to the rule it is written on (`scope: document` or `rule`), not to a package block. When several cards share one rule name, their
+  examples stay raw (a single value cannot be credited to one card).
+- Editing the declaration is a documentation change in `explico diff` (DOCS_CHANGED), never a logic change.
+- `explico.json` carries the same facts: see [JSON output](json-output.md).
 
 ## Generated examples: what explico can derive for you
 

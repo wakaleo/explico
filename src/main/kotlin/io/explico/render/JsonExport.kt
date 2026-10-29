@@ -149,6 +149,10 @@ internal object JsonExport {
         put("authors", authors(metadata?.authors.orEmpty()))
         put("relatedResources", relatedResources(metadata?.relatedResources.orEmpty()))
         put("custom", custom(metadata?.customFields.orEmpty()))
+        // Spec §14.53: the declared verdict, only when one was declared (every other export is unchanged).
+        metadata?.projection?.verdict?.let { v ->
+            put("verdict", buildJsonObject { put("outcome", v.outcome); put("reason", nullable(v.reason)) })
+        }
         put("parameters", buildJsonArray { rule.parameters.forEach { add(JsonPrimitive(it)) } })
         // "❌ denied" -> "denied": the same convention (and exclusions) as the card's line, minus the glyph.
         put("effectOfMatch", nullable(MarkdownRenderer.effectOfMatchWord(rule)?.substringAfter(' ')))
@@ -234,6 +238,10 @@ internal object JsonExport {
         put("outcome", WorkedExamples.outcomeWord(rule.name, outcome.matched))
         put("messages", buildJsonArray { outcome.messages.forEach { add(JsonPrimitive(it)) } })
         put("situations", buildJsonArray { outcome.situationLabels.forEach { add(it?.let { n -> JsonPrimitive(n) } ?: JsonNull) } })
+        // Spec §14.53: the projected verdict, only for an example the declaration actually applied to (the same test the card uses).
+        if (outcome.matched) VerdictProjector.project(rule.metadata?.projection?.verdict, outcome.value)?.let { v ->
+            put("verdict", buildJsonObject { put("outcome", v.outcome); put("text", v.text); put("reason", nullable(v.reason)) })
+        }
         if (generated) put("generated", true)
     }
 }

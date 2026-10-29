@@ -105,6 +105,7 @@ internal object ChangeSummary {
         if ((old?.authors.orEmpty()) != (new?.authors.orEmpty())) fields += "authors"
         if ((old?.relatedResources.orEmpty()) != (new?.relatedResources.orEmpty())) fields += "related resources"
         if ((old?.customFields ?: emptyMap<String, String>()) != (new?.customFields ?: emptyMap<String, String>())) fields += "custom fields"
+        if (old?.projection != new?.projection) fields += "verdict"
         return fields
     }
 

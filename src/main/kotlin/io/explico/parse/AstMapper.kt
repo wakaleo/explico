@@ -47,6 +47,7 @@ import io.explico.model.ComprehensionKind
 import io.explico.model.Author
 import io.explico.model.Condition
 import io.explico.model.ConstantValue
+import io.explico.model.DeclaredProjection
 import io.explico.model.DefaultValue
 import io.explico.model.ElseBranch
 import io.explico.model.LiteralCollection
@@ -278,6 +279,11 @@ internal object AstMapper {
             // opa reports Windows paths with backslashes; ParsedFile.sourceFile is always '/'-separated.
             val entryFile = entry.location.file?.replace('\\', '/')
             val entryRow = entry.location.row
+            // Spec §14.53: a declared verdict is read here, once per annotated rule (an inspect entry is already deduplicated across a
+            // multi-body document-scoped rule). A wrongly-shaped one is ignored with ONE warning -- the author declared it, so silence
+            // would hide the mistake -- and the rule then renders exactly as if nothing had been declared.
+            val verdict = entry.annotations.custom?.verdict
+            verdict?.problem?.let { System.err.println("explico: warning: ignoring custom.verdict on rule '$entryPackage.$ruleName': $it") }
             val metadata = RuleMetadata(
                 title = entry.annotations.title,
                 description = entry.annotations.description,
@@ -286,6 +292,7 @@ internal object AstMapper {
                 authors = entry.annotations.authors.filter { it.name != null || it.email != null }.map { Author(it.name, it.email) },
                 relatedResources = entry.annotations.relatedResources.mapNotNull { r -> r.ref?.let { RelatedResource(it, r.description) } },
                 customFields = entry.annotations.custom?.customFields ?: emptyMap(),
+                projection = verdict?.projection?.let { DeclaredProjection(verdict = it) },
             )
             val candidateFiles = (filesByPackage[entryPackage] ?: emptyList())
                 .filter { entryFile == null || entryFile.endsWith(it.sourceFile) }

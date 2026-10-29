@@ -126,6 +126,50 @@ class ExamplesTest {
     }
 
     @Nested
+    inner class EvaluatedValue {
+
+        private val fixture = Fixture("f", null, buildJsonObject { })
+        private fun pkgOf(vararg names: String) = io.explico.model.PolicyPackage(
+            "pkg", names.map { RuleGroup(it, null, null, listOf(RuleBody(emptyList(), null, null, SourceRef("f.rego", 1), ""))) }, listOf("f.rego"),
+        )
+
+        @Test
+        @org.junit.jupiter.api.DisplayName("spec §14.53: the rule's evaluated value is carried on its outcome, so a declared verdict can be projected at render time")
+        fun theValueIsCarried() {
+            val value = buildJsonObject { put("ok", true); put("why", "fine") }
+            val outcome = WorkedExamples.evaluatePackage(listOf(fixture), pkgOf("decision"), warn = {}) {
+                buildJsonObject { put("decision", value) }
+            }.getValue("decision").single()
+
+            assertThat(outcome.value).isEqualTo(value)
+            assertThat(outcome.matched).isTrue()
+        }
+
+        @Test
+        @org.junit.jupiter.api.DisplayName("an undefined rule has no value")
+        fun anUndefinedRuleHasNoValue() {
+            val outcome = WorkedExamples.evaluatePackage(listOf(fixture), pkgOf("decision"), warn = {}) { buildJsonObject { } }.getValue("decision").single()
+
+            assertThat(outcome.value).isNull()
+        }
+
+        @Test
+        @org.junit.jupiter.api.DisplayName("CHALLENGE: a name shared by several cards is attributed message by message, so the whole-name value is NOT carried onto any card -- raw, never a guess")
+        fun siblingCardsDoNotShareTheValue() {
+            fun group(template: String) = RuleGroup("deny", null, null, listOf(RuleBody(emptyList(), template, template, SourceRef("f.rego", 1), "")))
+            val first = group("a")
+            val second = group("b")
+            val pkg = io.explico.model.PolicyPackage("pkg", listOf(first, second), listOf("f.rego"))
+            val outcomes = WorkedExamples.evaluatePackage(listOf(fixture), pkg, warn = {}) {
+                buildJsonObject { put("deny", buildJsonArray { add(JsonPrimitive("a")) }) }
+            }.getValue("deny")
+
+            assertThat(outcomes.single().value).isNotNull()
+            assertThat(WorkedExamples.forGroup(first, pkg, outcomes).single().value).isNull()
+        }
+    }
+
+    @Nested
     inner class BodyAttribution {
 
         private val pkg = io.explico.model.PolicyPackage("pkg", emptyList(), listOf("f.rego"))
