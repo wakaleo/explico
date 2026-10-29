@@ -196,11 +196,21 @@ public object Explico {
     /**
      * Classifies every control across [old] -> [new] (spec §7.2) and renders the change report
      * (spec §7.3). Throws [io.explico.diff.DuplicateControlIdException] if either side has two
-     * rules sharing a control-id.
+     * rules sharing a control-id (with [groupByControl], only if it cannot tell two rules apart: same id, package and rule name).
      */
     @JvmStatic
-    public fun diff(old: PolicySet, new: PolicySet): DiffReport {
-        val entries = PolicyDiff.diff(old, new)
+    @JvmOverloads
+    public fun diff(
+        old: PolicySet,
+        new: PolicySet,
+        /**
+         * When true, a control id shared by two or more rules (one control split over several files) is allowed instead of an error, and any such rule is
+         * identified by (control id, package, rule) -- decided per id over BOTH versions. Off by default: shared ids still throw
+         * [io.explico.diff.DuplicateControlIdException], exactly as before.
+         */
+        groupByControl: Boolean = false,
+    ): DiffReport {
+        val entries = PolicyDiff.diff(old, new, groupByControl)
         return DiffReport(entries, DiffRenderer.render(entries, old, new), DiffJson.render(entries))
     }
 

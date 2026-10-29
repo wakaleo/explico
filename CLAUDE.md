@@ -1605,5 +1605,13 @@ the index, `Quality`, `JsonExport` and `Explico.render` all read it, so they can
 - A grouped rule has no card on its package page (`cardAnchorIds(pkg, groups)` skips it so it cannot steal an anchor); the package page keeps ONE pointer per grouped control.
 - Anything that counts or lists controls must go through `Quality.entries` (a grouped control is ONE entry). The index builds its rows the same way.
 - `RenderedDocs.files` now has `controls/...` keys: any code writing them must create parent directories (the CLI does; the docs snippets do).
-- Render only so far. `diff --group-by-control` (relaxed duplicate-id check, identity = id + package + rule) is a separate increment; until then shared ids still exit 4 in `diff`.
+
+## `diff --group-by-control` (spec §14.57)
+
+`PolicyDiff.diff(old, new, groupByControl)`: without the flag exactly as before (duplicate check, plain identity). With it, an id used by 2+ rules on EITHER side (decided over both versions) identifies each of its rules by a STRUCTURED `Identity(id, package, rule)`; every other id/rule keeps its plain identity.
+- The shared-id set for wording is `ChangeSummary.qualifiedIds(entries)` (ids naming more than one entry) -- the ONE place Markdown, JSON, `Gates.failOn` and the card heading/anchor (`MarkdownRenderer.anchorIdOf(..., qualifiedIds)`) get it from. Never recompute it elsewhere.
+- Anchors in a report come from `ChangeAnchors` (first claim wins; a loser has no anchor and is not linkable): never call `anchorOf` directly for output.
+- A diff report is ONE document: `renderCard(singleDocument = true)` makes every card link a bare `#anchor`. Do not reintroduce `<package>.md#...` in a diff.
+- Still an error with the flag: two rules of one name AND one shared id in one package (one identity). A renamed/moved rule inside a shared control is REMOVED + ADDED; never add rename guessing.
+
 

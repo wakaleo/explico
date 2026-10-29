@@ -5,6 +5,7 @@
  */
 package io.explico.diff
 
+import io.explico.model.PolicyPackage
 import io.explico.model.PolicySet
 import io.explico.model.RuleGroup
 import io.explico.render.Coverage
@@ -27,20 +28,22 @@ internal object DiffRenderer {
         appendSummary(sb, entries)
         val changed = entries.filter { it.category != DiffCategory.UNCHANGED }
             .sortedWith(compareBy({ SECTION_ORDER.indexOf(it.category) }, { it.controlId == null }, { it.controlId }))
-        appendWhatChanged(sb, changed)
-        val isLinkable = linkableTargetsOf(entries)
-        appendChanges(sb, changed, oldPolicySet, newPolicySet, isLinkable)
+        val qualified = ChangeSummary.qualifiedIds(entries)
+        val anchors = ChangeAnchors(changed, qualified)
+        appendWhatChanged(sb, changed, qualified, anchors)
+        val isLinkable = linkableTargetsOf(changed, anchors)
+        appendChanges(sb, changed, oldPolicySet, newPolicySet, isLinkable, qualified, anchors)
         appendCoverageWarning(sb, entries)
         return sb.toString()
     }
 
     /** Spec §14.42: a short, plain list before the full cards -- see [ChangeSummary]. Absent when [changed] is empty, same as `## Changes`. */
-    private fun appendWhatChanged(sb: StringBuilder, changed: List<DiffEntry>) {
+    private fun appendWhatChanged(sb: StringBuilder, changed: List<DiffEntry>, qualified: Set<String>, anchors: ChangeAnchors) {
         if (changed.isEmpty()) return
         sb.appendLine("## What changed")
         sb.appendLine()
         for (entry in changed) {
-            sb.appendLine(ChangeSummary.bulletFor(entry))
+            sb.appendLine(ChangeSummary.bulletFor(entry, qualified, anchors))
             for (sub in ChangeSummary.subBulletsFor(entry)) sb.appendLine("  - $sub")
         }
         sb.appendLine()
@@ -55,8 +58,8 @@ internal object DiffRenderer {
      * -- the set is keyed by whichever side's (packagePath, ruleName) that rendered card actually
      * uses, since a reference FROM that card is resolved against the SAME policy version.
      */
-    private fun linkableTargetsOf(entries: List<DiffEntry>): (String, String) -> Boolean {
-        val targets = entries.mapNotNull { entry ->
+    private fun linkableTargetsOf(entries: List<DiffEntry>, anchors: ChangeAnchors): (String, String) -> Boolean {
+        val targets = entries.filter { anchors.of(it) != null }.mapNotNull { entry ->
             when (entry.category) {
                 DiffCategory.REMOVED -> entry.oldPackage!!.path to entry.oldRule!!.name
                 DiffCategory.ADDED, DiffCategory.LOGIC_CHANGED -> entry.newPackage!!.path to entry.newRule!!.name
@@ -78,34 +81,34 @@ internal object DiffRenderer {
         sb.appendLine()
     }
 
-    private fun appendChanges(sb: StringBuilder, changed: List<DiffEntry>, oldPolicySet: PolicySet, newPolicySet: PolicySet, isLinkable: (String, String) -> Boolean) {
+    private fun appendChanges(sb: StringBuilder, changed: List<DiffEntry>, oldPolicySet: PolicySet, newPolicySet: PolicySet, isLinkable: (String, String) -> Boolean, qualified: Set<String>, anchors: ChangeAnchors) {
         if (changed.isEmpty()) return
 
         sb.appendLine("## Changes")
         sb.appendLine()
         for (entry in changed) {
-            appendSection(sb, entry, oldPolicySet, newPolicySet, isLinkable)
+            appendSection(sb, entry, oldPolicySet, newPolicySet, isLinkable, qualified, anchors)
             sb.appendLine("---")
             sb.appendLine()
         }
     }
 
-    private fun appendSection(sb: StringBuilder, entry: DiffEntry, oldPolicySet: PolicySet, newPolicySet: PolicySet, isLinkable: (String, String) -> Boolean) {
+    private fun appendSection(sb: StringBuilder, entry: DiffEntry, oldPolicySet: PolicySet, newPolicySet: PolicySet, isLinkable: (String, String) -> Boolean, qualified: Set<String>, anchors: ChangeAnchors) {
         sb.appendLine("**${entry.category}**")
         sb.appendLine()
         when (entry.category) {
             DiffCategory.REMOVED -> {
                 sb.appendLine("**⚠ This control has been removed.**")
                 sb.appendLine()
-                sb.append(MarkdownRenderer.renderCard(entry.oldRule!!, entry.oldPackage!!, oldPolicySet, anchorId = MarkdownRenderer.anchorIdOf(entry.oldRule, entry.oldPackage.path), isLinkable = isLinkable))
+                sb.append(card(entry.oldRule!!, entry.oldPackage!!, oldPolicySet, isLinkable, qualified, anchors.of(entry)))
                 sb.appendLine()
             }
             DiffCategory.ADDED -> {
-                sb.append(MarkdownRenderer.renderCard(entry.newRule!!, entry.newPackage!!, newPolicySet, anchorId = MarkdownRenderer.anchorIdOf(entry.newRule, entry.newPackage.path), isLinkable = isLinkable))
+                sb.append(card(entry.newRule!!, entry.newPackage!!, newPolicySet, isLinkable, qualified, anchors.of(entry)))
                 sb.appendLine()
             }
             DiffCategory.LOGIC_CHANGED -> {
-                sb.append(MarkdownRenderer.renderCard(entry.newRule!!, entry.newPackage!!, newPolicySet, anchorId = MarkdownRenderer.anchorIdOf(entry.newRule, entry.newPackage.path), isLinkable = isLinkable))
+                sb.append(card(entry.newRule!!, entry.newPackage!!, newPolicySet, isLinkable, qualified, anchors.of(entry)))
                 sb.appendLine()
                 sb.appendLine("**Source diff**")
                 sb.appendLine()
@@ -120,6 +123,22 @@ internal object DiffRenderer {
             }
             DiffCategory.UNCHANGED -> Unit
         }
+    }
+
+    /**
+     * One rule's card. For a control id in [qualified] (spec §14.57) the heading also names `package.rule`, the anchor is rule-qualified, and links from the
+     * card to such a rule go to the target's rule-qualified anchor; any other card is exactly the ordinary one.
+     */
+    private fun card(rule: RuleGroup, pkg: PolicyPackage, policySet: PolicySet, isLinkable: (String, String) -> Boolean, qualified: Set<String>, anchorId: String?): String {
+        val controlId = rule.metadata?.controlId
+        return MarkdownRenderer.renderCard(
+            rule, pkg, policySet,
+            anchorId = anchorId,
+            isLinkable = isLinkable,
+            heading = if (controlId != null && controlId in qualified) ChangeSummary.labelFor(controlId, pkg.path, rule, qualified) else null,
+            qualifiedIds = qualified,
+            singleDocument = true,
+        )
     }
 
     /** A `rego` fenced unified text diff of the two rule sources (spec §7.3), body-by-body verbatim source, LCS-diffed line by line. */

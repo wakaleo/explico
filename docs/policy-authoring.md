@@ -218,7 +218,9 @@ explico render policies --out docs --group-by-control
   "missing a description" (or "no framework") when **none** of its rules has one, so documenting one rule is enough.
 - The returned files (library: `RenderedDocs.files`) include `controls/...` keys: write them with their directory (the CLI does).
 - Off by default; without the option the output is exactly what it was. `explico.json` gains a `controls` array when it is on.
-- **`diff` does not group yet**: it still reports a control id shared by several rules as an error (exit `4`).
+- **`diff --group-by-control`** is the same idea for the change report. Without it a control id shared by several rules is an error (exit `4`); with it each rule of the control is its own entry,
+  identified by control id, package and rule, so editing one rule is one `LOGIC_CHANGED` entry (named `SEC-28 — Sign-off (grp_signoff.signed_off)`), a rule that only moved to another file is unchanged,
+  and a rule renamed or moved to another package inside the control shows as removed and added. Two rules of one name and one id in one package are still an error: they cannot be told apart.
 
 ## Keeping your documentation complete
 

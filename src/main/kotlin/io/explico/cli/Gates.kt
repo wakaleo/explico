@@ -44,8 +44,15 @@ internal object Gates {
         val matching = entries.filter { it.category in categories }
             .sortedWith(compareBy({ DIFF_REPORT_ORDER.indexOf(it.category) }, { it.controlId == null }, { it.controlId }))
         if (matching.isEmpty()) return null
+        // A control id shared by several rules (diff --group-by-control) is one failing RULE each: the id alone would repeat, so it names the rule too.
+        val qualified = ChangeSummary.qualifiedIds(entries)
         val labels = matching.map { entry ->
-            entry.controlId ?: ChangeSummary.displayedTarget(entry).let { (packagePath, rule) -> "$packagePath.${rule.name}" }
+            val (packagePath, rule) = ChangeSummary.displayedTarget(entry)
+            when {
+                entry.controlId == null -> "$packagePath.${rule.name}"
+                entry.controlId in qualified -> "${entry.controlId} ($packagePath.${rule.name})"
+                else -> entry.controlId
+            }
         }
         return "explico: gate failed (--fail-on ${categories.joinToString(",") { it.name }}): ${labels.size} control(s): ${labels.joinToString(", ")}"
     }

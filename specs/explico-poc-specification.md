@@ -2037,5 +2037,21 @@ A control is often split over several files and packages (`ctrl_28_signoff.rego`
 - **Quality and requirements.** A grouped control is ONE control: missing a description / naming no framework only if NONE of its rules has one; it covers a requirement if any rule names it; its title is the control's title for the duplicate-title check. `--fail-on-gaps` and `RenderedDocs.gaps` follow.
 - **`explico.json`.** A top-level `controls` array only with grouping (`controlId`, `page`, `anchor`, `title`, `rules[]` of `{package, rule, sourceFile, anchor}` in page order); a grouped rule gains `controlPage` and its `anchor` is its section's id there. Without grouping neither key exists.
 - **Writing the files.** `RenderedDocs.files` then has keys with a `controls/` prefix, so a caller must create the directory; the CLI does (`replaceOutputDirectory` creates parents).
-- **Not in this section.** `diff --group-by-control` (shared ids allowed, identity = control id + package + rule) is a separate increment; until then `diff` still throws `DuplicateControlIdException` for shared ids.
+- **Not in this section.** `diff --group-by-control`: see §14.57.
 - **Tests.** `RealisticGroupByControlAcceptanceIT` (fixtures `realistic/group-by-control/`), `ControlGroupsTest`, `CliGroupByControlProcessTest`.
+
+### 14.57 `diff --group-by-control`: a multi-file control in a change report
+
+The diff side of §14.56. Operator decisions: the flag relaxes the duplicate-control-id check and changes the identity ONLY when given; without it shared ids still exit `4` as §7.1 says.
+
+- **Options.** `Explico.diff(old, new, groupByControl: Boolean = false)` (`@JvmOverloads`: the two-argument form still links); CLI `diff --group-by-control`.
+- **Identity** (`PolicyDiff`). Without the option, unchanged: duplicate check, then `controlId ?: package.rule`. With it there is no duplicate check, and a control id used by TWO OR MORE rules on EITHER side is *shared*: each of its rules is identified by
+  (control id, package, rule) -- decided over BOTH versions at once, so a rule matches itself whichever side the id happens to be shared on (`gate` of an id that gained a second rule is matched, not re-added; of one that lost its sibling, likewise). Any other id keeps the plain
+  control-id identity (so a package/rule rename of a single-rule control is still ONE entry), and a rule with no id keeps `package.rule`. The key is structured (`Identity`), never a joined string, so no character in an id can make two collide; entries stay in sorted identity order.
+  A rule renamed or moved to another package inside a shared control is REMOVED + ADDED (never guessed to be the same rule). Two rules of one name and one shared id in one package have one identity: still `DuplicateControlIdException` (exit 4), naming the id and `package.rule`.
+- **Wording** (`ChangeSummary.qualifiedIds`, derived from the entries: an id naming more than one entry). For such an id the label is `<id> — <title or rule> (<package>.<rule>)` (What-changed bullet, JSON `label`, card heading) and the card's anchor is rule-qualified (`<id>-<package>-<rule>` slugged, as on a control page, §14.56), so every anchor in the report is unique -- anchors are slugs, so for two rules whose names slug alike the FIRST (report order) claims the anchor and the other has none (`ChangeAnchors`: no `<a id>`, a plain bullet, `anchor: null`, links to it left unlinked);
+  every other entry is worded exactly as before (goldens unchanged). `--fail-on` lists such a rule as `<id> (<package>.<rule>)`.
+- **Links in a diff report.** All cards live in one document, so a link from a card to another card is now always a bare `#anchor` (`renderCard(singleDocument = true)`); it used to be `<package>.md#anchor` across packages, a page a diff report does not have (a bug, fixed here for every diff, not only grouped ones).
+  A link to a shared-id rule goes to its rule-qualified anchor; a rule with no card in the report (unchanged, or docs-only) is unlinked, as before.
+- **JSON.** Unchanged shape (`controlId`, `label`, `package`, `rule`, `anchor` per change); only the label/anchor values differ for a shared id.
+- **Tests.** `RealisticGroupByControlDiffAcceptanceIT` (fixtures `realistic/group-by-control-diff/{old,new}`), `GroupedDiffTest`, `CliGroupByControlDiffProcessTest`.

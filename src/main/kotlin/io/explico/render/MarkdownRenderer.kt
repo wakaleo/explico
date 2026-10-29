@@ -188,6 +188,10 @@ internal object MarkdownRenderer {
         groups: ControlGroups? = null,
         /** Replaces the default `## <control id> — <title>` / `## <package>.<rule>` heading text (a rule on its control page is headed by its package and name). */
         heading: String? = null,
+        /** Spec §14.57: control ids whose rules a diff report tells apart by package and rule; a link to such a rule goes to its rule-qualified anchor ([anchorIdOf]). */
+        qualifiedIds: Set<String> = emptySet(),
+        /** True for a diff report, whose cards all live in ONE document: a link to any card is then a bare `#anchor`, never `<package>.md#anchor` (a page that report does not have). */
+        singleDocument: Boolean = false,
     ): String {
         val sb = StringBuilder()
         val currentPage = page ?: docFileName(pkg.path)
@@ -201,9 +205,9 @@ internal object MarkdownRenderer {
         appendHeading(sb, rule, pkg, heading)
         appendMetadataLines(sb, rule, pkg, sourceLinks)
 
-        val anchorFor: (Condition.RuleReference) -> String? = { ref -> anchorForTarget(currentPage, ref.packagePath, ref.ruleName, policySet, groups, isLinkable) }
-        val functionAnchorFor: (Condition.FunctionCall) -> String? = { call -> anchorForTarget(currentPage, call.packagePath, call.functionName, policySet, groups, isLinkable) }
-        val ruleValueAnchorFor: (Operand.RuleValueReference) -> String? = { ref -> anchorForTarget(currentPage, ref.packagePath, ref.ruleName, policySet, groups, isLinkable) }
+        val anchorFor: (Condition.RuleReference) -> String? = { ref -> anchorForTarget(currentPage, ref.packagePath, ref.ruleName, policySet, groups, isLinkable, qualifiedIds, singleDocument) }
+        val functionAnchorFor: (Condition.FunctionCall) -> String? = { call -> anchorForTarget(currentPage, call.packagePath, call.functionName, policySet, groups, isLinkable, qualifiedIds, singleDocument) }
+        val ruleValueAnchorFor: (Operand.RuleValueReference) -> String? = { ref -> anchorForTarget(currentPage, ref.packagePath, ref.ruleName, policySet, groups, isLinkable, qualifiedIds, singleDocument) }
         when {
             // A complete rule's unconditional constant value (review item 10, finding 4) has no
             // real body at all -- just its own value line.
@@ -837,6 +841,8 @@ internal object MarkdownRenderer {
         policySet: PolicySet,
         groups: ControlGroups?,
         isLinkable: (String, String) -> Boolean,
+        qualifiedIds: Set<String> = emptySet(),
+        singleDocument: Boolean = false,
     ): String? {
         if (!isLinkable(targetPackagePath, targetName)) return null
         val targetPackage = policySet.packages.first { it.path == targetPackagePath }
@@ -844,8 +850,8 @@ internal object MarkdownRenderer {
         val targetRule = candidates.firstOrNull { !it.isSplitDefaultEntry } ?: candidates.first()
         val placement = groups?.placementOf(targetPackagePath, targetPackage.rules.indexOfFirst { it === targetRule })
         val (targetPage, anchorId) = if (placement != null) placement.group.page to (placement.member.anchor ?: return null)
-        else docFileName(targetPackagePath) to anchorIdOf(targetRule, targetPackagePath)
-        return if (targetPage == currentPage) "#$anchorId" else "${pageLink(currentPage, targetPage)}#$anchorId"
+        else docFileName(targetPackagePath) to anchorIdOf(targetRule, targetPackagePath, qualifiedIds)
+        return if (singleDocument || targetPage == currentPage) "#$anchorId" else "${pageLink(currentPage, targetPage)}#$anchorId"
     }
 
     /** The path from the page [from] to the page [to], both relative to the output directory: pages are either top-level or one level down in `controls/`. */
@@ -934,8 +940,11 @@ internal object MarkdownRenderer {
     }
 
     /** The id [anchorForTarget] links to for [rule]: its control id if it has one, else `package-rulename`, slugged. */
-    internal fun anchorIdOf(rule: RuleGroup, packagePath: String): String =
-        slug(rule.metadata?.controlId ?: "$packagePath-${rule.name}")
+    internal fun anchorIdOf(rule: RuleGroup, packagePath: String, qualifiedIds: Set<String> = emptySet()): String {
+        val controlId = rule.metadata?.controlId
+        // Spec §14.57: a control id shared by several rules (in a diff report) is not enough to name one card -- the package and rule are added.
+        return slug(if (controlId != null && controlId in qualifiedIds) "$controlId-$packagePath-${rule.name}" else controlId ?: "$packagePath-${rule.name}")
+    }
 
     /**
      * One anchor id per card of [pkg] (aligned with `pkg.rules`), or null where the id was already

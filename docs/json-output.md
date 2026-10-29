@@ -78,7 +78,7 @@ unrendered), `link` (`{package, rule}` for a rule reference or function call, el
 | `summary` | object | Counts for `REMOVED`, `ADDED`, `LOGIC_CHANGED`, `DOCS_CHANGED`, `UNCHANGED` |
 | `changes` | array | Every non-`UNCHANGED` control, in report order (removed, added, logic changed, docs changed; then control id) |
 
-**Change:** `category`, `controlId`, `label` (e.g. `"REL-003 — Artifact provenance"`), `package`, `rule`, `anchor` (null for
+**Change:** `category`, `controlId`, `label` (e.g. `"REL-003 — Artifact provenance"`; for a control id shared by several rules under `diff --group-by-control`, with the rule added: `"SEC-28 — Sign-off (grp_signoff.signed_off)"`), `package`, `rule`, `anchor` (null for
 `DOCS_CHANGED`, which has no card), and either `details` (a `LOGIC_CHANGED` control: the exact sub-bullets of the Markdown *What
 changed* section) or `fields` (a `DOCS_CHANGED` control: which of `title`, `description`, `frameworks`, `authors`,
 `related resources`, `custom fields` differ).

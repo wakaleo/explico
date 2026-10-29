@@ -39,14 +39,20 @@ internal object PolicyDiff {
      * matching, so a control-id-preserving rename is the same control, never REMOVED+ADDED).
      * Entries are returned in identity order; [io.explico.diff.DiffRenderer] applies its own
      * category/control-id ordering on top. Throws [DuplicateControlIdException] if either side
-     * has two rules sharing a control-id.
+     * has two rules sharing a control-id -- unless [groupByControl] (spec §14.57), which allows shared ids and identifies their rules by package and rule.
      */
-    fun diff(old: PolicySet, new: PolicySet): List<DiffEntry> {
-        requireNoDuplicateControlIds(old)
-        requireNoDuplicateControlIds(new)
+    fun diff(old: PolicySet, new: PolicySet, groupByControl: Boolean = false): List<DiffEntry> {
+        // Without grouping a shared control id stays an error, exactly as before (spec §7.1).
+        if (!groupByControl) {
+            requireNoDuplicateControlIds(old)
+            requireNoDuplicateControlIds(new)
+        }
+        // With it (spec §14.57) an id used by two or more rules on EITHER side names several controls' rules, so each is told apart by package and rule;
+        // decided over both versions at once, so a rule matches itself whichever side the id happens to be shared on.
+        val shared = if (groupByControl) sharedControlIds(old) + sharedControlIds(new) else emptySet()
 
-        val oldByIdentity = index(old)
-        val newByIdentity = index(new)
+        val oldByIdentity = index(old, shared)
+        val newByIdentity = index(new, shared)
         val identities = (oldByIdentity.keys + newByIdentity.keys).toSortedSet()
 
         return identities.map { identity -> classify(oldByIdentity[identity], newByIdentity[identity]) }
@@ -54,11 +60,35 @@ internal object PolicyDiff {
 
     private data class Located(val pkg: PolicyPackage, val rule: RuleGroup)
 
-    private fun index(policySet: PolicySet): Map<String, Located> =
-        policySet.packages.flatMap { pkg -> pkg.rules.map { rule -> identityOf(pkg, rule) to Located(pkg, rule) } }.toMap()
+    /**
+     * What ties an old rule to a new one: [plain] is the control id, or `<package>.<rule>` for a rule with none; [packagePath] and [ruleName] are set
+     * ONLY for a rule of a control id that is shared. A structured key, never a joined string, so an id containing any character cannot collide with another.
+     */
+    private data class Identity(val plain: String, val packagePath: String = "", val ruleName: String = "") : Comparable<Identity> {
+        override fun compareTo(other: Identity): Int =
+            compareValuesBy(this, other, { it.plain }, { it.packagePath }, { it.ruleName })
+    }
 
-    private fun identityOf(pkg: PolicyPackage, rule: RuleGroup): String =
-        rule.metadata?.controlId ?: "${pkg.path}.${rule.name}"
+    private fun sharedControlIds(policySet: PolicySet): Set<String> =
+        policySet.packages.flatMap { pkg -> pkg.rules.mapNotNull { it.metadata?.controlId } }
+            .groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+
+    private fun index(policySet: PolicySet, shared: Set<String>): Map<Identity, Located> {
+        val result = linkedMapOf<Identity, Located>()
+        val collisions = sortedSetOf<String>()
+        for (pkg in policySet.packages) for (rule in pkg.rules) {
+            val identity = identityOf(pkg, rule, shared)
+            if (result.put(identity, Located(pkg, rule)) != null && identity.packagePath.isNotEmpty()) collisions += "${identity.plain} (rule ${identity.packagePath}.${identity.ruleName})"
+        }
+        // Two rules of one name AND one shared id in one package cannot be told apart: still an error with grouping, and it says which.
+        if (collisions.isNotEmpty()) throw DuplicateControlIdException(collisions.toList())
+        return result
+    }
+
+    private fun identityOf(pkg: PolicyPackage, rule: RuleGroup, shared: Set<String>): Identity {
+        val controlId = rule.metadata?.controlId ?: return Identity("${pkg.path}.${rule.name}")
+        return if (controlId in shared) Identity(controlId, pkg.path, rule.name) else Identity(controlId)
+    }
 
     private fun requireNoDuplicateControlIds(policySet: PolicySet) {
         val controlIds = policySet.packages.flatMap { pkg -> pkg.rules.mapNotNull { it.metadata?.controlId } }

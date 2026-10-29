@@ -132,6 +132,10 @@ private class DiffCommand : CliktCommand(name = "diff") {
     private val regoVersion by option("--rego-version", help = "Rego syntax of the policies: v1 (default) or v0 (legacy, e.g. the Gatekeeper library)")
         .choice("v1", "v0").default("v1")
     private val jsonOut by option("--json", help = "Also write the machine-readable change report (JSON) to this file").path()
+    private val groupByControl by option(
+        "--group-by-control",
+        help = "Allow a control id shared by several rules (one control split over files) instead of failing with exit 4: its rules are told apart by package and rule, one report entry each",
+    ).flag()
     private val failOn by option(
         "--fail-on",
         help = "Exit 5 if any control is in one of these categories (comma-separated: ADDED, REMOVED, LOGIC_CHANGED, DOCS_CHANGED); the report is still written",
@@ -142,7 +146,7 @@ private class DiffCommand : CliktCommand(name = "diff") {
         try {
             val old = Explico.load(oldDir, parseRegoVersion(regoVersion))
             val new = Explico.load(newDir, parseRegoVersion(regoVersion))
-            val report = Explico.diff(old, new)
+            val report = Explico.diff(old, new, groupByControl)
             out.parent?.let { Files.createDirectories(it) }
             Files.writeString(out, report.markdown)
             jsonOut?.let { target ->

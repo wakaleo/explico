@@ -16,9 +16,9 @@ import io.explico.render.MarkdownRenderer
 internal object ChangeSummary {
 
     /** `- <label> — <what>` (spec §14.42): [DiffCategory.UNCHANGED] never reaches here -- the caller filters it out. */
-    fun bulletFor(entry: DiffEntry): String {
+    fun bulletFor(entry: DiffEntry, qualifiedIds: Set<String> = emptySet(), anchors: ChangeAnchors? = null): String {
         val (packagePath, rule) = targetOf(entry)
-        val label = labelFor(entry.controlId, packagePath, rule)
+        val label = labelFor(entry.controlId, packagePath, rule, qualifiedIds)
         val text = when (entry.category) {
             DiffCategory.REMOVED -> "removed"
             DiffCategory.ADDED -> "added"
@@ -28,7 +28,9 @@ internal object ChangeSummary {
         }
         // REMOVED/ADDED/LOGIC_CHANGED each render a real card in this report (DiffRenderer.appendSection) at
         // this exact anchor; DOCS_CHANGED renders no card at all, so its label is plain text, never a dead link.
-        val labelMarkup = if (entry.category == DiffCategory.DOCS_CHANGED) label else "[$label](#${MarkdownRenderer.anchorIdOf(rule, packagePath)})"
+        // An anchor another card already claimed (two names that slug alike) leaves this label plain rather than linking to the wrong card.
+        val anchor = if (anchors != null) anchors.of(entry) else anchorOf(entry, qualifiedIds)
+        val labelMarkup = if (anchor == null) label else "[$label](#$anchor)"
         return "- $labelMarkup — $text"
     }
 
@@ -76,17 +78,30 @@ internal object ChangeSummary {
     }
 
     /** The entry's label without markdown (also the JSON export's `label`). */
-    fun plainLabelOf(entry: DiffEntry): String = targetOf(entry).let { (packagePath, rule) -> labelFor(entry.controlId, packagePath, rule) }
+    fun plainLabelOf(entry: DiffEntry, qualifiedIds: Set<String> = emptySet()): String =
+        targetOf(entry).let { (packagePath, rule) -> labelFor(entry.controlId, packagePath, rule, qualifiedIds) }
 
     /** The displayed side's package path and rule (also the JSON export's `package`/`rule`). */
     fun displayedTarget(entry: DiffEntry): Pair<String, RuleGroup> = targetOf(entry)
 
     /** The card anchor this entry's label links to; null for DOCS_CHANGED, which has no card in the report. */
-    fun anchorOf(entry: DiffEntry): String? =
-        if (entry.category == DiffCategory.DOCS_CHANGED) null else targetOf(entry).let { (packagePath, rule) -> MarkdownRenderer.anchorIdOf(rule, packagePath) }
+    fun anchorOf(entry: DiffEntry, qualifiedIds: Set<String> = emptySet()): String? =
+        if (entry.category == DiffCategory.DOCS_CHANGED) null else targetOf(entry).let { (packagePath, rule) -> MarkdownRenderer.anchorIdOf(rule, packagePath, qualifiedIds) }
 
-    private fun labelFor(controlId: String?, packagePath: String, rule: RuleGroup): String =
-        controlId?.let { "$it — ${rule.metadata?.title ?: rule.name}" } ?: "$packagePath.${rule.name}"
+    /**
+     * Spec §14.57: the control ids that name MORE THAN ONE entry -- a control split over several rules, which `diff --group-by-control` reports one entry
+     * per rule. Derived from the entries themselves (without the option an id can only ever have one), so the Markdown and the JSON agree by construction.
+     * For these ids the label and the card name the rule too, and the card's anchor is rule-qualified; every other entry is worded exactly as before.
+     */
+    fun qualifiedIds(entries: List<DiffEntry>): Set<String> =
+        entries.mapNotNull { it.controlId }.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+
+    /** `<id> — <title or rule name>`, plus ` (<package>.<rule>)` for an id in [qualifiedIds]; `<package>.<rule>` for a rule with no id. */
+    fun labelFor(controlId: String?, packagePath: String, rule: RuleGroup, qualifiedIds: Set<String> = emptySet()): String {
+        if (controlId == null) return "$packagePath.${rule.name}"
+        val base = "$controlId — ${rule.metadata?.title ?: rule.name}"
+        return if (controlId in qualifiedIds) "$base ($packagePath.${rule.name})" else base
+    }
 
     /**
      * [Canonicalizer.canonicalMetadata] also hashes `controlId` -- but [PolicyDiff]'s own identity resolution
@@ -139,4 +154,24 @@ internal object ChangeSummary {
 
     private fun unrenderedSourceTextsOf(rule: RuleGroup): List<String> =
         rule.bodies.flatMap { body -> body.conditions.filterIsInstance<Condition.Unrendered>().map { it.sourceText.trim() } }
+}
+
+/**
+ * The anchor each CARDED entry of one report owns, claimed in report order: an anchor is a slug, so two rules whose names slug alike would get the same id,
+ * and ids must be unique per document. The first claims it; a later entry has none (its card has no `<a id>`, its bullet is plain text, its JSON `anchor` is
+ * null, and a link to it is left unlinked) -- the same convention as duplicate ids on a package page. [changed] is the report's own order.
+ */
+internal class ChangeAnchors(changed: List<DiffEntry>, qualifiedIds: Set<String>) {
+    private val byEntry = java.util.IdentityHashMap<DiffEntry, String?>()
+
+    init {
+        val claimed = mutableSetOf<String>()
+        for (entry in changed) {
+            val anchor = ChangeSummary.anchorOf(entry, qualifiedIds) ?: continue
+            byEntry[entry] = anchor.takeIf { claimed.add(it) }
+        }
+    }
+
+    /** The anchor [entry]'s card owns, or null: a docs-only entry has no card, and a duplicate lost the claim. */
+    fun of(entry: DiffEntry): String? = byEntry[entry]
 }

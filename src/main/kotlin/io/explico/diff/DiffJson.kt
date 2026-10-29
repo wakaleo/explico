@@ -21,24 +21,26 @@ internal object DiffJson {
         val counts = entries.groupingBy { it.category }.eachCount()
         val changed = entries.filter { it.category != DiffCategory.UNCHANGED }
             .sortedWith(compareBy({ SECTION_ORDER.indexOf(it.category) }, { it.controlId == null }, { it.controlId }))
+        val qualified = ChangeSummary.qualifiedIds(entries)
+        val anchors = ChangeAnchors(changed, qualified)
         val document = buildJsonObject {
             put("schema", SCHEMA)
             put("summary", buildJsonObject {
                 for (category in SECTION_ORDER + DiffCategory.UNCHANGED) put(category.name, counts[category] ?: 0)
             })
-            put("changes", buildJsonArray { changed.forEach { add(change(it)) } })
+            put("changes", buildJsonArray { changed.forEach { add(change(it, qualified, anchors)) } })
         }
         return JsonExport.prettyJson(document)
     }
 
-    private fun change(entry: DiffEntry) = buildJsonObject {
+    private fun change(entry: DiffEntry, qualified: Set<String>, anchors: ChangeAnchors) = buildJsonObject {
         val (packagePath, rule) = ChangeSummary.displayedTarget(entry)
         put("category", entry.category.name)
         put("controlId", entry.controlId?.let { JsonPrimitive(it) } ?: JsonNull)
-        put("label", ChangeSummary.plainLabelOf(entry))
+        put("label", ChangeSummary.plainLabelOf(entry, qualified))
         put("package", packagePath)
         put("rule", rule.name)
-        put("anchor", ChangeSummary.anchorOf(entry)?.let { JsonPrimitive(it) } ?: JsonNull)
+        put("anchor", anchors.of(entry)?.let { JsonPrimitive(it) } ?: JsonNull)
         when (entry.category) {
             DiffCategory.LOGIC_CHANGED -> put("details", buildJsonArray { ChangeSummary.subBulletsFor(entry).forEach { add(JsonPrimitive(it)) } })
             DiffCategory.DOCS_CHANGED -> put("fields", buildJsonArray { ChangeSummary.changedMetadataFields(entry).forEach { add(JsonPrimitive(it)) } })

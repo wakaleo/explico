@@ -192,7 +192,7 @@ project's own `kotlin("jvm")` plugin version.
 ```
 explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>] [--source-url <template>]
                [--control-id-from <regex> [--control-id-template <template>]] [--group-by-control] [--fail-under <percent>] [--fail-on-gaps]
-explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--fail-on <categories>] [--rego-version v1|v0]
+explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--group-by-control] [--fail-on <categories>] [--rego-version v1|v0]
 explico version
 explico demo [--fetch-opa]
 ```
