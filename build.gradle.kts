@@ -211,6 +211,8 @@ val showcaseExamples = mapOf(
         "Set, list and variable-bound comprehensions rendered as readable phrases: counting matching items, an emptiness check, and a set substituted into a membership test."),
     "every" to ("Every element, and the empty case" to
         "`every` rendered as a nested list: it says outright that an empty collection satisfies it, and the worked examples show the value read from each element."),
+    "decision-objects" to ("Decision objects: ordered situations and a declared verdict" to
+        "Two policies that return a decision object. An `else` chain is rendered as ordered situations (decided in order, first match wins), and `custom.verdict`, `custom.annotations` and `custom.timing` in METADATA tell explico which fields of the evaluated object are the verdict, the status and the timing, so the worked examples read as a verdict instead of a JSON blob."),
     "fallbacks" to ("When explico will not paraphrase" to
         "A comprehension and an `every` block that each contain one condition explico cannot render (all-or-nothing, so the whole thing stays source). explico shows the verbatim Rego in a marked block and reports it in the coverage footer, rather than describing logic it did not check."),
 )

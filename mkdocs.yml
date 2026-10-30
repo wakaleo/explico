@@ -75,6 +75,7 @@ nav:
       - Helpers and functions: showcase/helpers-and-functions.md
       - Comprehensions: showcase/comprehensions.md
       - Every element: showcase/every.md
+      - Decision objects: showcase/decision-objects.md
       - When explico will not paraphrase: showcase/fallbacks.md
       - Acceptance pack output:
           - Index: sample-output/index.md
