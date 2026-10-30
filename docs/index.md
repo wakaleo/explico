@@ -96,6 +96,7 @@ cost of the example.
 | See real output for Kubernetes, storage, API and more | [Showcase](showcase/README.md) |
 | Follow a guided walkthrough | [Tutorial](tutorial.md) |
 | Understand a card | [Reading a card](concepts/reading-a-card.md) |
+| Improve what the index says is missing | [Policies that document well](guides/policies-that-document-well.md) |
 | Run it in a pipeline | [CI recipes](guides/ci-recipes.md) |
 
 You need a JDK (17 or newer) and the `opa` binary (1.x); explico is one jar and writes Markdown. The worked-example verdicts are evaluated,

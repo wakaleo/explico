@@ -1662,6 +1662,11 @@ gap findings WITH the examples; the displayed index/JSON findings never depend o
 Every `Condition.Unrendered` the mapper builds goes through `AstMapper.unrenderedAt(location, reason)`, which records the statement's first row (null when opa gave no location, never 0). The row is NOT logic: `Canonicalizer` hashes `sourceText` and `reason` only, and `diff` compares fallbacks by text -- never compare two
 `Unrendered` with `==` in diff code. The file of a place is the holding body's (or else branch's) `sourceLocation.file`; `Quality.shownAsSource` builds the places and the bullet/JSON only present them. `SourceLinks?.placeText(file, row)` is the ONLY place a place is written in the index (spec §14.70): a `file:row` code span, linked through `SourceLinks.url` when a template was given.
 
+## The guide (spec §14.72)
+
+`docs/guides/policies-that-document-well.md` suggests rewrites ONLY where the meaning is provably the same, and every pair is checked by `GuideRewritesTest` (declared as a test input in `build.gradle.kts`): the "before" falls back as stated, the "after" renders completely, and both answer the same on every listed input via the worked examples. Add a pair with a `<!-- guide-check: ... -->` comment and two rego fences;
+never add a rewrite you cannot check this way.
+
 ## Values shown as source (spec §14.71)
 
 `Coverage.unrenderedOperandsOf` is the ONE traversal that finds the unrendered operands: the card footer's count is defined from it, and `Quality.valuesShownAsSource` reads the same instances, so the footer and the index cannot disagree. Every `Operand.Unrendered` the mapper builds from a located term goes through

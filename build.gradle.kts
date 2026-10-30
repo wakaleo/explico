@@ -277,6 +277,8 @@ tasks.test {
     useJUnitPlatform()
     // ConstructsReferenceTest reads this page by path; without declaring it, editing the page would leave the test "up to date".
     inputs.file("docs/reference/constructs.md")
+    // GuideRewritesTest checks every before/after pair of this page against the real renderer and opa.
+    inputs.file("docs/guides/policies-that-document-well.md")
     // DocsExcerptsTest reads every docs page, README and the files they quote (policies, fixtures, generated cards) by path.
     inputs.files(fileTree("docs") { include("**/*.md") })
     inputs.file("README.md")

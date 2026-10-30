@@ -60,6 +60,7 @@ nav:
   - Guides:
       - From Rego to living documentation: guides/living-documentation.md
       - Writing policies: policy-authoring.md
+      - Policies that document well: guides/policies-that-document-well.md
       - CI recipes: guides/ci-recipes.md
   - Reference:
       - CLI and library: user-guide.md

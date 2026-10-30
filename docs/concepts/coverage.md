@@ -38,7 +38,7 @@ A helper rule can legitimately show 0%: if its only condition is a construct exp
 says nothing about the rules that call it. A number below 100% is not a bug, and not necessarily a problem with the policy. It means:
 *read this part as source*.
 
-**Why was it shown as source?** The index's *Documentation quality* section has a **Shown as source** bullet right under the
+**Why was it shown as source?** (And what, if anything, to do about it: [Policies that document well](../guides/policies-that-document-well.md).) The index's *Documentation quality* section has a **Shown as source** bullet right under the
 *Below 100%* note. It groups the unrendered conditions by reason and says, for each, in one sentence what explico needs before it
 can render that kind of construct:
 

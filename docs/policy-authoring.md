@@ -244,7 +244,7 @@ When you also give example fixtures (`--examples`), two more findings appear, ea
   partial-object rule) and a rule that already declares a verdict are not listed. A `custom.verdict` that is wrongly shaped is ignored
   with a warning, so the control is listed until you fix it.
 
-**Shown as source.** When any condition could not be rendered, a bullet groups them by reason (`every`, `else-chain`, `with-override`,
+**Shown as source.** (What to do about each: [Policies that document well](guides/policies-that-document-well.md).) When any condition could not be rendered, a bullet groups them by reason (`every`, `else-chain`, `with-override`,
 `function-call`, `helper-assignment`, `partial-rule-reference`, `comprehension`, `unclassified`, ...) with how many there are, which
 cards they are on with the `file:row` where each starts, and one sentence on what explico needs to render that kind of construct. It explains why, it never tells you what
 to change: a rewrite that renders can still change what the policy means, so that is your decision. Advisory, not a gap.
