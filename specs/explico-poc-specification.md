@@ -2132,3 +2132,15 @@ The index's *Documentation quality* section (§14.46) and the `quality` object o
 - **Output.** Two bullets after "No framework" and before duplicate titles, same link format, each ending `— <hint>`; existing bullets are unchanged. `explico.json` `quality.noMatchingExample` and `quality.rawDecisionObject` (control labels, always present, empty when not applicable).
 - **Impact.** Output with no example fixtures, and the pack's render (every control `✓ / ✓`, no objects), is byte-identical: no golden, `docs/sample-output` or `docs/showcase` moved.
 - Tests: `RealisticQualityHintsAcceptanceIT` (fixtures `realistic/quality-hints/`), `QualityHintsTest`.
+
+### 14.64 A configurable required set (`--require`, `required`)
+
+`--fail-on-gaps` (§14.47) failed on a fixed set of properties. The caller now chooses which documentation properties of a CONTROL are gaps.
+
+- **Names** (`render/RequiredSet`, pure; canonical order): `title`, `description`, `frameworks`, `fixture` (the §14.63 "no matching example" finding), `verdict` (the §14.63 "raw decision object" finding). `Explico.render(..., required: List<String>? = null)`: null is `description` + `frameworks` -- exactly the behaviour, wording and order of every earlier version -- an empty list requires nothing, order and duplicates do not matter, names are exact and case-sensitive.
+- **Always gaps**, whatever is required: controls sharing a title and the requirement gaps (`--requirements`). They are listed after the property gaps.
+- **Gap lines**, in the order description, frameworks, title, fixture, verdict (control order within each): `control X has no description`, `control X names no framework`, `control X has no title` (null, empty or whitespace-only), `control X has no matching example`, `control X returns an object but declares no custom.verdict`. Controls only; a grouped control once; never a function, an id-less rule or a split default (§14.63). `Quality.Findings.missingTitle` exists for this and is NEVER displayed (`isEmpty()` ignores it).
+- **Refused before any opa work** (`IllegalArgumentException`): an unknown name (`'<name>' is not a documentation property; expected one or more of: ...`), and `fixture` or `verdict` when no example fixtures were supplied (an empty examples directory counts as none) -- they would pass vacuously.
+- **It never changes the rendered files.** The index and the package pages are identical for every required set; `explico.json` echoes the effective set as `quality.required` (canonical order, always present; the default is `["description","frameworks"]`).
+- **CLI** `render --require <comma-list>`: names trimmed, an empty list or element is a usage error; it is refused (exit 1, nothing written) without `--fail-on-gaps`, since it only changes what that gate fails on, and with `fixture`/`verdict` but no `--examples`. Findings the index shows (§14.63) are unchanged: they are findings, and become gaps only when required.
+- Tests: `RealisticRequiredSetAcceptanceIT` (fixtures `realistic/required-set/`), `RequiredSetTest`, `QualityGapsTest`, `CliRequiredSetProcessTest`.

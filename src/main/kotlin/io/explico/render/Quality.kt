@@ -35,6 +35,11 @@ internal object Quality {
         val noMatchingExample: List<ControlRef> = emptyList(),
         /** Spec §14.63, only when example fixtures were supplied: controls with no declared verdict whose evaluated value is a JSON object, so their examples show raw JSON. */
         val rawDecisionObject: List<ControlRef> = emptyList(),
+        /**
+         * Spec §14.64: controls whose title is null or blank. NOT a displayed finding (the index and `explico.json` never show it, and [isEmpty] ignores it): it
+         * exists so a caller can require titles, which makes it a gap.
+         */
+        val missingTitle: List<ControlRef> = emptyList(),
     ) {
         fun isEmpty(): Boolean =
             missingDescription.isEmpty() && noFramework.isEmpty() && duplicateTitles.isEmpty() && noMatchingExample.isEmpty() && rawDecisionObject.isEmpty()
@@ -104,6 +109,7 @@ internal object Quality {
         // A function is not matched by an input and has no examples (spec §14.62): never a finding of these two kinds.
         val ofRules = controls.filter { supplied && it.members.any { (_, rule) -> rule.parameters.isEmpty() } }
         return Findings(
+            missingTitle = controls.filter { it.title.isNullOrBlank() }.map { it.ref },
             missingDescription = controls.filter { !it.hasDescription }.map { it.ref },
             noFramework = controls.filter { it.frameworks.isEmpty() }.map { it.ref },
             duplicateTitles = byTitle.filterValues { it.size > 1 }.entries.sortedBy { it.key }.map { (title, group) -> title to group.map { it.ref } },
@@ -141,13 +147,17 @@ internal object Quality {
     }
 
     /**
-     * One line per documentation gap (spec §14.47), worded here ONCE so the CLI gate, a pipeline script and a dashboard agree: a control
-     * with no description, one naming no framework, controls sharing a title, then (when a requirements list was given) each requirement with
-     * no control in list order and each framework string not on the list.
+     * One line per documentation gap (spec §14.47, §14.64), worded here ONCE so the CLI gate, a pipeline script and a dashboard agree. For each property in
+     * [required] (default: description and frameworks, as always) a line per control that lacks it, in the order description, frameworks, title, a matching
+     * example, a declared verdict; then -- whatever is required -- controls sharing a title, then (when a requirements list was given) each requirement with no
+     * control in list order and each framework string not on the list. The example-based kinds need [findings] computed WITH the examples.
      */
-    fun gapDescriptions(findings: Findings, coverage: RequirementsCoverage?): List<String> = buildList {
-        findings.missingDescription.forEach { add("control ${it.label} has no description") }
-        findings.noFramework.forEach { add("control ${it.label} names no framework") }
+    fun gapDescriptions(findings: Findings, coverage: RequirementsCoverage?, required: RequiredSet = RequiredSet.DEFAULT): List<String> = buildList {
+        if ("description" in required) findings.missingDescription.forEach { add("control ${it.label} has no description") }
+        if ("frameworks" in required) findings.noFramework.forEach { add("control ${it.label} names no framework") }
+        if ("title" in required) findings.missingTitle.forEach { add("control ${it.label} has no title") }
+        if ("fixture" in required) findings.noMatchingExample.forEach { add("control ${it.label} has no matching example") }
+        if ("verdict" in required) findings.rawDecisionObject.forEach { add("control ${it.label} returns an object but declares no custom.verdict") }
         findings.duplicateTitles.forEach { (title, controls) -> add("controls ${controls.joinToString(", ") { it.label }} share the title \"$title\"") }
         coverage?.items?.filter { it.controls.isEmpty() }?.forEach { add("requirement ${it.requirement} has no control") }
         coverage?.unlisted?.forEach { add("framework string $it is not in the requirements list") }

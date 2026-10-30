@@ -12,7 +12,7 @@ Four subcommands: `render`, `diff`, `version`, `demo`.
 ### `explico render`
 
 ```
-explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>] [--source-url <template>] [--control-id-from <regex> [--control-id-template <template>]] [--group-by-control] [--companion-url <template> [--companion-label <text>]] [--fail-under <percent>] [--fail-on-gaps]
+explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>] [--source-url <template>] [--control-id-from <regex> [--control-id-template <template>]] [--group-by-control] [--companion-url <template> [--companion-label <text>]] [--fail-under <percent>] [--fail-on-gaps [--require <properties>]]
 ```
 
 | Argument/flag | Required | Meaning |
@@ -31,7 +31,8 @@ explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--r
 | `--group-by-control` | no | Give every control id **shared by two or more rules** (one control split over several files and packages) ONE page, `controls/<slug>.md`, instead of scattering its cards over the package pages. Each rule is a sub-section (its whole card, worked examples included) in source-path order; package pages keep a one-line pointer; the index lists the control once, with every package, rule and source file it spans; the *Documentation quality* findings count it as one control (missing a description or framework only if none of its rules has one). A control id used by a single rule is untouched. Works with `--control-id-from` (derived ids group too). `explico.json` gains a `controls` array. Off by default (the output is then unchanged). `diff` has its own `--group-by-control` (below). See *One control, several files* in [`policy-authoring.md`](policy-authoring.md). |
 | `--control-id-template <template>` | no | How a derived id is written; `{id}` stands for the captured text, e.g. `'CTRL-{id}'` turns `ctrl_1123.rego` into `CTRL-1123`. Default `{id}` (the captured text as is). Must contain `{id}`; may not contain `\|` or a line break; taken literally (no `$1`-style substitution). Giving it without `--control-id-from` is a usage error (exit `1`). |
 | `--fail-under <percent>` | no | CI gate: exit `5` if overall rendering coverage is below this integer (0-100). Compared exactly (18 of 20 conditions is exactly 90%: it passes 90 and fails 91). The output is still written. **The figure can change between explico versions with no change to your policies**, because a release may render a construct that used to be source, or stop counting a statement that tests nothing (the acceptance pack went from 22 of 23 to 24 of 24 between two 0.2.0 builds). Pin the explico version in CI and re-baseline the threshold when you upgrade; the CHANGELOG says when what counts as a condition changes. |
-| `--fail-on-gaps` | no | CI gate: exit `5` if the documentation has gaps — a control with no description or no framework, a title shared by controls, and (with `--requirements`) a requirement with no control or a framework string not on the list. Each gap is listed on stderr. |
+| `--require` | no | With `--fail-on-gaps` (refused without it): the documentation properties a control must have, comma-separated from `title`, `description`, `frameworks`, `fixture` (a worked example in which it matches), `verdict` (a declared `custom.verdict` on an object-valued rule). Default `description,frameworks`. `fixture` and `verdict` need `--examples`. Shared titles and requirement gaps are always gaps. An unknown name is a usage error (exit `1`). |
+| `--fail-on-gaps` | no | CI gate: exit `5` if the documentation has gaps — by default a control with no description or no framework (change that with `--require`), a title shared by controls, and (with `--requirements`) a requirement with no control or a framework string not on the list. Each gap is listed on stderr. |
 | `--rego-version v1\|v0` | no | The Rego syntax of the policies: `v1` (default) or `v0` (legacy: `deny[msg] { ... }` with no `if`/`contains`, as in the Gatekeeper library). Passed to every `opa` call as `--v0-compatible`. Never auto-detected; v0 mode applies to the whole directory (v1 files that `import rego.v1` still parse). The `opa` binary must be 1.x either way. `diff` applies it to both directories. |
 
 Writes one `<package-path>.md` file per Rego package plus `index.md`, and
@@ -187,7 +188,7 @@ object Explico {
 - **`loadExamples(dir)`** — loads `*.json` fixtures from `dir`, in filename
   order. Throws `io.explico.render.DuplicateFixtureNameException` (public)
   if two fixtures share a `name`.
-- **`render(policySet, policyDir, examples, dataDir, generateExamples = false, json = false, requirements = emptyList(), sourceUrl = null, controlIdFrom = null, controlIdTemplate = "{id}", groupByControl = false, companionUrl = null, companionLabel = "module")`** — returns
+- **`render(policySet, policyDir, examples, dataDir, generateExamples = false, json = false, requirements = emptyList(), sourceUrl = null, controlIdFrom = null, controlIdTemplate = "{id}", groupByControl = false, companionUrl = null, companionLabel = "module", required = null)`** — returns
   `RenderedDocs(files: Map<String, String>, coverage: CoverageSummary,
   generatedExamples: GeneratedExamplesSummary?)`, the rendered Markdown keyed by
   output filename plus overall coverage (`coverage.rendered`, `coverage.total`,

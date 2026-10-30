@@ -94,12 +94,28 @@ Notes:
 | Flag | Fails (exit 5) when |
 |---|---|
 | `render --fail-under <percent>` | overall rendering coverage is below the threshold |
-| `render --fail-on-gaps` | a control has no description or no framework, two controls share a title, and (with `--requirements`) a requirement has no control or a control names a framework that is not on your list |
+| `render --fail-on-gaps` | a control has no description or no framework (or whatever `--require` names), two controls share a title, and (with `--requirements`) a requirement has no control or a control names a framework that is not on your list |
 | `diff --fail-on <categories>` | any control is in one of the comma-separated categories `ADDED`, `REMOVED`, `LOGIC_CHANGED`, `DOCS_CHANGED` |
 
 `--requirements <file>` is a text file with one requirement per line (blank lines and `#` comments ignored). Matching against a
 control's `frameworks` is by exact string, deliberately: a typo such as `SOC2 CC8.1` for `SOC 2 CC8.1` shows up as an unlisted framework
 and as a requirement with no control, instead of being silently accepted.
+
+### Ratchet the documentation quality
+
+`--fail-on-gaps` checks a description and a framework by default. `--require` chooses what a gap is, so you can tighten it as the
+policies catch up (it is newer than 0.3.0: check `explico render --help` shows it):
+
+```
+# today: every control has a description and a framework (the default)
+explico render policies --out docs --fail-on-gaps
+
+# next: also a title, and every control exercised by a fixture and, if it returns an object, a declared verdict
+explico render policies --out docs --examples examples --fail-on-gaps --require title,description,frameworks,fixture,verdict
+```
+
+Add one property at a time, fix what the gate lists (each line names the control), then add the next. `fixture` and `verdict` need
+`--examples`; without it the command stops with exit `1` instead of passing. Shared titles and requirement gaps always fail.
 
 ## Review a policy change: diff the pull request against its base
 

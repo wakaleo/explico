@@ -1646,3 +1646,8 @@ control character in a rendered literal is escaped; verbatim source is never pas
 
 `Quality.findingsOf(policySet, groups, examplesByPackage)` is the ONLY place the two example-based findings (`noMatchingExample`, `rawDecisionObject`) are decided, from `WorkedExamples.forGroup` outcomes (never a second evaluation). The gap path (`Explico.render` -> `gapDescriptions`) calls it WITHOUT examples and
 must keep doing so: these are findings, not gaps. Never list a function, an id-less rule or a split default; a grouped control is one entry.
+
+## The required set (spec §14.64)
+
+`render/RequiredSet` validates and normalises the names; `Quality.gapDescriptions(findings, coverage, required)` is the ONE place gap lines are worded and ordered (description, frameworks, title, fixture, verdict, then shared titles, then requirement gaps). `Explico.render` validates BEFORE opa work and computes the
+gap findings WITH the examples; the displayed index/JSON findings never depend on the set (`missingTitle` is gap-only and out of `Findings.isEmpty()`). The CLI checks the names itself before opa is needed and refuses `--require` without `--fail-on-gaps`. Never let the set change a rendered file.

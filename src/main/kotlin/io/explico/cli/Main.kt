@@ -26,6 +26,7 @@ import io.explico.opa.OpaInvocationException
 import io.explico.opa.OpaRunner
 import io.explico.opa.OpaUnavailableException
 import io.explico.render.CompanionLinks
+import io.explico.render.RequiredSet
 import io.explico.render.ControlIdFromFilename
 import io.explico.render.DuplicateFixtureNameException
 import io.explico.render.InvalidMaskException
@@ -103,10 +104,22 @@ private class RenderCommand : CliktCommand(name = "render") {
         .int().restrictTo(0..100)
     private val failOnGaps by option(
         "--fail-on-gaps",
-        help = "Exit 5 if the documentation has gaps: a control with no description or framework, a shared title, or (with --requirements) a requirement with no control",
+        help = "Exit 5 if the documentation has gaps: a control with no description or framework (or whatever --require names), a shared title, or (with --requirements) a requirement with no control",
     ).flag()
 
+    private val requiredProperties by option(
+        "--require",
+        help = "With --fail-on-gaps: the documentation properties a control must have, comma-separated from title, description, frameworks, fixture, verdict (default: description,frameworks). fixture and verdict need --examples",
+    )
+
     override fun run() {
+        // Spec §14.64: --require only changes what --fail-on-gaps fails on, so alone it would silently do nothing.
+        if (requiredProperties != null && !failOnGaps) throw UsageError("--require only changes what --fail-on-gaps fails on; add --fail-on-gaps")
+        // Names are checked here, before anything else (and before opa is needed): an unknown one, or fixture/verdict with no --examples.
+        val required = requiredProperties?.split(',')?.map { it.trim() }
+        if (required != null) {
+            try { RequiredSet.of(required, examplesSupplied = examplesDir != null) } catch (e: IllegalArgumentException) { throw UsageError(e.message ?: "invalid --require") }
+        }
         // A template says how a derived id is written; with no pattern it would silently do nothing, so it is a usage error (checked before anything else).
         if (controlIdTemplate != null && controlIdFrom == null) throw UsageError("--control-id-template needs --control-id-from (it says how a derived id is written)")
         // Likewise a label with no link to label.
@@ -117,7 +130,7 @@ private class RenderCommand : CliktCommand(name = "render") {
             val examples = examplesDir?.let { Explico.loadExamples(it) }
             val rendered = Explico.render(
                 policySet, policyDir, examples, dataDir, generateExamples, json, requirementsFile?.let { parseRequirements(Files.readString(it)) } ?: emptyList(), sourceUrl,
-                controlIdFrom, controlIdTemplate ?: ControlIdFromFilename.DEFAULT_TEMPLATE, groupByControl, companionUrl, companionLabel ?: "module",
+                controlIdFrom, controlIdTemplate ?: ControlIdFromFilename.DEFAULT_TEMPLATE, groupByControl, companionUrl, companionLabel ?: "module", required,
             )
             replaceOutputDirectory(out, rendered.files)
             echo("Rendering coverage: ${rendered.coverage.rendered} of ${rendered.coverage.total} conditions (${rendered.coverage.percent}%)")
@@ -134,6 +147,9 @@ private class RenderCommand : CliktCommand(name = "render") {
         } catch (e: InvalidMaskException) {
             // Spec §14.61: a malformed custom.mask is refused, never ignored; nothing has been written yet.
             failWith(1, e.message ?: "invalid custom.mask")
+        } catch (e: IllegalArgumentException) {
+            // e.g. --require fixture with an examples directory that holds no fixture (spec §14.64); the library words it, nothing has been written yet.
+            failWith(1, e.message ?: "invalid option")
         }
     }
 }

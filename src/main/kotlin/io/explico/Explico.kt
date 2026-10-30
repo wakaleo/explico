@@ -25,6 +25,7 @@ import io.explico.render.ExampleSet
 import io.explico.render.MarkdownRenderer
 import io.explico.render.PolicyDigest
 import io.explico.render.Quality
+import io.explico.render.RequiredSet
 import io.explico.render.SourceLinks
 import io.explico.render.ReferenceData
 import io.explico.render.WorkedExample
@@ -159,11 +160,21 @@ public object Explico {
         companionUrl: String? = null,
         /** The text of the second link (default `module`); must be non-blank plain text: no line break, `[`, `]`, `|`, backtick or `*`, else [IllegalArgumentException]. */
         companionLabel: String = "module",
+        /**
+         * Which documentation properties of a CONTROL count as gaps in [RenderedDocs.gaps] (what `--fail-on-gaps` fails on), by name: `title`, `description`, `frameworks`,
+         * `fixture` (a matching worked example) and `verdict` (a declared `custom.verdict` on an object-valued rule). Null (the default) is `description` and `frameworks`,
+         * exactly as before; an empty list requires none. Duplicate titles and requirement gaps are always gaps. It never changes the rendered files, except that
+         * `explico.json` echoes the effective set as `quality.required`. An unknown name, or `fixture`/`verdict` without [examples], is an [IllegalArgumentException].
+         * From Java the parameter is the last of the `@JvmOverloads` chain, so it is only reachable by passing every earlier argument.
+         */
+        required: List<String>? = null,
     ): RenderedDocs {
         // Validate the URL template before any (slow) opa work: a template without {file} is the caller's mistake.
         val sourceLinks = SourceLinks.of(sourceUrl)
         // Spec §14.61: a malformed custom.mask is refused, never ignored (it would show the values it was written to hide) -- before any opa work.
         requireValidMasks(policySet)
+        // Spec §14.64: likewise the required set -- an unknown property, or one that needs example fixtures when there are none, is refused before any opa work.
+        val requiredSet = RequiredSet.of(required, examplesSupplied = examples?.fixtures?.isNotEmpty() == true)
         warnUnmatchedMasks(policySet, examples)
         // Spec §14.58: likewise the companion template and its label.
         val companion = CompanionLinks.of(companionUrl, companionLabel)
@@ -198,7 +209,7 @@ public object Explico {
         } + groups?.groups.orEmpty().associate { group ->
             group.page to MarkdownRenderer.renderControlPage(group, set, groups!!, examplesByPackage, generated?.byPackage ?: emptyMap(), policyDigest, dataValues, sourceLinks, companion)
         } + ("index.md" to MarkdownRenderer.renderIndex(set, examplesByPackage, policyDigest, requirements, sourceLinks, groups)) +
-            (if (json) mapOf("explico.json" to JsonExport.render(set, policyDigest, examplesByPackage, generated?.byPackage ?: emptyMap(), dataValues, requirements, sourceLinks, groups, companion)) else emptyMap())
+            (if (json) mapOf("explico.json" to JsonExport.render(set, policyDigest, examplesByPackage, generated?.byPackage ?: emptyMap(), dataValues, requirements, sourceLinks, groups, companion, requiredSet)) else emptyMap())
 
         val packageCoverages = set.packages.map { Coverage.of(it) }
         val overallCoverage = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })
@@ -207,7 +218,11 @@ public object Explico {
             files = files,
             coverage = overallCoverage,
             generatedExamples = generated?.let { GeneratedExamplesSummary(it.rulesWithExamples, it.rulesConsidered) },
-            gaps = Quality.gapDescriptions(Quality.findingsOf(set, groups), normalisedRequirements.takeIf { it.isNotEmpty() }?.let { Quality.coverageOf(set, it, groups) }),
+            gaps = Quality.gapDescriptions(
+                Quality.findingsOf(set, groups, examplesByPackage),
+                normalisedRequirements.takeIf { it.isNotEmpty() }?.let { Quality.coverageOf(set, it, groups) },
+                requiredSet,
+            ),
         )
     }
 

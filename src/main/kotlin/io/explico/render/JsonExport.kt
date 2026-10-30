@@ -47,6 +47,8 @@ internal object JsonExport {
         groups: ControlGroups? = null,
         /** Spec §14.58: the second link; null (the default) leaves the document without any `companionUrl`. */
         companion: CompanionLinks? = null,
+        /** Spec §14.64: echoed as `quality.required`. */
+        required: RequiredSet = RequiredSet.DEFAULT,
     ): String {
         val packageCoverages = policySet.packages.map { Coverage.of(it) }
         val overall = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })
@@ -54,7 +56,7 @@ internal object JsonExport {
             put("schema", SCHEMA)
             put("policyDigest", policyDigest)
             put("coverage", coverage(overall))
-            put("quality", qualityObject(Quality.findingsOf(policySet, groups, examplesByPackage)))
+            put("quality", qualityObject(Quality.findingsOf(policySet, groups, examplesByPackage), required))
             put("requirements", Quality.normalise(requirements).takeIf { it.isNotEmpty() }?.let { requirementsObject(Quality.coverageOf(policySet, it, groups)) } ?: JsonNull)
             if (groups != null) put("controls", controlsArray(groups))
             put("packages", buildJsonArray {
@@ -64,7 +66,7 @@ internal object JsonExport {
         return prettyJson(document)
     }
 
-    private fun qualityObject(f: Quality.Findings) = buildJsonObject {
+    private fun qualityObject(f: Quality.Findings, required: RequiredSet) = buildJsonObject {
         put("missingDescription", buildJsonArray { f.missingDescription.forEach { add(JsonPrimitive(it.label)) } })
         put("noFramework", buildJsonArray { f.noFramework.forEach { add(JsonPrimitive(it.label)) } })
         put("noMatchingExample", buildJsonArray { f.noMatchingExample.forEach { add(JsonPrimitive(it.label)) } })
@@ -74,6 +76,8 @@ internal object JsonExport {
                 add(buildJsonObject { put("title", title); put("controls", buildJsonArray { controls.forEach { add(JsonPrimitive(it.label)) } }) })
             }
         })
+        // Spec §14.64: which of these properties the caller made gaps (the effective set, canonical order).
+        put("required", buildJsonArray { required.names.forEach { add(JsonPrimitive(it)) } })
     }
 
     /** Spec §14.56: one entry per grouped control, in id order -- its page, the page-level anchor, its title, and its rules in the order the page shows them. */
