@@ -258,6 +258,13 @@ test exercises is still listed, and the tests are not. "Used" is decided from op
 and the checks above start applying to it. Advisory, not a gap. On Trivy's Kubernetes checks it lists 171 entry points for 177 files; on Gatekeeper's general
 templates, 30 for 30.
 
+**Values shown as source.** The card footer's "contains N unrendered values" counts the operands inside otherwise-rendered conditions that explico
+could not render. The index lists them: one line per distinct source text, most frequent first, with the cards and `file:row` places where
+each occurs (linked with `--source-url`). The 25 most frequent are listed and the rest are only in `explico.json`
+(`quality.valuesShownAsSource`, the full list). It says what was not rendered, not why: an operand has no reason code the way a whole
+condition does. On a real corpus the most frequent values are often local-variable paths such as `types[_]` (a list held in a local variable, which explico
+cannot resolve): a recurring one is worth restructuring the policy around, or reporting. Advisory, not a gap.
+
 **Seeing it without opening the index.** `explico render` prints the findings after the coverage line, one line per kind (`2 controls have
 no description`, `1 comment block is not published`, ...), and says to see `index.md` for which controls. Every bullet there ends with
 what to do about it. Nothing is printed for a policy with nothing to report.

@@ -1662,6 +1662,11 @@ gap findings WITH the examples; the displayed index/JSON findings never depend o
 Every `Condition.Unrendered` the mapper builds goes through `AstMapper.unrenderedAt(location, reason)`, which records the statement's first row (null when opa gave no location, never 0). The row is NOT logic: `Canonicalizer` hashes `sourceText` and `reason` only, and `diff` compares fallbacks by text -- never compare two
 `Unrendered` with `==` in diff code. The file of a place is the holding body's (or else branch's) `sourceLocation.file`; `Quality.shownAsSource` builds the places and the bullet/JSON only present them. `SourceLinks?.placeText(file, row)` is the ONLY place a place is written in the index (spec §14.70): a `file:row` code span, linked through `SourceLinks.url` when a template was given.
 
+## Values shown as source (spec §14.71)
+
+`Coverage.unrenderedOperandsOf` is the ONE traversal that finds the unrendered operands: the card footer's count is defined from it, and `Quality.valuesShownAsSource` reads the same instances, so the footer and the index cannot disagree. Every `Operand.Unrendered` the mapper builds from a located term goes through
+`AstMapper.unrenderedOperandAt` (row = the term's first row, null when opa gave none). The row is NOT logic (`Canonicalizer` hashes `sourceText` only). The index lists the 25 most frequent distinct texts; `explico.json` has them all. Display a blank source as `(no source text)`, never an empty code span.
+
 ## Rules with no control id (spec §14.68)
 
 "Used by another rule" is decided in `parse/RuleReferences` from opa's own AST (a generic walk, so a use inside a comprehension, `every` or `with` still counts) and carried as `RuleGroup.isReferenced` (default TRUE = unknown, never a finding). Never answer the question from the domain model alone: it keeps those uses

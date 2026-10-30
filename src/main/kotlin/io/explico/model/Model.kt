@@ -395,7 +395,14 @@ public sealed interface Operand {
     ) : Operand
 
     /** An operand the mapper cannot classify, e.g. an unrecognised operand-position builtin call. */
-    public data class Unrendered(val sourceText: String) : Operand
+    public data class Unrendered @JvmOverloads constructor(
+        val sourceText: String,
+        /**
+         * Where the operand starts (spec §14.71): the 1-based row of its first line in its file, from opa's own location; null when unknown (a hand-built operand, or one
+         * with no location). The file is the holding body's own [RuleBody.sourceLocation]. Never part of what the operand says, and `diff` ignores it.
+         */
+        val row: Int? = null,
+    ) : Operand
 }
 
 /** One segment of an `input`/`data` path reference. */

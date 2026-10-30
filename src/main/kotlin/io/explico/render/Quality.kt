@@ -8,6 +8,7 @@ package io.explico.render
 
 import io.explico.model.CommentBlock
 import io.explico.model.Condition
+import io.explico.model.Operand
 import io.explico.model.PolicyPackage
 import io.explico.model.PolicySet
 import io.explico.model.RuleGroup
@@ -52,14 +53,22 @@ internal object Quality {
          * `<package>.<rule>`. Advisory, never a gap.
          */
         val noControlId: List<ControlRef> = emptyList(),
+        /**
+         * Spec §14.71: the unrendered VALUES inside rendered conditions -- the ones the card footer counts -- grouped by exact source text, most frequent first.
+         * Advisory, never a gap.
+         */
+        val valuesShownAsSource: List<ValueShownAsSource> = emptyList(),
     ) {
         fun isEmpty(): Boolean =
             missingDescription.isEmpty() && noFramework.isEmpty() && duplicateTitles.isEmpty() && noMatchingExample.isEmpty() && rawDecisionObject.isEmpty() &&
-                unpublishedComments.isEmpty() && shownAsSource.isEmpty() && noControlId.isEmpty()
+                unpublishedComments.isEmpty() && shownAsSource.isEmpty() && noControlId.isEmpty() && valuesShownAsSource.isEmpty()
     }
 
     /** [count] conditions shown as source for [reason], in [cards] (distinct, in index order). */
     data class ShownAsSource(val reason: String, val count: Int, val cards: List<ControlRef>, val places: List<Place> = emptyList())
+
+    /** [count] occurrences of the unrendered value [source] (verbatim), on [cards] (distinct, in index order) at [places]. */
+    data class ValueShownAsSource(val source: String, val count: Int, val cards: List<ControlRef>, val places: List<Place>)
 
     /** Where one fallback starts (spec §14.69): the [card] it is on, the policy-relative [file] of its body and the 1-based [row] of its first line. */
     data class Place(val card: ControlRef, val file: String, val row: Int)
@@ -132,6 +141,7 @@ internal object Quality {
             unpublishedComments = policySet.packages.flatMap { it.unpublishedComments }.sortedWith(compareBy({ it.file }, { it.row })),
             shownAsSource = shownAsSource(entries(policySet, groups).filter { !it.isSplitDefault }),
             noControlId = noControlId(entries(policySet, groups)),
+            valuesShownAsSource = valuesShownAsSource(entries(policySet, groups).filter { !it.isSplitDefault }),
             missingDescription = controls.filter { !it.hasDescription }.map { it.ref },
             noFramework = controls.filter { it.frameworks.isEmpty() }.map { it.ref },
             duplicateTitles = byTitle.filterValues { it.size > 1 }.entries.sortedBy { it.key }.map { (title, group) -> title to group.map { it.ref } },
@@ -168,6 +178,30 @@ internal object Quality {
         }
         return byReason.map { (reason, found) -> ShownAsSource(reason, found.sumOf { it.second }, found.map { it.first.ref }, found.flatMap { it.third }) }
     }
+
+    /**
+     * Spec §14.71: every card's unrendered operands inside rendered conditions -- exactly what [Coverage.unrenderedOperandsOf] (the card footer's own traversal) finds, with
+     * the file of the body or `else` branch holding each -- grouped by their exact source text. A value with no known row counts and names its card but has no place;
+     * two on one row are two occurrences and one place. Most frequent first, then by text.
+     */
+    private fun valuesShownAsSource(cards: List<Entry>): List<ValueShownAsSource> {
+        class Found(val card: Entry, val count: Int, val places: List<Place>)
+        val bySource = HashMap<String, MutableList<Found>>()
+        for (card in cards) {
+            val values = card.members.flatMap { (_, rule) -> rule.bodies.flatMap { body -> unrenderedValuesOf(body) } }
+            for ((source, ofSource) in values.groupBy { it.second.sourceText }) {
+                val places = ofSource.mapNotNull { (file, operand) -> operand.row?.let { Place(card.ref, file, it) } }.distinct().sortedWith(compareBy({ it.file }, { it.row }))
+                bySource.getOrPut(source) { mutableListOf() } += Found(card, ofSource.size, places)
+            }
+        }
+        return bySource.map { (source, found) -> ValueShownAsSource(source, found.sumOf { it.count }, found.map { it.card.ref }, found.flatMap { it.places }) }
+            .sortedWith(compareBy({ -it.count }, { it.source }))
+    }
+
+    /** The unrendered values a body shows (its own conditions' and its `else` branches'), each with the file of the body or branch that holds it. */
+    private fun unrenderedValuesOf(body: io.explico.model.RuleBody): List<Pair<String, Operand.Unrendered>> =
+        listOf(body.sourceLocation.file to body.conditions).plus(body.elseBranches.map { it.sourceLocation.file to it.conditions })
+            .flatMap { (file, conditions) -> Coverage.unrenderedOperandsOf(conditions).map { file to it } }
 
     /** The condition-level fallbacks a body shows (its own, its `else` branches' and any nested), each with the file of the body or branch that holds it. */
     private fun fallbacksOf(body: io.explico.model.RuleBody): List<Pair<String, Condition.Unrendered>> =
@@ -219,6 +253,8 @@ internal object Quality {
         if (comments > 0) add(if (comments == 1) "1 comment block is not published" else "$comments comment blocks are not published")
         val conditions = findings.shownAsSource.sumOf { it.count }
         if (conditions > 0) add(if (conditions == 1) "1 condition is shown as source" else "$conditions conditions are shown as source")
+        val values = findings.valuesShownAsSource.sumOf { it.count }
+        if (values > 0) add(if (values == 1) "1 value is shown as source inside a rendered condition" else "$values values are shown as source inside rendered conditions")
         val titles = findings.duplicateTitles.size
         if (titles > 0) add(if (titles == 1) "1 title is shared by several controls" else "$titles titles are shared by several controls")
     }

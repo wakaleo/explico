@@ -34,7 +34,7 @@ class RealisticUnpublishedCommentsAcceptanceIT {
 
     companion object {
         private val policies = Path.of("src/test/resources/realistic/unpublished-comments/policies")
-        private val clean = Path.of("src/test/resources/realistic/quality-hints/policies")
+        private val clean = Path.of("samples/policies") // the acceptance-pack sample: nothing to report (spec §14.71: quality-hints has one unrendered value, QH-7's `name`)
 
         private const val MARKER = "- **Comments not published"
         private const val HINT = "— move what readers need into a rule's description in its METADATA"

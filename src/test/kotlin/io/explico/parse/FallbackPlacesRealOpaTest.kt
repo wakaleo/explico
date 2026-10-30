@@ -61,4 +61,17 @@ class FallbackPlacesRealOpaTest {
         val text = "package p\n\nimport rego.v1\n\nf(x) if {\n\tx == 1\n\tunknown_check(x)\n}\n"
         assertThat(rowsOf(dir, text, "f")).containsExactly(7)
     }
+
+    @Test
+    @DisplayName("spec §14.71: an unrendered VALUE has its row too, with Windows line endings as with Unix ones")
+    fun valueRowsWithCrlf(@TempDir dir: Path) {
+        val text = "package p\n\nimport rego.v1\n\nr if {\n\tinput.a == 1\n\tjson.marshal(input.x) == \"1\"\n}\n"
+        fun rows(source: String): List<Int?> {
+            Files.writeString(dir.resolve("p.rego"), source)
+            val rule = Explico.load(dir).packages.single().rules.single { it.name == "r" }
+            return io.explico.render.Coverage.unrenderedOperandsOf(rule.bodies.flatMap { io.explico.render.Coverage.conditionsOf(it) }).map { it.row }
+        }
+        assertThat(rows(text)).containsExactly(7)
+        assertThat(rows(text.replace("\n", "\r\n"))).containsExactly(7)
+    }
 }

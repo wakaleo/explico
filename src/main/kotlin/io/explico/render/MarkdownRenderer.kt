@@ -982,16 +982,31 @@ internal object MarkdownRenderer {
         if (findings.shownAsSource.isNotEmpty()) {
             sb.appendLine("- **Shown as source (${findings.shownAsSource.sumOf { it.count }}):**")
             for (item in findings.shownAsSource) {
-                val cards = item.cards.joinToString(", ") { card ->
-                    val where = item.places.filter { it.card == card }.joinToString(", ") { sourceLinks.placeText(it.file, it.row) }
-                    card.link() + if (where.isEmpty()) "" else " ($where)"
-                }
-                sb.appendLine("  - `${item.reason}` ×${item.count} in $cards — ${UnrenderedReasons.why(item.reason)}")
+                sb.appendLine("  - `${item.reason}` ×${item.count} in ${cardsWithPlaces(item.cards, item.places, sourceLinks)} — ${UnrenderedReasons.why(item.reason)}")
             }
+        }
+        // Spec §14.71: the values inside rendered conditions that the card footer counts -- by exact source text, the 25 most frequent, the rest only in explico.json.
+        if (findings.valuesShownAsSource.isNotEmpty()) {
+            sb.appendLine("- **Values shown as source (${findings.valuesShownAsSource.sumOf { it.count }}):** explico renders the condition around each of these but cannot render the value itself")
+            for (item in findings.valuesShownAsSource.take(MAX_VALUES_LISTED)) {
+                val source = if (item.source.isBlank()) "(no source text)" else MarkdownText.codeSpan(item.source)
+                sb.appendLine("  - $source ×${item.count} in ${cardsWithPlaces(item.cards, item.places, sourceLinks)}")
+            }
+            val more = findings.valuesShownAsSource.size - MAX_VALUES_LISTED
+            if (more > 0) sb.appendLine("  - … and $more more distinct ${if (more == 1) "value" else "values"} (all are in explico.json)")
         }
         for ((title, controls) in findings.duplicateTitles) {
             sb.appendLine("- **Duplicate title (${controls.size}):** ${controls.joinToString(", ") { it.link() }} -- \"$title\" — give each control its own title")
         }
+    }
+
+    /** How many distinct unrendered values the index lists (spec §14.71); `explico.json` has them all. */
+    private const val MAX_VALUES_LISTED = 25
+
+    /** [cards] as the quality section writes them: each link followed by that card's own places in parentheses (linked when a source template was given), none when it has none. */
+    private fun cardsWithPlaces(cards: List<Quality.ControlRef>, places: List<Quality.Place>, sourceLinks: SourceLinks?): String = cards.joinToString(", ") { card ->
+        val where = places.filter { it.card == card }.joinToString(", ") { sourceLinks.placeText(it.file, it.row) }
+        card.link() + if (where.isEmpty()) "" else " ($where)"
     }
 
     /** The id [anchorForTarget] links to for [rule]: its control id if it has one, else `package-rulename`, slugged. */

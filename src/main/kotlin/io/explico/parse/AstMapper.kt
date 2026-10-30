@@ -834,7 +834,7 @@ internal object AstMapper {
         if (value.location == null) return null
         return when (val result = mapOperand(value, symbolTable, ctx)) {
             is ConstructResult.Ok -> result.operand
-            is ConstructResult.Unsupported -> Operand.Unrendered(sourceText(value.location))
+            is ConstructResult.Unsupported -> unrenderedOperandAt(value.location)
         }
     }
 
@@ -1398,7 +1398,7 @@ internal object AstMapper {
                 if (ctx.freeKeys?.bound?.containsKey(name) == true) return ConstructResult.Ok(Operand.Variable(name))
                 val reference = ruleValueReferenceIfKnown(ctx.currentPackage, name, ctx)
                     ?: importedMember(name, ctx)?.let { (pkg, member) -> ruleValueReferenceIfKnown(pkg, member, ctx) }
-                ConstructResult.Ok(reference ?: Operand.Unrendered(sourceText(term.location)))
+                ConstructResult.Ok(reference ?: unrenderedOperandAt(term.location))
             }
         }
 
@@ -1429,7 +1429,7 @@ internal object AstMapper {
         // on an array literal, `{...}[k]` on a comprehension (found by benchmarking real-world Rego
         // corpora; stringValueOf threw on each). None has a rendering, so it is the ordinary
         // operand fallback -- the chain's own verbatim source -- never a guess.
-        if (root.type != "var" && root.type != "string") return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+        if (root.type != "var" && root.type != "string") return ConstructResult.Ok(unrenderedOperandAt(wholeRefLocation))
         val rootName = stringValueOf(root)
         val remaining = chain.drop(1)
         // Review item 10: a full `data.<package>.<rule>` path to a COMPLETE rule's value is a
@@ -1448,10 +1448,10 @@ internal object AstMapper {
             ruleValueReferenceIfKnown(candidatePackage, candidateRule, ctx)?.let { return ConstructResult.Ok(it) }
         }
         if (rootName == "input" || rootName == "data") {
-            val segments = mapPathSegments(remaining, symbolTable, ctx, listOf(PathSegment.Field(rootName))) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+            val segments = mapPathSegments(remaining, symbolTable, ctx, listOf(PathSegment.Field(rootName))) ?: return ConstructResult.Ok(unrenderedOperandAt(wholeRefLocation))
             // `input[_]` / `input[key]` (a single-use index): with nothing named after the root the breadcrumb would be EMPTY ("any of: `` is ..."), a
             // statement with no subject. The raw operand says what it is.
-            if (segments.isNotEmpty() && segments.all { it == PathSegment.AnyIndex }) return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+            if (segments.isNotEmpty() && segments.all { it == PathSegment.AnyIndex }) return ConstructResult.Ok(unrenderedOperandAt(wholeRefLocation))
             return ConstructResult.Ok(Operand.Path(listOf(PathSegment.Field(rootName)) + segments))
         }
         // Review item 10: an import-alias-rooted chain (`config.max_items`) is a reference to that
@@ -1476,18 +1476,18 @@ internal object AstMapper {
             // segment (`x[input.k]`) cannot, and stringValueOf would throw on it.
             val dottedPath = if (allPlainStringSegments(remaining)) chain.joinToString(".") { stringValueOf(it) } else null
             if (dottedPath != null && ctx.refHeadRegistry[ctx.currentPackage]?.contains(dottedPath) == true) {
-                val segments = mapPathSegments(remaining, symbolTable, ctx, listOf(PathSegment.Field(rootName))) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+                val segments = mapPathSegments(remaining, symbolTable, ctx, listOf(PathSegment.Field(rootName))) ?: return ConstructResult.Ok(unrenderedOperandAt(wholeRefLocation))
                 return ConstructResult.Ok(Operand.Path(listOf(PathSegment.Field(rootName)) + segments))
             }
         }
         return when (val binding = symbolTable[rootName]) {
             is VarBinding.Iteration -> {
                 val prefix = binding.collection.segments + PathSegment.VarIndex(rootName)
-                val segments = mapPathSegments(remaining, symbolTable, ctx, prefix) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+                val segments = mapPathSegments(remaining, symbolTable, ctx, prefix) ?: return ConstructResult.Ok(unrenderedOperandAt(wholeRefLocation))
                 ConstructResult.Ok(Operand.Path(prefix + segments))
             }
             is VarBinding.Substitution -> {
-                val segments = mapPathSegments(remaining, symbolTable, ctx, binding.path.segments) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+                val segments = mapPathSegments(remaining, symbolTable, ctx, binding.path.segments) ?: return ConstructResult.Ok(unrenderedOperandAt(wholeRefLocation))
                 ConstructResult.Ok(Operand.Path(binding.path.segments + segments))
             }
             // A parameter used as a ref-chain ROOT (`ns.subfield`), spec §14.26 (coverage audit
@@ -1499,10 +1499,10 @@ internal object AstMapper {
             // Operand.Parameter a bare use would produce, rather than an empty-tail ParameterPath.
             VarBinding.Parameter -> {
                 if (remaining.isEmpty()) return ConstructResult.Ok(Operand.Parameter(rootName))
-                val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+                val segments = mapPathSegments(remaining, symbolTable, ctx) ?: return ConstructResult.Ok(unrenderedOperandAt(wholeRefLocation))
                 ConstructResult.Ok(Operand.ParameterPath(rootName, segments))
             }
-            VarBinding.NonPath, is VarBinding.Expression, is VarBinding.IterationKey, null -> ConstructResult.Ok(Operand.Unrendered(sourceText(wholeRefLocation)))
+            VarBinding.NonPath, is VarBinding.Expression, is VarBinding.IterationKey, null -> ConstructResult.Ok(unrenderedOperandAt(wholeRefLocation))
         }
     }
 
@@ -1592,7 +1592,7 @@ internal object AstMapper {
     private fun mapCollectionLiteral(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): ConstructResult {
         val elements = decodeTermList(term.value)
         val allScalar = elements.all { it.type in SCALAR_TERM_TYPES }
-        if (elements.size > 5 || !allScalar) return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
+        if (elements.size > 5 || !allScalar) return ConstructResult.Ok(unrenderedOperandAt(term.location))
         val rendered = elements.joinToString(", ") { el ->
             (mapOperand(el, symbolTable, ctx) as ConstructResult.Ok).let { (it.operand as Operand.Literal).rendered }
         }
@@ -1622,7 +1622,7 @@ internal object AstMapper {
         val pairs = opaJson.decodeFromJsonElement(ListSerializer(ListSerializer(OpaTerm.serializer())), term.value ?: JsonArray(emptyList()))
             .map { it[0] to it[1] }
         val allFlat = pairs.all { (key, value) -> key.type == "string" && value.type in SCALAR_TERM_TYPES }
-        if (pairs.size > 5 || !allFlat) return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
+        if (pairs.size > 5 || !allFlat) return ConstructResult.Ok(unrenderedOperandAt(term.location))
         val rendered = pairs.joinToString(", ") { (key, value) ->
             val valueText = (mapOperand(value, symbolTable, ctx) as ConstructResult.Ok).let { (it.operand as Operand.Literal).rendered }
             "${quoted(stringValueOf(key))}: $valueText"
@@ -1655,7 +1655,7 @@ internal object AstMapper {
      * does any promotable builtin above if an argument doesn't resolve -- never a guessed rendering.
      */
     private fun mapCallOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): ConstructResult {
-        val (name, args) = decodeCallShape(decodeTermList(term.value)) ?: return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
+        val (name, args) = decodeCallShape(decodeTermList(term.value)) ?: return ConstructResult.Ok(unrenderedOperandAt(term.location))
         val mapped = args.map { mapOperand(it, symbolTable, ctx) }
         val unsupported = mapped.filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
         if (unsupported != null) return unsupported
@@ -1684,7 +1684,7 @@ internal object AstMapper {
         resolveFunctionCall(name, args.size, ctx)?.let { (packagePath, functionName) ->
             return ConstructResult.Ok(Operand.FunctionCall(packagePath, functionName, operands))
         }
-        return ConstructResult.Ok(Operand.Unrendered(sourceText(term.location)))
+        return ConstructResult.Ok(unrenderedOperandAt(term.location))
     }
 
     /**
@@ -1829,6 +1829,10 @@ internal object AstMapper {
     /** A fallback for the statement at [location]: its verbatim source, why, and where it starts (spec §14.69; a missing location is no place, not row 0). */
     private fun unrenderedAt(location: io.explico.opa.OpaLocation?, reason: String): Condition.Unrendered =
         Condition.Unrendered(sourceText(location), reason, location?.row?.takeIf { it > 0 })
+
+    /** An operand shown as source: its verbatim text and where it starts (spec §14.71; a missing location is no place, not row 0). */
+    private fun unrenderedOperandAt(location: io.explico.opa.OpaLocation?): Operand.Unrendered =
+        Operand.Unrendered(sourceText(location), location?.row?.takeIf { it > 0 })
 
     private fun sourceText(location: io.explico.opa.OpaLocation?): String {
         val encoded = location?.text ?: return ""

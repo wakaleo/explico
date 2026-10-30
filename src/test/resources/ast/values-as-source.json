@@ -1,0 +1,1409 @@
+{
+  "package": {
+    "location": {
+      "file": "vs.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "vs.rego",
+          "row": 1,
+          "col": 9,
+          "text": "dnM="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "vs.rego",
+          "row": 1,
+          "col": 9,
+          "text": "dnM="
+        },
+        "type": "string",
+        "value": "vs"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "vs.rego",
+        "row": 3,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "vs.rego",
+          "row": 3,
+          "col": 8,
+          "text": "cmVnby52MQ=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "vs.rego",
+              "row": 3,
+              "col": 8,
+              "text": "cmVnbw=="
+            },
+            "type": "var",
+            "value": "rego"
+          },
+          {
+            "location": {
+              "file": "vs.rego",
+              "row": 3,
+              "col": 13,
+              "text": "djE="
+            },
+            "type": "string",
+            "value": "v1"
+          }
+        ]
+      }
+    }
+  ],
+  "annotations": [
+    {
+      "custom": {
+        "control-id": "VS-1",
+        "frameworks": [
+          "ISO 27001 A.8.32"
+        ]
+      },
+      "description": "Fixture control VS-1.",
+      "location": {
+        "file": "vs.rego",
+        "row": 5,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBTYW1lIHZhbHVlIHR3aWNlCiMgZGVzY3JpcHRpb246IEZpeHR1cmUgY29udHJvbCBWUy0xLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFZTLTEKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMg=="
+      },
+      "scope": "document",
+      "title": "Same value twice"
+    },
+    {
+      "custom": {
+        "control-id": "VS-2",
+        "frameworks": [
+          "ISO 27001 A.8.32"
+        ]
+      },
+      "description": "Fixture control VS-2.",
+      "location": {
+        "file": "vs.rego",
+        "row": 21,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBTYW1lIHZhbHVlLCBuZXN0ZWQKIyBkZXNjcmlwdGlvbjogRml4dHVyZSBjb250cm9sIFZTLTIuCiMgY3VzdG9tOgojICAgY29udHJvbC1pZDogVlMtMgojICAgZnJhbWV3b3JrczoKIyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+      },
+      "scope": "document",
+      "title": "Same value, nested"
+    }
+  ],
+  "rules": [
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "VS-1",
+            "frameworks": [
+              "ISO 27001 A.8.32"
+            ]
+          },
+          "description": "Fixture control VS-1.",
+          "location": {
+            "file": "vs.rego",
+            "row": 5,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBTYW1lIHZhbHVlIHR3aWNlCiMgZGVzY3JpcHRpb246IEZpeHR1cmUgY29udHJvbCBWUy0xLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFZTLTEKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMg=="
+          },
+          "scope": "document",
+          "title": "Same value twice"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "vs.rego",
+            "row": 14,
+            "col": 2,
+            "text": "aW5wdXQua2luZCA9PSAiYSI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 14,
+                "col": 13,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 14,
+                    "col": 13,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 14,
+                "col": 2,
+                "text": "aW5wdXQua2luZA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 14,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 14,
+                    "col": 8,
+                    "text": "a2luZA=="
+                  },
+                  "type": "string",
+                  "value": "kind"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 14,
+                "col": 16,
+                "text": "ImEi"
+              },
+              "type": "string",
+              "value": "a"
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "vs.rego",
+            "row": 15,
+            "col": 2,
+            "text": "anNvbi5tYXJzaGFsKGlucHV0LmEpID09ICIxIg=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 15,
+                "col": 24,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 15,
+                    "col": 24,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 15,
+                "col": 2,
+                "text": "anNvbi5tYXJzaGFsKGlucHV0LmEp"
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 15,
+                    "col": 2,
+                    "text": "anNvbi5tYXJzaGFs"
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 15,
+                        "col": 2,
+                        "text": "anNvbg=="
+                      },
+                      "type": "var",
+                      "value": "json"
+                    },
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 15,
+                        "col": 7,
+                        "text": "bWFyc2hhbA=="
+                      },
+                      "type": "string",
+                      "value": "marshal"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 15,
+                    "col": 15,
+                    "text": "aW5wdXQuYQ=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 15,
+                        "col": 15,
+                        "text": "aW5wdXQ="
+                      },
+                      "type": "var",
+                      "value": "input"
+                    },
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 15,
+                        "col": 21,
+                        "text": "YQ=="
+                      },
+                      "type": "string",
+                      "value": "a"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 15,
+                "col": 27,
+                "text": "IjEi"
+              },
+              "type": "string",
+              "value": "1"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "location": {
+            "file": "vs.rego",
+            "row": 16,
+            "col": 2,
+            "text": "aW5wdXQub2sgPT0gdHJ1ZQ=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 16,
+                "col": 11,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 16,
+                    "col": 11,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 16,
+                "col": 2,
+                "text": "aW5wdXQub2s="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 16,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 16,
+                    "col": 8,
+                    "text": "b2s="
+                  },
+                  "type": "string",
+                  "value": "ok"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 16,
+                "col": 14,
+                "text": "dHJ1ZQ=="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "location": {
+            "file": "vs.rego",
+            "row": 17,
+            "col": 2,
+            "text": "anNvbi5tYXJzaGFsKGlucHV0LmEpID09ICIyIg=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 17,
+                "col": 24,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 17,
+                    "col": 24,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 17,
+                "col": 2,
+                "text": "anNvbi5tYXJzaGFsKGlucHV0LmEp"
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 17,
+                    "col": 2,
+                    "text": "anNvbi5tYXJzaGFs"
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 17,
+                        "col": 2,
+                        "text": "anNvbg=="
+                      },
+                      "type": "var",
+                      "value": "json"
+                    },
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 17,
+                        "col": 7,
+                        "text": "bWFyc2hhbA=="
+                      },
+                      "type": "string",
+                      "value": "marshal"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 17,
+                    "col": 15,
+                    "text": "aW5wdXQuYQ=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 17,
+                        "col": 15,
+                        "text": "aW5wdXQ="
+                      },
+                      "type": "var",
+                      "value": "input"
+                    },
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 17,
+                        "col": 21,
+                        "text": "YQ=="
+                      },
+                      "type": "string",
+                      "value": "a"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 17,
+                "col": 27,
+                "text": "IjIi"
+              },
+              "type": "string",
+              "value": "2"
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "location": {
+            "file": "vs.rego",
+            "row": 18,
+            "col": 2,
+            "text": "anNvbi5tYXJzaGFsKGlucHV0LmIpID09ICIzIg=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 18,
+                "col": 24,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 18,
+                    "col": 24,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 18,
+                "col": 2,
+                "text": "anNvbi5tYXJzaGFsKGlucHV0LmIp"
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 18,
+                    "col": 2,
+                    "text": "anNvbi5tYXJzaGFs"
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 18,
+                        "col": 2,
+                        "text": "anNvbg=="
+                      },
+                      "type": "var",
+                      "value": "json"
+                    },
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 18,
+                        "col": 7,
+                        "text": "bWFyc2hhbA=="
+                      },
+                      "type": "string",
+                      "value": "marshal"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 18,
+                    "col": 15,
+                    "text": "aW5wdXQuYg=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 18,
+                        "col": 15,
+                        "text": "aW5wdXQ="
+                      },
+                      "type": "var",
+                      "value": "input"
+                    },
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 18,
+                        "col": 21,
+                        "text": "Yg=="
+                      },
+                      "type": "string",
+                      "value": "b"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 18,
+                "col": 27,
+                "text": "IjMi"
+              },
+              "type": "string",
+              "value": "3"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "vs_one",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "vs.rego",
+              "row": 13,
+              "col": 1,
+              "text": "dnNfb25l"
+            },
+            "type": "var",
+            "value": "vs_one"
+          }
+        ],
+        "location": {
+          "file": "vs.rego",
+          "row": 13,
+          "col": 1,
+          "text": "dnNfb25l"
+        }
+      },
+      "location": {
+        "file": "vs.rego",
+        "row": 13,
+        "col": 1,
+        "text": "dnNfb25lIGlmIHsKCWlucHV0LmtpbmQgPT0gImEiCglqc29uLm1hcnNoYWwoaW5wdXQuYSkgPT0gIjEiCglpbnB1dC5vayA9PSB0cnVlCglqc29uLm1hcnNoYWwoaW5wdXQuYSkgPT0gIjIiCglqc29uLm1hcnNoYWwoaW5wdXQuYikgPT0gIjMiCn0="
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "VS-2",
+            "frameworks": [
+              "ISO 27001 A.8.32"
+            ]
+          },
+          "description": "Fixture control VS-2.",
+          "location": {
+            "file": "vs.rego",
+            "row": 21,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBTYW1lIHZhbHVlLCBuZXN0ZWQKIyBkZXNjcmlwdGlvbjogRml4dHVyZSBjb250cm9sIFZTLTIuCiMgY3VzdG9tOgojICAgY29udHJvbC1pZDogVlMtMgojICAgZnJhbWV3b3JrczoKIyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+          },
+          "scope": "document",
+          "title": "Same value, nested"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "vs.rego",
+            "row": 30,
+            "col": 2,
+            "text": "anNvbi5tYXJzaGFsKGlucHV0LmEpID09ICI0Ig=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 30,
+                "col": 24,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 30,
+                    "col": 24,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 30,
+                "col": 2,
+                "text": "anNvbi5tYXJzaGFsKGlucHV0LmEp"
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 30,
+                    "col": 2,
+                    "text": "anNvbi5tYXJzaGFs"
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 30,
+                        "col": 2,
+                        "text": "anNvbg=="
+                      },
+                      "type": "var",
+                      "value": "json"
+                    },
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 30,
+                        "col": 7,
+                        "text": "bWFyc2hhbA=="
+                      },
+                      "type": "string",
+                      "value": "marshal"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 30,
+                    "col": 15,
+                    "text": "aW5wdXQuYQ=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 30,
+                        "col": 15,
+                        "text": "aW5wdXQ="
+                      },
+                      "type": "var",
+                      "value": "input"
+                    },
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 30,
+                        "col": 21,
+                        "text": "YQ=="
+                      },
+                      "type": "string",
+                      "value": "a"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 30,
+                "col": 27,
+                "text": "IjQi"
+              },
+              "type": "string",
+              "value": "4"
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "vs.rego",
+            "row": 31,
+            "col": 2,
+            "text": "Y291bnQoanNvbi5tYXJzaGFsKGlucHV0LmMpKSA+IDA="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 31,
+                "col": 31,
+                "text": "Pg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 31,
+                    "col": 31,
+                    "text": "Pg=="
+                  },
+                  "type": "var",
+                  "value": "gt"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 31,
+                "col": 2,
+                "text": "Y291bnQoanNvbi5tYXJzaGFsKGlucHV0LmMpKQ=="
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 31,
+                    "col": 2,
+                    "text": "Y291bnQ="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 31,
+                        "col": 2,
+                        "text": "Y291bnQ="
+                      },
+                      "type": "var",
+                      "value": "count"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 31,
+                    "col": 8,
+                    "text": "anNvbi5tYXJzaGFsKGlucHV0LmMp"
+                  },
+                  "type": "call",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 31,
+                        "col": 8,
+                        "text": "anNvbi5tYXJzaGFs"
+                      },
+                      "type": "ref",
+                      "value": [
+                        {
+                          "location": {
+                            "file": "vs.rego",
+                            "row": 31,
+                            "col": 8,
+                            "text": "anNvbg=="
+                          },
+                          "type": "var",
+                          "value": "json"
+                        },
+                        {
+                          "location": {
+                            "file": "vs.rego",
+                            "row": 31,
+                            "col": 13,
+                            "text": "bWFyc2hhbA=="
+                          },
+                          "type": "string",
+                          "value": "marshal"
+                        }
+                      ]
+                    },
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 31,
+                        "col": 21,
+                        "text": "aW5wdXQuYw=="
+                      },
+                      "type": "ref",
+                      "value": [
+                        {
+                          "location": {
+                            "file": "vs.rego",
+                            "row": 31,
+                            "col": 21,
+                            "text": "aW5wdXQ="
+                          },
+                          "type": "var",
+                          "value": "input"
+                        },
+                        {
+                          "location": {
+                            "file": "vs.rego",
+                            "row": 31,
+                            "col": 27,
+                            "text": "Yw=="
+                          },
+                          "type": "string",
+                          "value": "c"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 31,
+                "col": 33,
+                "text": "MA=="
+              },
+              "type": "number",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "vs_two",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "vs.rego",
+              "row": 29,
+              "col": 1,
+              "text": "dnNfdHdv"
+            },
+            "type": "var",
+            "value": "vs_two"
+          }
+        ],
+        "location": {
+          "file": "vs.rego",
+          "row": 29,
+          "col": 1,
+          "text": "dnNfdHdv"
+        }
+      },
+      "location": {
+        "file": "vs.rego",
+        "row": 29,
+        "col": 1,
+        "text": "dnNfdHdvIGlmIHsKCWpzb24ubWFyc2hhbChpbnB1dC5hKSA9PSAiNCIKCWNvdW50KGpzb24ubWFyc2hhbChpbnB1dC5jKSkgPiAwCn0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "vs.rego",
+            "row": 35,
+            "col": 2,
+            "text": "anNvbi5tYXJzaGFsKHgpID09ICI1Ig=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 35,
+                "col": 18,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 35,
+                    "col": 18,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 35,
+                "col": 2,
+                "text": "anNvbi5tYXJzaGFsKHgp"
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 35,
+                    "col": 2,
+                    "text": "anNvbi5tYXJzaGFs"
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 35,
+                        "col": 2,
+                        "text": "anNvbg=="
+                      },
+                      "type": "var",
+                      "value": "json"
+                    },
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 35,
+                        "col": 7,
+                        "text": "bWFyc2hhbA=="
+                      },
+                      "type": "string",
+                      "value": "marshal"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 35,
+                    "col": 15,
+                    "text": "eA=="
+                  },
+                  "type": "var",
+                  "value": "x"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 35,
+                "col": 21,
+                "text": "IjUi"
+              },
+              "type": "string",
+              "value": "5"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "vs_fn",
+        "args": [
+          {
+            "location": {
+              "file": "vs.rego",
+              "row": 34,
+              "col": 7,
+              "text": "eA=="
+            },
+            "type": "var",
+            "value": "x"
+          }
+        ],
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "vs.rego",
+              "row": 34,
+              "col": 1,
+              "text": "dnNfZm4="
+            },
+            "type": "var",
+            "value": "vs_fn"
+          }
+        ],
+        "location": {
+          "file": "vs.rego",
+          "row": 34,
+          "col": 1,
+          "text": "dnNfZm4oeCk="
+        }
+      },
+      "location": {
+        "file": "vs.rego",
+        "row": 34,
+        "col": 1,
+        "text": "dnNfZm4oeCkgaWYgewoJanNvbi5tYXJzaGFsKHgpID09ICI1Igp9"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "vs.rego",
+            "row": 39,
+            "col": 2,
+            "text": "anNvbi5tYXJzaGFsKGlucHV0LmgpID09ICI2Ig=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 39,
+                "col": 24,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 39,
+                    "col": 24,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 39,
+                "col": 2,
+                "text": "anNvbi5tYXJzaGFsKGlucHV0Lmgp"
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 39,
+                    "col": 2,
+                    "text": "anNvbi5tYXJzaGFs"
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 39,
+                        "col": 2,
+                        "text": "anNvbg=="
+                      },
+                      "type": "var",
+                      "value": "json"
+                    },
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 39,
+                        "col": 7,
+                        "text": "bWFyc2hhbA=="
+                      },
+                      "type": "string",
+                      "value": "marshal"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "vs.rego",
+                    "row": 39,
+                    "col": 15,
+                    "text": "aW5wdXQuaA=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 39,
+                        "col": 15,
+                        "text": "aW5wdXQ="
+                      },
+                      "type": "var",
+                      "value": "input"
+                    },
+                    {
+                      "location": {
+                        "file": "vs.rego",
+                        "row": 39,
+                        "col": 21,
+                        "text": "aA=="
+                      },
+                      "type": "string",
+                      "value": "h"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "vs.rego",
+                "row": 39,
+                "col": 27,
+                "text": "IjYi"
+              },
+              "type": "string",
+              "value": "6"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "helper_v",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "vs.rego",
+              "row": 38,
+              "col": 1,
+              "text": "aGVscGVyX3Y="
+            },
+            "type": "var",
+            "value": "helper_v"
+          }
+        ],
+        "location": {
+          "file": "vs.rego",
+          "row": 38,
+          "col": 1,
+          "text": "aGVscGVyX3Y="
+        }
+      },
+      "location": {
+        "file": "vs.rego",
+        "row": 38,
+        "col": 1,
+        "text": "aGVscGVyX3YgaWYgewoJanNvbi5tYXJzaGFsKGlucHV0LmgpID09ICI2Igp9"
+      }
+    }
+  ],
+  "comments": [
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "vs.rego",
+        "row": 5,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBTYW1lIHZhbHVlIHR3aWNlCiMgZGVzY3JpcHRpb246IEZpeHR1cmUgY29udHJvbCBWUy0xLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFZTLTEKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMg=="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "vs.rego",
+        "row": 6,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBTYW1lIHZhbHVlIHR3aWNl",
+      "Location": {
+        "file": "vs.rego",
+        "row": 7,
+        "col": 1,
+        "text": "IyB0aXRsZTogU2FtZSB2YWx1ZSB0d2ljZQ=="
+      }
+    },
+    {
+      "Text": "IGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgVlMtMS4=",
+      "Location": {
+        "file": "vs.rego",
+        "row": 8,
+        "col": 1,
+        "text": "IyBkZXNjcmlwdGlvbjogRml4dHVyZSBjb250cm9sIFZTLTEu"
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "vs.rego",
+        "row": 9,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogVlMtMQ==",
+      "Location": {
+        "file": "vs.rego",
+        "row": 10,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IFZTLTE="
+      }
+    },
+    {
+      "Text": "ICAgZnJhbWV3b3Jrczo=",
+      "Location": {
+        "file": "vs.rego",
+        "row": 11,
+        "col": 1,
+        "text": "IyAgIGZyYW1ld29ya3M6"
+      }
+    },
+    {
+      "Text": "ICAgICAtIElTTyAyNzAwMSBBLjguMzI=",
+      "Location": {
+        "file": "vs.rego",
+        "row": 12,
+        "col": 1,
+        "text": "IyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "vs.rego",
+        "row": 21,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBTYW1lIHZhbHVlLCBuZXN0ZWQKIyBkZXNjcmlwdGlvbjogRml4dHVyZSBjb250cm9sIFZTLTIuCiMgY3VzdG9tOgojICAgY29udHJvbC1pZDogVlMtMgojICAgZnJhbWV3b3JrczoKIyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "vs.rego",
+        "row": 22,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBTYW1lIHZhbHVlLCBuZXN0ZWQ=",
+      "Location": {
+        "file": "vs.rego",
+        "row": 23,
+        "col": 1,
+        "text": "IyB0aXRsZTogU2FtZSB2YWx1ZSwgbmVzdGVk"
+      }
+    },
+    {
+      "Text": "IGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgVlMtMi4=",
+      "Location": {
+        "file": "vs.rego",
+        "row": 24,
+        "col": 1,
+        "text": "IyBkZXNjcmlwdGlvbjogRml4dHVyZSBjb250cm9sIFZTLTIu"
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "vs.rego",
+        "row": 25,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogVlMtMg==",
+      "Location": {
+        "file": "vs.rego",
+        "row": 26,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IFZTLTI="
+      }
+    },
+    {
+      "Text": "ICAgZnJhbWV3b3Jrczo=",
+      "Location": {
+        "file": "vs.rego",
+        "row": 27,
+        "col": 1,
+        "text": "IyAgIGZyYW1ld29ya3M6"
+      }
+    },
+    {
+      "Text": "ICAgICAtIElTTyAyNzAwMSBBLjguMzI=",
+      "Location": {
+        "file": "vs.rego",
+        "row": 28,
+        "col": 1,
+        "text": "IyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+      }
+    }
+  ]
+}

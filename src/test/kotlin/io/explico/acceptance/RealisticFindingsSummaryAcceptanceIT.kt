@@ -10,7 +10,7 @@
  *   RealisticGroupByControlAcceptanceIT); they are repointed in /tdd, not here.
  * Authored from the plan, NOT from the frozen acceptance-pack README. Facade only. Fixtures: `realistic/findings-summary/policies` (one of each kind: FS-1 no description,
  * FS-2 no framework, FS-3 never matched, FS-4 raw object, FS-5 a `with`, FS-6/FS-7 one shared title, one comment block), `.../plural/policies` (two of each kind, two shared
- * titles) and `realistic/quality-hints/policies` (clean without examples).
+ * titles) and `samples/policies` (clean: nothing to report).
  */
 package io.explico.acceptance
 
@@ -29,7 +29,7 @@ class RealisticFindingsSummaryAcceptanceIT {
 
     companion object {
         private val base = Path.of("src/test/resources/realistic/findings-summary")
-        private val clean = Path.of("src/test/resources/realistic/quality-hints/policies")
+        private val clean = Path.of("samples/policies") // the acceptance-pack sample: nothing to report (spec §14.71: quality-hints has one unrendered value, QH-7's `name`)
 
         private lateinit var single: io.explico.RenderedDocs
         private lateinit var singleAgain: io.explico.RenderedDocs

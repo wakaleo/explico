@@ -52,23 +52,29 @@ internal object Coverage {
     fun of(pkg: PolicyPackage): CoverageSummary = of(pkg.rules.flatMap { conditionsOf(it) })
 
     /** Operand-level fallbacks don't count against coverage but are reported separately (spec §6.6). */
-    fun unrenderedOperandCount(conditions: List<Condition>): Int =
-        flatten(conditions).sumOf { operandsOf(it).sumOf { operand -> countUnrendered(operand) } }
+    fun unrenderedOperandCount(conditions: List<Condition>): Int = unrenderedOperandsOf(conditions).size
+
+    /**
+     * Spec §14.71: the very operands [unrenderedOperandCount] counts, as instances (one traversal serves the footer and the "Values shown as source" finding, so they cannot
+     * disagree): every [Operand.Unrendered] in [conditions]' operands, nested ones included, in source order.
+     */
+    fun unrenderedOperandsOf(conditions: List<Condition>): List<Operand.Unrendered> =
+        flatten(conditions).flatMap { condition -> operandsOf(condition).flatMap { operand -> unrenderedIn(operand) } }
 
     fun unrenderedOperandCount(rule: RuleGroup): Int = unrenderedOperandCount(conditionsOf(rule))
 
     /** `Operand.BuiltinCall` (spec §14) is the only nested operand shape -- an unrenderable argument
      * buried inside an otherwise-faithful `count(...)`/`lower(...)`/`upper(...)` call must still count,
      * or the coverage footer would silently undercount it. */
-    private fun countUnrendered(operand: Operand): Int = when (operand) {
-        is Operand.Unrendered -> 1
-        is Operand.BuiltinCall -> operand.args.sumOf { countUnrendered(it) }
-        is Operand.FunctionCall -> operand.args.sumOf { countUnrendered(it) }
-        // A comprehension is only built when fully rendered, so this is 0 in practice; counted anyway
+    private fun unrenderedIn(operand: Operand): List<Operand.Unrendered> = when (operand) {
+        is Operand.Unrendered -> listOf(operand)
+        is Operand.BuiltinCall -> operand.args.flatMap { unrenderedIn(it) }
+        is Operand.FunctionCall -> operand.args.flatMap { unrenderedIn(it) }
+        // A comprehension is only built when fully rendered, so this is empty in practice; traversed anyway
         // so the footer can never undercount if that invariant is ever relaxed.
-        is Operand.Comprehension -> countUnrendered(operand.term) + (operand.valueTerm?.let { countUnrendered(it) } ?: 0) +
-            operand.body.sumOf { c -> operandsOf(c).sumOf { countUnrendered(it) } }
-        else -> 0
+        is Operand.Comprehension -> unrenderedIn(operand.term) + (operand.valueTerm?.let { unrenderedIn(it) } ?: emptyList()) +
+            operand.body.flatMap { c -> operandsOf(c).flatMap { unrenderedIn(it) } }
+        else -> emptyList()
     }
 
     private fun conditionsOf(rule: RuleGroup): List<Condition> = rule.bodies.flatMap { conditionsOf(it) }

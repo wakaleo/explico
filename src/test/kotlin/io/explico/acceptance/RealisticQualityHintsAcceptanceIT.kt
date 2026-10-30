@@ -145,10 +145,12 @@ class RealisticQualityHintsAcceptanceIT {
     inner class Boundaries {
 
         @Test
-        @DisplayName("without example fixtures neither finding appears, and with nothing else to report there is no Documentation quality section at all")
+        @DisplayName("without example fixtures neither finding appears; the one thing left to report is QH-7's unrendered value (spec §14.71), not an example finding")
         fun noExamplesNoFindings() {
             val index = withoutExamples.getValue("index.md")
-            assertThat(index).doesNotContain("No matching example").doesNotContain("Raw decision object").doesNotContain("## Documentation quality")
+            assertThat(index).doesNotContain("No matching example").doesNotContain("Raw decision object")
+            assertThat(qualityLines(withoutExamples)).hasSize(1)
+            assertThat(qualityLines(withoutExamples).single()).startsWith("- **Values shown as source (1):**")
         }
 
         @Test
@@ -159,12 +161,13 @@ class RealisticQualityHintsAcceptanceIT {
         }
 
         @Test
-        @DisplayName("the section starts with the new bullets only when there is something to report, and keeps the existing ones above them")
+        @DisplayName("the section starts with the new bullets only when there is something to report, and keeps the existing ones above them (QH-7's unrendered value, spec §14.71, follows)")
         fun existingBulletsKeepTheirPlace() {
             val lines = qualityLines(withExamples)
-            assertThat(lines).hasSize(2)
+            assertThat(lines).hasSize(3)
             assertThat(lines[0]).startsWith("- $NO_MATCH")
             assertThat(lines[1]).startsWith("- $RAW")
+            assertThat(lines[2]).startsWith("- **Values shown as source (1):**")
         }
 
         @Test

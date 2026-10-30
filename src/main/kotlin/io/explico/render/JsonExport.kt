@@ -89,6 +89,18 @@ internal object JsonExport {
                 })
             }
         })
+        // Spec §14.71: every value (no cap), the same order as the index.
+        put("valuesShownAsSource", buildJsonArray {
+            f.valuesShownAsSource.forEach { item ->
+                add(
+                    buildJsonObject {
+                        put("source", item.source)
+                        put("count", item.count)
+                        put("places", buildJsonArray { item.places.forEach { add(buildJsonObject { put("rule", it.card.label); put("file", it.file); put("row", it.row); sourceLinks?.let { links -> put("url", links.url(it.file, it.row)) } }) } })
+                    },
+                )
+            }
+        })
         // Spec §14.64: which of these properties the caller made gaps (the effective set, canonical order).
         put("required", buildJsonArray { required.names.forEach { add(JsonPrimitive(it)) } })
     }

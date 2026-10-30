@@ -26,7 +26,9 @@ A condition is **rendered** if explico produced a phrase for it, and **unrendere
 Two refinements appear in a footer when they apply:
 
 - `contains N unrendered value(s)` — a condition was rendered, but one *operand* inside it (say a variable explico could not
-  resolve) is shown as raw source. These do not lower the percentage; they are reported next to it.
+  resolve) is shown as raw source. These do not lower the percentage; they are reported next to it, and the index lists them
+  too: its *Documentation quality* section has a **Values shown as source** bullet that groups them by their exact source text, with
+  how many times and the `file:row` of each, so a value that recurs (a local variable path explico cannot resolve, say) is easy to spot.
 - `including N helper assignment(s) shown as source` — how many of the unrendered conditions are local assignments whose right-hand
   side explico could not substitute. They still count as unrendered; the note only tells you what kind they are.
 

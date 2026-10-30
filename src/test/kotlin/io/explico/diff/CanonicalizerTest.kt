@@ -278,6 +278,12 @@ class CanonicalizerTest {
     }
 
     @Test
+    @org.junit.jupiter.api.DisplayName("spec §14.71: an unrendered VALUE's row is not logic either -- moving the statement that holds it keeps the logic hash")
+    fun movingAnUnrenderedValueKeepsTheLogicHash() {
+        assertThat(Canonicalizer.logicHash(denyRule("value-shift-moved"))).isEqualTo(Canonicalizer.logicHash(denyRule("value-shift-base")))
+    }
+
+    @Test
     fun pureUnificationEquivalentToDoubleEqualsHashesTheSame() {
         // spec §14 promotion: `input.a = input.b` (both sides already real, non-binding paths) now
         // promotes identically to `input.a == input.b` -- a real diff-quality improvement, not just
