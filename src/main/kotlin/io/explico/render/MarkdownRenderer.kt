@@ -810,7 +810,7 @@ internal object MarkdownRenderer {
             )
         }
 
-        appendQualityFindings(sb, Quality.findingsOf(policySet, groups, examplesByPackage))
+        appendQualityFindings(sb, Quality.findingsOf(policySet, groups, examplesByPackage), sourceLinks)
 
         // Compliance quick win: a closing legend, so "Rendered" is never mistaken for a statement about the
         // control itself -- it measures how much of the rule's logic explico could turn into prose, nothing more.
@@ -941,7 +941,7 @@ internal object MarkdownRenderer {
     }
 
     /** Spec §14.46/§14.63: controls with no description, no framework, no matching example, a raw decision object, or a shared title. Nothing at all when there is nothing to report. */
-    private fun appendQualityFindings(sb: StringBuilder, findings: Quality.Findings) {
+    private fun appendQualityFindings(sb: StringBuilder, findings: Quality.Findings, sourceLinks: SourceLinks? = null) {
         if (findings.isEmpty()) return
         // Blank line BEFORE (the heading follows the overall/below-100% line); none after -- the legend supplies its own.
         sb.appendLine()
@@ -974,7 +974,7 @@ internal object MarkdownRenderer {
         if (findings.unpublishedComments.isNotEmpty()) {
             sb.appendLine(
                 "- **Comments not published (${findings.unpublishedComments.size}):** " +
-                    findings.unpublishedComments.joinToString(", ") { "`${it.file}:${it.row}` (${it.lines} lines)" } +
+                    findings.unpublishedComments.joinToString(", ") { "${sourceLinks.placeText(it.file, it.row)} (${it.lines} lines)" } +
                     " — move what readers need into a rule's description in its METADATA",
             )
         }
@@ -983,7 +983,7 @@ internal object MarkdownRenderer {
             sb.appendLine("- **Shown as source (${findings.shownAsSource.sumOf { it.count }}):**")
             for (item in findings.shownAsSource) {
                 val cards = item.cards.joinToString(", ") { card ->
-                    val where = item.places.filter { it.card == card }.joinToString(", ") { "`${it.file}:${it.row}`" }
+                    val where = item.places.filter { it.card == card }.joinToString(", ") { sourceLinks.placeText(it.file, it.row) }
                     card.link() + if (where.isEmpty()) "" else " ($where)"
                 }
                 sb.appendLine("  - `${item.reason}` ×${item.count} in $cards — ${UnrenderedReasons.why(item.reason)}")

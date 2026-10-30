@@ -1660,7 +1660,7 @@ gap findings WITH the examples; the displayed index/JSON findings never depend o
 ## Places of the fallbacks (spec §14.69)
 
 Every `Condition.Unrendered` the mapper builds goes through `AstMapper.unrenderedAt(location, reason)`, which records the statement's first row (null when opa gave no location, never 0). The row is NOT logic: `Canonicalizer` hashes `sourceText` and `reason` only, and `diff` compares fallbacks by text -- never compare two
-`Unrendered` with `==` in diff code. The file of a place is the holding body's (or else branch's) `sourceLocation.file`; `Quality.shownAsSource` builds the places and the bullet/JSON only present them.
+`Unrendered` with `==` in diff code. The file of a place is the holding body's (or else branch's) `sourceLocation.file`; `Quality.shownAsSource` builds the places and the bullet/JSON only present them. `SourceLinks?.placeText(file, row)` is the ONLY place a place is written in the index (spec §14.70): a `file:row` code span, linked through `SourceLinks.url` when a template was given.
 
 ## Rules with no control id (spec §14.68)
 

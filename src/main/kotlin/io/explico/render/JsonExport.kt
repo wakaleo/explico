@@ -56,7 +56,7 @@ internal object JsonExport {
             put("schema", SCHEMA)
             put("policyDigest", policyDigest)
             put("coverage", coverage(overall))
-            put("quality", qualityObject(Quality.findingsOf(policySet, groups, examplesByPackage), required))
+            put("quality", qualityObject(Quality.findingsOf(policySet, groups, examplesByPackage), required, sourceLinks))
             put("requirements", Quality.normalise(requirements).takeIf { it.isNotEmpty() }?.let { requirementsObject(Quality.coverageOf(policySet, it, groups)) } ?: JsonNull)
             if (groups != null) put("controls", controlsArray(groups))
             put("packages", buildJsonArray {
@@ -66,7 +66,7 @@ internal object JsonExport {
         return prettyJson(document)
     }
 
-    private fun qualityObject(f: Quality.Findings, required: RequiredSet) = buildJsonObject {
+    private fun qualityObject(f: Quality.Findings, required: RequiredSet, sourceLinks: SourceLinks?) = buildJsonObject {
         put("missingDescription", buildJsonArray { f.missingDescription.forEach { add(JsonPrimitive(it.label)) } })
         put("noFramework", buildJsonArray { f.noFramework.forEach { add(JsonPrimitive(it.label)) } })
         put("noControlId", buildJsonArray { f.noControlId.forEach { add(JsonPrimitive(it.label)) } })
@@ -78,12 +78,14 @@ internal object JsonExport {
             }
         })
         put("unpublishedComments", buildJsonArray {
-            f.unpublishedComments.forEach { add(buildJsonObject { put("file", it.file); put("row", it.row); put("lines", it.lines) }) }
+            f.unpublishedComments.forEach {
+                add(buildJsonObject { put("file", it.file); put("row", it.row); put("lines", it.lines); sourceLinks?.let { links -> put("url", links.url(it.file, it.row)) } })
+            }
         })
         put("shownAsSource", buildJsonArray {
             f.shownAsSource.forEach { item ->
                 add(buildJsonObject { put("reason", item.reason); put("count", item.count); put("rules", buildJsonArray { item.cards.forEach { add(JsonPrimitive(it.label)) } })
-                    put("places", buildJsonArray { item.places.forEach { add(buildJsonObject { put("rule", it.card.label); put("file", it.file); put("row", it.row) }) } })
+                    put("places", buildJsonArray { item.places.forEach { add(buildJsonObject { put("rule", it.card.label); put("file", it.file); put("row", it.row); sourceLinks?.let { links -> put("url", links.url(it.file, it.row)) } }) } })
                 })
             }
         })

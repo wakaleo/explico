@@ -158,6 +158,25 @@ class QualityShownAsSourceTest {
         }
 
         @Test
+        @DisplayName("spec §14.70: with a source template each place is a link (text unchanged), a card with no place has no parentheses even then, and the comments bullet links too")
+        fun linkedMarkdown() {
+            val s = PolicySet(
+                listOf(
+                    PolicyPackage(
+                        "p", listOf(rule("a", "C-1", bodyIn("a.rego", at("every", 3), at("every", 9))), rule("b", "C-2", bodyIn("b.rego", at("every", null)))), listOf("a.rego"),
+                        unpublishedComments = listOf(io.explico.model.CommentBlock("a.rego", 20, 2)),
+                    ),
+                ),
+            )
+            val links = SourceLinks.of("https://h/{file}#L{line}")
+            val index = MarkdownRenderer.renderIndex(s, sourceLinks = links)
+            assertThat(index).contains("in [C-1](p.md#c-1) ([`a.rego:3`](https://h/a.rego#L3), [`a.rego:9`](https://h/a.rego#L9)), [C-2](p.md#c-2) — ")
+            assertThat(index).contains("- **Comments not published (1):** [`a.rego:20`](https://h/a.rego#L20) (2 lines) — ")
+            assertThat(MarkdownRenderer.renderIndex(s)).contains("in [C-1](p.md#c-1) (`a.rego:3`, `a.rego:9`), [C-2](p.md#c-2) — ")
+            assertThat(MarkdownRenderer.renderIndex(s)).contains("- **Comments not published (1):** `a.rego:20` (2 lines) — ")
+        }
+
+        @Test
         @DisplayName("the markdown puts a card's own places in parentheses after its link, as file:row code spans; a card with none has no parentheses")
         fun markdown() {
             val s = set(rule("a", "C-1", bodyIn("a.rego", at("every", 3), at("every", 9))), rule("b", "C-2", bodyIn("b.rego", at("every", null))))

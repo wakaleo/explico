@@ -27,6 +27,12 @@ internal class SourceLinks private constructor(private val template: String) {
     }
 }
 
+/**
+ * Spec §14.70: a place (`file:row`) as the index writes it -- ONE definition for the "Shown as source" places and the "Comments not published" blocks, so they cannot
+ * diverge. A code span whose text is always `file:row` as written; with a template it is a link to [SourceLinks.url] for that row, without one nothing changes.
+ */
+internal fun SourceLinks?.placeText(file: String, row: Int): String = if (this == null) "`$file:$row`" else "[`$file:$row`](${url(file, row)})"
+
 /** Percent-encodes every UTF-8 byte of [text] but the RFC 3986 unreserved set (`A-Za-z0-9-._~`): nothing in it can break out of a URL. Shared by every link builder. */
 internal fun percentEncode(text: String): String = buildString {
     for (byte in text.toByteArray(Charsets.UTF_8)) {

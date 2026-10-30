@@ -66,4 +66,20 @@ class SourceLinksTest {
     fun aRootLevelFileHasASingleSegment() {
         assertThat(SourceLinks.of("https://h/{file}")!!.url("policy.rego", 2)).isEqualTo("https://h/policy.rego")
     }
+
+    @Test
+    @DisplayName("spec §14.70: a place is `file:row` as a code span, linked when there is a template: the text never changes, the URL is SourceLinks' own")
+    fun placeText() {
+        val links = SourceLinks.of("https://git.example.com/blob/abc/{file}#L{line}")
+        assertThat(links.placeText("sub/x.rego", 14)).isEqualTo("[`sub/x.rego:14`](https://git.example.com/blob/abc/sub/x.rego#L14)")
+        assertThat(SourceLinks.of(null).placeText("sub/x.rego", 14)).isEqualTo("`sub/x.rego:14`")
+    }
+
+    @Test
+    @DisplayName("spec §14.70 CHALLENGE: a directory with a space and a `#` is percent-encoded in the link (the text keeps the name as written); a template without {line} links the file; {line} twice is replaced twice")
+    fun placeTextEncodingAndTemplates() {
+        assertThat(SourceLinks.of("https://h/{file}#L{line}").placeText("my dir/a#b.rego", 3)).isEqualTo("[`my dir/a#b.rego:3`](https://h/my%20dir/a%23b.rego#L3)")
+        assertThat(SourceLinks.of("https://h/{file}").placeText("a.rego", 9)).isEqualTo("[`a.rego:9`](https://h/a.rego)")
+        assertThat(SourceLinks.of("https://h/{file}?l={line}&m={line}").placeText("a.rego", 9)).isEqualTo("[`a.rego:9`](https://h/a.rego?l=9&m=9)")
+    }
 }
