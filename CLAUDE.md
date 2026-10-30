@@ -1657,6 +1657,10 @@ section appear) but never in `gapDescriptions`, and comments never reach `Canoni
 `render/RequiredSet` validates and normalises the names; `Quality.gapDescriptions(findings, coverage, required)` is the ONE place gap lines are worded and ordered (description, frameworks, title, fixture, verdict, then shared titles, then requirement gaps). `Explico.render` validates BEFORE opa work and computes the
 gap findings WITH the examples; the displayed index/JSON findings never depend on the set (`missingTitle` is gap-only and out of `Findings.isEmpty()`). The CLI checks the names itself before opa is needed and refuses `--require` without `--fail-on-gaps`. Never let the set change a rendered file.
 
+## Findings summary (spec §14.67)
+
+`Quality.findingLines` is the ONE place the summary sentences are worded; `Explico.render` puts them in `RenderedDocs.findings` and the CLI prints them after the coverage line (only when non-empty, stdout, before any gate message). Advisory, never a gap. A new displayed finding kind needs its bullet, its JSON key AND a line here, in the section's order.
+
 ## Why a condition is shown as source (spec §14.66)
 
 `render/UnrenderedReasons.why(reason)` is the ONE table of sentences; they say what explico needs, never prescribe a rewrite. A new fallback reason added to `AstMapper` MUST get a sentence (`UnrenderedReasonsTest` reads the mapper's source and fails otherwise). `Quality.shownAsSource` counts condition-level fallbacks only,

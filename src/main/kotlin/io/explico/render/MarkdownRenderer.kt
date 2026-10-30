@@ -948,10 +948,10 @@ internal object MarkdownRenderer {
         sb.appendLine("## Documentation quality")
         sb.appendLine()
         if (findings.missingDescription.isNotEmpty()) {
-            sb.appendLine("- **Missing description (${findings.missingDescription.size}):** ${findings.missingDescription.joinToString(", ") { it.link() }}")
+            sb.appendLine("- **Missing description (${findings.missingDescription.size}):** ${findings.missingDescription.joinToString(", ") { it.link() }} — add a description to its METADATA")
         }
         if (findings.noFramework.isNotEmpty()) {
-            sb.appendLine("- **No framework (${findings.noFramework.size}):** ${findings.noFramework.joinToString(", ") { it.link() }}")
+            sb.appendLine("- **No framework (${findings.noFramework.size}):** ${findings.noFramework.joinToString(", ") { it.link() }} — list the requirements it supports under custom.frameworks in its METADATA")
         }
         // Spec §14.63: each ends with the one thing to do about it.
         if (findings.noMatchingExample.isNotEmpty()) {
@@ -979,7 +979,7 @@ internal object MarkdownRenderer {
             }
         }
         for ((title, controls) in findings.duplicateTitles) {
-            sb.appendLine("- **Duplicate title (${controls.size}):** ${controls.joinToString(", ") { it.link() }} -- \"$title\"")
+            sb.appendLine("- **Duplicate title (${controls.size}):** ${controls.joinToString(", ") { it.link() }} -- \"$title\" — give each control its own title")
         }
     }
 

@@ -104,9 +104,9 @@ class RealisticQualityAndRequirementsAcceptanceIT {
         @DisplayName("the quality fixture reports exactly the missing description, the missing framework and the shared title")
         fun exactBullets() {
             assertThat(section(qualityIndex, "## Documentation quality").filter { it.isNotBlank() }).containsExactly(
-                "- **Missing description (1):** [Q-003](quality-demo.md#q-003)",
-                "- **No framework (1):** [Q-002](quality-demo.md#q-002)",
-                "- **Duplicate title (2):** [Q-001](quality-demo.md#q-001), [Q-002](quality-demo.md#q-002) -- \"Shared\"",
+                "- **Missing description (1):** [Q-003](quality-demo.md#q-003) — add a description to its METADATA",
+                "- **No framework (1):** [Q-002](quality-demo.md#q-002) — list the requirements it supports under custom.frameworks in its METADATA",
+                "- **Duplicate title (2):** [Q-001](quality-demo.md#q-001), [Q-002](quality-demo.md#q-002) -- \"Shared\" — give each control its own title",
             )
         }
 

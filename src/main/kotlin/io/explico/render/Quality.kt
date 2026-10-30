@@ -173,6 +173,25 @@ internal object Quality {
     }
 
     /**
+     * Spec §14.67: one sentence per kind of finding the index's quality section shows, in its order, worded here ONCE so the library, the CLI and a pipeline agree
+     * (a count of controls, blocks or conditions; shared titles are counted as titles). Advisory -- unlike [gapDescriptions] nothing fails on it. Empty when the
+     * section is absent; a missing title is not a displayed finding, so it is not a line.
+     */
+    fun findingLines(findings: Findings): List<String> = buildList {
+        fun controls(n: Int, one: String, many: String) { if (n > 0) add(if (n == 1) "1 control $one" else "$n controls $many") }
+        controls(findings.missingDescription.size, "has no description", "have no description")
+        controls(findings.noFramework.size, "names no framework", "name no framework")
+        controls(findings.noMatchingExample.size, "has no matching example", "have no matching example")
+        controls(findings.rawDecisionObject.size, "returns an object but declares no custom.verdict", "return an object but declare no custom.verdict")
+        val comments = findings.unpublishedComments.size
+        if (comments > 0) add(if (comments == 1) "1 comment block is not published" else "$comments comment blocks are not published")
+        val conditions = findings.shownAsSource.sumOf { it.count }
+        if (conditions > 0) add(if (conditions == 1) "1 condition is shown as source" else "$conditions conditions are shown as source")
+        val titles = findings.duplicateTitles.size
+        if (titles > 0) add(if (titles == 1) "1 title is shared by several controls" else "$titles titles are shared by several controls")
+    }
+
+    /**
      * One line per documentation gap (spec §14.47, §14.64), worded here ONCE so the CLI gate, a pipeline script and a dashboard agree. For each property in
      * [required] (default: description and frameworks, as always) a line per control that lacks it, in the order description, frameworks, title, a matching
      * example, a declared verdict; then -- whatever is required -- controls sharing a title, then (when a requirements list was given) each requirement with no

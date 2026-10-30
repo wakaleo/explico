@@ -135,6 +135,11 @@ private class RenderCommand : CliktCommand(name = "render") {
             replaceOutputDirectory(out, rendered.files)
             echo("Rendering coverage: ${rendered.coverage.rendered} of ${rendered.coverage.total} conditions (${rendered.coverage.percent}%)")
             rendered.generatedExamples?.let { echo("Generated examples for ${it.rulesWithExamples} of ${it.rulesConsidered} rules") }
+            // Spec §14.67: what is suboptimal, without opening index.md. Nothing at all when there is nothing to say; printed before any gate message (a gate never suppresses output).
+            if (rendered.findings.isNotEmpty()) {
+                echo("Documentation quality (see index.md):")
+                rendered.findings.forEach { echo("  - $it") }
+            }
             val failures = listOfNotNull(
                 failUnder?.let { Gates.failUnder(rendered.coverage, it) },
                 if (failOnGaps) Gates.failOnGaps(rendered.gaps) else null,

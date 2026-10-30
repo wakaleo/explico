@@ -103,6 +103,9 @@ and as a requirement with no control, instead of being silently accepted.
 
 ### Ratchet the documentation quality
 
+Every run already prints the findings on stdout after the coverage line (`Documentation quality (see index.md): ...`), so a CI log shows
+what is suboptimal even when no gate fails. That block is advisory and never changes the exit code; the gates below decide what fails.
+
 `--fail-on-gaps` checks a description and a framework by default. `--require` chooses what a gap is, so you can tighten it as the
 policies catch up (it is newer than 0.3.0: check `explico render --help` shows it):
 

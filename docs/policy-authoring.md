@@ -246,6 +246,10 @@ When you also give example fixtures (`--examples`), two more findings appear, ea
 cards they are on, and one sentence on what explico needs to render that kind of construct. It explains why, it never tells you what
 to change: a rewrite that renders can still change what the policy means, so that is your decision. Advisory, not a gap.
 
+**Seeing it without opening the index.** `explico render` prints the findings after the coverage line, one line per kind (`2 controls have
+no description`, `1 comment block is not published`, ...), and says to see `index.md` for which controls. Every bullet there ends with
+what to do about it. Nothing is printed for a policy with nothing to report.
+
 **Comments not published.** explico publishes METADATA only: an ordinary `#` comment above a rule, a package or between rules never
 appears in the documentation. When a run of two or more plain comment lines (outside any rule, not part of a `# METADATA` block) is
 found, the section lists it as `file:row` with its length, so you can move what readers need into the rule's `description`. It does

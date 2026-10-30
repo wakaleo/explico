@@ -36,11 +36,25 @@ explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--r
 | `--rego-version v1\|v0` | no | The Rego syntax of the policies: `v1` (default) or `v0` (legacy: `deny[msg] { ... }` with no `if`/`contains`, as in the Gatekeeper library). Passed to every `opa` call as `--v0-compatible`. Never auto-detected; v0 mode applies to the whole directory (v1 files that `import rego.v1` still parse). The `opa` binary must be 1.x either way. `diff` applies it to both directories. |
 
 Writes one `<package-path>.md` file per Rego package plus `index.md`, and
-prints a one-line coverage summary to stdout, e.g.:
+prints a coverage line (and, when there is something to improve, a short findings block) to stdout, e.g.:
 
 ```
 Rendering coverage: 24 of 24 conditions (100%)
 ```
+
+When the documentation has something to improve, a short block follows on stdout, one line per kind of finding (the same ones the index's
+*Documentation quality* section lists), so you see it without opening `index.md`:
+
+```
+Rendering coverage: 22 of 24 conditions (91%)
+Documentation quality (see index.md):
+  - 2 controls have no description
+  - 1 control has no matching example
+  - 3 conditions are shown as source
+```
+
+Nothing is printed when there is nothing to report, so a clean policy's output is unchanged. It is advisory: the exit code and the
+gates are not affected, and a gate failure's message on stderr is unchanged.
 
 ### Generated examples (`--generate-examples`)
 
@@ -196,7 +210,7 @@ object Explico {
   then `rulesWithExamples` of `rulesConsidered`. A trailing `json = true` also adds `explico.json` to `files`
   (see [`json-output.md`](json-output.md)); a further trailing `requirements: List<String>` and `sourceUrl: String?` add the *Requirements coverage* section (see
   *Keeping your documentation complete* in [`policy-authoring.md`](policy-authoring.md)). `RenderedDocs.gaps` is always filled: one line
-  per documentation gap, worded once for every consumer (empty when the documentation is complete). `controlIdFrom` / `controlIdTemplate` are the `--control-id-from` / `--control-id-template` options; an invalid value throws `IllegalArgumentException` before any `opa` work; so does a rule whose `custom.mask` is malformed (see *Keeping values out of the documentation* in [`policy-authoring.md`](policy-authoring.md)). `groupByControl = true` is `--group-by-control`: `files` then also holds `controls/<slug>.md` pages, so **a caller writing the files must create parent directories** (the snippets below do).
+  per documentation gap, worded once for every consumer (empty when the documentation is complete). `RenderedDocs.findings` is the advisory counterpart: one line per kind of finding the index's *Documentation quality* section shows (`2 controls have no description`), in its order, empty when the section is absent; nothing fails on it. `controlIdFrom` / `controlIdTemplate` are the `--control-id-from` / `--control-id-template` options; an invalid value throws `IllegalArgumentException` before any `opa` work; so does a rule whose `custom.mask` is malformed (see *Keeping values out of the documentation* in [`policy-authoring.md`](policy-authoring.md)). `groupByControl = true` is `--group-by-control`: `files` then also holds `controls/<slug>.md` pages, so **a caller writing the files must create parent directories** (the snippets below do).
 - **`diff(old, new, groupByControl = false)`** — returns `DiffReport(entries: List<DiffEntry>,
   markdown: String, json: String)`. Each `DiffEntry` carries its `category`
   (`DiffCategory`: `ADDED`/`REMOVED`/`LOGIC_CHANGED`/`DOCS_CHANGED`/`UNCHANGED`),

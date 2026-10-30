@@ -45,6 +45,13 @@ public data class RenderedDocs @JvmOverloads constructor(
     val generatedExamples: GeneratedExamplesSummary? = null,
     /** One line per documentation gap (spec §14.47), always computed; empty when the documentation is complete. */
     val gaps: List<String> = emptyList(),
+    /**
+     * One line per kind of finding the index's *Documentation quality* section shows, in the section's order, worded here once (`2 controls have no description`).
+     * Advisory -- unlike [gaps] nothing fails on it, and a control with no description is both a gap line and a finding line (worded differently, by design). Counts
+     * are the index's (controls, comment blocks, conditions shown as source, shared titles); the example-based kinds appear only when example fixtures were given.
+     * Empty when the section is absent. Spec §14.67.
+     */
+    val findings: List<String> = emptyList(),
 )
 
 /**
@@ -214,15 +221,17 @@ public object Explico {
         val packageCoverages = set.packages.map { Coverage.of(it) }
         val overallCoverage = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })
         val normalisedRequirements = Quality.normalise(requirements)
+        val findings = Quality.findingsOf(set, groups, examplesByPackage)
         return RenderedDocs(
             files = files,
             coverage = overallCoverage,
             generatedExamples = generated?.let { GeneratedExamplesSummary(it.rulesWithExamples, it.rulesConsidered) },
             gaps = Quality.gapDescriptions(
-                Quality.findingsOf(set, groups, examplesByPackage),
+                findings,
                 normalisedRequirements.takeIf { it.isNotEmpty() }?.let { Quality.coverageOf(set, it, groups) },
                 requiredSet,
             ),
+            findings = Quality.findingLines(findings),
         )
     }
 
