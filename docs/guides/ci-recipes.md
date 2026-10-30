@@ -53,7 +53,7 @@ on:
     branches: [main]
 
 env:
-  EXPLICO_VERSION: "0.3.0"
+  EXPLICO_VERSION: "0.4.0"
 
 jobs:
   docs:
@@ -107,7 +107,7 @@ Every run already prints the findings on stdout after the coverage line (`Docume
 what is suboptimal even when no gate fails. That block is advisory and never changes the exit code; the gates below decide what fails.
 
 `--fail-on-gaps` checks a description and a framework by default. `--require` chooses what a gap is, so you can tighten it as the
-policies catch up (it is newer than 0.3.0: check `explico render --help` shows it):
+policies catch up (`--require` is in **0.4.0** and later):
 
 ```
 # today: every control has a description and a framework (the default)
@@ -127,7 +127,7 @@ name: Policy change report
 on: pull_request
 
 env:
-  EXPLICO_VERSION: "0.3.0"
+  EXPLICO_VERSION: "0.4.0"
 
 jobs:
   diff:
@@ -188,7 +188,7 @@ the same flags as the gate step, and no `--source-url`; see [One workflow](#one-
 policy-docs:
   image: eclipse-temurin:21
   variables:
-    EXPLICO_VERSION: "0.3.0"
+    EXPLICO_VERSION: "0.4.0"
     OPA_VERSION: "1.19.0"
   before_script:
     - curl -fsSL -o /usr/local/bin/opa "https://github.com/open-policy-agent/opa/releases/download/v${OPA_VERSION}/opa_linux_amd64_static"

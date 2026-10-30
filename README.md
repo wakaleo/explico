@@ -174,7 +174,7 @@ dependencies (see [`CHANGELOG.md`](CHANGELOG.md)).
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.wakaleo:explico:0.1.1")
+    implementation("io.github.wakaleo:explico:0.4.0")
 }
 ```
 

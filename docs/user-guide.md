@@ -278,7 +278,7 @@ kotlin {
 }
 
 dependencies {
-    implementation("io.github.wakaleo:explico:0.1.1")
+    implementation("io.github.wakaleo:explico:0.4.0")
 }
 
 application {

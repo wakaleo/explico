@@ -2107,7 +2107,7 @@ Fixture inputs carry subject ids and e-mail addresses that must not appear in th
 - **Limits, stated plainly in the docs.** Only values present in the fixture input are known and can be hidden; a value the rule derives or reads from `data`, text outside the examples (descriptions, fixed message strings), and opa's own stderr diagnostics are not masked.
 - **Tests.** `RealisticInputMaskingAcceptanceIT` (fixtures `realistic/input-masking/`), `InputMaskTest`, `CliInputMaskProcessTest`.
 
-### 14.62 Real-world fixes found in the 0.3.1 pass: `some x in object.get(...)`, functions without examples, escaped control characters
+### 14.62 Real-world fixes found while preparing 0.4.0: `some x in object.get(...)`, functions without examples, escaped control characters
 
 Three defects found by rendering real decision-object policies (only their shapes were kept: the tests use an invented fixture).
 
