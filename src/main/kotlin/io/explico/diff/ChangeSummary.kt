@@ -64,6 +64,9 @@ internal object ChangeSummary {
             bullets += "code shown as source changed (see the source diff below)"
         }
 
+        // Spec §14.59: which situation of an `else` chain / several definitions moved, was added or removed, or yields a different value.
+        bullets += Situations.bullets(old, new)
+
         // The canonical hash DID change (that's why this is LOGIC_CHANGED at all), but none of the mechanical
         // checks above named anything -- e.g. the same conditions regrouped across bodies. Never guess at what
         // moved; point at the one place that actually shows it.

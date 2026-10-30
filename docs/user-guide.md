@@ -114,7 +114,7 @@ just the report's `## Summary` table to stdout.
 Right after that table, the report itself gains a `## What changed` section: one line per changed control
 (`removed`/`added`/`documentation changed: <fields>`/`logic changed`), the last with indented sub-bullets naming
 exactly which condition, message, body count, default outcome, or fallback source changed — mechanically derived,
-never a guess at what moved. See `samples/` or `src/test/resources/diff/change-summary/` for worked examples.
+never a guess at what moved. For a rule with several situations (an `else` chain, or several definitions of one name) the sub-bullets name the situation: `situations reordered: now in the order of the old situations 2, 1, otherwise`, `situation 2: value changed from <old> to <new>` (the values worded as the cards word them), `situation 3 removed (was: then <value>)` / `situation 3 added (then <value>)`. See `samples/` or `src/test/resources/diff/change-summary/` for worked examples.
 
 ### `explico version`
 

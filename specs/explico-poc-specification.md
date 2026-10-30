@@ -2068,3 +2068,15 @@ A policy is often owned by a host-application module, not only by its `.rego` fi
   A rule with no location gets no link. NOT in the index. `explico.json`: `companionUrl` on every rule, but only when the option is given (null for a rule with no location), the same URL the card links.
 - **Tests.** `RealisticCompanionSourceAcceptanceIT` (fixtures `realistic/companion-source/`), `CompanionLinksTest`, `CliCompanionUrlProcessTest`.
 
+### 14.59 Situation-aware `What changed` lines (FR-12)
+
+A reordered `else` branch or a changed commentary string was already `LOGIC_CHANGED` (the canonical hash sees branch order and every branch's value, §14.52), but its line read only "the rule's structure changed; see the source diff below". The sub-bullets now name the situation. Classification and hashes are unchanged; a changed
+*declared* verdict (`custom.verdict`, §14.53) stays a documentation change.
+
+- **Situations** (`diff/Situations`, pure): the branches of an `else` chain (the first body plus its `else` branches) or, for a name with several definitions, its bodies; one body is one unnumbered situation. Each is matched across the versions by its CONDITIONS as the card words them (an unrendered condition by its trimmed source), equal keys paired in order of appearance;
+  a rule with one body on both sides is that body on both sides. Numbering is the card's: a chain numbers only branches with conditions and calls the closing one `otherwise`; several definitions are numbered as listed.
+- **Lines** (appended after the existing ones, in this order, only when they apply; values are the rendered text after the card's `*Then:*` / `**Value:**`): `situations reordered: now in the order of the old situations 2, 1, otherwise` (only for an `else` chain on either side; the order of sibling definitions is not semantic; relative order of the matched situations, so also when
+  one was removed); `situation N: value changed from X to Y` / `otherwise: value changed ...` / `value changed from X to Y` (one body) when both sides have a value (N is the NEW number); `situation N removed (was: then X)` and `situation N added (then X)` (old / new numbering) for a situation with no counterpart.
+- **Not reported** as removed + added: a branch whose conditions changed but whose value did not (the `condition removed/added` lines name it), and an extra body of a rule with no value outside a chain (the condition and body-count lines name it). The generic fallback sentence stays for what nothing names.
+- Same lines in `explico diff --json` (`details`). Fixtures `realistic/diff-situations/`; tests `RealisticDiffSituationsAcceptanceIT`, `SituationsTest`.
+
