@@ -1,0 +1,1469 @@
+{
+  "package": {
+    "location": {
+      "file": "re.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "re.rego",
+          "row": 1,
+          "col": 9,
+          "text": "cmU="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "re.rego",
+          "row": 1,
+          "col": 9,
+          "text": "cmU="
+        },
+        "type": "string",
+        "value": "re"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "re.rego",
+        "row": 3,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "re.rego",
+          "row": 3,
+          "col": 8,
+          "text": "cmVnby52MQ=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 3,
+              "col": 8,
+              "text": "cmVnbw=="
+            },
+            "type": "var",
+            "value": "rego"
+          },
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 3,
+              "col": 13,
+              "text": "djE="
+            },
+            "type": "string",
+            "value": "v1"
+          }
+        ]
+      }
+    },
+    {
+      "alias": "other",
+      "location": {
+        "file": "re.rego",
+        "row": 5,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "re.rego",
+          "row": 5,
+          "col": 8,
+          "text": "ZGF0YS5yZTI="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 5,
+              "col": 8,
+              "text": "ZGF0YQ=="
+            },
+            "type": "var",
+            "value": "data"
+          },
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 5,
+              "col": 13,
+              "text": "cmUy"
+            },
+            "type": "string",
+            "value": "re2"
+          }
+        ]
+      }
+    }
+  ],
+  "rules": [
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re.rego",
+            "row": 8,
+            "col": 2,
+            "text": "ZGF0YS5yZTIudGFyZ2V0X2E="
+          },
+          "terms": {
+            "location": {
+              "file": "re.rego",
+              "row": 8,
+              "col": 2,
+              "text": "ZGF0YS5yZTIudGFyZ2V0X2E="
+            },
+            "type": "ref",
+            "value": [
+              {
+                "location": {
+                  "file": "re.rego",
+                  "row": 8,
+                  "col": 2,
+                  "text": "ZGF0YQ=="
+                },
+                "type": "var",
+                "value": "data"
+              },
+              {
+                "location": {
+                  "file": "re.rego",
+                  "row": 8,
+                  "col": 7,
+                  "text": "cmUy"
+                },
+                "type": "string",
+                "value": "re2"
+              },
+              {
+                "location": {
+                  "file": "re.rego",
+                  "row": 8,
+                  "col": 11,
+                  "text": "dGFyZ2V0X2E="
+                },
+                "type": "string",
+                "value": "target_a"
+              }
+            ]
+          }
+        }
+      ],
+      "head": {
+        "name": "by_full_path",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 7,
+              "col": 1,
+              "text": "YnlfZnVsbF9wYXRo"
+            },
+            "type": "var",
+            "value": "by_full_path"
+          }
+        ],
+        "location": {
+          "file": "re.rego",
+          "row": 7,
+          "col": 1,
+          "text": "YnlfZnVsbF9wYXRo"
+        }
+      },
+      "location": {
+        "file": "re.rego",
+        "row": 7,
+        "col": 1,
+        "text": "YnlfZnVsbF9wYXRoIGlmIHsKCWRhdGEucmUyLnRhcmdldF9hCn0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re.rego",
+            "row": 12,
+            "col": 2,
+            "text": "b3RoZXIudGFyZ2V0X2I="
+          },
+          "terms": {
+            "location": {
+              "file": "re.rego",
+              "row": 12,
+              "col": 2,
+              "text": "b3RoZXIudGFyZ2V0X2I="
+            },
+            "type": "ref",
+            "value": [
+              {
+                "location": {
+                  "file": "re.rego",
+                  "row": 12,
+                  "col": 2,
+                  "text": "b3RoZXI="
+                },
+                "type": "var",
+                "value": "other"
+              },
+              {
+                "location": {
+                  "file": "re.rego",
+                  "row": 12,
+                  "col": 8,
+                  "text": "dGFyZ2V0X2I="
+                },
+                "type": "string",
+                "value": "target_b"
+              }
+            ]
+          }
+        }
+      ],
+      "head": {
+        "name": "by_alias",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 11,
+              "col": 1,
+              "text": "YnlfYWxpYXM="
+            },
+            "type": "var",
+            "value": "by_alias"
+          }
+        ],
+        "location": {
+          "file": "re.rego",
+          "row": 11,
+          "col": 1,
+          "text": "YnlfYWxpYXM="
+        }
+      },
+      "location": {
+        "file": "re.rego",
+        "row": 11,
+        "col": 1,
+        "text": "YnlfYWxpYXMgaWYgewoJb3RoZXIudGFyZ2V0X2IKfQ=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re.rego",
+            "row": 16,
+            "col": 2,
+            "text": "eCA9PSB1c2VkX2luX2Z1bmN0aW9u"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 16,
+                "col": 4,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 16,
+                    "col": 4,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 16,
+                "col": 2,
+                "text": "eA=="
+              },
+              "type": "var",
+              "value": "x"
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 16,
+                "col": 7,
+                "text": "dXNlZF9pbl9mdW5jdGlvbg=="
+              },
+              "type": "var",
+              "value": "used_in_function"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "fn_user",
+        "args": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 15,
+              "col": 9,
+              "text": "eA=="
+            },
+            "type": "var",
+            "value": "x"
+          }
+        ],
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 15,
+              "col": 1,
+              "text": "Zm5fdXNlcg=="
+            },
+            "type": "var",
+            "value": "fn_user"
+          }
+        ],
+        "location": {
+          "file": "re.rego",
+          "row": 15,
+          "col": 1,
+          "text": "Zm5fdXNlcih4KQ=="
+        }
+      },
+      "location": {
+        "file": "re.rego",
+        "row": 15,
+        "col": 1,
+        "text": "Zm5fdXNlcih4KSBpZiB7Cgl4ID09IHVzZWRfaW5fZnVuY3Rpb24KfQ=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re.rego",
+            "row": 19,
+            "col": 21,
+            "text": "MQ=="
+          },
+          "terms": {
+            "location": {
+              "file": "re.rego",
+              "row": 19,
+              "col": 21,
+              "text": "MQ=="
+            },
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "head": {
+        "name": "used_in_function",
+        "value": {
+          "location": {
+            "file": "re.rego",
+            "row": 19,
+            "col": 21,
+            "text": "MQ=="
+          },
+          "type": "number",
+          "value": 1
+        },
+        "assign": true,
+        "ref": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 19,
+              "col": 1,
+              "text": "dXNlZF9pbl9mdW5jdGlvbg=="
+            },
+            "type": "var",
+            "value": "used_in_function"
+          }
+        ],
+        "location": {
+          "file": "re.rego",
+          "row": 19,
+          "col": 1,
+          "text": "dXNlZF9pbl9mdW5jdGlvbiA6PSAx"
+        }
+      },
+      "location": {
+        "file": "re.rego",
+        "row": 19,
+        "col": 1,
+        "text": "dXNlZF9pbl9mdW5jdGlvbiA6PSAx"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re.rego",
+            "row": 22,
+            "col": 2,
+            "text": "c29tZSBzaGFkb3dlZCBpbiBpbnB1dC54cw=="
+          },
+          "terms": {
+            "location": {
+              "file": "re.rego",
+              "row": 22,
+              "col": 2,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "re.rego",
+                  "row": 22,
+                  "col": 7,
+                  "text": "c2hhZG93ZWQgaW4gaW5wdXQueHM="
+                },
+                "type": "call",
+                "value": [
+                  {
+                    "location": {
+                      "file": "re.rego",
+                      "row": 22,
+                      "col": 16,
+                      "text": "aW4="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "re.rego",
+                          "row": 22,
+                          "col": 16,
+                          "text": "aW4="
+                        },
+                        "type": "var",
+                        "value": "internal"
+                      },
+                      {
+                        "location": {
+                          "file": "re.rego",
+                          "row": 22,
+                          "col": 16,
+                          "text": "aW4="
+                        },
+                        "type": "string",
+                        "value": "member_2"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "re.rego",
+                      "row": 22,
+                      "col": 7,
+                      "text": "c2hhZG93ZWQ="
+                    },
+                    "type": "var",
+                    "value": "shadowed"
+                  },
+                  {
+                    "location": {
+                      "file": "re.rego",
+                      "row": 22,
+                      "col": 19,
+                      "text": "aW5wdXQueHM="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "re.rego",
+                          "row": 22,
+                          "col": 19,
+                          "text": "aW5wdXQ="
+                        },
+                        "type": "var",
+                        "value": "input"
+                      },
+                      {
+                        "location": {
+                          "file": "re.rego",
+                          "row": 22,
+                          "col": 25,
+                          "text": "eHM="
+                        },
+                        "type": "string",
+                        "value": "xs"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "re.rego",
+            "row": 23,
+            "col": 2,
+            "text": "c2hhZG93ZWQgPT0gMQ=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 23,
+                "col": 11,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 23,
+                    "col": 11,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 23,
+                "col": 2,
+                "text": "c2hhZG93ZWQ="
+              },
+              "type": "var",
+              "value": "shadowed"
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 23,
+                "col": 14,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "local_shadow",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 21,
+              "col": 1,
+              "text": "bG9jYWxfc2hhZG93"
+            },
+            "type": "var",
+            "value": "local_shadow"
+          }
+        ],
+        "location": {
+          "file": "re.rego",
+          "row": 21,
+          "col": 1,
+          "text": "bG9jYWxfc2hhZG93"
+        }
+      },
+      "location": {
+        "file": "re.rego",
+        "row": 21,
+        "col": 1,
+        "text": "bG9jYWxfc2hhZG93IGlmIHsKCXNvbWUgc2hhZG93ZWQgaW4gaW5wdXQueHMKCXNoYWRvd2VkID09IDEKfQ=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re.rego",
+            "row": 27,
+            "col": 2,
+            "text": "aW5wdXQucyA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 27,
+                "col": 10,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 27,
+                    "col": 10,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 27,
+                "col": 2,
+                "text": "aW5wdXQucw=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 27,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 27,
+                    "col": 8,
+                    "text": "cw=="
+                  },
+                  "type": "string",
+                  "value": "s"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 27,
+                "col": 13,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "shadowed",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 26,
+              "col": 1,
+              "text": "c2hhZG93ZWQ="
+            },
+            "type": "var",
+            "value": "shadowed"
+          }
+        ],
+        "location": {
+          "file": "re.rego",
+          "row": 26,
+          "col": 1,
+          "text": "c2hhZG93ZWQ="
+        }
+      },
+      "location": {
+        "file": "re.rego",
+        "row": 26,
+        "col": 1,
+        "text": "c2hhZG93ZWQgaWYgewoJaW5wdXQucyA9PSAxCn0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re.rego",
+            "row": 31,
+            "col": 2,
+            "text": "aW5wdXQuYSA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 31,
+                "col": 10,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 31,
+                    "col": 10,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 31,
+                "col": 2,
+                "text": "aW5wdXQuYQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 31,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 31,
+                    "col": 8,
+                    "text": "YQ=="
+                  },
+                  "type": "string",
+                  "value": "a"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 31,
+                "col": 13,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "else": {
+        "body": [
+          {
+            "index": 0,
+            "location": {
+              "file": "re.rego",
+              "row": 33,
+              "col": 2,
+              "text": "c2VsZmlzaA=="
+            },
+            "terms": {
+              "location": {
+                "file": "re.rego",
+                "row": 33,
+                "col": 2,
+                "text": "c2VsZmlzaA=="
+              },
+              "type": "var",
+              "value": "selfish"
+            }
+          }
+        ],
+        "head": {
+          "name": "selfish",
+          "value": {
+            "location": {
+              "file": "re.rego",
+              "row": 32,
+              "col": 11,
+              "text": "Mg=="
+            },
+            "type": "number",
+            "value": 2
+          },
+          "assign": true,
+          "ref": [
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 30,
+                "col": 1,
+                "text": "c2VsZmlzaA=="
+              },
+              "type": "var",
+              "value": "selfish"
+            }
+          ],
+          "location": {
+            "file": "re.rego",
+            "row": 32,
+            "col": 3,
+            "text": "ZWxzZSA6PSAy"
+          }
+        },
+        "location": {
+          "file": "re.rego",
+          "row": 32,
+          "col": 3,
+          "text": "ZWxzZSA6PSAyIGlmIHsKCXNlbGZpc2gKfQ=="
+        }
+      },
+      "head": {
+        "name": "selfish",
+        "value": {
+          "location": {
+            "file": "re.rego",
+            "row": 30,
+            "col": 12,
+            "text": "MQ=="
+          },
+          "type": "number",
+          "value": 1
+        },
+        "assign": true,
+        "ref": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 30,
+              "col": 1,
+              "text": "c2VsZmlzaA=="
+            },
+            "type": "var",
+            "value": "selfish"
+          }
+        ],
+        "location": {
+          "file": "re.rego",
+          "row": 30,
+          "col": 1,
+          "text": "c2VsZmlzaCA6PSAx"
+        }
+      },
+      "location": {
+        "file": "re.rego",
+        "row": 30,
+        "col": 1,
+        "text": "c2VsZmlzaCA6PSAxIGlmIHsKCWlucHV0LmEgPT0gMQp9IGVsc2UgOj0gMiBpZiB7CglzZWxmaXNoCn0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re.rego",
+            "row": 37,
+            "col": 2,
+            "text": "aW5wdXQudSA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 37,
+                "col": 10,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 37,
+                    "col": 10,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 37,
+                "col": 2,
+                "text": "aW5wdXQudQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 37,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 37,
+                    "col": 8,
+                    "text": "dQ=="
+                  },
+                  "type": "string",
+                  "value": "u"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 37,
+                "col": 13,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "unused_one",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 36,
+              "col": 1,
+              "text": "dW51c2VkX29uZQ=="
+            },
+            "type": "var",
+            "value": "unused_one"
+          }
+        ],
+        "location": {
+          "file": "re.rego",
+          "row": 36,
+          "col": 1,
+          "text": "dW51c2VkX29uZQ=="
+        }
+      },
+      "location": {
+        "file": "re.rego",
+        "row": 36,
+        "col": 1,
+        "text": "dW51c2VkX29uZSBpZiB7CglpbnB1dC51ID09IDEKfQ=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re.rego",
+            "row": 41,
+            "col": 2,
+            "text": "bSA6PSBpbnB1dC5h"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 41,
+                "col": 4,
+                "text": "Oj0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 41,
+                    "col": 4,
+                    "text": "Oj0="
+                  },
+                  "type": "var",
+                  "value": "assign"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 41,
+                "col": 2,
+                "text": "bQ=="
+              },
+              "type": "var",
+              "value": "m"
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 41,
+                "col": 7,
+                "text": "aW5wdXQuYQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 41,
+                    "col": 7,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 41,
+                    "col": 13,
+                    "text": "YQ=="
+                  },
+                  "type": "string",
+                  "value": "a"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "partial_used",
+        "key": {
+          "location": {
+            "file": "re.rego",
+            "row": 40,
+            "col": 23,
+            "text": "bQ=="
+          },
+          "type": "var",
+          "value": "m"
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 40,
+              "col": 1,
+              "text": "cGFydGlhbF91c2Vk"
+            },
+            "type": "var",
+            "value": "partial_used"
+          }
+        ],
+        "location": {
+          "file": "re.rego",
+          "row": 40,
+          "col": 1,
+          "text": "cGFydGlhbF91c2VkIGNvbnRhaW5zIG0="
+        }
+      },
+      "location": {
+        "file": "re.rego",
+        "row": 40,
+        "col": 1,
+        "text": "cGFydGlhbF91c2VkIGNvbnRhaW5zIG0gaWYgewoJbSA6PSBpbnB1dC5hCn0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re.rego",
+            "row": 45,
+            "col": 2,
+            "text": "Y291bnQocGFydGlhbF91c2VkKSA+IDA="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 45,
+                "col": 22,
+                "text": "Pg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 45,
+                    "col": 22,
+                    "text": "Pg=="
+                  },
+                  "type": "var",
+                  "value": "gt"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 45,
+                "col": 2,
+                "text": "Y291bnQocGFydGlhbF91c2VkKQ=="
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 45,
+                    "col": 2,
+                    "text": "Y291bnQ="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "re.rego",
+                        "row": 45,
+                        "col": 2,
+                        "text": "Y291bnQ="
+                      },
+                      "type": "var",
+                      "value": "count"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 45,
+                    "col": 8,
+                    "text": "cGFydGlhbF91c2Vk"
+                  },
+                  "type": "var",
+                  "value": "partial_used"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 45,
+                "col": 24,
+                "text": "MA=="
+              },
+              "type": "number",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "uses_partial",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 44,
+              "col": 1,
+              "text": "dXNlc19wYXJ0aWFs"
+            },
+            "type": "var",
+            "value": "uses_partial"
+          }
+        ],
+        "location": {
+          "file": "re.rego",
+          "row": 44,
+          "col": 1,
+          "text": "dXNlc19wYXJ0aWFs"
+        }
+      },
+      "location": {
+        "file": "re.rego",
+        "row": 44,
+        "col": 1,
+        "text": "dXNlc19wYXJ0aWFsIGlmIHsKCWNvdW50KHBhcnRpYWxfdXNlZCkgPiAwCn0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re.rego",
+            "row": 49,
+            "col": 2,
+            "text": "aW5wdXQucSA9PSAxIHdpdGggZGF0YS54IGFzIHdpdGhfdGFyZ2V0"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 49,
+                "col": 10,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 49,
+                    "col": 10,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 49,
+                "col": 2,
+                "text": "aW5wdXQucQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 49,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "re.rego",
+                    "row": 49,
+                    "col": 8,
+                    "text": "cQ=="
+                  },
+                  "type": "string",
+                  "value": "q"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 49,
+                "col": 13,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ],
+          "with": [
+            {
+              "location": {
+                "file": "re.rego",
+                "row": 49,
+                "col": 15,
+                "text": "d2l0aCBkYXRhLnggYXMgd2l0aF90YXJnZXQ="
+              },
+              "target": {
+                "location": {
+                  "file": "re.rego",
+                  "row": 49,
+                  "col": 20,
+                  "text": "ZGF0YS54"
+                },
+                "type": "ref",
+                "value": [
+                  {
+                    "location": {
+                      "file": "re.rego",
+                      "row": 49,
+                      "col": 20,
+                      "text": "ZGF0YQ=="
+                    },
+                    "type": "var",
+                    "value": "data"
+                  },
+                  {
+                    "location": {
+                      "file": "re.rego",
+                      "row": 49,
+                      "col": 25,
+                      "text": "eA=="
+                    },
+                    "type": "string",
+                    "value": "x"
+                  }
+                ]
+              },
+              "value": {
+                "location": {
+                  "file": "re.rego",
+                  "row": 49,
+                  "col": 30,
+                  "text": "d2l0aF90YXJnZXQ="
+                },
+                "type": "var",
+                "value": "with_target"
+              }
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "in_with_value",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 48,
+              "col": 1,
+              "text": "aW5fd2l0aF92YWx1ZQ=="
+            },
+            "type": "var",
+            "value": "in_with_value"
+          }
+        ],
+        "location": {
+          "file": "re.rego",
+          "row": 48,
+          "col": 1,
+          "text": "aW5fd2l0aF92YWx1ZQ=="
+        }
+      },
+      "location": {
+        "file": "re.rego",
+        "row": 48,
+        "col": 1,
+        "text": "aW5fd2l0aF92YWx1ZSBpZiB7CglpbnB1dC5xID09IDEgd2l0aCBkYXRhLnggYXMgd2l0aF90YXJnZXQKfQ=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re.rego",
+            "row": 52,
+            "col": 16,
+            "text": "Mw=="
+          },
+          "terms": {
+            "location": {
+              "file": "re.rego",
+              "row": 52,
+              "col": 16,
+              "text": "Mw=="
+            },
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "head": {
+        "name": "with_target",
+        "value": {
+          "location": {
+            "file": "re.rego",
+            "row": 52,
+            "col": 16,
+            "text": "Mw=="
+          },
+          "type": "number",
+          "value": 3
+        },
+        "assign": true,
+        "ref": [
+          {
+            "location": {
+              "file": "re.rego",
+              "row": 52,
+              "col": 1,
+              "text": "d2l0aF90YXJnZXQ="
+            },
+            "type": "var",
+            "value": "with_target"
+          }
+        ],
+        "location": {
+          "file": "re.rego",
+          "row": 52,
+          "col": 1,
+          "text": "d2l0aF90YXJnZXQgOj0gMw=="
+        }
+      },
+      "location": {
+        "file": "re.rego",
+        "row": 52,
+        "col": 1,
+        "text": "d2l0aF90YXJnZXQgOj0gMw=="
+      }
+    }
+  ]
+}

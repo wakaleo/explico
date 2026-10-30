@@ -1,0 +1,2471 @@
+{
+  "package": {
+    "location": {
+      "file": "nc.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "nc.rego",
+          "row": 1,
+          "col": 9,
+          "text": "bmM="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "nc.rego",
+          "row": 1,
+          "col": 9,
+          "text": "bmM="
+        },
+        "type": "string",
+        "value": "nc"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "nc.rego",
+        "row": 3,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "nc.rego",
+          "row": 3,
+          "col": 8,
+          "text": "cmVnby52MQ=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 3,
+              "col": 8,
+              "text": "cmVnbw=="
+            },
+            "type": "var",
+            "value": "rego"
+          },
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 3,
+              "col": 13,
+              "text": "djE="
+            },
+            "type": "string",
+            "value": "v1"
+          }
+        ]
+      }
+    },
+    {
+      "location": {
+        "file": "nc.rego",
+        "row": 5,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "nc.rego",
+          "row": 5,
+          "col": 8,
+          "text": "ZGF0YS5uYzIuc2hhcmVkX3J1bGU="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 5,
+              "col": 8,
+              "text": "ZGF0YQ=="
+            },
+            "type": "var",
+            "value": "data"
+          },
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 5,
+              "col": 13,
+              "text": "bmMy"
+            },
+            "type": "string",
+            "value": "nc2"
+          },
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 5,
+              "col": 17,
+              "text": "c2hhcmVkX3J1bGU="
+            },
+            "type": "string",
+            "value": "shared_rule"
+          }
+        ]
+      }
+    }
+  ],
+  "annotations": [
+    {
+      "custom": {
+        "control-id": "NC-1",
+        "frameworks": [
+          "ISO 27001 A.8.32"
+        ]
+      },
+      "description": "Fixture control NC-1.",
+      "location": {
+        "file": "nc.rego",
+        "row": 7,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBVc2VzIGV2ZXJ5IGhlbHBlciBzaGFwZQojIGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgTkMtMS4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBOQy0xCiMgICBmcmFtZXdvcmtzOgojICAgICAtIElTTyAyNzAwMSBBLjguMzI="
+      },
+      "scope": "document",
+      "title": "Uses every helper shape"
+    },
+    {
+      "custom": {
+        "control-id": "NC-2",
+        "frameworks": [
+          "ISO 27001 A.8.32"
+        ]
+      },
+      "description": "Fixture control NC-2.",
+      "location": {
+        "file": "nc.rego",
+        "row": 26,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBFbHNlIGJyYW5jaAojIGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgTkMtMi4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBOQy0yCiMgICBmcmFtZXdvcmtzOgojICAgICAtIElTTyAyNzAwMSBBLjguMzI="
+      },
+      "scope": "document",
+      "title": "Else branch"
+    },
+    {
+      "custom": {
+        "control-id": "NC-3",
+        "frameworks": [
+          "ISO 27001 A.8.32"
+        ]
+      },
+      "description": "Fixture control NC-3.",
+      "location": {
+        "file": "nc.rego",
+        "row": 40,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBXaXRoIG92ZXJyaWRlCiMgZGVzY3JpcHRpb246IEZpeHR1cmUgY29udHJvbCBOQy0zLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IE5DLTMKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMg=="
+      },
+      "scope": "document",
+      "title": "With override"
+    }
+  ],
+  "rules": [
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "NC-1",
+            "frameworks": [
+              "ISO 27001 A.8.32"
+            ]
+          },
+          "description": "Fixture control NC-1.",
+          "location": {
+            "file": "nc.rego",
+            "row": 7,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBVc2VzIGV2ZXJ5IGhlbHBlciBzaGFwZQojIGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgTkMtMS4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBOQy0xCiMgICBmcmFtZXdvcmtzOgojICAgICAtIElTTyAyNzAwMSBBLjguMzI="
+          },
+          "scope": "document",
+          "title": "Uses every helper shape"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 16,
+            "col": 2,
+            "text": "aGVscGVyX3BsYWlu"
+          },
+          "terms": {
+            "location": {
+              "file": "nc.rego",
+              "row": 16,
+              "col": 2,
+              "text": "aGVscGVyX3BsYWlu"
+            },
+            "type": "var",
+            "value": "helper_plain"
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "nc.rego",
+            "row": 17,
+            "col": 2,
+            "text": "Y291bnQoaW5wdXQuaXRlbXMpIDwgbWF4X2l0ZW1z"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 17,
+                "col": 21,
+                "text": "PA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 17,
+                    "col": 21,
+                    "text": "PA=="
+                  },
+                  "type": "var",
+                  "value": "lt"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 17,
+                "col": 2,
+                "text": "Y291bnQoaW5wdXQuaXRlbXMp"
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 17,
+                    "col": 2,
+                    "text": "Y291bnQ="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "nc.rego",
+                        "row": 17,
+                        "col": 2,
+                        "text": "Y291bnQ="
+                      },
+                      "type": "var",
+                      "value": "count"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 17,
+                    "col": 8,
+                    "text": "aW5wdXQuaXRlbXM="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "nc.rego",
+                        "row": 17,
+                        "col": 8,
+                        "text": "aW5wdXQ="
+                      },
+                      "type": "var",
+                      "value": "input"
+                    },
+                    {
+                      "location": {
+                        "file": "nc.rego",
+                        "row": 17,
+                        "col": 14,
+                        "text": "aXRlbXM="
+                      },
+                      "type": "string",
+                      "value": "items"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 17,
+                "col": 23,
+                "text": "bWF4X2l0ZW1z"
+              },
+              "type": "var",
+              "value": "max_items"
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "location": {
+            "file": "nc.rego",
+            "row": 18,
+            "col": 2,
+            "text": "ZXZlcnkgeCBpbiBpbnB1dC54cyB7CgkJeC5vawoJCWV2ZXJ5X2hlbHBlcgoJfQ=="
+          },
+          "terms": {
+            "body": [
+              {
+                "index": 0,
+                "location": {
+                  "file": "nc.rego",
+                  "row": 19,
+                  "col": 3,
+                  "text": "eC5vaw=="
+                },
+                "terms": {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 19,
+                    "col": 3,
+                    "text": "eC5vaw=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "nc.rego",
+                        "row": 19,
+                        "col": 3,
+                        "text": "eA=="
+                      },
+                      "type": "var",
+                      "value": "x"
+                    },
+                    {
+                      "location": {
+                        "file": "nc.rego",
+                        "row": 19,
+                        "col": 5,
+                        "text": "b2s="
+                      },
+                      "type": "string",
+                      "value": "ok"
+                    }
+                  ]
+                }
+              },
+              {
+                "index": 1,
+                "location": {
+                  "file": "nc.rego",
+                  "row": 20,
+                  "col": 3,
+                  "text": "ZXZlcnlfaGVscGVy"
+                },
+                "terms": {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 20,
+                    "col": 3,
+                    "text": "ZXZlcnlfaGVscGVy"
+                  },
+                  "type": "var",
+                  "value": "every_helper"
+                }
+              }
+            ],
+            "domain": {
+              "location": {
+                "file": "nc.rego",
+                "row": 18,
+                "col": 13,
+                "text": "aW5wdXQueHM="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 18,
+                    "col": 13,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 18,
+                    "col": 19,
+                    "text": "eHM="
+                  },
+                  "type": "string",
+                  "value": "xs"
+                }
+              ]
+            },
+            "key": null,
+            "location": {
+              "file": "nc.rego",
+              "row": 18,
+              "col": 2,
+              "text": "ZXZlcnk="
+            },
+            "value": {
+              "location": {
+                "file": "nc.rego",
+                "row": 18,
+                "col": 8,
+                "text": "eA=="
+              },
+              "type": "var",
+              "value": "x"
+            }
+          }
+        },
+        {
+          "index": 3,
+          "location": {
+            "file": "nc.rego",
+            "row": 22,
+            "col": 2,
+            "text": "Y291bnQoW3kgfCBzb21lIHkgaW4gaW5wdXQueXM7IGNvbXBfaGVscGVyXSkgPiAw"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 22,
+                "col": 47,
+                "text": "Pg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 22,
+                    "col": 47,
+                    "text": "Pg=="
+                  },
+                  "type": "var",
+                  "value": "gt"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 22,
+                "col": 2,
+                "text": "Y291bnQoW3kgfCBzb21lIHkgaW4gaW5wdXQueXM7IGNvbXBfaGVscGVyXSk="
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 22,
+                    "col": 2,
+                    "text": "Y291bnQ="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "nc.rego",
+                        "row": 22,
+                        "col": 2,
+                        "text": "Y291bnQ="
+                      },
+                      "type": "var",
+                      "value": "count"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 22,
+                    "col": 8,
+                    "text": "W3kgfCBzb21lIHkgaW4gaW5wdXQueXM7IGNvbXBfaGVscGVyXQ=="
+                  },
+                  "type": "arraycomprehension",
+                  "value": {
+                    "term": {
+                      "location": {
+                        "file": "nc.rego",
+                        "row": 22,
+                        "col": 9,
+                        "text": "eQ=="
+                      },
+                      "type": "var",
+                      "value": "y"
+                    },
+                    "body": [
+                      {
+                        "index": 0,
+                        "location": {
+                          "file": "nc.rego",
+                          "row": 22,
+                          "col": 13,
+                          "text": "c29tZSB5IGluIGlucHV0Lnlz"
+                        },
+                        "terms": {
+                          "location": {
+                            "file": "nc.rego",
+                            "row": 22,
+                            "col": 13,
+                            "text": "c29tZQ=="
+                          },
+                          "symbols": [
+                            {
+                              "location": {
+                                "file": "nc.rego",
+                                "row": 22,
+                                "col": 18,
+                                "text": "eSBpbiBpbnB1dC55cw=="
+                              },
+                              "type": "call",
+                              "value": [
+                                {
+                                  "location": {
+                                    "file": "nc.rego",
+                                    "row": 22,
+                                    "col": 20,
+                                    "text": "aW4="
+                                  },
+                                  "type": "ref",
+                                  "value": [
+                                    {
+                                      "location": {
+                                        "file": "nc.rego",
+                                        "row": 22,
+                                        "col": 20,
+                                        "text": "aW4="
+                                      },
+                                      "type": "var",
+                                      "value": "internal"
+                                    },
+                                    {
+                                      "location": {
+                                        "file": "nc.rego",
+                                        "row": 22,
+                                        "col": 20,
+                                        "text": "aW4="
+                                      },
+                                      "type": "string",
+                                      "value": "member_2"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "location": {
+                                    "file": "nc.rego",
+                                    "row": 22,
+                                    "col": 18,
+                                    "text": "eQ=="
+                                  },
+                                  "type": "var",
+                                  "value": "y"
+                                },
+                                {
+                                  "location": {
+                                    "file": "nc.rego",
+                                    "row": 22,
+                                    "col": 23,
+                                    "text": "aW5wdXQueXM="
+                                  },
+                                  "type": "ref",
+                                  "value": [
+                                    {
+                                      "location": {
+                                        "file": "nc.rego",
+                                        "row": 22,
+                                        "col": 23,
+                                        "text": "aW5wdXQ="
+                                      },
+                                      "type": "var",
+                                      "value": "input"
+                                    },
+                                    {
+                                      "location": {
+                                        "file": "nc.rego",
+                                        "row": 22,
+                                        "col": 29,
+                                        "text": "eXM="
+                                      },
+                                      "type": "string",
+                                      "value": "ys"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "location": {
+                          "file": "nc.rego",
+                          "row": 22,
+                          "col": 33,
+                          "text": "Y29tcF9oZWxwZXI="
+                        },
+                        "terms": {
+                          "location": {
+                            "file": "nc.rego",
+                            "row": 22,
+                            "col": 33,
+                            "text": "Y29tcF9oZWxwZXI="
+                          },
+                          "type": "var",
+                          "value": "comp_helper"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 22,
+                "col": 49,
+                "text": "MA=="
+              },
+              "type": "number",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "location": {
+            "file": "nc.rego",
+            "row": 23,
+            "col": 2,
+            "text": "c2hhcmVkX3J1bGU="
+          },
+          "terms": {
+            "location": {
+              "file": "nc.rego",
+              "row": 23,
+              "col": 2,
+              "text": "c2hhcmVkX3J1bGU="
+            },
+            "type": "var",
+            "value": "shared_rule"
+          }
+        }
+      ],
+      "head": {
+        "name": "nc_one",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 15,
+              "col": 1,
+              "text": "bmNfb25l"
+            },
+            "type": "var",
+            "value": "nc_one"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 15,
+          "col": 1,
+          "text": "bmNfb25l"
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 15,
+        "col": 1,
+        "text": "bmNfb25lIGlmIHsKCWhlbHBlcl9wbGFpbgoJY291bnQoaW5wdXQuaXRlbXMpIDwgbWF4X2l0ZW1zCglldmVyeSB4IGluIGlucHV0LnhzIHsKCQl4Lm9rCgkJZXZlcnlfaGVscGVyCgl9Cgljb3VudChbeSB8IHNvbWUgeSBpbiBpbnB1dC55czsgY29tcF9oZWxwZXJdKSA+IDAKCXNoYXJlZF9ydWxlCn0="
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "NC-2",
+            "frameworks": [
+              "ISO 27001 A.8.32"
+            ]
+          },
+          "description": "Fixture control NC-2.",
+          "location": {
+            "file": "nc.rego",
+            "row": 26,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBFbHNlIGJyYW5jaAojIGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgTkMtMi4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBOQy0yCiMgICBmcmFtZXdvcmtzOgojICAgICAtIElTTyAyNzAwMSBBLjguMzI="
+          },
+          "scope": "document",
+          "title": "Else branch"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 35,
+            "col": 2,
+            "text": "aW5wdXQuayA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 35,
+                "col": 10,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 35,
+                    "col": 10,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 35,
+                "col": 2,
+                "text": "aW5wdXQuaw=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 35,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 35,
+                    "col": 8,
+                    "text": "aw=="
+                  },
+                  "type": "string",
+                  "value": "k"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 35,
+                "col": 13,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "else": {
+        "body": [
+          {
+            "index": 0,
+            "location": {
+              "file": "nc.rego",
+              "row": 37,
+              "col": 2,
+              "text": "ZWxzZV9oZWxwZXI="
+            },
+            "terms": {
+              "location": {
+                "file": "nc.rego",
+                "row": 37,
+                "col": 2,
+                "text": "ZWxzZV9oZWxwZXI="
+              },
+              "type": "var",
+              "value": "else_helper"
+            }
+          }
+        ],
+        "head": {
+          "name": "nc_two",
+          "value": {
+            "location": {
+              "file": "nc.rego",
+              "row": 36,
+              "col": 11,
+              "text": "ImIi"
+            },
+            "type": "string",
+            "value": "b"
+          },
+          "assign": true,
+          "ref": [
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 34,
+                "col": 1,
+                "text": "bmNfdHdv"
+              },
+              "type": "var",
+              "value": "nc_two"
+            }
+          ],
+          "location": {
+            "file": "nc.rego",
+            "row": 36,
+            "col": 3,
+            "text": "ZWxzZSA6PSAiYiI="
+          }
+        },
+        "location": {
+          "file": "nc.rego",
+          "row": 36,
+          "col": 3,
+          "text": "ZWxzZSA6PSAiYiIgaWYgewoJZWxzZV9oZWxwZXIKfQ=="
+        }
+      },
+      "head": {
+        "name": "nc_two",
+        "value": {
+          "location": {
+            "file": "nc.rego",
+            "row": 34,
+            "col": 11,
+            "text": "ImEi"
+          },
+          "type": "string",
+          "value": "a"
+        },
+        "assign": true,
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 34,
+              "col": 1,
+              "text": "bmNfdHdv"
+            },
+            "type": "var",
+            "value": "nc_two"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 34,
+          "col": 1,
+          "text": "bmNfdHdvIDo9ICJhIg=="
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 34,
+        "col": 1,
+        "text": "bmNfdHdvIDo9ICJhIiBpZiB7CglpbnB1dC5rID09IDEKfSBlbHNlIDo9ICJiIiBpZiB7CgllbHNlX2hlbHBlcgp9"
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "NC-3",
+            "frameworks": [
+              "ISO 27001 A.8.32"
+            ]
+          },
+          "description": "Fixture control NC-3.",
+          "location": {
+            "file": "nc.rego",
+            "row": 40,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBXaXRoIG92ZXJyaWRlCiMgZGVzY3JpcHRpb246IEZpeHR1cmUgY29udHJvbCBOQy0zLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IE5DLTMKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMg=="
+          },
+          "scope": "document",
+          "title": "With override"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 49,
+            "col": 2,
+            "text": "aGVscGVyX3dpdGggd2l0aCBpbnB1dCBhcyB7ImEiOiAxfQ=="
+          },
+          "terms": {
+            "location": {
+              "file": "nc.rego",
+              "row": 49,
+              "col": 2,
+              "text": "aGVscGVyX3dpdGg="
+            },
+            "type": "var",
+            "value": "helper_with"
+          },
+          "with": [
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 49,
+                "col": 14,
+                "text": "d2l0aCBpbnB1dCBhcyB7ImEiOiAxfQ=="
+              },
+              "target": {
+                "location": {
+                  "file": "nc.rego",
+                  "row": 49,
+                  "col": 19,
+                  "text": "aW5wdXQ="
+                },
+                "type": "ref",
+                "value": [
+                  {
+                    "location": {
+                      "file": "nc.rego",
+                      "row": 49,
+                      "col": 19,
+                      "text": "aW5wdXQ="
+                    },
+                    "type": "var",
+                    "value": "input"
+                  }
+                ]
+              },
+              "value": {
+                "location": {
+                  "file": "nc.rego",
+                  "row": 49,
+                  "col": 28,
+                  "text": "eyJhIjogMX0="
+                },
+                "type": "object",
+                "value": [
+                  [
+                    {
+                      "location": {
+                        "file": "nc.rego",
+                        "row": 49,
+                        "col": 29,
+                        "text": "ImEi"
+                      },
+                      "type": "string",
+                      "value": "a"
+                    },
+                    {
+                      "location": {
+                        "file": "nc.rego",
+                        "row": 49,
+                        "col": 34,
+                        "text": "MQ=="
+                      },
+                      "type": "number",
+                      "value": 1
+                    }
+                  ]
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "nc_three",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 48,
+              "col": 1,
+              "text": "bmNfdGhyZWU="
+            },
+            "type": "var",
+            "value": "nc_three"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 48,
+          "col": 1,
+          "text": "bmNfdGhyZWU="
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 48,
+        "col": 1,
+        "text": "bmNfdGhyZWUgaWYgewoJaGVscGVyX3dpdGggd2l0aCBpbnB1dCBhcyB7ImEiOiAxfQp9"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 53,
+            "col": 2,
+            "text": "aW5wdXQuYSA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 53,
+                "col": 10,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 53,
+                    "col": 10,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 53,
+                "col": 2,
+                "text": "aW5wdXQuYQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 53,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 53,
+                    "col": 8,
+                    "text": "YQ=="
+                  },
+                  "type": "string",
+                  "value": "a"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 53,
+                "col": 13,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "helper_plain",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 52,
+              "col": 1,
+              "text": "aGVscGVyX3BsYWlu"
+            },
+            "type": "var",
+            "value": "helper_plain"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 52,
+          "col": 1,
+          "text": "aGVscGVyX3BsYWlu"
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 52,
+        "col": 1,
+        "text": "aGVscGVyX3BsYWluIGlmIHsKCWlucHV0LmEgPT0gMQp9"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 57,
+            "col": 2,
+            "text": "aW5wdXQuYiA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 57,
+                "col": 10,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 57,
+                    "col": 10,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 57,
+                "col": 2,
+                "text": "aW5wdXQuYg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 57,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 57,
+                    "col": 8,
+                    "text": "Yg=="
+                  },
+                  "type": "string",
+                  "value": "b"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 57,
+                "col": 13,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "every_helper",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 56,
+              "col": 1,
+              "text": "ZXZlcnlfaGVscGVy"
+            },
+            "type": "var",
+            "value": "every_helper"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 56,
+          "col": 1,
+          "text": "ZXZlcnlfaGVscGVy"
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 56,
+        "col": 1,
+        "text": "ZXZlcnlfaGVscGVyIGlmIHsKCWlucHV0LmIgPT0gMQp9"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 61,
+            "col": 2,
+            "text": "aW5wdXQuYyA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 61,
+                "col": 10,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 61,
+                    "col": 10,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 61,
+                "col": 2,
+                "text": "aW5wdXQuYw=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 61,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 61,
+                    "col": 8,
+                    "text": "Yw=="
+                  },
+                  "type": "string",
+                  "value": "c"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 61,
+                "col": 13,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "comp_helper",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 60,
+              "col": 1,
+              "text": "Y29tcF9oZWxwZXI="
+            },
+            "type": "var",
+            "value": "comp_helper"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 60,
+          "col": 1,
+          "text": "Y29tcF9oZWxwZXI="
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 60,
+        "col": 1,
+        "text": "Y29tcF9oZWxwZXIgaWYgewoJaW5wdXQuYyA9PSAxCn0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 65,
+            "col": 2,
+            "text": "aW5wdXQuZCA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 65,
+                "col": 10,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 65,
+                    "col": 10,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 65,
+                "col": 2,
+                "text": "aW5wdXQuZA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 65,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 65,
+                    "col": 8,
+                    "text": "ZA=="
+                  },
+                  "type": "string",
+                  "value": "d"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 65,
+                "col": 13,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "else_helper",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 64,
+              "col": 1,
+              "text": "ZWxzZV9oZWxwZXI="
+            },
+            "type": "var",
+            "value": "else_helper"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 64,
+          "col": 1,
+          "text": "ZWxzZV9oZWxwZXI="
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 64,
+        "col": 1,
+        "text": "ZWxzZV9oZWxwZXIgaWYgewoJaW5wdXQuZCA9PSAxCn0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 69,
+            "col": 2,
+            "text": "aW5wdXQuYSA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 69,
+                "col": 10,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 69,
+                    "col": 10,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 69,
+                "col": 2,
+                "text": "aW5wdXQuYQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 69,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 69,
+                    "col": 8,
+                    "text": "YQ=="
+                  },
+                  "type": "string",
+                  "value": "a"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 69,
+                "col": 13,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "helper_with",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 68,
+              "col": 1,
+              "text": "aGVscGVyX3dpdGg="
+            },
+            "type": "var",
+            "value": "helper_with"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 68,
+          "col": 1,
+          "text": "aGVscGVyX3dpdGg="
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 68,
+        "col": 1,
+        "text": "aGVscGVyX3dpdGggaWYgewoJaW5wdXQuYSA9PSAxCn0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 72,
+            "col": 14,
+            "text": "NQ=="
+          },
+          "terms": {
+            "location": {
+              "file": "nc.rego",
+              "row": 72,
+              "col": 14,
+              "text": "NQ=="
+            },
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "head": {
+        "name": "max_items",
+        "value": {
+          "location": {
+            "file": "nc.rego",
+            "row": 72,
+            "col": 14,
+            "text": "NQ=="
+          },
+          "type": "number",
+          "value": 5
+        },
+        "assign": true,
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 72,
+              "col": 1,
+              "text": "bWF4X2l0ZW1z"
+            },
+            "type": "var",
+            "value": "max_items"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 72,
+          "col": 1,
+          "text": "bWF4X2l0ZW1zIDo9IDU="
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 72,
+        "col": 1,
+        "text": "bWF4X2l0ZW1zIDo9IDU="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 74,
+            "col": 17,
+            "text": "Mw=="
+          },
+          "terms": {
+            "location": {
+              "file": "nc.rego",
+              "row": 74,
+              "col": 17,
+              "text": "Mw=="
+            },
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "head": {
+        "name": "unused_const",
+        "value": {
+          "location": {
+            "file": "nc.rego",
+            "row": 74,
+            "col": 17,
+            "text": "Mw=="
+          },
+          "type": "number",
+          "value": 3
+        },
+        "assign": true,
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 74,
+              "col": 1,
+              "text": "dW51c2VkX2NvbnN0"
+            },
+            "type": "var",
+            "value": "unused_const"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 74,
+          "col": 1,
+          "text": "dW51c2VkX2NvbnN0IDo9IDM="
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 74,
+        "col": 1,
+        "text": "dW51c2VkX2NvbnN0IDo9IDM="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 77,
+            "col": 2,
+            "text": "eCA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 77,
+                "col": 4,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 77,
+                    "col": 4,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 77,
+                "col": 2,
+                "text": "eA=="
+              },
+              "type": "var",
+              "value": "x"
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 77,
+                "col": 7,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "unused_fn",
+        "args": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 76,
+              "col": 11,
+              "text": "eA=="
+            },
+            "type": "var",
+            "value": "x"
+          }
+        ],
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 76,
+              "col": 1,
+              "text": "dW51c2VkX2Zu"
+            },
+            "type": "var",
+            "value": "unused_fn"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 76,
+          "col": 1,
+          "text": "dW51c2VkX2ZuKHgp"
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 76,
+        "col": 1,
+        "text": "dW51c2VkX2ZuKHgpIGlmIHsKCXggPT0gMQp9"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 80,
+            "col": 1,
+            "text": "ZGVmYXVsdA=="
+          },
+          "terms": {
+            "location": {
+              "file": "nc.rego",
+              "row": 80,
+              "col": 1,
+              "text": "ZGVmYXVsdA=="
+            },
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "default": true,
+      "head": {
+        "name": "flag_only",
+        "value": {
+          "location": {
+            "file": "nc.rego",
+            "row": 80,
+            "col": 22,
+            "text": "ZmFsc2U="
+          },
+          "type": "boolean",
+          "value": false
+        },
+        "assign": true,
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 80,
+              "col": 9,
+              "text": "ZmxhZ19vbmx5"
+            },
+            "type": "var",
+            "value": "flag_only"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 80,
+          "col": 9,
+          "text": "ZmxhZ19vbmx5IDo9IGZhbHNl"
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 80,
+        "col": 1,
+        "text": "ZGVmYXVsdA=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 82,
+            "col": 1,
+            "text": "ZGVmYXVsdA=="
+          },
+          "terms": {
+            "location": {
+              "file": "nc.rego",
+              "row": 82,
+              "col": 1,
+              "text": "ZGVmYXVsdA=="
+            },
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "default": true,
+      "head": {
+        "name": "entry_point",
+        "value": {
+          "location": {
+            "file": "nc.rego",
+            "row": 82,
+            "col": 24,
+            "text": "ZmFsc2U="
+          },
+          "type": "boolean",
+          "value": false
+        },
+        "assign": true,
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 82,
+              "col": 9,
+              "text": "ZW50cnlfcG9pbnQ="
+            },
+            "type": "var",
+            "value": "entry_point"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 82,
+          "col": 9,
+          "text": "ZW50cnlfcG9pbnQgOj0gZmFsc2U="
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 82,
+        "col": 1,
+        "text": "ZGVmYXVsdA=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 85,
+            "col": 2,
+            "text": "aW5wdXQua2luZCA9PSAieiI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 85,
+                "col": 13,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 85,
+                    "col": 13,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 85,
+                "col": 2,
+                "text": "aW5wdXQua2luZA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 85,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 85,
+                    "col": 8,
+                    "text": "a2luZA=="
+                  },
+                  "type": "string",
+                  "value": "kind"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 85,
+                "col": 16,
+                "text": "Inoi"
+              },
+              "type": "string",
+              "value": "z"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "entry_point",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 84,
+              "col": 1,
+              "text": "ZW50cnlfcG9pbnQ="
+            },
+            "type": "var",
+            "value": "entry_point"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 84,
+          "col": 1,
+          "text": "ZW50cnlfcG9pbnQ="
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 84,
+        "col": 1,
+        "text": "ZW50cnlfcG9pbnQgaWYgewoJaW5wdXQua2luZCA9PSAieiIKfQ=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 89,
+            "col": 2,
+            "text": "aW5wdXQua2luZCA9PSAiYiI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 89,
+                "col": 13,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 89,
+                    "col": 13,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 89,
+                "col": 2,
+                "text": "aW5wdXQua2luZA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 89,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 89,
+                    "col": 8,
+                    "text": "a2luZA=="
+                  },
+                  "type": "string",
+                  "value": "kind"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 89,
+                "col": 16,
+                "text": "ImIi"
+              },
+              "type": "string",
+              "value": "b"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "deny",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 88,
+              "col": 1,
+              "text": "ZGVueQ=="
+            },
+            "type": "var",
+            "value": "deny"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 88,
+          "col": 1,
+          "text": "ZGVueQ=="
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 88,
+        "col": 1,
+        "text": "ZGVueSBpZiB7CglpbnB1dC5raW5kID09ICJiIgp9"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "nc.rego",
+            "row": 93,
+            "col": 2,
+            "text": "aW5wdXQua2luZCA9PSAiYyI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 93,
+                "col": 13,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 93,
+                    "col": 13,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 93,
+                "col": 2,
+                "text": "aW5wdXQua2luZA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 93,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "nc.rego",
+                    "row": 93,
+                    "col": 8,
+                    "text": "a2luZA=="
+                  },
+                  "type": "string",
+                  "value": "kind"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "nc.rego",
+                "row": 93,
+                "col": 16,
+                "text": "ImMi"
+              },
+              "type": "string",
+              "value": "c"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "allow_other",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "nc.rego",
+              "row": 92,
+              "col": 1,
+              "text": "YWxsb3dfb3RoZXI="
+            },
+            "type": "var",
+            "value": "allow_other"
+          }
+        ],
+        "location": {
+          "file": "nc.rego",
+          "row": 92,
+          "col": 1,
+          "text": "YWxsb3dfb3RoZXI="
+        }
+      },
+      "location": {
+        "file": "nc.rego",
+        "row": 92,
+        "col": 1,
+        "text": "YWxsb3dfb3RoZXIgaWYgewoJaW5wdXQua2luZCA9PSAiYyIKfQ=="
+      }
+    }
+  ],
+  "comments": [
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "nc.rego",
+        "row": 7,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBVc2VzIGV2ZXJ5IGhlbHBlciBzaGFwZQojIGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgTkMtMS4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBOQy0xCiMgICBmcmFtZXdvcmtzOgojICAgICAtIElTTyAyNzAwMSBBLjguMzI="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "nc.rego",
+        "row": 8,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBVc2VzIGV2ZXJ5IGhlbHBlciBzaGFwZQ==",
+      "Location": {
+        "file": "nc.rego",
+        "row": 9,
+        "col": 1,
+        "text": "IyB0aXRsZTogVXNlcyBldmVyeSBoZWxwZXIgc2hhcGU="
+      }
+    },
+    {
+      "Text": "IGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgTkMtMS4=",
+      "Location": {
+        "file": "nc.rego",
+        "row": 10,
+        "col": 1,
+        "text": "IyBkZXNjcmlwdGlvbjogRml4dHVyZSBjb250cm9sIE5DLTEu"
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "nc.rego",
+        "row": 11,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogTkMtMQ==",
+      "Location": {
+        "file": "nc.rego",
+        "row": 12,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IE5DLTE="
+      }
+    },
+    {
+      "Text": "ICAgZnJhbWV3b3Jrczo=",
+      "Location": {
+        "file": "nc.rego",
+        "row": 13,
+        "col": 1,
+        "text": "IyAgIGZyYW1ld29ya3M6"
+      }
+    },
+    {
+      "Text": "ICAgICAtIElTTyAyNzAwMSBBLjguMzI=",
+      "Location": {
+        "file": "nc.rego",
+        "row": 14,
+        "col": 1,
+        "text": "IyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "nc.rego",
+        "row": 26,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBFbHNlIGJyYW5jaAojIGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgTkMtMi4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBOQy0yCiMgICBmcmFtZXdvcmtzOgojICAgICAtIElTTyAyNzAwMSBBLjguMzI="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "nc.rego",
+        "row": 27,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBFbHNlIGJyYW5jaA==",
+      "Location": {
+        "file": "nc.rego",
+        "row": 28,
+        "col": 1,
+        "text": "IyB0aXRsZTogRWxzZSBicmFuY2g="
+      }
+    },
+    {
+      "Text": "IGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgTkMtMi4=",
+      "Location": {
+        "file": "nc.rego",
+        "row": 29,
+        "col": 1,
+        "text": "IyBkZXNjcmlwdGlvbjogRml4dHVyZSBjb250cm9sIE5DLTIu"
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "nc.rego",
+        "row": 30,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogTkMtMg==",
+      "Location": {
+        "file": "nc.rego",
+        "row": 31,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IE5DLTI="
+      }
+    },
+    {
+      "Text": "ICAgZnJhbWV3b3Jrczo=",
+      "Location": {
+        "file": "nc.rego",
+        "row": 32,
+        "col": 1,
+        "text": "IyAgIGZyYW1ld29ya3M6"
+      }
+    },
+    {
+      "Text": "ICAgICAtIElTTyAyNzAwMSBBLjguMzI=",
+      "Location": {
+        "file": "nc.rego",
+        "row": 33,
+        "col": 1,
+        "text": "IyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "nc.rego",
+        "row": 40,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBXaXRoIG92ZXJyaWRlCiMgZGVzY3JpcHRpb246IEZpeHR1cmUgY29udHJvbCBOQy0zLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IE5DLTMKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMg=="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "nc.rego",
+        "row": 41,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBXaXRoIG92ZXJyaWRl",
+      "Location": {
+        "file": "nc.rego",
+        "row": 42,
+        "col": 1,
+        "text": "IyB0aXRsZTogV2l0aCBvdmVycmlkZQ=="
+      }
+    },
+    {
+      "Text": "IGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgTkMtMy4=",
+      "Location": {
+        "file": "nc.rego",
+        "row": 43,
+        "col": 1,
+        "text": "IyBkZXNjcmlwdGlvbjogRml4dHVyZSBjb250cm9sIE5DLTMu"
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "nc.rego",
+        "row": 44,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogTkMtMw==",
+      "Location": {
+        "file": "nc.rego",
+        "row": 45,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IE5DLTM="
+      }
+    },
+    {
+      "Text": "ICAgZnJhbWV3b3Jrczo=",
+      "Location": {
+        "file": "nc.rego",
+        "row": 46,
+        "col": 1,
+        "text": "IyAgIGZyYW1ld29ya3M6"
+      }
+    },
+    {
+      "Text": "ICAgICAtIElTTyAyNzAwMSBBLjguMzI=",
+      "Location": {
+        "file": "nc.rego",
+        "row": 47,
+        "col": 1,
+        "text": "IyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+      }
+    }
+  ]
+}

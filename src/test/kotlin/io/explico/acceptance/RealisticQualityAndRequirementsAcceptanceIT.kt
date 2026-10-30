@@ -106,16 +106,21 @@ class RealisticQualityAndRequirementsAcceptanceIT {
             assertThat(section(qualityIndex, "## Documentation quality").filter { it.isNotBlank() }).containsExactly(
                 "- **Missing description (1):** [Q-003](quality-demo.md#q-003) — add a description to its METADATA",
                 "- **No framework (1):** [Q-002](quality-demo.md#q-002) — list the requirements it supports under custom.frameworks in its METADATA",
+                // Spec §14.68: the fixture's one id-less rule that no other rule uses is an entry point no control-level check covers.
+                "- **No control id (1):** [quality.demo.helper_without_metadata](quality-demo.md#quality-demo-helper-without-metadata) — add custom.control-id to its METADATA (or derive one with --control-id-from) so the checks above apply to it",
                 "- **Duplicate title (2):** [Q-001](quality-demo.md#q-001), [Q-002](quality-demo.md#q-002) -- \"Shared\" — give each control its own title",
             )
         }
 
         @Test
-        @DisplayName("the section sits after the overall line and before the legend; an id-less rule is never reported")
+        @DisplayName("the section sits after the overall line and before the legend; an id-less rule is never reported as a control finding (spec §14.68: only under 'No control id')")
         fun placementAndScope() {
             assertThat(qualityIndex.indexOf("## Documentation quality")).isGreaterThan(qualityIndex.indexOf("*Overall rendering coverage:"))
             assertThat(qualityIndex.indexOf("## Documentation quality")).isLessThan(qualityIndex.indexOf("## How to read this index"))
-            assertThat(section(qualityIndex, "## Documentation quality").joinToString("\n")).doesNotContain("helper_without_metadata").doesNotContain("Q-004")
+            val controlFindings = section(qualityIndex, "## Documentation quality").filter { it.startsWith("- **Missing description") || it.startsWith("- **No framework") || it.startsWith("- **Duplicate title") }
+            assertThat(controlFindings).hasSize(3)
+            assertThat(controlFindings.joinToString("\n")).doesNotContain("helper_without_metadata")
+            assertThat(section(qualityIndex, "## Documentation quality").joinToString("\n")).doesNotContain("Q-004")
         }
 
         @Test

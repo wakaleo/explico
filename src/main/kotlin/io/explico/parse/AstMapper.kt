@@ -197,6 +197,9 @@ internal object AstMapper {
         val refHeadRegistry = buildRefHeadRuleRegistry(files)
         val functionRegistry = buildFunctionRegistry(files)
         val metadataIndex = buildMetadataIndex(inspectResult, files)
+        // Spec §14.68: every rule some OTHER rule uses, from opa's own AST (one pass over the files, so it stays linear on a large corpus).
+        val used = mutableSetOf<Pair<String, String>>()
+        for (file in files) RuleReferences.collect(packagePath(file.module), resolveImportAliases(file.module), file.module.rules, registry, used)
         val packages = files
             .groupBy { packagePath(it.module) }
             .map { (path, filesInPackage) ->
@@ -204,6 +207,7 @@ internal object AstMapper {
                 val rules = orderedFiles
                     .flatMap { mapRuleGroups(it, registry, partialRegistry, refHeadRegistry, functionRegistry, metadataIndex) }
                     .sortedBy { it.name }
+                    .map { rule -> if ((path to rule.name) in used) rule else rule.copy(isReferenced = false) }
                 PolicyPackage(
                     path = path,
                     rules = rules,

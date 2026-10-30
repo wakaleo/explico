@@ -1,0 +1,457 @@
+{
+  "package": {
+    "location": {
+      "file": "p_test.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "p_test.rego",
+          "row": 1,
+          "col": 9,
+          "text": "dHBfdGVzdA=="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "p_test.rego",
+          "row": 1,
+          "col": 9,
+          "text": "dHBfdGVzdA=="
+        },
+        "type": "string",
+        "value": "tp_test"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "p_test.rego",
+        "row": 3,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "p_test.rego",
+          "row": 3,
+          "col": 8,
+          "text": "cmVnby52MQ=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "p_test.rego",
+              "row": 3,
+              "col": 8,
+              "text": "cmVnbw=="
+            },
+            "type": "var",
+            "value": "rego"
+          },
+          {
+            "location": {
+              "file": "p_test.rego",
+              "row": 3,
+              "col": 13,
+              "text": "djE="
+            },
+            "type": "string",
+            "value": "v1"
+          }
+        ]
+      }
+    },
+    {
+      "location": {
+        "file": "p_test.rego",
+        "row": 5,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "p_test.rego",
+          "row": 5,
+          "col": 8,
+          "text": "ZGF0YS50cA=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "p_test.rego",
+              "row": 5,
+              "col": 8,
+              "text": "ZGF0YQ=="
+            },
+            "type": "var",
+            "value": "data"
+          },
+          {
+            "location": {
+              "file": "p_test.rego",
+              "row": 5,
+              "col": 13,
+              "text": "dHA="
+            },
+            "type": "string",
+            "value": "tp"
+          }
+        ]
+      }
+    }
+  ],
+  "rules": [
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "p_test.rego",
+            "row": 8,
+            "col": 2,
+            "text": "Y291bnQodHAuZGVueSkgPiAwIHdpdGggaW5wdXQgYXMgeyJhIjogMX0="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "p_test.rego",
+                "row": 8,
+                "col": 17,
+                "text": "Pg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "p_test.rego",
+                    "row": 8,
+                    "col": 17,
+                    "text": "Pg=="
+                  },
+                  "type": "var",
+                  "value": "gt"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "p_test.rego",
+                "row": 8,
+                "col": 2,
+                "text": "Y291bnQodHAuZGVueSk="
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "p_test.rego",
+                    "row": 8,
+                    "col": 2,
+                    "text": "Y291bnQ="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "p_test.rego",
+                        "row": 8,
+                        "col": 2,
+                        "text": "Y291bnQ="
+                      },
+                      "type": "var",
+                      "value": "count"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "p_test.rego",
+                    "row": 8,
+                    "col": 8,
+                    "text": "dHAuZGVueQ=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "p_test.rego",
+                        "row": 8,
+                        "col": 8,
+                        "text": "dHA="
+                      },
+                      "type": "var",
+                      "value": "tp"
+                    },
+                    {
+                      "location": {
+                        "file": "p_test.rego",
+                        "row": 8,
+                        "col": 11,
+                        "text": "ZGVueQ=="
+                      },
+                      "type": "string",
+                      "value": "deny"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "p_test.rego",
+                "row": 8,
+                "col": 19,
+                "text": "MA=="
+              },
+              "type": "number",
+              "value": 0
+            }
+          ],
+          "with": [
+            {
+              "location": {
+                "file": "p_test.rego",
+                "row": 8,
+                "col": 21,
+                "text": "d2l0aCBpbnB1dCBhcyB7ImEiOiAxfQ=="
+              },
+              "target": {
+                "location": {
+                  "file": "p_test.rego",
+                  "row": 8,
+                  "col": 26,
+                  "text": "aW5wdXQ="
+                },
+                "type": "ref",
+                "value": [
+                  {
+                    "location": {
+                      "file": "p_test.rego",
+                      "row": 8,
+                      "col": 26,
+                      "text": "aW5wdXQ="
+                    },
+                    "type": "var",
+                    "value": "input"
+                  }
+                ]
+              },
+              "value": {
+                "location": {
+                  "file": "p_test.rego",
+                  "row": 8,
+                  "col": 35,
+                  "text": "eyJhIjogMX0="
+                },
+                "type": "object",
+                "value": [
+                  [
+                    {
+                      "location": {
+                        "file": "p_test.rego",
+                        "row": 8,
+                        "col": 36,
+                        "text": "ImEi"
+                      },
+                      "type": "string",
+                      "value": "a"
+                    },
+                    {
+                      "location": {
+                        "file": "p_test.rego",
+                        "row": 8,
+                        "col": 41,
+                        "text": "MQ=="
+                      },
+                      "type": "number",
+                      "value": 1
+                    }
+                  ]
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "test_denies",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "p_test.rego",
+              "row": 7,
+              "col": 1,
+              "text": "dGVzdF9kZW5pZXM="
+            },
+            "type": "var",
+            "value": "test_denies"
+          }
+        ],
+        "location": {
+          "file": "p_test.rego",
+          "row": 7,
+          "col": 1,
+          "text": "dGVzdF9kZW5pZXM="
+        }
+      },
+      "location": {
+        "file": "p_test.rego",
+        "row": 7,
+        "col": 1,
+        "text": "dGVzdF9kZW5pZXMgaWYgewoJY291bnQodHAuZGVueSkgPiAwIHdpdGggaW5wdXQgYXMgeyJhIjogMX0KfQ=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "p_test.rego",
+            "row": 12,
+            "col": 2,
+            "text": "dHAudXNlZF9vbmx5X2J5X2FfdGVzdCB3aXRoIGlucHV0IGFzIHsiYiI6IDF9"
+          },
+          "terms": {
+            "location": {
+              "file": "p_test.rego",
+              "row": 12,
+              "col": 2,
+              "text": "dHAudXNlZF9vbmx5X2J5X2FfdGVzdA=="
+            },
+            "type": "ref",
+            "value": [
+              {
+                "location": {
+                  "file": "p_test.rego",
+                  "row": 12,
+                  "col": 2,
+                  "text": "dHA="
+                },
+                "type": "var",
+                "value": "tp"
+              },
+              {
+                "location": {
+                  "file": "p_test.rego",
+                  "row": 12,
+                  "col": 5,
+                  "text": "dXNlZF9vbmx5X2J5X2FfdGVzdA=="
+                },
+                "type": "string",
+                "value": "used_only_by_a_test"
+              }
+            ]
+          },
+          "with": [
+            {
+              "location": {
+                "file": "p_test.rego",
+                "row": 12,
+                "col": 25,
+                "text": "d2l0aCBpbnB1dCBhcyB7ImIiOiAxfQ=="
+              },
+              "target": {
+                "location": {
+                  "file": "p_test.rego",
+                  "row": 12,
+                  "col": 30,
+                  "text": "aW5wdXQ="
+                },
+                "type": "ref",
+                "value": [
+                  {
+                    "location": {
+                      "file": "p_test.rego",
+                      "row": 12,
+                      "col": 30,
+                      "text": "aW5wdXQ="
+                    },
+                    "type": "var",
+                    "value": "input"
+                  }
+                ]
+              },
+              "value": {
+                "location": {
+                  "file": "p_test.rego",
+                  "row": 12,
+                  "col": 39,
+                  "text": "eyJiIjogMX0="
+                },
+                "type": "object",
+                "value": [
+                  [
+                    {
+                      "location": {
+                        "file": "p_test.rego",
+                        "row": 12,
+                        "col": 40,
+                        "text": "ImIi"
+                      },
+                      "type": "string",
+                      "value": "b"
+                    },
+                    {
+                      "location": {
+                        "file": "p_test.rego",
+                        "row": 12,
+                        "col": 45,
+                        "text": "MQ=="
+                      },
+                      "type": "number",
+                      "value": 1
+                    }
+                  ]
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "todo_test_later",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "p_test.rego",
+              "row": 11,
+              "col": 1,
+              "text": "dG9kb190ZXN0X2xhdGVy"
+            },
+            "type": "var",
+            "value": "todo_test_later"
+          }
+        ],
+        "location": {
+          "file": "p_test.rego",
+          "row": 11,
+          "col": 1,
+          "text": "dG9kb190ZXN0X2xhdGVy"
+        }
+      },
+      "location": {
+        "file": "p_test.rego",
+        "row": 11,
+        "col": 1,
+        "text": "dG9kb190ZXN0X2xhdGVyIGlmIHsKCXRwLnVzZWRfb25seV9ieV9hX3Rlc3Qgd2l0aCBpbnB1dCBhcyB7ImIiOiAxfQp9"
+      }
+    }
+  ]
+}

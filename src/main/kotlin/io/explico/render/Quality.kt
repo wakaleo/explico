@@ -11,6 +11,7 @@ import io.explico.model.Condition
 import io.explico.model.PolicyPackage
 import io.explico.model.PolicySet
 import io.explico.model.RuleGroup
+import io.explico.parse.RuleReferences
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -46,10 +47,15 @@ internal object Quality {
         val unpublishedComments: List<CommentBlock> = emptyList(),
         /** Spec §14.66: the condition-level fallbacks of every card grouped by reason, sorted by reason. Advisory, never a gap. */
         val shownAsSource: List<ShownAsSource> = emptyList(),
+        /**
+         * Spec §14.68: rules with no control id that no other rule uses -- entry points no control-level check covers. Each [ControlRef] is labelled
+         * `<package>.<rule>`. Advisory, never a gap.
+         */
+        val noControlId: List<ControlRef> = emptyList(),
     ) {
         fun isEmpty(): Boolean =
             missingDescription.isEmpty() && noFramework.isEmpty() && duplicateTitles.isEmpty() && noMatchingExample.isEmpty() && rawDecisionObject.isEmpty() &&
-                unpublishedComments.isEmpty() && shownAsSource.isEmpty()
+                unpublishedComments.isEmpty() && shownAsSource.isEmpty() && noControlId.isEmpty()
     }
 
     /** [count] conditions shown as source for [reason], in [cards] (distinct, in index order). */
@@ -122,6 +128,7 @@ internal object Quality {
             missingTitle = controls.filter { it.title.isNullOrBlank() }.map { it.ref },
             unpublishedComments = policySet.packages.flatMap { it.unpublishedComments }.sortedWith(compareBy({ it.file }, { it.row })),
             shownAsSource = shownAsSource(entries(policySet, groups).filter { !it.isSplitDefault }),
+            noControlId = noControlId(entries(policySet, groups)),
             missingDescription = controls.filter { !it.hasDescription }.map { it.ref },
             noFramework = controls.filter { it.frameworks.isEmpty() }.map { it.ref },
             duplicateTitles = byTitle.filterValues { it.size > 1 }.entries.sortedBy { it.key }.map { (title, group) -> title to group.map { it.ref } },
@@ -129,6 +136,19 @@ internal object Quality {
             rawDecisionObject = ofRules.filter { entry -> entry.members.any { (pkg, rule) -> isRawDecisionObject(pkg, rule, ::outcomesOf) } }.map { it.ref },
         )
     }
+
+    /**
+     * Spec §14.68: the id-less ENTRY POINTS -- a card with no control id, at least one body (so not a constant or a default-only rule), no parameters (not a function)
+     * and [RuleGroup.isReferenced] false (opa's own AST shows no other rule uses it); OPA unit tests (`test_*`) are never entry points. In index order; the label is `<package>.<rule>` so same-named rules of two
+     * packages can be told apart.
+     */
+    private fun noControlId(entries: List<Entry>): List<ControlRef> = entries
+        .filter { it.controlId == null && !it.isSplitDefault }
+        .mapNotNull { entry ->
+            val (pkg, rule) = entry.members.single()
+            // An OPA unit test (`test_*`) is not an entry point of the policy.
+            if (rule.parameters.isEmpty() && rule.bodies.isNotEmpty() && !rule.isReferenced && !RuleReferences.isTestRule(rule.name)) entry.ref.copy(label = "${pkg.path}.${rule.name}") else null
+        }
 
     /**
      * Spec §14.66: every card's condition-level fallbacks (its own and its `else` branches', as the card and the coverage count them), grouped by reason. A grouped
@@ -181,6 +201,8 @@ internal object Quality {
         fun controls(n: Int, one: String, many: String) { if (n > 0) add(if (n == 1) "1 control $one" else "$n controls $many") }
         controls(findings.missingDescription.size, "has no description", "have no description")
         controls(findings.noFramework.size, "names no framework", "name no framework")
+        val rules = findings.noControlId.size
+        if (rules > 0) add(if (rules == 1) "1 rule has no control id and is not used by another rule" else "$rules rules have no control id and are not used by another rule")
         controls(findings.noMatchingExample.size, "has no matching example", "have no matching example")
         controls(findings.rawDecisionObject.size, "returns an object but declares no custom.verdict", "return an object but declare no custom.verdict")
         val comments = findings.unpublishedComments.size

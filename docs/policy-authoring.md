@@ -195,6 +195,9 @@ the *controls* table, and other cards link to it by that id.
   `explico.json` has `controlIdDerived: true` on that rule, and the index legend gains a *Derived control ids* note. A METADATA-declared id is never marked.
 - **A derived-id control is a control with no description and no framework**, so the index's *Documentation quality* section and `--fail-on-gaps` list it, exactly
   as they list any control without them. Add METADATA (`description`, `custom.frameworks`) to the files that matter.
+- **A file with helper rules: add `--group-by-control`.** Every rule in a matching file gets the id, helpers included, so each one counts as a control and the
+  findings count them all (on Trivy's Kubernetes checks, 177 files give "594 controls have no description" without it). With `--group-by-control` the file's rules are
+  ONE control, and the findings say "177 controls", one per file.
 - **`diff` does not take these options.** A rule with no METADATA id keeps its `package.rule` identity in a diff, so the report still compares old and new correctly,
   but labels such a rule by its package and name rather than by the derived id.
 - Off by default: without the options, or with a pattern that matches nothing, the output is exactly what it was.
@@ -245,6 +248,15 @@ When you also give example fixtures (`--examples`), two more findings appear, ea
 `function-call`, `helper-assignment`, `partial-rule-reference`, `comprehension`, `unclassified`, ...) with how many there are, which
 cards they are on, and one sentence on what explico needs to render that kind of construct. It explains why, it never tells you what
 to change: a rewrite that renders can still change what the policy means, so that is your decision. Advisory, not a gap.
+
+**No control id.** Every control-level check above covers only a rule with a `control-id`, so a policy set with no ids (Trivy's checks, Gatekeeper's
+templates) would get none of them. This bullet lists the rules that have no id **and that no other rule uses**: the entry points (for example the `deny` or
+`violation` of a file), labelled `<package>.<rule>`. OPA unit tests (rules named `test_*` or `todo_test_*`) are neither entry points nor uses: a rule that only a
+test exercises is still listed, and the tests are not. "Used" is decided from opa's own parse, so a rule used only inside a comprehension, an `every`, a
+`with` or through an import still counts as used; a function, a constant and a rule with only a `default` are never listed. Give a listed rule
+`custom.control-id` in its METADATA, or derive ids from file names with `--control-id-from` (with `--group-by-control` when a file also holds helper rules),
+and the checks above start applying to it. Advisory, not a gap. On Trivy's Kubernetes checks it lists 171 entry points for 177 files; on Gatekeeper's general
+templates, 30 for 30.
 
 **Seeing it without opening the index.** `explico render` prints the findings after the coverage line, one line per kind (`2 controls have
 no description`, `1 comment block is not published`, ...), and says to see `index.md` for which controls. Every bullet there ends with

@@ -1657,6 +1657,11 @@ section appear) but never in `gapDescriptions`, and comments never reach `Canoni
 `render/RequiredSet` validates and normalises the names; `Quality.gapDescriptions(findings, coverage, required)` is the ONE place gap lines are worded and ordered (description, frameworks, title, fixture, verdict, then shared titles, then requirement gaps). `Explico.render` validates BEFORE opa work and computes the
 gap findings WITH the examples; the displayed index/JSON findings never depend on the set (`missingTitle` is gap-only and out of `Findings.isEmpty()`). The CLI checks the names itself before opa is needed and refuses `--require` without `--fail-on-gaps`. Never let the set change a rendered file.
 
+## Rules with no control id (spec §14.68)
+
+"Used by another rule" is decided in `parse/RuleReferences` from opa's own AST (a generic walk, so a use inside a comprehension, `every` or `with` still counts) and carried as `RuleGroup.isReferenced` (default TRUE = unknown, never a finding). Never answer the question from the domain model alone: it keeps those uses
+as verbatim source. Resolution must stay the mapper's own (same package, import, `data.` path); a local variable named like a rule counts as a use (safe direction). Advisory, never a gap.
+
 ## Findings summary (spec §14.67)
 
 `Quality.findingLines` is the ONE place the summary sentences are worded; `Explico.render` puts them in `RenderedDocs.findings` and the CLI prints them after the coverage line (only when non-empty, stdout, before any gate message). Advisory, never a gap. A new displayed finding kind needs its bullet, its JSON key AND a line here, in the section's order.

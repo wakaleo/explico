@@ -49,6 +49,7 @@ When the documentation has something to improve, a short block follows on stdout
 Rendering coverage: 22 of 24 conditions (91%)
 Documentation quality (see index.md):
   - 2 controls have no description
+  - 4 rules have no control id and are not used by another rule
   - 1 control has no matching example
   - 3 conditions are shown as source
 ```

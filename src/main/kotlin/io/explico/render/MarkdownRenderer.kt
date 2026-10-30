@@ -953,6 +953,13 @@ internal object MarkdownRenderer {
         if (findings.noFramework.isNotEmpty()) {
             sb.appendLine("- **No framework (${findings.noFramework.size}):** ${findings.noFramework.joinToString(", ") { it.link() }} — list the requirements it supports under custom.frameworks in its METADATA")
         }
+        // Spec §14.68: entry points no control-level check covers.
+        if (findings.noControlId.isNotEmpty()) {
+            sb.appendLine(
+                "- **No control id (${findings.noControlId.size}):** ${findings.noControlId.joinToString(", ") { it.link() }} — " +
+                    "add custom.control-id to its METADATA (or derive one with --control-id-from) so the checks above apply to it",
+            )
+        }
         // Spec §14.63: each ends with the one thing to do about it.
         if (findings.noMatchingExample.isNotEmpty()) {
             sb.appendLine("- **No matching example (${findings.noMatchingExample.size}):** ${findings.noMatchingExample.joinToString(", ") { it.link() }} — add a fixture that makes it match")

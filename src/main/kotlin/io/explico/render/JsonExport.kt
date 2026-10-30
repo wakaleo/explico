@@ -69,6 +69,7 @@ internal object JsonExport {
     private fun qualityObject(f: Quality.Findings, required: RequiredSet) = buildJsonObject {
         put("missingDescription", buildJsonArray { f.missingDescription.forEach { add(JsonPrimitive(it.label)) } })
         put("noFramework", buildJsonArray { f.noFramework.forEach { add(JsonPrimitive(it.label)) } })
+        put("noControlId", buildJsonArray { f.noControlId.forEach { add(JsonPrimitive(it.label)) } })
         put("noMatchingExample", buildJsonArray { f.noMatchingExample.forEach { add(JsonPrimitive(it.label)) } })
         put("rawDecisionObject", buildJsonArray { f.rawDecisionObject.forEach { add(JsonPrimitive(it.label)) } })
         put("duplicateTitles", buildJsonArray {

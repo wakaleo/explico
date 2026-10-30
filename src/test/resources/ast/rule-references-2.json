@@ -1,0 +1,399 @@
+{
+  "package": {
+    "location": {
+      "file": "re2.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "re2.rego",
+          "row": 1,
+          "col": 9,
+          "text": "cmUy"
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "re2.rego",
+          "row": 1,
+          "col": 9,
+          "text": "cmUy"
+        },
+        "type": "string",
+        "value": "re2"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "re2.rego",
+        "row": 3,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "re2.rego",
+          "row": 3,
+          "col": 8,
+          "text": "cmVnby52MQ=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "re2.rego",
+              "row": 3,
+              "col": 8,
+              "text": "cmVnbw=="
+            },
+            "type": "var",
+            "value": "rego"
+          },
+          {
+            "location": {
+              "file": "re2.rego",
+              "row": 3,
+              "col": 13,
+              "text": "djE="
+            },
+            "type": "string",
+            "value": "v1"
+          }
+        ]
+      }
+    }
+  ],
+  "rules": [
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re2.rego",
+            "row": 6,
+            "col": 2,
+            "text": "aW5wdXQuYSA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "re2.rego",
+                "row": 6,
+                "col": 10,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re2.rego",
+                    "row": 6,
+                    "col": 10,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re2.rego",
+                "row": 6,
+                "col": 2,
+                "text": "aW5wdXQuYQ=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re2.rego",
+                    "row": 6,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "re2.rego",
+                    "row": 6,
+                    "col": 8,
+                    "text": "YQ=="
+                  },
+                  "type": "string",
+                  "value": "a"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re2.rego",
+                "row": 6,
+                "col": 13,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "target_a",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "re2.rego",
+              "row": 5,
+              "col": 1,
+              "text": "dGFyZ2V0X2E="
+            },
+            "type": "var",
+            "value": "target_a"
+          }
+        ],
+        "location": {
+          "file": "re2.rego",
+          "row": 5,
+          "col": 1,
+          "text": "dGFyZ2V0X2E="
+        }
+      },
+      "location": {
+        "file": "re2.rego",
+        "row": 5,
+        "col": 1,
+        "text": "dGFyZ2V0X2EgaWYgewoJaW5wdXQuYSA9PSAxCn0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re2.rego",
+            "row": 10,
+            "col": 2,
+            "text": "aW5wdXQuYiA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "re2.rego",
+                "row": 10,
+                "col": 10,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re2.rego",
+                    "row": 10,
+                    "col": 10,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re2.rego",
+                "row": 10,
+                "col": 2,
+                "text": "aW5wdXQuYg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re2.rego",
+                    "row": 10,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "re2.rego",
+                    "row": 10,
+                    "col": 8,
+                    "text": "Yg=="
+                  },
+                  "type": "string",
+                  "value": "b"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re2.rego",
+                "row": 10,
+                "col": 13,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "target_b",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "re2.rego",
+              "row": 9,
+              "col": 1,
+              "text": "dGFyZ2V0X2I="
+            },
+            "type": "var",
+            "value": "target_b"
+          }
+        ],
+        "location": {
+          "file": "re2.rego",
+          "row": 9,
+          "col": 1,
+          "text": "dGFyZ2V0X2I="
+        }
+      },
+      "location": {
+        "file": "re2.rego",
+        "row": 9,
+        "col": 1,
+        "text": "dGFyZ2V0X2IgaWYgewoJaW5wdXQuYiA9PSAxCn0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "re2.rego",
+            "row": 14,
+            "col": 2,
+            "text": "aW5wdXQuYyA9PSAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "re2.rego",
+                "row": 14,
+                "col": 10,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re2.rego",
+                    "row": 14,
+                    "col": 10,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re2.rego",
+                "row": 14,
+                "col": 2,
+                "text": "aW5wdXQuYw=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "re2.rego",
+                    "row": 14,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "re2.rego",
+                    "row": 14,
+                    "col": 8,
+                    "text": "Yw=="
+                  },
+                  "type": "string",
+                  "value": "c"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "re2.rego",
+                "row": 14,
+                "col": 13,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "unused_two",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "re2.rego",
+              "row": 13,
+              "col": 1,
+              "text": "dW51c2VkX3R3bw=="
+            },
+            "type": "var",
+            "value": "unused_two"
+          }
+        ],
+        "location": {
+          "file": "re2.rego",
+          "row": 13,
+          "col": 1,
+          "text": "dW51c2VkX3R3bw=="
+        }
+      },
+      "location": {
+        "file": "re2.rego",
+        "row": 13,
+        "col": 1,
+        "text": "dW51c2VkX3R3byBpZiB7CglpbnB1dC5jID09IDEKfQ=="
+      }
+    }
+  ]
+}

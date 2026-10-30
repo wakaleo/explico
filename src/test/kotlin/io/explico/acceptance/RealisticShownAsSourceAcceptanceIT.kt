@@ -96,10 +96,12 @@ class RealisticShownAsSourceAcceptanceIT {
     }
 
     @Test
-    @DisplayName("it is the only finding, so the section exists for it alone, and nothing is a gap")
+    @DisplayName("it is the only finding about the controls, so the section exists for it and the id-less entry point (spec §14.68); nothing is a gap")
     fun onlyFindingNotAGap() {
         val top = sectionLines(found).filter { it.startsWith("- ") }
-        assertThat(top).containsExactly(HEAD)
+        assertThat(top).hasSize(2)
+        assertThat(top[0]).startsWith("- **No control id (1):** [sas.helper_fallback](sas.md#sas-helper-fallback)")
+        assertThat(top[1]).isEqualTo(HEAD)
         assertThat(found.gaps).isEmpty()
     }
 

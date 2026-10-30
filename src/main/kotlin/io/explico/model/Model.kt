@@ -47,7 +47,7 @@ public data class PackageMetadata @JvmOverloads constructor(
 )
 
 /** All rule definitions sharing one name in one package. Bodies are OR-ed. */
-public data class RuleGroup(
+public data class RuleGroup @JvmOverloads constructor(
     val name: String,
     val metadata: RuleMetadata?,
     val default: DefaultValue?,
@@ -82,6 +82,12 @@ public data class RuleGroup(
      * `bodies` is empty whenever this is non-null.
      */
     val constantValue: ConstantValue? = null,
+    /**
+     * False only when explico KNOWS no other rule in the loaded policies uses this one (spec §14.68): decided from opa's own AST, so a use kept in the model
+     * only as verbatim source (a comprehension, an `every`, a `with`) still counts, and a local variable named like the rule counts too -- it can only hide a
+     * finding, never invent one. True by default, i.e. "not known to be unreferenced": a hand-built group never produces the "no control id" finding.
+     */
+    val isReferenced: Boolean = true,
 )
 
 /**
