@@ -27,6 +27,9 @@ class CliFindingsSummaryProcessTest {
     private val examples = Path.of("src/test/resources/realistic/findings-summary/examples").toAbsolutePath().toString()
     private val samples = Path.of("samples/policies").toAbsolutePath().toString()
 
+    /** Windows prints `\r\n`; a block of lines is compared with `\n` (the single-line checks use `lines()`, which accepts both). */
+    private fun unixNewlines(text: String) = text.replace("\r\n", "\n")
+
     private fun render(tempDir: Path, dir: String, vararg extra: String) = runCli(listOf("render", dir, "--out", tempDir.resolve("out").toString()) + extra, tempDir)
 
     private val full = listOf(
@@ -78,7 +81,7 @@ class CliFindingsSummaryProcessTest {
         val result = render(tempDir, withFindings, "--examples", examples, "--fail-on-gaps")
 
         assertThat(result.exitCode).isEqualTo(5)
-        assertThat(result.stdout).contains(full.joinToString("\n"))
+        assertThat(unixNewlines(result.stdout)).contains(full.joinToString("\n"))
         assertThat(result.stderr).contains("control FS-1 has no description").contains("3 gap(s)")
         assertThat(result.stderr).doesNotContain("Documentation quality")
     }
@@ -95,7 +98,7 @@ class CliFindingsSummaryProcessTest {
     @Test
     @DisplayName("--json does not change what is printed, and --group-by-control counts a control once")
     fun withJsonAndGrouping(@TempDir tempDir: Path) {
-        assertThat(render(tempDir, withFindings, "--examples", examples, "--json").stdout).contains(full.joinToString("\n"))
+        assertThat(unixNewlines(render(tempDir, withFindings, "--examples", examples, "--json").stdout)).contains(full.joinToString("\n"))
         val grouped = Path.of("src/test/resources/realistic/quality-hints/grouped/policies").toAbsolutePath().toString()
         val groupedExamples = Path.of("src/test/resources/realistic/quality-hints/grouped/examples").toAbsolutePath().toString()
         val result = render(tempDir, grouped, "--examples", groupedExamples, "--group-by-control")
