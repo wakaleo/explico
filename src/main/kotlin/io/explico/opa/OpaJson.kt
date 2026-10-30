@@ -176,8 +176,8 @@ internal data class OpaCustomAnnotation(val raw: JsonObject = JsonObject(emptyMa
 /** Keys explico itself interprets (§14.43, §14.53, §14.54): never repeated in the 'Custom:' passthrough line, even when malformed. */
 private val RESERVED_KEYS = setOf("control-id", "frameworks", "verdict", "actions", "annotations", "timing", "mask")
 
-/** A mask path: dot-separated keys, each non-empty and free of `[`, `]` and `.`, optionally followed by `[]` (once or more) for every element of an array. */
-private val MASK_PATH = Regex("""[^.\[\]]+(\[\])*(\.[^.\[\]]+(\[\])*)*""")
+/** A mask path: dot-separated keys, each non-empty and free of `[`, `]`, `.`, `|`, a backtick and line breaks (it is echoed in tables and code spans), optionally followed by `[]` (once or more) for every element of an array. */
+private val MASK_PATH = Regex("""[^.\[\]|`\r\n]+(\[\])*(\.[^.\[\]|`\r\n]+(\[\])*)*""")
 
 /** The outcome of reading `custom.mask`: the [paths], a [problem] (declared but malformed), or neither (not declared). */
 internal data class MaskDeclaration(val paths: List<String>? = null, val problem: String? = null)

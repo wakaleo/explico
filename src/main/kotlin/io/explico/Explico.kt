@@ -14,6 +14,7 @@ import io.explico.opa.OpaRunner
 import io.explico.parse.AstMapper
 import io.explico.parse.ParsedFile
 import io.explico.render.CompanionLinks
+import io.explico.render.InputMask
 import io.explico.render.InvalidMaskException
 import io.explico.render.ControlGroups
 import io.explico.render.ControlIdFromFilename
@@ -163,6 +164,7 @@ public object Explico {
         val sourceLinks = SourceLinks.of(sourceUrl)
         // Spec §14.61: a malformed custom.mask is refused, never ignored (it would show the values it was written to hide) -- before any opa work.
         requireValidMasks(policySet)
+        warnUnmatchedMasks(policySet, examples)
         // Spec §14.58: likewise the companion template and its label.
         val companion = CompanionLinks.of(companionUrl, companionLabel)
         // Spec §14.55: likewise the control-id options -- an invalid pattern or template is the caller's mistake, found before any opa work.
@@ -228,6 +230,21 @@ public object Explico {
     ): DiffReport {
         val entries = PolicyDiff.diff(old, new, groupByControl)
         return DiffReport(entries, DiffRenderer.render(entries, old, new), DiffJson.render(entries))
+    }
+
+    /**
+     * Spec §14.61: a mask path that hides nothing in any example (a typo, the wrong case, a leading `input.`) would let the very values it was written for through
+     * without a sign, so each is warned about once on stderr. Nothing to say without example fixtures.
+     */
+    private fun warnUnmatchedMasks(policySet: PolicySet, examples: ExampleSet?) {
+        val inputs = examples?.fixtures?.map { it.input }?.takeIf { it.isNotEmpty() } ?: return
+        for (pkg in policySet.packages) for (rule in pkg.rules) {
+            val unmatched = InputMask.of(rule.metadata?.projection?.mask)?.unmatchedPaths(inputs) ?: continue
+            for (path in unmatched.sorted()) {
+                val hint = if (path.startsWith("input.")) " -- paths are keys INSIDE the fixture input: drop the leading 'input.'" else " -- check the spelling and case (paths are keys inside the fixture input)"
+                System.err.println("explico: warning: custom.mask path '$path' on rule '${pkg.path}.${rule.name}' hides no string or number in any example fixture$hint")
+            }
+        }
     }
 
     /** Throws [InvalidMaskException] listing every rule (sorted) whose `custom.mask` is malformed. */

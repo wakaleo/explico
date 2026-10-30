@@ -38,6 +38,20 @@ class CliInputMaskProcessTest {
     }
 
     @Test
+    @DisplayName("a mask path that hides nothing (a leading 'input.', the wrong case) is warned about once each on stderr, the valid one is not; the render still succeeds")
+    fun unmatchedPathsWarn(@TempDir tempDir: Path) {
+        val dir = Path.of("src/test/resources/realistic/input-masking-typo").toAbsolutePath()
+        val result = runCli(listOf("render", dir.resolve("policies").toString(), "--out", tempDir.resolve("out").toString(), "--examples", dir.resolve("examples").toString()), tempDir)
+
+        assertThat(result.exitCode).isEqualTo(0)
+        val warnings = result.stderr.lines().filter { it.startsWith("explico: warning: custom.mask path") }
+        assertThat(warnings).hasSize(2)
+        assertThat(warnings[0]).contains("'Requester.Email'").contains("masktypo.leaky").contains("check the spelling and case")
+        assertThat(warnings[1]).contains("'input.subjectId'").contains("drop the leading 'input.'")
+        assertThat(result.stderr).doesNotContain("'requester.email'")
+    }
+
+    @Test
     @DisplayName("a malformed custom.mask is exit 1 naming custom.mask and the rule, with nothing written and no stack trace")
     fun malformed(@TempDir tempDir: Path) {
         val out = tempDir.resolve("out")

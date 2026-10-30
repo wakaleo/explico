@@ -173,7 +173,7 @@ private class DiffCommand : CliktCommand(name = "diff") {
         } catch (e: OpaInvocationException) {
             failWith(2, e.stderr)
         } catch (e: DuplicateControlIdException) {
-            failWith(4, e.message ?: "duplicate control-id")
+            failWith(4, (e.message ?: "duplicate control-id") + " -- if one control is split over several rules on purpose, pass --group-by-control to diff each rule separately")
         }
     }
 }

@@ -558,8 +558,9 @@ that rule shows `***` instead:
   `path: value` bullets, the produced message (`alice@example.com has no ticket` becomes `*** has no ticket`), a declared verdict's reason, remediation labels, status and
   timing text, the raw value, and the fixture's own name and description. The same in `explico.json` and in generated examples. It is per rule: another rule that does not
   declare the path shows its values.
-- **How values are found:** a string is hidden wherever its text occurs, in any letter case (so a message built with `lower(input.email)` is hidden too) and even inside a longer word, which errs on the safe side: masking `al` also turns `also` into `***so`; a number only as a whole token written as in the fixture, so
+- **How values are found:** a string is hidden wherever its text occurs, in any letter case and also in its JSON-escaped form (so `json.marshal`/`%q` do not reintroduce it) (so a message built with `lower(input.email)` is hidden too) and even inside a longer word, which errs on the safe side: masking `al` also turns `also` into `***so`; a number only as a whole token written as in the fixture, so
   masking `1` leaves `11` and `1.5` alone, and a fixture value `1.0` does not hide the `1` OPA prints.
+- **A path that hides nothing is warned about.** If a declared path matches no string or number in any example fixture (a typo, the wrong case, a leading `input.`), explico prints one warning per path on stderr, because that rule would otherwise show the values it was meant to hide. Check the log of a new rule's render.
 - **A malformed declaration stops the render** (`IllegalArgumentException`; the CLI prints it and exits `1`, writing nothing): not a list, an empty or malformed path, an entry
   that is not a string. Every other declaration (`verdict`, `actions`, ...) is ignored with a warning; this one is not, because ignoring it would show exactly what it was written to hide.
 - **What it cannot do:** only values that are in the fixture's input are known, so only they can be hidden. A value the rule derives, looks up, or reads from `data` that never appears in

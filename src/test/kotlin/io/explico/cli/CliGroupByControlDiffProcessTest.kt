@@ -43,6 +43,15 @@ class CliGroupByControlDiffProcessTest {
     }
 
     @Test
+    @DisplayName("the exit-4 message says how to proceed when the shared id is deliberate")
+    fun hint(@TempDir tempDir: Path) {
+        val (result, _) = diff(tempDir)
+
+        assertThat(result.exitCode).isEqualTo(4)
+        assertThat(result.stderr).contains("--group-by-control")
+    }
+
+    @Test
     @DisplayName("with the flag: exit 0, the report is written, and stdout is the summary table")
     fun withTheFlag(@TempDir tempDir: Path) {
         val (result, out) = diff(tempDir, "--group-by-control")

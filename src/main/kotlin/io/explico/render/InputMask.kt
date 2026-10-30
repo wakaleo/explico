@@ -15,7 +15,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
-internal class InputMask private constructor(private val paths: List<List<Step>>) {
+internal class InputMask private constructor(private val paths: List<List<Step>>, private val sources: List<String> = emptyList()) {
 
     private sealed interface Step {
         data class Key(val name: String) : Step
@@ -26,26 +26,43 @@ internal class InputMask private constructor(private val paths: List<List<Step>>
     class Secret(val text: String, val isNumber: Boolean)
 
     /** An example's input with the masked values replaced by [MASK], and the values that were hidden, longest first. */
-    class Applied(val input: JsonObject, val secrets: List<Secret>) {
+    class Applied(val input: JsonObject, found: List<Secret>) {
+        /** Every value that was hidden, plus the forms a rule may print it in beyond its plain text (JSON-escaped: `json.marshal`, `%q`), longest first. */
+        val secrets: List<Secret> = withEscapedForms(found)
+
         val isActive: Boolean get() = secrets.isNotEmpty()
+
+        /** Compiled once per example, not once per text. */
+        private val tokens: List<Regex> = secrets.map { if (it.isNumber) numberToken(it.text) else stringToken(it.text) }
 
         /** [text] with every secret replaced by `***`. A string matches in any case; a secret that contains another is hidden whole (longest first); a number only when it stands alone (`1` never corrupts `11` or `1.5`). */
         fun scrub(text: String): String {
             var result = text
-            for (secret in secrets) {
-                result = if (secret.isNumber) result.replace(numberToken(secret.text), "***") else result.replace(stringToken(secret.text), "***")
-            }
+            for (token in tokens) result = result.replace(token, "***")
             return result
         }
 
-        /** [element] with every string scrubbed and every number that is a secret replaced; objects and arrays are walked, keys are left alone. */
+        /** [element] with every string scrubbed and every number that is a secret replaced; objects and arrays are walked, and keys are scrubbed too. */
         fun scrub(element: JsonElement?): JsonElement? = when (element) {
             null, JsonNull -> element
             is JsonPrimitive ->
                 if (element.isString) JsonPrimitive(scrub(element.content))
                 else if (secrets.any { it.isNumber && it.text == element.content }) JsonPrimitive("***") else element
             is JsonArray -> JsonArray(element.map { scrub(it)!! })
-            is JsonObject -> JsonObject(element.mapValues { scrub(it.value)!! })
+            is JsonObject -> JsonObject(element.entries.associate { (key, value) -> scrub(key) to scrub(value)!! })
+        }
+
+        private fun withEscapedForms(found: List<Secret>): List<Secret> {
+            val all = found.flatMap { secret ->
+                if (secret.isNumber) listOf(secret)
+                else {
+                    // As JSON text would print it (escaped quote, backslash, line break) and as Go's encoder does (OPA's json.marshal also escapes < > &).
+                    val json = JsonPrimitive(secret.text).toString().removeSurrounding("\"")
+                    val go = json.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+                    listOf(secret, Secret(json, false), Secret(go, false))
+                }
+            }
+            return all.distinctBy { it.isNumber to it.text }.sortedWith(compareByDescending<Secret> { it.text.length }.thenBy { it.text })
         }
 
         /** A string secret matches whatever its case: a rule may print it through `lower(...)` or `upper(...)`. Over-masking is the safe side. */
@@ -55,13 +72,16 @@ internal class InputMask private constructor(private val paths: List<List<Step>>
             Regex("(?<![\\p{L}\\p{N}_]|\\p{N}\\.)" + Regex.escape(number) + "(?![\\p{L}\\p{N}_]|\\.\\p{N})")
     }
 
+    /** The declared paths of which NONE hides a string or number in any of [inputs]: a typo, the wrong case, or a leading `input.` -- they would hide nothing, and the values would be shown. */
+    fun unmatchedPaths(inputs: List<JsonObject>): List<String> =
+        paths.indices.filter { index -> inputs.none { InputMask(listOf(paths[index])).apply(it).isActive } }.map { sources[it] }
+
     /** Masks [input]: the values at the declared paths become [MASK]; a path that is absent, or runs through something that is not what it names, is ignored. */
     fun apply(input: JsonObject): Applied {
         val found = mutableListOf<Secret>()
         var masked: JsonElement = input
         for (path in paths) masked = mask(masked, path, found)
-        val ordered = found.distinctBy { it.isNumber to it.text }.sortedWith(compareByDescending<Secret> { it.text.length }.thenBy { it.text })
-        return Applied(masked as JsonObject, ordered)
+        return Applied(masked as JsonObject, found)
     }
 
     private fun mask(element: JsonElement, path: List<Step>, found: MutableList<Secret>): JsonElement {
@@ -104,7 +124,7 @@ internal class InputMask private constructor(private val paths: List<List<Step>>
         val MASK: JsonPrimitive = JsonPrimitive("***")
 
         /** Null when nothing is declared. [paths] are already validated (`custom.mask` reading); each is split into keys and `[]` steps. */
-        fun of(paths: List<String>?): InputMask? = paths?.takeIf { it.isNotEmpty() }?.let { InputMask(it.map(::steps)) }
+        fun of(paths: List<String>?): InputMask? = paths?.takeIf { it.isNotEmpty() }?.let { InputMask(it.map(::steps), it) }
 
         private fun steps(path: String): List<Step> = path.split('.').flatMap { segment ->
             val name = segment.substringBefore('[')

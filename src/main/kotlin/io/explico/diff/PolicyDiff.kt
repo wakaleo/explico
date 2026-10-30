@@ -64,9 +64,9 @@ internal object PolicyDiff {
      * What ties an old rule to a new one: [plain] is the control id, or `<package>.<rule>` for a rule with none; [packagePath] and [ruleName] are set
      * ONLY for a rule of a control id that is shared. A structured key, never a joined string, so an id containing any character cannot collide with another.
      */
-    private data class Identity(val plain: String, val packagePath: String = "", val ruleName: String = "") : Comparable<Identity> {
+    private data class Identity(val plain: String, val packagePath: String = "", val ruleName: String = "", val declaredId: Boolean = false) : Comparable<Identity> {
         override fun compareTo(other: Identity): Int =
-            compareValuesBy(this, other, { it.plain }, { it.packagePath }, { it.ruleName })
+            compareValuesBy(this, other, { it.plain }, { it.packagePath }, { it.ruleName }, { it.declaredId })
     }
 
     private fun sharedControlIds(policySet: PolicySet): Set<String> =
@@ -87,7 +87,8 @@ internal object PolicyDiff {
 
     private fun identityOf(pkg: PolicyPackage, rule: RuleGroup, shared: Set<String>): Identity {
         val controlId = rule.metadata?.controlId ?: return Identity("${pkg.path}.${rule.name}")
-        return if (controlId in shared) Identity(controlId, pkg.path, rule.name) else Identity(controlId)
+        // `declaredId` keeps a control id that happens to read like another rule's `package.rule` from colliding with it (one of them would silently never be diffed).
+        return if (controlId in shared) Identity(controlId, pkg.path, rule.name, declaredId = true) else Identity(controlId, declaredId = true)
     }
 
     private fun requireNoDuplicateControlIds(policySet: PolicySet) {

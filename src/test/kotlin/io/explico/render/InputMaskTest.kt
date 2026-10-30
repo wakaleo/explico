@@ -125,6 +125,15 @@ class InputMaskTest {
         }
 
         @Test
+        @DisplayName("the JSON-escaped form of a string secret is hidden too (json.marshal, %q), plain and Go-style (< > & as \\u003c ...); object keys are scrubbed")
+        fun escapedForms() {
+            val applied = masked(listOf("a", "b"), """{"a":"he said \"hi\" \\ x","b":"a&b<c>"}""")
+            assertThat(applied.scrub("""{"m":"he said \"hi\" \\ x"}""")).isEqualTo("""{"m":"***"}""")
+            assertThat(applied.scrub("""{"m":"a\u0026b\u003cc\u003e"}""")).isEqualTo("""{"m":"***"}""")
+            assertThat(applied.scrub(obj("""{"he said \"hi\" \\ x":1,"keep":2}""")).toString()).isEqualTo("""{"***":1,"keep":2}""")
+        }
+
+        @Test
         @DisplayName("a JSON value is scrubbed in strings (also nested) and numbers; keys are left; the JSON TEXT of a secret with a quote or backslash is gone too")
         fun jsonValue() {
             val applied = masked(listOf("a", "n"), """{"a":"he said \"hi\" \\ there","n":42}""")
@@ -132,6 +141,25 @@ class InputMaskTest {
             val scrubbed = applied.scrub(value).toString()
             assertThat(scrubbed).doesNotContain("hi").doesNotContain("there").contains("43").contains("\"a\":\"key stays\"")
             assertThat(scrubbed).contains("\"list\":[{\"x\":\"about ***\"},\"***\",43]")
+        }
+    }
+
+    @Nested
+    inner class Unmatched {
+
+        private val inputs = listOf(obj("""{"subjectId":"S-1","ok":true,"n":null}"""), obj("""{"requester":{"email":"a@b"}}"""))
+
+        @Test
+        @DisplayName("a path that hides nothing in ANY example is reported (a typo, the wrong case, a leading 'input.', a boolean, null or absent key); one that hides in some example is not")
+        fun unmatched() {
+            val mask = InputMask.of(listOf("subjectId", "SubjectId", "input.subjectId", "ok", "n", "requester.email", "requester.mail", "nowhere[].x"))!!
+            assertThat(mask.unmatchedPaths(inputs)).containsExactly("SubjectId", "input.subjectId", "ok", "n", "requester.mail", "nowhere[].x")
+        }
+
+        @Test
+        @DisplayName("no examples at all: every declared path is unmatched (the caller only asks when there are fixtures)")
+        fun noInputs() {
+            assertThat(InputMask.of(listOf("a"))!!.unmatchedPaths(emptyList())).containsExactly("a")
         }
     }
 
@@ -204,6 +232,12 @@ class InputMaskTest {
                 assertThat(declaration.problem).describedAs(bad).isNotNull()
                 assertThat(declaration.paths).describedAs(bad).isNull()
             }
+        }
+
+        @Test
+        @DisplayName("a path with a pipe, a backtick or a line break is a problem (it is echoed in table cells and code spans)")
+        fun unsafeCharacters() {
+            for (bad in listOf("a|b", "a`b", "a\\nb", "p[].e|f")) assertThat(mask("""{"mask":["$bad"]}""").problem).describedAs(bad).isNotNull()
         }
 
         @Test

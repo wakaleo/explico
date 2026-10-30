@@ -30,6 +30,8 @@ internal class ControlGroups private constructor(val groups: List<Group>) {
         /** Directory (inside the output) the control pages are written to. */
         const val DIRECTORY = "controls"
 
+        private val WINDOWS_DEVICES = setOf("con", "prn", "aux", "nul") + (1..9).flatMap { listOf("com$it", "lpt$it") }
+
         private val SOURCE_ORDER: Comparator<Member> = compareBy<Member>(
             { MarkdownRenderer.ruleLocation(it.rule) == null },
             { MarkdownRenderer.ruleLocation(it.rule)?.file.orEmpty() },
@@ -56,9 +58,11 @@ internal class ControlGroups private constructor(val groups: List<Group>) {
             val claimedPages = mutableSetOf<String>()
             val groups = sharedById.keys.sorted().map { id ->
                 val base = MarkdownRenderer.slug(id).ifEmpty { "control" }
-                var name = base
+                // A page called con.md / nul.md / com1.md is a DEVICE on Windows: those stems get a suffix (the anchor keeps the plain slug).
+                val stem = if (base in WINDOWS_DEVICES) "$base-control" else base
+                var name = stem
                 var suffix = 2
-                while (!claimedPages.add(name)) name = "$base-${suffix++}"
+                while (!claimedPages.add(name)) name = "$stem-${suffix++}"
 
                 // Anchors are claimed in policy order (package, then rule), the order a link's target is resolved in, so the card a link points at is the card that owns the id.
                 val claimedAnchors = mutableSetOf(base)

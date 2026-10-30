@@ -98,6 +98,16 @@ class ControlGroupsTest {
     }
 
     @Test
+    @DisplayName("an id whose slug is a Windows device name (con, nul, com1, lpt9 ...) gets a page that is not one: con-control.md; the anchor keeps the slug; a later id cannot take the name")
+    fun windowsDevices() {
+        val groups = ControlGroups.of(set("p" to listOf(rule("a", "CON"), rule("b", "CON"), rule("c", "con-control"), rule("d", "con-control"), rule("e", "COM1"), rule("f", "COM1"), rule("g", "com10"), rule("h", "com10"))))
+        assertThat(groups.groups.map { it.controlId to it.page }).containsExactly(
+            "COM1" to "controls/com1-control.md", "CON" to "controls/con-control.md", "com10" to "controls/com10.md", "con-control" to "controls/con-control-2.md",
+        )
+        assertThat(groups.groups.first { it.controlId == "CON" }.anchor).isEqualTo("con")
+    }
+
+    @Test
     @DisplayName("each member's anchor is <id>-<package>-<rule>, slugged")
     fun memberAnchors() {
         val group = ControlGroups.of(set("grp_a.b" to listOf(rule("my_rule", "SEC-28")), "grp_c" to listOf(rule("other", "SEC-28")))).groups.single()

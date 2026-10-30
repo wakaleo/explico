@@ -88,6 +88,17 @@ class GroupedDiffTest {
     }
 
     @Test
+    @DisplayName("a control id that reads like another rule's package.rule does not collide with it: both are diffed, in the old and the new version alike")
+    fun controlIdLikeAPackageRule() {
+        val policy = set("release" to listOf(rule("deny", null), rule("other", "release.deny")))
+        val entries = diff(policy, policy)
+        assertThat(entries).hasSize(2)
+        assertThat(entries.map { it.controlId }).containsExactlyInAnyOrder(null, "release.deny")
+        val changed = set("release" to listOf(rule("deny", null, message = "changed"), rule("other", "release.deny")))
+        assertThat(diff(policy, changed).single { it.category == DiffCategory.LOGIC_CHANGED }.controlId).isNull()
+    }
+
+    @Test
     @DisplayName("an id-less rule named like a shared control's rule is a different entry")
     fun idLessRuleWithTheSameName() {
         val policy = set("p" to listOf(rule("r", "A"), rule("s", "A")), "q" to listOf(rule("r", null)))
