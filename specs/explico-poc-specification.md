@@ -2080,3 +2080,12 @@ A reordered `else` branch or a changed commentary string was already `LOGIC_CHAN
 - **Not reported** as removed + added: a branch whose conditions changed but whose value did not (the `condition removed/added` lines name it), and an extra body of a rule with no value outside a chain (the condition and body-count lines name it). The generic fallback sentence stays for what nothing names.
 - Same lines in `explico diff --json` (`details`). Fixtures `realistic/diff-situations/`; tests `RealisticDiffSituationsAcceptanceIT`, `SituationsTest`.
 
+### 14.60 Generator: `count` and `time.parse_rfc3339_ns` (FR-8)
+
+`--generate-examples` (§14.39) gains two constructs; nothing else about generation changes (every candidate is still verified by `opa eval`, a body the solver cannot model is still `NotSolvable`, caps and names are unchanged). Membership over a plain `<path>` collection already worked and is pinned as a guard.
+
+- **`count(<path>) <op> <integer>`** (either operand order; after `not` / near-miss inversion): the list at `<path>` gets exactly the length that makes the comparison true -- `==`/`>=`/`<=` n, `!=`/`>` n+1, `<` n-1 -- of distinct strings `item-1`, `item-2`, ...
+  The length is then *pinned* for that list: a second `count` with another target, an iteration that already gave the list element objects, or a membership that would add a member conflicts (`NotSolvable`, never a guess). A negative length (`count < 0`) and a length above 50 (so `>= 1000000` never allocates) are `NotSolvable`; so is a non-integer or non-literal other side, a `data.*` path and a non-list slot.
+- **`time.parse_rfc3339_ns(<path>) <op> <path>`** (either order): the other path is pinned to the fixed instant `1700000000000000000` (2023-11-14T22:13:20Z, a whole JSON integer) and the timestamp to an RFC 3339 string on the right side of it (`<`, `<=`, `!=`: 2023-01-01T00:00:00Z; `==`: the instant itself; `>`, `>=`: 2030-01-01T00:00:00Z). A value already set on either path conflicts. A time compared with a number literal or another call is `NotSolvable`.
+- Tests: `RealisticGeneratorExtensionsAcceptanceIT` (fixture `realistic/generated-extensions/`), `InputSynthesizerCountTimeTest`.
+

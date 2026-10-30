@@ -8,8 +8,9 @@
  * [Synthesis.NotSolvable] and gets no generated example) but a wrong guess can never reach the output.
  *
  * It models exactly the constructs the renderer already classifies as plain comparisons, membership, truthiness, a few
- * string/type builtins and `some x in <path>` / `[_]` iteration. Everything else -- rule and function references,
- * fallbacks, `count(...)` comparisons, `data.*` paths, key variables -- is NotSolvable, never a guess.
+ * string/type builtins, `some x in <path>` / `[_]` iteration, `count(<path>) <op> <int>` (a list of the length that makes it
+ * true) and `time.parse_rfc3339_ns(<path>) <op> <path>` (spec §14.60). Everything else -- rule and function references,
+ * fallbacks, other operand builtins, `data.*` paths, key variables -- is NotSolvable, never a guess.
  *
  * Deterministic: objects are insertion-ordered ([LinkedHashMap]) and nothing iterates a hash-ordered collection.
  */
@@ -167,6 +168,9 @@ internal object InputSynthesizer {
 
         /** Lookup only (never iterated): the element object created for each `some x in ...` variable. */
         val elements = HashMap<String, MutableMap<String, Any>>()
+
+        /** Lookup only: lists whose LENGTH a `count(...)` condition pinned, with that length -- a later member added to one would silently break the count. */
+        val counted = java.util.IdentityHashMap<MutableList<Any>, Int>()
         var fresh = 0
 
         fun toJson(): JsonObject = convert(root) as JsonObject
@@ -280,6 +284,10 @@ internal object InputSynthesizer {
                 left = right.also { right = left }
                 op = mirror(op)
             }
+            if (left is Operand.BuiltinCall || right is Operand.BuiltinCall) {
+                if (left !is Operand.BuiltinCall) { left = right.also { right = left }; op = mirror(op) }
+                return builtinComparison(left as Operand.BuiltinCall, op, right)
+            }
             when {
                 left is Operand.Path && right is Operand.Literal -> {
                     val literal = scalar(right)
@@ -320,6 +328,70 @@ internal object InputSynthesizer {
             }
         }
 
+        // ---- count(...) and time.parse_rfc3339_ns(...) against a plain path (spec §14.60) ----
+
+        /** `<builtin>(<path>) <op> <other>`, the call on the left (the caller mirrors the operator when it was on the right). Only the two modelled builtins; all else is not solvable. */
+        private fun builtinComparison(call: Operand.BuiltinCall, op: Operator, other: Operand) {
+            val argument = call.args.singleOrNull() as? Operand.Path ?: unsolvable("builtin ${call.name} needs exactly one path argument")
+            when (call.name) {
+                "count" -> countComparison(argument, op, other)
+                "time.parse_rfc3339_ns" -> timeComparison(argument, op, other)
+                else -> unsolvable("builtin ${call.name} in an operand position is not modelled")
+            }
+        }
+
+        /**
+         * `count(path) <op> n`: a list of exactly the length that makes it true -- n, n+1 or n-1 by the operator -- of distinct placeholder strings.
+         * Always an ARRAY, although Rego's `count` also takes an object, a set or a string: if the rule really reads an object there, OPA's verification rejects the
+         * candidate and the rule simply gets no example for it -- incomplete, never wrong.
+         */
+        private fun countComparison(path: Operand.Path, op: Operator, other: Operand) {
+            val literal = (scalar(other) as? JsonPrimitive)?.takeIf { !it.isString }?.content ?: unsolvable("count is compared with something other than a number")
+            val n = literal.toLongOrNull() ?: unsolvable("count is compared with a non-integer")
+            val target = when (op) {
+                Operator.EQ, Operator.GTE, Operator.LTE -> n
+                Operator.NEQ, Operator.GT -> n + 1
+                Operator.LT -> n - 1
+            }
+            if (target < 0) unsolvable("count cannot be negative")
+            if (target > MAX_COUNT) unsolvable("count too large to list")
+            val list = listOf(path)
+            val fixed = counted[list]
+            if (fixed != null) {
+                if (fixed.toLong() != target) unsolvable("conflicting constraints on one path")
+                return
+            }
+            if (list.isEmpty()) repeat(target.toInt()) { list.add(JsonPrimitive("item-${it + 1}")) }
+            else if (list.size.toLong() != target || list.any { it !is JsonElement }) unsolvable("conflicting constraints on one path")
+            counted[list] = target.toInt()
+        }
+
+        /**
+         * `time.parse_rfc3339_ns(ts) <op> other` where [other] is a plain path (e.g. `input.now`): [other] is pinned to a fixed instant and `ts` to a time on the right side of it.
+         * Every such [other] gets the SAME instant, so two time conditions against different "now" paths conflict and are not solvable (conservative); against one path they agree.
+         * A near-miss of `==` is the earlier date -- either side is a valid, OPA-verified near-miss.
+         */
+        private fun timeComparison(timestamp: Operand.Path, op: Operator, other: Operand) {
+            val now = other as? Operand.Path ?: unsolvable("a time is compared with something other than a plain path")
+            slotOf(now).set(JsonPrimitive(NOW_NS))
+            slotOf(timestamp).set(
+                JsonPrimitive(
+                    when (op) {
+                        Operator.EQ -> TIME_AT_NOW
+                        Operator.LT, Operator.LTE, Operator.NEQ -> TIME_BEFORE_NOW
+                        Operator.GT, Operator.GTE -> TIME_AFTER_NOW
+                    },
+                ),
+            )
+        }
+
+        /** Adds [value] to a membership list, unless a `count` already pinned that list's length (it would break). */
+        private fun addMember(list: MutableList<Any>, value: JsonElement) {
+            if (value in list) return
+            if (list in counted) unsolvable("conflicting constraints on one path")
+            list.add(value)
+        }
+
         private fun membership(condition: Condition.Membership, violate: Boolean) {
             val inside = !(condition.negated xor violate)
             val member = condition.member
@@ -332,7 +404,7 @@ internal object InputSynthesizer {
                 member is Operand.Literal && collection is Operand.Path -> {
                     val value = scalar(member)
                     val list = listOf(collection)
-                    if (inside) { if (value !in list) list.add(value) } else if (value in list) unsolvable("conflicting constraints on one path")
+                    if (inside) addMember(list, value) else if (value in list) unsolvable("conflicting constraints on one path")
                 }
                 member is Operand.Path && collection is Operand.Path -> {
                     val list = listOf(collection)
@@ -340,7 +412,7 @@ internal object InputSynthesizer {
                     if (inside) {
                         val value = (slot.get() ?: list.firstOrNull() ?: freshValue()) as? JsonElement ?: unsolvable("conflicting constraints on one path")
                         slot.set(value)
-                        if (value !in list) list.add(value)
+                        addMember(list, value)
                     } else {
                         val value = (slot.get() ?: freshValue()) as? JsonElement ?: unsolvable("conflicting constraints on one path")
                         if (value in list) unsolvable("conflicting constraints on one path")
@@ -404,6 +476,15 @@ internal object InputSynthesizer {
             if (slot.get() == null) slot.write(JsonPrimitive(PLACEHOLDER))
         }
     }
+
+    /** The largest list a `count` condition may ask for: a rule comparing against a huge number is not worth a huge list (and never allocates one). */
+    private const val MAX_COUNT = 50L
+
+    /** The instant `input.now`-style paths are pinned to (2023-11-14T22:13:20Z, nanoseconds since the epoch) and the times chosen relative to it. */
+    private const val NOW_NS = 1_700_000_000_000_000_000L
+    private const val TIME_AT_NOW = "2023-11-14T22:13:20Z"
+    private const val TIME_BEFORE_NOW = "2023-01-01T00:00:00Z"
+    private const val TIME_AFTER_NOW = "2030-01-01T00:00:00Z"
 
     private val STRING_PREDICATES = setOf("startswith", "endswith", "contains")
     private val TYPE_CHECKS = setOf("is_string", "is_number", "is_boolean")

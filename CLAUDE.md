@@ -1606,6 +1606,11 @@ the index, `Quality`, `JsonExport` and `Explico.render` all read it, so they can
 - Anything that counts or lists controls must go through `Quality.entries` (a grouped control is ONE entry). The index builds its rows the same way.
 - `RenderedDocs.files` now has `controls/...` keys: any code writing them must create parent directories (the CLI does; the docs snippets do).
 
+## Generator: count and time (spec §14.60)
+
+`InputSynthesizer` models `count(<path>) <op> <int>` (a list of the exact length; the length is PINNED in `Tree.counted` so a later membership/iteration/second count conflicts -- never silently broken) and `time.parse_rfc3339_ns(<path>) <op> <path>` (the other path pinned to `NOW_NS`). Caps/refusals: negative length, > 50 (`MAX_COUNT`), non-integer, `data.*`.
+The solver stays a CANDIDATE producer: opa verification is what makes a result shown, so add modelling only with a unit test AND a real-opa acceptance case.
+
 ## Situation-aware diff lines (spec §14.59)
 
 `diff/Situations.bullets(old, new)` words WHAT moved in an `else` chain / several definitions (reordered, value changed, situation removed/added), appended by `ChangeSummary.subBulletsFor` before the generic fallback. Pure and text-only: never touch the hash or the category for it. Matching is by conditions as the card words them; keep the

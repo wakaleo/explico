@@ -57,8 +57,11 @@ Rendering coverage: 24 of 24 conditions (100%)
   a matching one it gets near-misses only; with only a non-matching one it gets a matching example only; with none, both. At most 3
   matching (one per situation) and 2 near-misses per rule.
 - **What it can model:** comparisons of an input field with a literal or another field, field presence/absence, set membership,
-  `startswith`/`endswith`/`contains`, `is_string`/`is_number`/`is_boolean`, and `some x in <field>` / `[_]` iteration. It cannot model
-  references to other rules, calls to your own functions, `data.*` lookups, `count(...)` comparisons, comprehensions and anything else
+  `startswith`/`endswith`/`contains`, `is_string`/`is_number`/`is_boolean`, `some x in <field>` / `[_]` iteration, a count compared with a
+  whole number (`count(input.approvers) >= 2`: a list of the length that makes it true, or just short of it for a near-miss; up to 50), and a
+  time compared with another field (`time.parse_rfc3339_ns(input.signed_at) < input.now`: `now` is set to a fixed instant and the time to one
+  just before or after it; every such field is set to the same instant). It cannot model
+  references to other rules, calls to your own functions, `data.*` lookups, a `count(...)` over a `data.*` document or contradicting itself, comprehensions and anything else
   shown as source. Policies written in a defensive, helper-heavy style get few generated examples (2 of 43 rules across 30
   Gatekeeper templates, about 5%; about 40-45% of the rule bodies in the sample pack and the showcase).
 - **It runs the policy:** like your own examples, generation executes `opa eval` on the policy. Don't use it on a policy you don't trust

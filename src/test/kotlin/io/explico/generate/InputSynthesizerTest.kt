@@ -373,9 +373,10 @@ class InputSynthesizerTest {
         }
 
         @Test
-        fun aCountComparisonIsNotModelled() {
-            val count = Operand.BuiltinCall("count", listOf(path("items")))
-            assertThat(reason(body(Condition.Comparison(count, Operator.GT, lit("2"))))).contains("BuiltinCall")
+        fun anOperandBuiltinOtherThanCountAndTimeIsNotModelled() {
+            // Repointed (spec §14.60): this used `count(...) > 2`, which the solver now models (InputSynthesizerCountTimeTest); `sum` is still not.
+            val sum = Operand.BuiltinCall("sum", listOf(path("items")))
+            assertThat(reason(body(Condition.Comparison(sum, Operator.GT, lit("2"))))).contains("sum").contains("not modelled")
         }
 
         @Test
