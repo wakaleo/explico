@@ -264,6 +264,22 @@ Pin `COMMIT` to the commit hash you rendered from, **not a branch name**: a link
 inside the repository.) Each path segment is percent-encoded, so spaces and symbols in file names are safe. Pair it with the *policy digest*
 on every page, which proves which version of the policies the document describes.
 
+
+### A second link, to the module that owns the policy
+
+If a policy is owned from a host-application module (not only its `.rego` file), `--companion-url` adds a second link next to the source link. Its template takes
+`{file}` and `{line}` as above plus `{package}`, the Rego package (`app.billing`); at least one of `{file}` and `{package}` is required, and every value is percent-encoded:
+
+```
+explico render policies --out docs \
+  --source-url 'https://git.example.com/org/repo/blob/abc123/policies/{file}#L{line}' \
+  --companion-url 'https://git.example.com/org/app/blob/abc123/modules/{package}/README.md' \
+  --companion-label 'Billing module'
+```
+
+The card's *defined in* line reads `defined in [charge.rego:8](…) · [Billing module](…)`, each package page's source files gain the same link, and `explico.json` has `companionUrl` per rule.
+The index and `diff` are unchanged.
+
 ## Enforcing it in CI
 
 Reports are only useful if someone reads them. Three opt-in gates make a pipeline fail instead (exit code `5`); the output is

@@ -49,6 +49,7 @@ Library: `Explico.render(policySet, policyDir, examples, dataDir, generateExampl
 | `controlPage` | string | **Only for a rule moved to a control page by `--group-by-control`**: that page (`controls/sec-28.md`). Absent otherwise |
 | `sourceFile` | string or null | The `.rego` file (relative to the policy directory) |
 | `sourceLine` | integer or null | The rule's first line in that file (its first body, else its `default`, else its constant value) |
+| `companionUrl` | string or null | **Only when `--companion-url` was given** (spec §14.58): the second link's URL for this rule (null for a rule with no location), the same URL its card shows. Absent otherwise |
 | `sourceUrl` | string or null | The link to that line when a `--source-url` template was given, else null |
 | `frameworks` | string[] | METADATA `custom.frameworks` |
 | `authors` | `{name, email}`[] | METADATA `authors`; either field may be null |

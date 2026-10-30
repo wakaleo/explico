@@ -25,6 +25,7 @@ import io.explico.opa.OpaFetcher
 import io.explico.opa.OpaInvocationException
 import io.explico.opa.OpaRunner
 import io.explico.opa.OpaUnavailableException
+import io.explico.render.CompanionLinks
 import io.explico.render.ControlIdFromFilename
 import io.explico.render.DuplicateFixtureNameException
 import io.explico.render.SourceLinks
@@ -89,6 +90,14 @@ private class RenderCommand : CliktCommand(name = "render") {
         "--group-by-control",
         help = "Give every control id shared by two or more rules ONE page, controls/<id>.md, instead of scattering its cards over the package pages (the index lists it once)",
     ).flag()
+    private val companionUrl by option(
+        "--companion-url",
+        help = "A second URL template linking each card (and package page) to the module that owns the policy, with {file}, {package} (the Rego package) and {line}; needs {file} or {package}, e.g. https://host/modules/{package}/{file}#L{line}",
+    ).convert { value -> try { CompanionLinks.of(value, "module"); value } catch (e: IllegalArgumentException) { fail(e.message ?: "invalid template") } }
+    private val companionLabel by option(
+        "--companion-label",
+        help = "The text of the --companion-url link (default: module); plain text, without [ ] | ` * or a line break",
+    ).convert { value -> try { CompanionLinks.validateLabel(value); value } catch (e: IllegalArgumentException) { fail(e.message ?: "invalid label") } }
     private val failUnder by option("--fail-under", help = "Exit 5 if overall rendering coverage is below this percent (0-100); the output is still written")
         .int().restrictTo(0..100)
     private val failOnGaps by option(
@@ -99,13 +108,15 @@ private class RenderCommand : CliktCommand(name = "render") {
     override fun run() {
         // A template says how a derived id is written; with no pattern it would silently do nothing, so it is a usage error (checked before anything else).
         if (controlIdTemplate != null && controlIdFrom == null) throw UsageError("--control-id-template needs --control-id-from (it says how a derived id is written)")
+        // Likewise a label with no link to label.
+        if (companionLabel != null && companionUrl == null) throw UsageError("--companion-label needs --companion-url (it names the link that option adds)")
         requireOpaOrExit()
         try {
             val policySet = Explico.load(policyDir, parseRegoVersion(regoVersion))
             val examples = examplesDir?.let { Explico.loadExamples(it) }
             val rendered = Explico.render(
                 policySet, policyDir, examples, dataDir, generateExamples, json, requirementsFile?.let { parseRequirements(Files.readString(it)) } ?: emptyList(), sourceUrl,
-                controlIdFrom, controlIdTemplate ?: ControlIdFromFilename.DEFAULT_TEMPLATE, groupByControl,
+                controlIdFrom, controlIdTemplate ?: ControlIdFromFilename.DEFAULT_TEMPLATE, groupByControl, companionUrl, companionLabel ?: "module",
             )
             replaceOutputDirectory(out, rendered.files)
             echo("Rendering coverage: ${rendered.coverage.rendered} of ${rendered.coverage.total} conditions (${rendered.coverage.percent}%)")

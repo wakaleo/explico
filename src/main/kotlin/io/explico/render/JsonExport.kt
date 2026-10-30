@@ -45,6 +45,8 @@ internal object JsonExport {
         sourceLinks: SourceLinks? = null,
         /** Spec §14.56: grouped controls; null when grouping is off (then the document has no `controls` key and is unchanged). */
         groups: ControlGroups? = null,
+        /** Spec §14.58: the second link; null (the default) leaves the document without any `companionUrl`. */
+        companion: CompanionLinks? = null,
     ): String {
         val packageCoverages = policySet.packages.map { Coverage.of(it) }
         val overall = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })
@@ -56,7 +58,7 @@ internal object JsonExport {
             put("requirements", Quality.normalise(requirements).takeIf { it.isNotEmpty() }?.let { requirementsObject(Quality.coverageOf(policySet, it, groups)) } ?: JsonNull)
             if (groups != null) put("controls", controlsArray(groups))
             put("packages", buildJsonArray {
-                for (pkg in policySet.packages) add(packageObject(pkg, policySet, examplesByPackage[pkg.path] ?: emptyMap(), generatedByPackage[pkg.path] ?: emptyMap(), dataValues, sourceLinks, groups))
+                for (pkg in policySet.packages) add(packageObject(pkg, policySet, examplesByPackage[pkg.path] ?: emptyMap(), generatedByPackage[pkg.path] ?: emptyMap(), dataValues, sourceLinks, groups, companion))
             })
         }
         return prettyJson(document)
@@ -131,6 +133,7 @@ internal object JsonExport {
         dataValues: Map<Operand.Path, JsonElement?>?,
         sourceLinks: SourceLinks?,
         groups: ControlGroups?,
+        companion: CompanionLinks?,
     ): JsonObject {
         val anchors = MarkdownRenderer.cardAnchorIds(pkg, groups)
         return buildJsonObject {
@@ -145,7 +148,7 @@ internal object JsonExport {
             put("rules", buildJsonArray {
                 pkg.rules.forEachIndexed { index, rule ->
                     val placement = groups?.placementOf(pkg.path, index)
-                    add(ruleObject(rule, pkg, policySet, placement?.member?.anchor ?: anchors[index], WorkedExamples.forGroup(rule, pkg, examples[rule.name] ?: emptyList()), generated[index], dataValues, sourceLinks, placement?.group?.page))
+                    add(ruleObject(rule, pkg, policySet, placement?.member?.anchor ?: anchors[index], WorkedExamples.forGroup(rule, pkg, examples[rule.name] ?: emptyList()), generated[index], dataValues, sourceLinks, placement?.group?.page, companion))
                 }
             })
         }
@@ -161,6 +164,7 @@ internal object JsonExport {
         dataValues: Map<Operand.Path, JsonElement?>?,
         sourceLinks: SourceLinks?,
         controlPage: String?,
+        companion: CompanionLinks?,
     ): JsonObject = buildJsonObject {
         val metadata = rule.metadata
         put("name", rule.name)
@@ -177,6 +181,8 @@ internal object JsonExport {
         // Spec §14.48: always present (additive); the URL only when a template was given and the rule has a location.
         put("sourceLine", location?.let { JsonPrimitive(it.row) } ?: JsonNull)
         put("sourceUrl", nullable(if (location != null) sourceLinks?.url(location.file, location.row) else null))
+        // Spec §14.58: present only when a companion template was given (then null for a rule with no location); the same URL the card links.
+        if (companion != null) put("companionUrl", nullable(location?.let { companion.url(pkg.path, it.file, it.row) }))
         put("frameworks", buildJsonArray { metadata?.frameworks.orEmpty().forEach { add(JsonPrimitive(it)) } })
         put("authors", authors(metadata?.authors.orEmpty()))
         put("relatedResources", relatedResources(metadata?.relatedResources.orEmpty()))

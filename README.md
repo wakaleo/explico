@@ -80,6 +80,7 @@ and tested. What it produces:
   insensitive to formatting, comments and variable names.
 - **Control ids from file names** (`--control-id-from`, `--control-id-template`): a corpus that names its controls by file (`ctrl_1123.rego`) gets `CTRL-1123` as the card's id without any METADATA.
 - **One page per control** (`--group-by-control`): a control split over several files and packages gets a single `controls/<id>.md` page and a single index row.
+- **Companion link** (`--companion-url`): a second link per card to the host module that owns the policy.
 - **Source links** (`--source-url`): every card, package page and index row links to the exact Rego line in your repository.
 - **CI gates**: `--fail-under`, `--fail-on-gaps` and `diff --fail-on` exit `5` so a pipeline can enforce rendering coverage, complete
   documentation and review of policy changes — the output is still written.
@@ -191,7 +192,7 @@ project's own `kotlin("jvm")` plugin version.
 
 ```
 explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--rego-version v1|v0] [--generate-examples] [--json] [--requirements <file>] [--source-url <template>]
-               [--control-id-from <regex> [--control-id-template <template>]] [--group-by-control] [--fail-under <percent>] [--fail-on-gaps]
+               [--control-id-from <regex> [--control-id-template <template>]] [--group-by-control] [--companion-url <template> [--companion-label <text>]] [--fail-under <percent>] [--fail-on-gaps]
 explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--group-by-control] [--fail-on <categories>] [--rego-version v1|v0]
 explico version
 explico demo [--fetch-opa]

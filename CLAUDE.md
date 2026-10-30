@@ -1606,6 +1606,11 @@ the index, `Quality`, `JsonExport` and `Explico.render` all read it, so they can
 - Anything that counts or lists controls must go through `Quality.entries` (a grouped control is ONE entry). The index builds its rows the same way.
 - `RenderedDocs.files` now has `controls/...` keys: any code writing them must create parent directories (the CLI does; the docs snippets do).
 
+## Companion source link (spec §14.58)
+
+`--companion-url` / `companionUrl` (+ `--companion-label`, default `module`): a second link on each card's "defined in" line, each package page's source files and `explico.json` (`companionUrl`, only when asked), NOT the index, NOT diff cards.
+`render/CompanionLinks` is the only place the URL is built (`{file}`, `{package}`, `{line}`, ONE substitution pass, `percentEncode` shared with `SourceLinks`); its label is validated plain text (no `[ ] | \` *` or line break), so a label can never break the line it sits in.
+
 ## `diff --group-by-control` (spec §14.57)
 
 `PolicyDiff.diff(old, new, groupByControl)`: without the flag exactly as before (duplicate check, plain identity). With it, an id used by 2+ rules on EITHER side (decided over both versions) identifies each of its rules by a STRUCTURED `Identity(id, package, rule)`; every other id/rule keeps its plain identity.

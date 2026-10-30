@@ -31,11 +31,13 @@ internal object MarkdownRenderer {
         sourceLinks: SourceLinks? = null,
         /** Spec §14.56: with grouping on, a grouped control's cards are not repeated here -- one pointer to its page stands in for them. */
         groups: ControlGroups? = null,
+        /** The second link, to the owning module (spec §14.58); null adds nothing. */
+        companion: CompanionLinks? = null,
     ): String {
         val sb = StringBuilder()
         sb.appendLine("# Package `${pkg.path}`")
         sb.appendLine()
-        sb.appendLine("*Source files: ${pkg.sourceFiles.joinToString(", ") { file -> sourceLinks?.let { "[`$file`](${it.url(file, 1)})" } ?: "`$file`" }}*")
+        sb.appendLine("*Source files: ${pkg.sourceFiles.joinToString(", ") { file -> sourceFileEntry(pkg, file, sourceLinks, companion) }}*")
         sb.appendLine()
 
         // Package-scope METADATA (review item 4), shown before the first card -- title bold (no
@@ -74,6 +76,7 @@ internal object MarkdownRenderer {
                         dataValues = dataValues,
                         sourceLinks = sourceLinks,
                         groups = groups,
+                        companion = companion,
                     ),
                 )
             }
@@ -124,6 +127,7 @@ internal object MarkdownRenderer {
         policyDigest: String? = null,
         dataValues: Map<Operand.Path, JsonElement?>? = null,
         sourceLinks: SourceLinks? = null,
+        companion: CompanionLinks? = null,
     ): String {
         val sb = StringBuilder()
         sb.appendLine("<a id=\"${group.anchor}\"></a>")
@@ -144,6 +148,7 @@ internal object MarkdownRenderer {
                     page = group.page,
                     groups = groups,
                     heading = "${pkg.path}.${member.rule.name}$title",
+                    companion = companion,
                 ),
             )
             sb.appendLine()
@@ -192,6 +197,8 @@ internal object MarkdownRenderer {
         qualifiedIds: Set<String> = emptySet(),
         /** True for a diff report, whose cards all live in ONE document: a link to any card is then a bare `#anchor`, never `<package>.md#anchor` (a page that report does not have). */
         singleDocument: Boolean = false,
+        /** The second link, to the owning module (spec §14.58), after the source link on the "defined in" line; null adds nothing. */
+        companion: CompanionLinks? = null,
     ): String {
         val sb = StringBuilder()
         val currentPage = page ?: docFileName(pkg.path)
@@ -203,7 +210,7 @@ internal object MarkdownRenderer {
             sb.appendLine()
         }
         appendHeading(sb, rule, pkg, heading)
-        appendMetadataLines(sb, rule, pkg, sourceLinks)
+        appendMetadataLines(sb, rule, pkg, sourceLinks, companion)
 
         val anchorFor: (Condition.RuleReference) -> String? = { ref -> anchorForTarget(currentPage, ref.packagePath, ref.ruleName, policySet, groups, isLinkable, qualifiedIds, singleDocument) }
         val functionAnchorFor: (Condition.FunctionCall) -> String? = { call -> anchorForTarget(currentPage, call.packagePath, call.functionName, policySet, groups, isLinkable, qualifiedIds, singleDocument) }
@@ -283,7 +290,13 @@ internal object MarkdownRenderer {
         if (customFields.isNotEmpty()) sb.appendLine("*Custom: ${customFields.entries.joinToString(", ") { "${it.key}: ${it.value}" }}*")
     }
 
-    private fun appendMetadataLines(sb: StringBuilder, rule: RuleGroup, pkg: PolicyPackage, sourceLinks: SourceLinks?) {
+    /** One entry of a package page's "Source files": the file (linked with a template), then ` ([label](url))` to the owning module at line 1 (spec §14.58). */
+    private fun sourceFileEntry(pkg: PolicyPackage, file: String, sourceLinks: SourceLinks?, companion: CompanionLinks?): String {
+        val source = sourceLinks?.let { "[`$file`](${it.url(file, 1)})" } ?: "`$file`"
+        return if (companion == null) source else "$source (${companion.link(pkg.path, file, 1)})"
+    }
+
+    private fun appendMetadataLines(sb: StringBuilder, rule: RuleGroup, pkg: PolicyPackage, sourceLinks: SourceLinks?, companion: CompanionLinks?) {
         val metadata = rule.metadata
         // "?" only for a default-only rule with zero bodies in this file (review item 3) -- should
         // never actually surface, since a RuleGroup is only ever constructed with at least one of
@@ -295,7 +308,8 @@ internal object MarkdownRenderer {
         } else {
             "`${location?.file?.substringAfterLast('/') ?: "?"}`"
         }
-        sb.appendLine("*Rule `${rule.name}` in package `${pkg.path}` — defined in $definedIn*")
+        val companionLink = if (location != null && companion != null) " · ${companion.link(pkg.path, location.file, location.row)}" else ""
+        sb.appendLine("*Rule `${rule.name}` in package `${pkg.path}` — defined in $definedIn$companionLink*")
         // Spec §14.55: an id taken from the file name is a mechanical reading, not an attested METADATA value -- the card says so.
         metadata?.controlIdDerivedFrom?.let { sb.appendLine("*Control id derived from the file name ${MarkdownText.codeSpan(it)}*") }
         if (!metadata?.frameworks.isNullOrEmpty()) {

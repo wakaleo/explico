@@ -2055,3 +2055,16 @@ The diff side of §14.56. Operator decisions: the flag relaxes the duplicate-con
   A link to a shared-id rule goes to its rule-qualified anchor; a rule with no card in the report (unchanged, or docs-only) is unlinked, as before.
 - **JSON.** Unchanged shape (`controlId`, `label`, `package`, `rule`, `anchor` per change); only the label/anchor values differ for a shared id.
 - **Tests.** `RealisticGroupByControlDiffAcceptanceIT` (fixtures `realistic/group-by-control-diff/{old,new}`), `GroupedDiffTest`, `CliGroupByControlDiffProcessTest`.
+
+### 14.58 A companion source link (`--companion-url`, `--companion-label`)
+
+A policy is often owned by a host-application module, not only by its `.rego` file; a second link lets a card point at both. Operator decisions: the placeholders and the places the link appears were asked for and chosen.
+
+- **Options.** `Explico.render(..., companionUrl: String? = null, companionLabel: String = "module")`; CLI `render --companion-url <template>` and `--companion-label <text>`. Off by default and then byte-identical. `diff` does not take them (diff cards carry no source links either).
+- **Template** (`render/CompanionLinks`, the one place the URL is built): `{file}` (the policy file's path relative to the policy directory, percent-encoded per segment, as `--source-url`), `{package}` (the Rego package path, e.g. `app.billing`, percent-encoded as ONE string: a `/` or `#` in a quoted
+  segment cannot escape) and `{line}` (the rule's first line; 1 on a package page). At least one of `{file}` and `{package}` is required. Every occurrence is substituted, in a SINGLE pass, so placeholder-looking text inside a value is encoded, never substituted again.
+  Validated up front with the source template: a template without either placeholder, or a label that is blank or holds a line break, `[`, `]`, `|`, a backtick or `*` (each would break the link, a table or the italic line), is `IllegalArgumentException` (CLI: usage error, exit 1, nothing written); a label without a URL is a CLI usage error.
+- **Where.** A card's "defined in" line, after the source link and ` · `, inside the same italic span (the file stays plain text without `--source-url`); each file in a package page's *Source files* as ` ([label](url))` at line 1; a control page's cards (§14.56) through the same card renderer.
+  A rule with no location gets no link. NOT in the index. `explico.json`: `companionUrl` on every rule, but only when the option is given (null for a rule with no location), the same URL the card links.
+- **Tests.** `RealisticCompanionSourceAcceptanceIT` (fixtures `realistic/companion-source/`), `CompanionLinksTest`, `CliCompanionUrlProcessTest`.
+

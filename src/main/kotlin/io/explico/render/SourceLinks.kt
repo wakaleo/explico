@@ -12,14 +12,7 @@ internal class SourceLinks private constructor(private val template: String) {
         template.replace(FILE, encodePath(file)).replace(LINE, line.toString())
 
     /** Percent-encodes every byte but the RFC 3986 unreserved set, per segment, keeping `/`: no file name can break out of the URL. */
-    private fun encodePath(file: String): String = file.split('/').joinToString("/") { segment ->
-        buildString {
-            for (byte in segment.toByteArray(Charsets.UTF_8)) {
-                val c = byte.toInt().toChar()
-                if (byte >= 0 && (c in 'A'..'Z' || c in 'a'..'z' || c in '0'..'9' || c in "-._~")) append(c) else append("%%%02X".format(byte.toInt() and 0xFF))
-            }
-        }
-    }
+    private fun encodePath(file: String): String = file.split('/').joinToString("/") { percentEncode(it) }
 
     companion object {
         private const val FILE = "{file}"
@@ -31,5 +24,13 @@ internal class SourceLinks private constructor(private val template: String) {
             require(template.contains(FILE)) { "the source URL template must contain {file} (the policy file's path), e.g. https://host/org/repo/blob/COMMIT/policies/{file}#L{line}" }
             return SourceLinks(template)
         }
+    }
+}
+
+/** Percent-encodes every UTF-8 byte of [text] but the RFC 3986 unreserved set (`A-Za-z0-9-._~`): nothing in it can break out of a URL. Shared by every link builder. */
+internal fun percentEncode(text: String): String = buildString {
+    for (byte in text.toByteArray(Charsets.UTF_8)) {
+        val c = byte.toInt().toChar()
+        if (byte >= 0 && (c in 'A'..'Z' || c in 'a'..'z' || c in '0'..'9' || c in "-._~")) append(c) else append("%%%02X".format(java.util.Locale.ROOT, byte.toInt() and 0xFF))
     }
 }

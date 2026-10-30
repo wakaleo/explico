@@ -13,6 +13,7 @@ import io.explico.model.RegoVersion
 import io.explico.opa.OpaRunner
 import io.explico.parse.AstMapper
 import io.explico.parse.ParsedFile
+import io.explico.render.CompanionLinks
 import io.explico.render.ControlGroups
 import io.explico.render.ControlIdFromFilename
 import io.explico.render.Coverage
@@ -147,9 +148,20 @@ public object Explico {
          * default, and the output is then unchanged. The returned `files` then contain keys with a `controls/` prefix, so a caller writing them must create the directory.
          */
         groupByControl: Boolean = false,
+        /**
+         * A second URL template, for the module that OWNS a policy (spec §14.58): `{file}` (the policy file's path, as for [sourceUrl]), `{package}` (the Rego package
+         * path, e.g. `app.billing`) and `{line}`, all percent-encoded; at least one of `{file}` and `{package}` is required, else [IllegalArgumentException]. Each card's
+         * *defined in* line and each package page's source files then gain a second link, labelled [companionLabel]; `explico.json` gains `companionUrl`.
+         * Null (the default) adds nothing and the output is unchanged.
+         */
+        companionUrl: String? = null,
+        /** The text of the second link (default `module`); must be non-blank plain text: no line break, `[`, `]`, `|`, backtick or `*`, else [IllegalArgumentException]. */
+        companionLabel: String = "module",
     ): RenderedDocs {
         // Validate the URL template before any (slow) opa work: a template without {file} is the caller's mistake.
         val sourceLinks = SourceLinks.of(sourceUrl)
+        // Spec §14.58: likewise the companion template and its label.
+        val companion = CompanionLinks.of(companionUrl, companionLabel)
         // Spec §14.55: likewise the control-id options -- an invalid pattern or template is the caller's mistake, found before any opa work.
         val controlIds = ControlIdFromFilename.of(controlIdFrom, controlIdTemplate)
         // From here on everything reads this set: a derived id is just a control-id on the model, so headings, anchors, links, the index and
@@ -176,11 +188,12 @@ public object Explico {
                 dataValues,
                 sourceLinks,
                 groups,
+                companion,
             )
         } + groups?.groups.orEmpty().associate { group ->
-            group.page to MarkdownRenderer.renderControlPage(group, set, groups!!, examplesByPackage, generated?.byPackage ?: emptyMap(), policyDigest, dataValues, sourceLinks)
+            group.page to MarkdownRenderer.renderControlPage(group, set, groups!!, examplesByPackage, generated?.byPackage ?: emptyMap(), policyDigest, dataValues, sourceLinks, companion)
         } + ("index.md" to MarkdownRenderer.renderIndex(set, examplesByPackage, policyDigest, requirements, sourceLinks, groups)) +
-            (if (json) mapOf("explico.json" to JsonExport.render(set, policyDigest, examplesByPackage, generated?.byPackage ?: emptyMap(), dataValues, requirements, sourceLinks, groups)) else emptyMap())
+            (if (json) mapOf("explico.json" to JsonExport.render(set, policyDigest, examplesByPackage, generated?.byPackage ?: emptyMap(), dataValues, requirements, sourceLinks, groups, companion)) else emptyMap())
 
         val packageCoverages = set.packages.map { Coverage.of(it) }
         val overallCoverage = CoverageSummary(packageCoverages.sumOf { it.rendered }, packageCoverages.sumOf { it.total })

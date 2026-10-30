@@ -40,4 +40,12 @@ class ControlIdApiJavaInteropTest {
         assertThat(Explico.class.getMethod("render", with(String.class, String.class, String.class))).isNotNull();
         assertThat(Explico.class.getMethod("render", with(String.class, String.class, String.class, boolean.class))).isNotNull();
     }
+
+    @Test
+    void companionParametersAreAppendedLast() throws Exception {
+        // Spec §14.58: companionUrl and companionLabel come after groupByControl, so the previous full signature (ending at it) must still link.
+        assertThat(Explico.class.getMethod("render", with(String.class, String.class, String.class, boolean.class))).isNotNull();
+        assertThat(Explico.class.getMethod("render", with(String.class, String.class, String.class, boolean.class, String.class))).isNotNull();
+        assertThat(Explico.class.getMethod("render", with(String.class, String.class, String.class, boolean.class, String.class, String.class))).isNotNull();
+    }
 }
