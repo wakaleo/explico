@@ -105,6 +105,8 @@ internal object Canonicalizer {
             val keyAlias = condition.key?.let { aliasFor(it, aliases) }
             val alias = aliasFor(condition.variable, aliases)
             put("collection", canonicalOperand(condition.collection, aliases))
+            // Only when stated (spec §14.62), so the hash of every other iteration is unchanged.
+            condition.defaultValue?.let { put("default", JsonPrimitive(it)) }
             put("key", keyAlias?.let { JsonPrimitive(it) } ?: JsonNull)
             put("type", JsonPrimitive("SomeIn"))
             put("variable", JsonPrimitive(alias))

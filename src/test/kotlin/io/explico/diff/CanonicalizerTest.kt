@@ -257,6 +257,21 @@ class CanonicalizerTest {
     }
 
     @Test
+    @org.junit.jupiter.api.DisplayName("spec §14.62: renaming the loop variable, re-spacing and commenting `some g in object.get(input, \"items\", [])` keeps the logic hash")
+    fun objectGetIterationRenamedAndReformattedYieldsTheSameLogicHash() {
+        assertThat(Canonicalizer.logicHash(denyRule("object-get-iteration-renamed-vars"))).isEqualTo(Canonicalizer.logicHash(denyRule("object-get-iteration-base")))
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("spec §14.62: the stated default is part of the logic: object.get(input, \"items\", []) differs from input.items, from another key, and from another default")
+    fun objectGetIterationDefaultKeyAndPlainPathAreAllLogic() {
+        val base = Canonicalizer.logicHash(denyRule("object-get-iteration-base"))
+        assertThat(Canonicalizer.logicHash(denyRule("object-get-iteration-plain-path"))).isNotEqualTo(base)
+        assertThat(Canonicalizer.logicHash(denyRule("object-get-iteration-other-key"))).isNotEqualTo(base)
+        assertThat(Canonicalizer.logicHash(denyRule("object-get-iteration-other-default"))).isNotEqualTo(base)
+    }
+
+    @Test
     fun pureUnificationEquivalentToDoubleEqualsHashesTheSame() {
         // spec §14 promotion: `input.a = input.b` (both sides already real, non-binding paths) now
         // promotes identically to `input.a == input.b` -- a real diff-quality improvement, not just

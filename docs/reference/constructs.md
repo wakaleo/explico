@@ -87,6 +87,7 @@ Each of these becomes a readable bullet. Where a bullet names another rule or fu
 | Rego | Reads as |
 |---|---|
 | `some p in input.pods; p.privileged == true` | `` for some p in `pods` ``<br>`` `pods ▸ [each p] ▸ privileged` is `true` `` |
+| `some p in object.get(input, "pods", []); p.privileged == true` | `` for some p in `pods` (default `[]`) ``<br>`` `pods ▸ [each p] ▸ privileged` is `true` `` |
 | `input.pods[_].privileged == true` | `` any of: `pods ▸ privileged` is `true` `` |
 | `some k, v in input.labels; v == ""` | `` for some k, v in `labels` ``<br>`` `labels ▸ [each v]` is `""` `` |
 | `every c in input.containers { c.image != "" }` | `` for every c in `containers`, all of the following are true (vacuously true when there are none) ``<br>↳ `` `containers ▸ [each c] ▸ image` is not `""` `` |

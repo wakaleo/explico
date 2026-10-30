@@ -207,7 +207,8 @@ internal object JsonExport {
         put("referenceData", buildJsonArray {
             if (dataValues != null) ReferenceData.referencedDataPaths(rule, policySet).forEach { add(referenceDatum(it, dataValues[it])) }
         })
-        put("workedExamples", buildJsonArray { examples.forEach { add(exampleObject(rule, it.fixture.name, it, generated = false)) } })
+        // Spec §14.62: a function is not matched by an input, so it has no key at all (an ordinary rule with no fixtures has an empty list).
+        if (rule.parameters.isEmpty()) put("workedExamples", buildJsonArray { examples.forEach { add(exampleObject(rule, it.fixture.name, it, generated = false)) } })
         put("generatedExamples", buildJsonArray {
             generated?.let { g ->
                 (g.matching + g.nearMisses).forEach { entry ->

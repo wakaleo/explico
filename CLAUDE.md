@@ -1636,4 +1636,8 @@ The solver stays a CANDIDATE producer: opa verification is what makes a result s
 - A diff report is ONE document: `renderCard(singleDocument = true)` makes every card link a bare `#anchor`. Do not reintroduce `<package>.md#...` in a diff.
 - Still an error with the flag: two rules of one name AND one shared id in one package (one identity). A renamed/moved rule inside a shared control is REMOVED + ADDED; never add rename guessing.
 
+## Real-world fixes (spec §14.62)
 
+`AstMapper.objectGetCollectionOrNull` is called from `mapSomeIn` ONLY: `some x in object.get(<plain path or bare input>, "<string literal>", [])` becomes a `SomeIn` over the path plus the key (`Field` when the key is an identifier, else `KeyLiteral`) with `defaultValue = "[]"`. Only an
+empty-array default; never route `every` through it (an absent list makes `every` undefined, not vacuously true). A function (`rule.parameters` non-empty) has NO worked examples (`WorkedExamples.forGroup`) and no `workedExamples` JSON key. `MarkdownText.controlCharacters` is the single place a
+control character in a rendered literal is escaped; verbatim source is never passed through it.

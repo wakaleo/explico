@@ -63,4 +63,32 @@ class MarkdownTextTest {
     fun emphasisLineBreaks() {
         assertThat(MarkdownText.emphasisText("line\nbreak")).isEqualTo("line break")
     }
+
+    @ParameterizedTest
+    @CsvSource(
+        delimiter = '|',
+        value = [
+            "plain | plain",
+            "back\\slash \"quote\" | back\\slash \"quote\"",
+            "caf\u00e9 \u00dcber \u65e5\u672c | caf\u00e9 \u00dcber \u65e5\u672c",
+        ],
+    )
+    @DisplayName("spec §14.62: text without a control character is returned as it was -- a backslash, a quote and non-ASCII letters are not touched")
+    fun controlCharactersLeavesOtherTextAlone(text: String, expected: String) {
+        assertThat(MarkdownText.controlCharacters(text)).isEqualTo(expected)
+    }
+
+    @Test
+    @DisplayName("spec §14.62: tab, line feed and carriage return are written \\t \\n \\r; any other control character is \\u00XX with lowercase hex")
+    fun controlCharactersAreEscaped() {
+        assertThat(MarkdownText.controlCharacters(" \t\n\r")).isEqualTo(" \\t\\n\\r")
+        assertThat(MarkdownText.controlCharacters("a\u0001b\u001fc\u007fd\u0085e")).isEqualTo("a\\u0001b\\u001fc\\u007fd\\u0085e")
+    }
+
+    @Test
+    @DisplayName("spec §14.62: the result never contains a control character, whatever went in")
+    fun controlCharactersLeavesNoneBehind() {
+        val everything = (0..0x9f).map { it.toChar() }.joinToString("")
+        assertThat(MarkdownText.controlCharacters(everything).any { it.isISOControl() }).isFalse()
+    }
 }

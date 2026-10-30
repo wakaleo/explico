@@ -113,4 +113,11 @@ class PathHumanizerTest {
     // ref has no symbol-table binding, it produces Operand.Unrendered directly (never Operand.Path),
     // so PathHumanizer never sees it. Already covered by
     // AstMapperTest.EdgeCases.varRootedPathWithNoSomeInBindingBecomesOperandUnrendered.
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("spec §14.62: a bracket key with a tab or line break is shown with escapes, so the breadcrumb stays on one line")
+    fun aKeyLiteralWithControlCharactersIsEscaped() {
+        val rendered = PathHumanizer.humanize(listOf(PathSegment.Field("input"), PathSegment.KeyLiteral("a\tb\nc"))).rendered
+        assertThat(rendered).isEqualTo("`\"a\\tb\\nc\"`")
+    }
 }

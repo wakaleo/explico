@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+Three fixes found by rendering real decision-object policies. No change for a policy that uses none of the shapes below.
+
+- **Fixed:** `some x in object.get(input, "items", [])` -- the defensive way to read a list that may be absent -- was shown as source, with every later `x.field` left as raw text and the rule short of 100%. It is now rendered as an iteration, ``for some g in `items` (default `[]`)``, and the later uses read as the usual `items ▸ [each g] ▸ kind`. The key may be a plain field (`items`, `narGroups`) or a quoted one (`my-items`), the first argument a longer plain path (`object.get(input.request, "reviewers", [])`). Only an empty-array default is modelled; another default, a key that is not a string literal and `every x in object.get(...)` stay source. Public model: `Condition.SomeIn` gains `defaultValue`. Spec §14.62.
+- **Fixed:** a function's card no longer lists "Worked examples" with "not matched" entries -- a function is not matched by an input. It has no such section and no `workedExamples` key in `explico.json`; the rules that call it keep theirs.
+- **Fixed:** a string literal with a tab, line feed or carriage return (`trim(value, " \t\n\r")`) was printed with the raw characters, breaking the line it sat on. Control characters are now written as escapes (`\t`, `\n`, `\r`, any other as `\u00xx`) in every rendered literal and in the `path: value` bullets of a worked example; a backslash, a quote and non-ASCII letters are unchanged.
+
 ## 0.3.0
 
 Rendering of the decision-object policies that were shown as source (`else` chains, object-valued rules), one page per multi-file control, and `diff` and the example generator catching up. Everything new is opt-in or additive; read the **Changed** entries (reserved `custom:` keys including `mask`, whose malformed form now stops the render; no "Effect of a match" on an `else` chain) and the **Fixed** entry (links inside a diff report) before upgrading.

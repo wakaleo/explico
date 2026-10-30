@@ -106,6 +106,8 @@ internal object WorkedExamples {
      * A name with a single card is returned unchanged.
      */
     fun forGroup(rule: RuleGroup, pkg: PolicyPackage, outcomes: List<WorkedExample>): List<WorkedExample> {
+        // Spec §14.62: a function takes arguments, so an input does not "match" it -- the verdict would be a meaningless "not matched".
+        if (rule.parameters.isNotEmpty()) return emptyList()
         val siblings = pkg.rules.filter { it.name == rule.name && !it.isSplitDefaultEntry }
         if (rule.isSplitDefaultEntry && siblings.size > 1) return emptyList()
         if (siblings.size <= 1) return outcomes
@@ -195,7 +197,7 @@ internal object WorkedExamples {
     private fun renderJsonScalar(element: JsonElement): String {
         if (element === InputMask.MASK) return "***"
         val primitive = element as? JsonPrimitive ?: return element.toString()
-        return if (primitive.isString) "\"${primitive.content}\"" else primitive.content
+        return if (primitive.isString) "\"${MarkdownText.controlCharacters(primitive.content)}\"" else primitive.content
     }
 
     /**

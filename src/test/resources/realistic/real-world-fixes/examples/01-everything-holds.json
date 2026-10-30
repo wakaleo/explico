@@ -1,0 +1,12 @@
+{
+  "name": "everything holds",
+  "input": {
+    "items": [{"kind": "gold", "tier": "a"}],
+    "request": {"reviewers": [{"role": "lead"}]},
+    "listName": "extras",
+    "extras": [{"kind": "extra"}],
+    "label": " OK\n",
+    "text": "a\tb\nc\u0001",
+    "name": "café"
+  }
+}

@@ -310,6 +310,19 @@ class ExamplesTest {
         }
 
         @Test
+        @org.junit.jupiter.api.DisplayName("spec §14.62: a function is not matched by an input, so it has no worked examples (a single card too); a rule with the same shape but no parameters keeps them")
+        fun aFunctionHasNoWorkedExamples() {
+            val body = RuleBody(emptyList(), null, null, SourceRef("f.rego", 1), "")
+            val function = RuleGroup("normalized", null, null, listOf(body), parameters = listOf("value"))
+            val ordinary = RuleGroup("allowed", null, null, listOf(body))
+            val pkg = io.explico.model.PolicyPackage("pkg", listOf(function, ordinary), listOf("f.rego"))
+            val outcomes = WorkedExamples.evaluatePackage(listOf(fixture), pkg, warn = {}) { buildJsonObject {} }
+
+            assertThat(WorkedExamples.forGroup(function, pkg, outcomes.getValue("normalized"))).isEmpty()
+            assertThat(WorkedExamples.forGroup(ordinary, pkg, outcomes.getValue("allowed"))).hasSize(1)
+        }
+
+        @Test
         fun aMessageNoGroupClaimsShowsNoExamples() {
             val first = group("deny", "one")
             val second = group("deny", "two")
@@ -471,6 +484,14 @@ class ExamplesTest {
             val path = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("deployment"), PathSegment.Field("environment")))
             val input = buildJsonObject { put("deployment", buildJsonObject { put("environment", "production") }) }
             assertThat(WorkedExamples.resolvePathValue(path, input)).isEqualTo("\"production\"")
+        }
+
+        @Test
+        @org.junit.jupiter.api.DisplayName("spec §14.62: a string value with a tab or line break is shown with escapes, so the path bullet stays on one line")
+        fun aValueWithControlCharactersIsShownEscaped() {
+            val path = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("text")))
+            val input = buildJsonObject { put("text", "a\tb\nc") }
+            assertThat(WorkedExamples.resolvePathValue(path, input)).isEqualTo("\"a\\tb\\nc\"")
         }
 
         @Test

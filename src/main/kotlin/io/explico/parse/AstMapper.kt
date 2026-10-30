@@ -107,6 +107,12 @@ private val CONDITION_BUILTINS = setOf(
  * `time.parse_rfc3339_ns`, all confirmed single-argument via a real `opa parse` run, fit the exact
  * same promotion mechanism `count`/`lower`/`upper` already use.
  */
+/** The default `some x in object.get(<path>, "<key>", [])` states, as written (spec §14.62). */
+private const val EMPTY_ARRAY_DEFAULT = "[]"
+
+/** A key that reads as a plain field name (`items`, `narGroups`); anything else (`my-items`, `a.b`) stays a quoted bracket key. */
+private val IDENTIFIER = Regex("[A-Za-z_][A-Za-z0-9_]*")
+
 private val OPERAND_BUILTINS = setOf(
     "count", "lower", "upper",
     "sum", "max", "min", "to_number", "trim_space", "object.keys", "time.parse_rfc3339_ns",
@@ -1130,12 +1136,38 @@ internal object AstMapper {
                 Triple(stringValueOf(args[0]), stringValueOf(args[1]), args[2])
             else -> return Condition.Unrendered(sourceText(expr.location), "unclassified")
         }
-        val collection = mapIterationCollection(collectionTerm, symbolTable, ctx)
+        val objectGet = objectGetCollectionOrNull(collectionTerm, symbolTable, ctx)
+        val collection = if (objectGet != null) ConstructResult.Ok(objectGet) else mapIterationCollection(collectionTerm, symbolTable, ctx)
         val collectionPath = (collection as? ConstructResult.Ok)?.operand as? Operand.Path
             ?: return Condition.Unrendered(sourceText(expr.location), (collection as? ConstructResult.Unsupported)?.reason ?: "unclassified")
         if (key != null) symbolTable[key] = VarBinding.IterationKey(collectionPath)
         symbolTable[variable] = VarBinding.Iteration(collectionPath)
-        return Condition.SomeIn(variable, collectionPath, key)
+        return Condition.SomeIn(variable, collectionPath, key, if (objectGet != null) EMPTY_ARRAY_DEFAULT else null)
+    }
+
+    /**
+     * Spec §14.62: `object.get(<plain path>, "<key>", [])` as the collection of `some`. It is `<path>.<key>` with an explicit empty-array default, so
+     * the iteration is over that path and the default is shown by the renderer -- an absent list and an empty one both leave `some` with nothing to
+     * satisfy, which is exactly what the default says. Only this exact shape: a string-literal key, an EMPTY-ARRAY default (any other default is a
+     * different claim), and a first argument that is a plain path or the bare `input` root. Anything else returns null and takes the ordinary route
+     * (a fallback). `every` deliberately does not use this: an absent list leaves `every` undefined, not vacuously true, so dropping the default
+     * there would misstate it.
+     */
+    private fun objectGetCollectionOrNull(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): Operand.Path? {
+        if (term.type != "call") return null
+        val (name, args) = decodeCallShape(decodeTermList(term.value)) ?: return null
+        if (name != "object.get" || args.size != 3) return null
+        val keyTerm = args[1].takeIf { it.type == "string" } ?: return null
+        if (args[2].type != "array" || decodeTermList(args[2].value).isNotEmpty()) return null
+        val root = args[0]
+        val base = if (root.type == "var" && stringValueOf(root) == "input" && symbolTable["input"] == null) {
+            Operand.Path(listOf(PathSegment.Field("input")))
+        } else {
+            (mapOperand(root, symbolTable, ctx) as? ConstructResult.Ok)?.operand as? Operand.Path ?: return null
+        }
+        val key = stringValueOf(keyTerm)
+        val segment = if (IDENTIFIER.matches(key)) PathSegment.Field(key) else PathSegment.KeyLiteral(key)
+        return Operand.Path(base.segments + segment)
     }
 
     /**

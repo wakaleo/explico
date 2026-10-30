@@ -1,0 +1,3364 @@
+{
+  "package": {
+    "location": {
+      "file": "capture.rego",
+      "row": 1,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "capture.rego",
+          "row": 1,
+          "col": 9,
+          "text": "b2c="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "capture.rego",
+          "row": 1,
+          "col": 9,
+          "text": "b2c="
+        },
+        "type": "string",
+        "value": "og"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "capture.rego",
+        "row": 3,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "capture.rego",
+          "row": 3,
+          "col": 8,
+          "text": "cmVnby52MQ=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "capture.rego",
+              "row": 3,
+              "col": 8,
+              "text": "cmVnbw=="
+            },
+            "type": "var",
+            "value": "rego"
+          },
+          {
+            "location": {
+              "file": "capture.rego",
+              "row": 3,
+              "col": 13,
+              "text": "djE="
+            },
+            "type": "string",
+            "value": "v1"
+          }
+        ]
+      }
+    }
+  ],
+  "rules": [
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "capture.rego",
+            "row": 6,
+            "col": 5,
+            "text": "c29tZSBnIGluIG9iamVjdC5nZXQoaW5wdXQsICJpdGVtcyIsIFtdKQ=="
+          },
+          "terms": {
+            "location": {
+              "file": "capture.rego",
+              "row": 6,
+              "col": 5,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "capture.rego",
+                  "row": 6,
+                  "col": 10,
+                  "text": "ZyBpbiBvYmplY3QuZ2V0KGlucHV0LCAiaXRlbXMiLCBbXSk="
+                },
+                "type": "call",
+                "value": [
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 6,
+                      "col": 12,
+                      "text": "aW4="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 6,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "var",
+                        "value": "internal"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 6,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "string",
+                        "value": "member_2"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 6,
+                      "col": 10,
+                      "text": "Zw=="
+                    },
+                    "type": "var",
+                    "value": "g"
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 6,
+                      "col": 15,
+                      "text": "b2JqZWN0LmdldChpbnB1dCwgIml0ZW1zIiwgW10p"
+                    },
+                    "type": "call",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 6,
+                          "col": 15,
+                          "text": "b2JqZWN0LmdldA=="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 6,
+                              "col": 15,
+                              "text": "b2JqZWN0"
+                            },
+                            "type": "var",
+                            "value": "object"
+                          },
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 6,
+                              "col": 22,
+                              "text": "Z2V0"
+                            },
+                            "type": "string",
+                            "value": "get"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 6,
+                          "col": 26,
+                          "text": "aW5wdXQ="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 6,
+                              "col": 26,
+                              "text": "aW5wdXQ="
+                            },
+                            "type": "var",
+                            "value": "input"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 6,
+                          "col": 33,
+                          "text": "Iml0ZW1zIg=="
+                        },
+                        "type": "string",
+                        "value": "items"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 6,
+                          "col": 42,
+                          "text": "W10="
+                        },
+                        "type": "array",
+                        "value": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "capture.rego",
+            "row": 7,
+            "col": 5,
+            "text": "Zy5raW5kID09ICJnb2xkIg=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 7,
+                "col": 12,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 7,
+                    "col": 12,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 7,
+                "col": 5,
+                "text": "Zy5raW5k"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 7,
+                    "col": 5,
+                    "text": "Zw=="
+                  },
+                  "type": "var",
+                  "value": "g"
+                },
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 7,
+                    "col": 7,
+                    "text": "a2luZA=="
+                  },
+                  "type": "string",
+                  "value": "kind"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 7,
+                "col": 15,
+                "text": "ImdvbGQi"
+              },
+              "type": "string",
+              "value": "gold"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "top",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "capture.rego",
+              "row": 5,
+              "col": 1,
+              "text": "dG9w"
+            },
+            "type": "var",
+            "value": "top"
+          }
+        ],
+        "location": {
+          "file": "capture.rego",
+          "row": 5,
+          "col": 1,
+          "text": "dG9w"
+        }
+      },
+      "location": {
+        "file": "capture.rego",
+        "row": 5,
+        "col": 1,
+        "text": "dG9wIGlmIHsKICAgIHNvbWUgZyBpbiBvYmplY3QuZ2V0KGlucHV0LCAiaXRlbXMiLCBbXSkKICAgIGcua2luZCA9PSAiZ29sZCIKfQ=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "capture.rego",
+            "row": 11,
+            "col": 5,
+            "text": "c29tZSByIGluIG9iamVjdC5nZXQoaW5wdXQucmVxdWVzdCwgInJldmlld2VycyIsIFtdKQ=="
+          },
+          "terms": {
+            "location": {
+              "file": "capture.rego",
+              "row": 11,
+              "col": 5,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "capture.rego",
+                  "row": 11,
+                  "col": 10,
+                  "text": "ciBpbiBvYmplY3QuZ2V0KGlucHV0LnJlcXVlc3QsICJyZXZpZXdlcnMiLCBbXSk="
+                },
+                "type": "call",
+                "value": [
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 11,
+                      "col": 12,
+                      "text": "aW4="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 11,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "var",
+                        "value": "internal"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 11,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "string",
+                        "value": "member_2"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 11,
+                      "col": 10,
+                      "text": "cg=="
+                    },
+                    "type": "var",
+                    "value": "r"
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 11,
+                      "col": 15,
+                      "text": "b2JqZWN0LmdldChpbnB1dC5yZXF1ZXN0LCAicmV2aWV3ZXJzIiwgW10p"
+                    },
+                    "type": "call",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 11,
+                          "col": 15,
+                          "text": "b2JqZWN0LmdldA=="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 11,
+                              "col": 15,
+                              "text": "b2JqZWN0"
+                            },
+                            "type": "var",
+                            "value": "object"
+                          },
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 11,
+                              "col": 22,
+                              "text": "Z2V0"
+                            },
+                            "type": "string",
+                            "value": "get"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 11,
+                          "col": 26,
+                          "text": "aW5wdXQucmVxdWVzdA=="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 11,
+                              "col": 26,
+                              "text": "aW5wdXQ="
+                            },
+                            "type": "var",
+                            "value": "input"
+                          },
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 11,
+                              "col": 32,
+                              "text": "cmVxdWVzdA=="
+                            },
+                            "type": "string",
+                            "value": "request"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 11,
+                          "col": 41,
+                          "text": "InJldmlld2VycyI="
+                        },
+                        "type": "string",
+                        "value": "reviewers"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 11,
+                          "col": 54,
+                          "text": "W10="
+                        },
+                        "type": "array",
+                        "value": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "capture.rego",
+            "row": 12,
+            "col": 5,
+            "text": "ci5yb2xlID09ICJsZWFkIg=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 12,
+                "col": 12,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 12,
+                    "col": 12,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 12,
+                "col": 5,
+                "text": "ci5yb2xl"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 12,
+                    "col": 5,
+                    "text": "cg=="
+                  },
+                  "type": "var",
+                  "value": "r"
+                },
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 12,
+                    "col": 7,
+                    "text": "cm9sZQ=="
+                  },
+                  "type": "string",
+                  "value": "role"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 12,
+                "col": 15,
+                "text": "ImxlYWQi"
+              },
+              "type": "string",
+              "value": "lead"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "nested",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "capture.rego",
+              "row": 10,
+              "col": 1,
+              "text": "bmVzdGVk"
+            },
+            "type": "var",
+            "value": "nested"
+          }
+        ],
+        "location": {
+          "file": "capture.rego",
+          "row": 10,
+          "col": 1,
+          "text": "bmVzdGVk"
+        }
+      },
+      "location": {
+        "file": "capture.rego",
+        "row": 10,
+        "col": 1,
+        "text": "bmVzdGVkIGlmIHsKICAgIHNvbWUgciBpbiBvYmplY3QuZ2V0KGlucHV0LnJlcXVlc3QsICJyZXZpZXdlcnMiLCBbXSkKICAgIHIucm9sZSA9PSAibGVhZCIKfQ=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "capture.rego",
+            "row": 16,
+            "col": 5,
+            "text": "c29tZSBnIGluIG9iamVjdC5nZXQoaW5wdXQsICJuYXJHcm91cHMiLCBbXSk="
+          },
+          "terms": {
+            "location": {
+              "file": "capture.rego",
+              "row": 16,
+              "col": 5,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "capture.rego",
+                  "row": 16,
+                  "col": 10,
+                  "text": "ZyBpbiBvYmplY3QuZ2V0KGlucHV0LCAibmFyR3JvdXBzIiwgW10p"
+                },
+                "type": "call",
+                "value": [
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 16,
+                      "col": 12,
+                      "text": "aW4="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 16,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "var",
+                        "value": "internal"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 16,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "string",
+                        "value": "member_2"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 16,
+                      "col": 10,
+                      "text": "Zw=="
+                    },
+                    "type": "var",
+                    "value": "g"
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 16,
+                      "col": 15,
+                      "text": "b2JqZWN0LmdldChpbnB1dCwgIm5hckdyb3VwcyIsIFtdKQ=="
+                    },
+                    "type": "call",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 16,
+                          "col": 15,
+                          "text": "b2JqZWN0LmdldA=="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 16,
+                              "col": 15,
+                              "text": "b2JqZWN0"
+                            },
+                            "type": "var",
+                            "value": "object"
+                          },
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 16,
+                              "col": 22,
+                              "text": "Z2V0"
+                            },
+                            "type": "string",
+                            "value": "get"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 16,
+                          "col": 26,
+                          "text": "aW5wdXQ="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 16,
+                              "col": 26,
+                              "text": "aW5wdXQ="
+                            },
+                            "type": "var",
+                            "value": "input"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 16,
+                          "col": 33,
+                          "text": "Im5hckdyb3VwcyI="
+                        },
+                        "type": "string",
+                        "value": "narGroups"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 16,
+                          "col": 46,
+                          "text": "W10="
+                        },
+                        "type": "array",
+                        "value": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "capture.rego",
+            "row": 17,
+            "col": 5,
+            "text": "Zy5ncm91cElkID09ICJHMSI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 17,
+                "col": 15,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 17,
+                    "col": 15,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 17,
+                "col": 5,
+                "text": "Zy5ncm91cElk"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 17,
+                    "col": 5,
+                    "text": "Zw=="
+                  },
+                  "type": "var",
+                  "value": "g"
+                },
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 17,
+                    "col": 7,
+                    "text": "Z3JvdXBJZA=="
+                  },
+                  "type": "string",
+                  "value": "groupId"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 17,
+                "col": 18,
+                "text": "IkcxIg=="
+              },
+              "type": "string",
+              "value": "G1"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "camel",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "capture.rego",
+              "row": 15,
+              "col": 1,
+              "text": "Y2FtZWw="
+            },
+            "type": "var",
+            "value": "camel"
+          }
+        ],
+        "location": {
+          "file": "capture.rego",
+          "row": 15,
+          "col": 1,
+          "text": "Y2FtZWw="
+        }
+      },
+      "location": {
+        "file": "capture.rego",
+        "row": 15,
+        "col": 1,
+        "text": "Y2FtZWwgaWYgewogICAgc29tZSBnIGluIG9iamVjdC5nZXQoaW5wdXQsICJuYXJHcm91cHMiLCBbXSkKICAgIGcuZ3JvdXBJZCA9PSAiRzEiCn0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "capture.rego",
+            "row": 21,
+            "col": 5,
+            "text": "c29tZSBnIGluIG9iamVjdC5nZXQoaW5wdXQsICJteS1pdGVtcyIsIFtdKQ=="
+          },
+          "terms": {
+            "location": {
+              "file": "capture.rego",
+              "row": 21,
+              "col": 5,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "capture.rego",
+                  "row": 21,
+                  "col": 10,
+                  "text": "ZyBpbiBvYmplY3QuZ2V0KGlucHV0LCAibXktaXRlbXMiLCBbXSk="
+                },
+                "type": "call",
+                "value": [
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 21,
+                      "col": 12,
+                      "text": "aW4="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 21,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "var",
+                        "value": "internal"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 21,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "string",
+                        "value": "member_2"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 21,
+                      "col": 10,
+                      "text": "Zw=="
+                    },
+                    "type": "var",
+                    "value": "g"
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 21,
+                      "col": 15,
+                      "text": "b2JqZWN0LmdldChpbnB1dCwgIm15LWl0ZW1zIiwgW10p"
+                    },
+                    "type": "call",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 21,
+                          "col": 15,
+                          "text": "b2JqZWN0LmdldA=="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 21,
+                              "col": 15,
+                              "text": "b2JqZWN0"
+                            },
+                            "type": "var",
+                            "value": "object"
+                          },
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 21,
+                              "col": 22,
+                              "text": "Z2V0"
+                            },
+                            "type": "string",
+                            "value": "get"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 21,
+                          "col": 26,
+                          "text": "aW5wdXQ="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 21,
+                              "col": 26,
+                              "text": "aW5wdXQ="
+                            },
+                            "type": "var",
+                            "value": "input"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 21,
+                          "col": 33,
+                          "text": "Im15LWl0ZW1zIg=="
+                        },
+                        "type": "string",
+                        "value": "my-items"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 21,
+                          "col": 45,
+                          "text": "W10="
+                        },
+                        "type": "array",
+                        "value": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "capture.rego",
+            "row": 22,
+            "col": 5,
+            "text": "Zy5raW5kID09ICJ4Ig=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 22,
+                "col": 12,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 22,
+                    "col": 12,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 22,
+                "col": 5,
+                "text": "Zy5raW5k"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 22,
+                    "col": 5,
+                    "text": "Zw=="
+                  },
+                  "type": "var",
+                  "value": "g"
+                },
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 22,
+                    "col": 7,
+                    "text": "a2luZA=="
+                  },
+                  "type": "string",
+                  "value": "kind"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 22,
+                "col": 15,
+                "text": "Ingi"
+              },
+              "type": "string",
+              "value": "x"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "dashed",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "capture.rego",
+              "row": 20,
+              "col": 1,
+              "text": "ZGFzaGVk"
+            },
+            "type": "var",
+            "value": "dashed"
+          }
+        ],
+        "location": {
+          "file": "capture.rego",
+          "row": 20,
+          "col": 1,
+          "text": "ZGFzaGVk"
+        }
+      },
+      "location": {
+        "file": "capture.rego",
+        "row": 20,
+        "col": 1,
+        "text": "ZGFzaGVkIGlmIHsKICAgIHNvbWUgZyBpbiBvYmplY3QuZ2V0KGlucHV0LCAibXktaXRlbXMiLCBbXSkKICAgIGcua2luZCA9PSAieCIKfQ=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "capture.rego",
+            "row": 26,
+            "col": 5,
+            "text": "c29tZSBrLCB2IGluIG9iamVjdC5nZXQoaW5wdXQsICJpdGVtcyIsIFtdKQ=="
+          },
+          "terms": {
+            "location": {
+              "file": "capture.rego",
+              "row": 26,
+              "col": 5,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "capture.rego",
+                  "row": 26,
+                  "col": 10,
+                  "text": "aywgdiBpbiBvYmplY3QuZ2V0KGlucHV0LCAiaXRlbXMiLCBbXSk="
+                },
+                "type": "call",
+                "value": [
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 26,
+                      "col": 15,
+                      "text": "aW4="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 26,
+                          "col": 15,
+                          "text": "aW4="
+                        },
+                        "type": "var",
+                        "value": "internal"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 26,
+                          "col": 15,
+                          "text": "aW4="
+                        },
+                        "type": "string",
+                        "value": "member_3"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 26,
+                      "col": 10,
+                      "text": "aw=="
+                    },
+                    "type": "var",
+                    "value": "k"
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 26,
+                      "col": 13,
+                      "text": "dg=="
+                    },
+                    "type": "var",
+                    "value": "v"
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 26,
+                      "col": 18,
+                      "text": "b2JqZWN0LmdldChpbnB1dCwgIml0ZW1zIiwgW10p"
+                    },
+                    "type": "call",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 26,
+                          "col": 18,
+                          "text": "b2JqZWN0LmdldA=="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 26,
+                              "col": 18,
+                              "text": "b2JqZWN0"
+                            },
+                            "type": "var",
+                            "value": "object"
+                          },
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 26,
+                              "col": 25,
+                              "text": "Z2V0"
+                            },
+                            "type": "string",
+                            "value": "get"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 26,
+                          "col": 29,
+                          "text": "aW5wdXQ="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 26,
+                              "col": 29,
+                              "text": "aW5wdXQ="
+                            },
+                            "type": "var",
+                            "value": "input"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 26,
+                          "col": 36,
+                          "text": "Iml0ZW1zIg=="
+                        },
+                        "type": "string",
+                        "value": "items"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 26,
+                          "col": 45,
+                          "text": "W10="
+                        },
+                        "type": "array",
+                        "value": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "capture.rego",
+            "row": 27,
+            "col": 5,
+            "text": "diA9PSBr"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 27,
+                "col": 7,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 27,
+                    "col": 7,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 27,
+                "col": 5,
+                "text": "dg=="
+              },
+              "type": "var",
+              "value": "v"
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 27,
+                "col": 10,
+                "text": "aw=="
+              },
+              "type": "var",
+              "value": "k"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "pair",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "capture.rego",
+              "row": 25,
+              "col": 1,
+              "text": "cGFpcg=="
+            },
+            "type": "var",
+            "value": "pair"
+          }
+        ],
+        "location": {
+          "file": "capture.rego",
+          "row": 25,
+          "col": 1,
+          "text": "cGFpcg=="
+        }
+      },
+      "location": {
+        "file": "capture.rego",
+        "row": 25,
+        "col": 1,
+        "text": "cGFpciBpZiB7CiAgICBzb21lIGssIHYgaW4gb2JqZWN0LmdldChpbnB1dCwgIml0ZW1zIiwgW10pCiAgICB2ID09IGsKfQ=="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "capture.rego",
+            "row": 31,
+            "col": 5,
+            "text": "c29tZSBoIGluIG9iamVjdC5nZXQoaW5wdXQsIGlucHV0Lmxpc3ROYW1lLCBbXSk="
+          },
+          "terms": {
+            "location": {
+              "file": "capture.rego",
+              "row": 31,
+              "col": 5,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "capture.rego",
+                  "row": 31,
+                  "col": 10,
+                  "text": "aCBpbiBvYmplY3QuZ2V0KGlucHV0LCBpbnB1dC5saXN0TmFtZSwgW10p"
+                },
+                "type": "call",
+                "value": [
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 31,
+                      "col": 12,
+                      "text": "aW4="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 31,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "var",
+                        "value": "internal"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 31,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "string",
+                        "value": "member_2"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 31,
+                      "col": 10,
+                      "text": "aA=="
+                    },
+                    "type": "var",
+                    "value": "h"
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 31,
+                      "col": 15,
+                      "text": "b2JqZWN0LmdldChpbnB1dCwgaW5wdXQubGlzdE5hbWUsIFtdKQ=="
+                    },
+                    "type": "call",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 31,
+                          "col": 15,
+                          "text": "b2JqZWN0LmdldA=="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 31,
+                              "col": 15,
+                              "text": "b2JqZWN0"
+                            },
+                            "type": "var",
+                            "value": "object"
+                          },
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 31,
+                              "col": 22,
+                              "text": "Z2V0"
+                            },
+                            "type": "string",
+                            "value": "get"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 31,
+                          "col": 26,
+                          "text": "aW5wdXQ="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 31,
+                              "col": 26,
+                              "text": "aW5wdXQ="
+                            },
+                            "type": "var",
+                            "value": "input"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 31,
+                          "col": 33,
+                          "text": "aW5wdXQubGlzdE5hbWU="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 31,
+                              "col": 33,
+                              "text": "aW5wdXQ="
+                            },
+                            "type": "var",
+                            "value": "input"
+                          },
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 31,
+                              "col": 39,
+                              "text": "bGlzdE5hbWU="
+                            },
+                            "type": "string",
+                            "value": "listName"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 31,
+                          "col": 49,
+                          "text": "W10="
+                        },
+                        "type": "array",
+                        "value": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "capture.rego",
+            "row": 32,
+            "col": 5,
+            "text": "aC5raW5kID09ICJ4Ig=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 32,
+                "col": 12,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 32,
+                    "col": 12,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 32,
+                "col": 5,
+                "text": "aC5raW5k"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 32,
+                    "col": 5,
+                    "text": "aA=="
+                  },
+                  "type": "var",
+                  "value": "h"
+                },
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 32,
+                    "col": 7,
+                    "text": "a2luZA=="
+                  },
+                  "type": "string",
+                  "value": "kind"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 32,
+                "col": 15,
+                "text": "Ingi"
+              },
+              "type": "string",
+              "value": "x"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "non_literal_key",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "capture.rego",
+              "row": 30,
+              "col": 1,
+              "text": "bm9uX2xpdGVyYWxfa2V5"
+            },
+            "type": "var",
+            "value": "non_literal_key"
+          }
+        ],
+        "location": {
+          "file": "capture.rego",
+          "row": 30,
+          "col": 1,
+          "text": "bm9uX2xpdGVyYWxfa2V5"
+        }
+      },
+      "location": {
+        "file": "capture.rego",
+        "row": 30,
+        "col": 1,
+        "text": "bm9uX2xpdGVyYWxfa2V5IGlmIHsKICAgIHNvbWUgaCBpbiBvYmplY3QuZ2V0KGlucHV0LCBpbnB1dC5saXN0TmFtZSwgW10pCiAgICBoLmtpbmQgPT0gIngiCn0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "capture.rego",
+            "row": 36,
+            "col": 5,
+            "text": "c29tZSBoIGluIG9iamVjdC5nZXQoaW5wdXQsICJpdGVtcyIsIFsiYSJdKQ=="
+          },
+          "terms": {
+            "location": {
+              "file": "capture.rego",
+              "row": 36,
+              "col": 5,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "capture.rego",
+                  "row": 36,
+                  "col": 10,
+                  "text": "aCBpbiBvYmplY3QuZ2V0KGlucHV0LCAiaXRlbXMiLCBbImEiXSk="
+                },
+                "type": "call",
+                "value": [
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 36,
+                      "col": 12,
+                      "text": "aW4="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 36,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "var",
+                        "value": "internal"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 36,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "string",
+                        "value": "member_2"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 36,
+                      "col": 10,
+                      "text": "aA=="
+                    },
+                    "type": "var",
+                    "value": "h"
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 36,
+                      "col": 15,
+                      "text": "b2JqZWN0LmdldChpbnB1dCwgIml0ZW1zIiwgWyJhIl0p"
+                    },
+                    "type": "call",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 36,
+                          "col": 15,
+                          "text": "b2JqZWN0LmdldA=="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 36,
+                              "col": 15,
+                              "text": "b2JqZWN0"
+                            },
+                            "type": "var",
+                            "value": "object"
+                          },
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 36,
+                              "col": 22,
+                              "text": "Z2V0"
+                            },
+                            "type": "string",
+                            "value": "get"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 36,
+                          "col": 26,
+                          "text": "aW5wdXQ="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 36,
+                              "col": 26,
+                              "text": "aW5wdXQ="
+                            },
+                            "type": "var",
+                            "value": "input"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 36,
+                          "col": 33,
+                          "text": "Iml0ZW1zIg=="
+                        },
+                        "type": "string",
+                        "value": "items"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 36,
+                          "col": 42,
+                          "text": "WyJhIl0="
+                        },
+                        "type": "array",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 36,
+                              "col": 43,
+                              "text": "ImEi"
+                            },
+                            "type": "string",
+                            "value": "a"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "capture.rego",
+            "row": 37,
+            "col": 5,
+            "text": "aC5raW5kID09ICJ4Ig=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 37,
+                "col": 12,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 37,
+                    "col": 12,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 37,
+                "col": 5,
+                "text": "aC5raW5k"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 37,
+                    "col": 5,
+                    "text": "aA=="
+                  },
+                  "type": "var",
+                  "value": "h"
+                },
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 37,
+                    "col": 7,
+                    "text": "a2luZA=="
+                  },
+                  "type": "string",
+                  "value": "kind"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 37,
+                "col": 15,
+                "text": "Ingi"
+              },
+              "type": "string",
+              "value": "x"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "other_default",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "capture.rego",
+              "row": 35,
+              "col": 1,
+              "text": "b3RoZXJfZGVmYXVsdA=="
+            },
+            "type": "var",
+            "value": "other_default"
+          }
+        ],
+        "location": {
+          "file": "capture.rego",
+          "row": 35,
+          "col": 1,
+          "text": "b3RoZXJfZGVmYXVsdA=="
+        }
+      },
+      "location": {
+        "file": "capture.rego",
+        "row": 35,
+        "col": 1,
+        "text": "b3RoZXJfZGVmYXVsdCBpZiB7CiAgICBzb21lIGggaW4gb2JqZWN0LmdldChpbnB1dCwgIml0ZW1zIiwgWyJhIl0pCiAgICBoLmtpbmQgPT0gIngiCn0="
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "capture.rego",
+            "row": 41,
+            "col": 5,
+            "text": "c29tZSBoIGluIG9iamVjdC5nZXQoaW5wdXQsICJpdGVtcyIsIHt9KQ=="
+          },
+          "terms": {
+            "location": {
+              "file": "capture.rego",
+              "row": 41,
+              "col": 5,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "capture.rego",
+                  "row": 41,
+                  "col": 10,
+                  "text": "aCBpbiBvYmplY3QuZ2V0KGlucHV0LCAiaXRlbXMiLCB7fSk="
+                },
+                "type": "call",
+                "value": [
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 41,
+                      "col": 12,
+                      "text": "aW4="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 41,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "var",
+                        "value": "internal"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 41,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "string",
+                        "value": "member_2"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 41,
+                      "col": 10,
+                      "text": "aA=="
+                    },
+                    "type": "var",
+                    "value": "h"
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 41,
+                      "col": 15,
+                      "text": "b2JqZWN0LmdldChpbnB1dCwgIml0ZW1zIiwge30p"
+                    },
+                    "type": "call",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 41,
+                          "col": 15,
+                          "text": "b2JqZWN0LmdldA=="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 41,
+                              "col": 15,
+                              "text": "b2JqZWN0"
+                            },
+                            "type": "var",
+                            "value": "object"
+                          },
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 41,
+                              "col": 22,
+                              "text": "Z2V0"
+                            },
+                            "type": "string",
+                            "value": "get"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 41,
+                          "col": 26,
+                          "text": "aW5wdXQ="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 41,
+                              "col": 26,
+                              "text": "aW5wdXQ="
+                            },
+                            "type": "var",
+                            "value": "input"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 41,
+                          "col": 33,
+                          "text": "Iml0ZW1zIg=="
+                        },
+                        "type": "string",
+                        "value": "items"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 41,
+                          "col": 42,
+                          "text": "e30="
+                        },
+                        "type": "object",
+                        "value": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "capture.rego",
+            "row": 42,
+            "col": 5,
+            "text": "aC5raW5kID09ICJ4Ig=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 42,
+                "col": 12,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 42,
+                    "col": 12,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 42,
+                "col": 5,
+                "text": "aC5raW5k"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 42,
+                    "col": 5,
+                    "text": "aA=="
+                  },
+                  "type": "var",
+                  "value": "h"
+                },
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 42,
+                    "col": 7,
+                    "text": "a2luZA=="
+                  },
+                  "type": "string",
+                  "value": "kind"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 42,
+                "col": 15,
+                "text": "Ingi"
+              },
+              "type": "string",
+              "value": "x"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "object_default",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "capture.rego",
+              "row": 40,
+              "col": 1,
+              "text": "b2JqZWN0X2RlZmF1bHQ="
+            },
+            "type": "var",
+            "value": "object_default"
+          }
+        ],
+        "location": {
+          "file": "capture.rego",
+          "row": 40,
+          "col": 1,
+          "text": "b2JqZWN0X2RlZmF1bHQ="
+        }
+      },
+      "location": {
+        "file": "capture.rego",
+        "row": 40,
+        "col": 1,
+        "text": "b2JqZWN0X2RlZmF1bHQgaWYgewogICAgc29tZSBoIGluIG9iamVjdC5nZXQoaW5wdXQsICJpdGVtcyIsIHt9KQogICAgaC5raW5kID09ICJ4Igp9"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "capture.rego",
+            "row": 46,
+            "col": 5,
+            "text": "c29tZSBoIGluIG9iamVjdC5nZXQoaW5wdXQsICJhLmIiLCBbXSk="
+          },
+          "terms": {
+            "location": {
+              "file": "capture.rego",
+              "row": 46,
+              "col": 5,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "capture.rego",
+                  "row": 46,
+                  "col": 10,
+                  "text": "aCBpbiBvYmplY3QuZ2V0KGlucHV0LCAiYS5iIiwgW10p"
+                },
+                "type": "call",
+                "value": [
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 46,
+                      "col": 12,
+                      "text": "aW4="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 46,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "var",
+                        "value": "internal"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 46,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "string",
+                        "value": "member_2"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 46,
+                      "col": 10,
+                      "text": "aA=="
+                    },
+                    "type": "var",
+                    "value": "h"
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 46,
+                      "col": 15,
+                      "text": "b2JqZWN0LmdldChpbnB1dCwgImEuYiIsIFtdKQ=="
+                    },
+                    "type": "call",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 46,
+                          "col": 15,
+                          "text": "b2JqZWN0LmdldA=="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 46,
+                              "col": 15,
+                              "text": "b2JqZWN0"
+                            },
+                            "type": "var",
+                            "value": "object"
+                          },
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 46,
+                              "col": 22,
+                              "text": "Z2V0"
+                            },
+                            "type": "string",
+                            "value": "get"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 46,
+                          "col": 26,
+                          "text": "aW5wdXQ="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 46,
+                              "col": 26,
+                              "text": "aW5wdXQ="
+                            },
+                            "type": "var",
+                            "value": "input"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 46,
+                          "col": 33,
+                          "text": "ImEuYiI="
+                        },
+                        "type": "string",
+                        "value": "a.b"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 46,
+                          "col": 40,
+                          "text": "W10="
+                        },
+                        "type": "array",
+                        "value": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "capture.rego",
+            "row": 47,
+            "col": 5,
+            "text": "aC5raW5kID09ICJ4Ig=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 47,
+                "col": 12,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 47,
+                    "col": 12,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 47,
+                "col": 5,
+                "text": "aC5raW5k"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 47,
+                    "col": 5,
+                    "text": "aA=="
+                  },
+                  "type": "var",
+                  "value": "h"
+                },
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 47,
+                    "col": 7,
+                    "text": "a2luZA=="
+                  },
+                  "type": "string",
+                  "value": "kind"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 47,
+                "col": 15,
+                "text": "Ingi"
+              },
+              "type": "string",
+              "value": "x"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "dotted_key",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "capture.rego",
+              "row": 45,
+              "col": 1,
+              "text": "ZG90dGVkX2tleQ=="
+            },
+            "type": "var",
+            "value": "dotted_key"
+          }
+        ],
+        "location": {
+          "file": "capture.rego",
+          "row": 45,
+          "col": 1,
+          "text": "ZG90dGVkX2tleQ=="
+        }
+      },
+      "location": {
+        "file": "capture.rego",
+        "row": 45,
+        "col": 1,
+        "text": "ZG90dGVkX2tleSBpZiB7CiAgICBzb21lIGggaW4gb2JqZWN0LmdldChpbnB1dCwgImEuYiIsIFtdKQogICAgaC5raW5kID09ICJ4Igp9"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "capture.rego",
+            "row": 51,
+            "col": 5,
+            "text": "c29tZSBvIGluIGlucHV0Lm91dGVy"
+          },
+          "terms": {
+            "location": {
+              "file": "capture.rego",
+              "row": 51,
+              "col": 5,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "capture.rego",
+                  "row": 51,
+                  "col": 10,
+                  "text": "byBpbiBpbnB1dC5vdXRlcg=="
+                },
+                "type": "call",
+                "value": [
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 51,
+                      "col": 12,
+                      "text": "aW4="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 51,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "var",
+                        "value": "internal"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 51,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "string",
+                        "value": "member_2"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 51,
+                      "col": 10,
+                      "text": "bw=="
+                    },
+                    "type": "var",
+                    "value": "o"
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 51,
+                      "col": 15,
+                      "text": "aW5wdXQub3V0ZXI="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 51,
+                          "col": 15,
+                          "text": "aW5wdXQ="
+                        },
+                        "type": "var",
+                        "value": "input"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 51,
+                          "col": 21,
+                          "text": "b3V0ZXI="
+                        },
+                        "type": "string",
+                        "value": "outer"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "capture.rego",
+            "row": 52,
+            "col": 5,
+            "text": "c29tZSBoIGluIG9iamVjdC5nZXQobywgImlubmVyIiwgW10p"
+          },
+          "terms": {
+            "location": {
+              "file": "capture.rego",
+              "row": 52,
+              "col": 5,
+              "text": "c29tZQ=="
+            },
+            "symbols": [
+              {
+                "location": {
+                  "file": "capture.rego",
+                  "row": 52,
+                  "col": 10,
+                  "text": "aCBpbiBvYmplY3QuZ2V0KG8sICJpbm5lciIsIFtdKQ=="
+                },
+                "type": "call",
+                "value": [
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 52,
+                      "col": 12,
+                      "text": "aW4="
+                    },
+                    "type": "ref",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 52,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "var",
+                        "value": "internal"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 52,
+                          "col": 12,
+                          "text": "aW4="
+                        },
+                        "type": "string",
+                        "value": "member_2"
+                      }
+                    ]
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 52,
+                      "col": 10,
+                      "text": "aA=="
+                    },
+                    "type": "var",
+                    "value": "h"
+                  },
+                  {
+                    "location": {
+                      "file": "capture.rego",
+                      "row": 52,
+                      "col": 15,
+                      "text": "b2JqZWN0LmdldChvLCAiaW5uZXIiLCBbXSk="
+                    },
+                    "type": "call",
+                    "value": [
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 52,
+                          "col": 15,
+                          "text": "b2JqZWN0LmdldA=="
+                        },
+                        "type": "ref",
+                        "value": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 52,
+                              "col": 15,
+                              "text": "b2JqZWN0"
+                            },
+                            "type": "var",
+                            "value": "object"
+                          },
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 52,
+                              "col": 22,
+                              "text": "Z2V0"
+                            },
+                            "type": "string",
+                            "value": "get"
+                          }
+                        ]
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 52,
+                          "col": 26,
+                          "text": "bw=="
+                        },
+                        "type": "var",
+                        "value": "o"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 52,
+                          "col": 29,
+                          "text": "ImlubmVyIg=="
+                        },
+                        "type": "string",
+                        "value": "inner"
+                      },
+                      {
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 52,
+                          "col": 38,
+                          "text": "W10="
+                        },
+                        "type": "array",
+                        "value": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "location": {
+            "file": "capture.rego",
+            "row": 53,
+            "col": 5,
+            "text": "aC5raW5kID09ICJ4Ig=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 53,
+                "col": 12,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 53,
+                    "col": 12,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 53,
+                "col": 5,
+                "text": "aC5raW5k"
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 53,
+                    "col": 5,
+                    "text": "aA=="
+                  },
+                  "type": "var",
+                  "value": "h"
+                },
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 53,
+                    "col": 7,
+                    "text": "a2luZA=="
+                  },
+                  "type": "string",
+                  "value": "kind"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 53,
+                "col": 15,
+                "text": "Ingi"
+              },
+              "type": "string",
+              "value": "x"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "var_first_arg",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "capture.rego",
+              "row": 50,
+              "col": 1,
+              "text": "dmFyX2ZpcnN0X2FyZw=="
+            },
+            "type": "var",
+            "value": "var_first_arg"
+          }
+        ],
+        "location": {
+          "file": "capture.rego",
+          "row": 50,
+          "col": 1,
+          "text": "dmFyX2ZpcnN0X2FyZw=="
+        }
+      },
+      "location": {
+        "file": "capture.rego",
+        "row": 50,
+        "col": 1,
+        "text": "dmFyX2ZpcnN0X2FyZyBpZiB7CiAgICBzb21lIG8gaW4gaW5wdXQub3V0ZXIKICAgIHNvbWUgaCBpbiBvYmplY3QuZ2V0KG8sICJpbm5lciIsIFtdKQogICAgaC5raW5kID09ICJ4Igp9"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "capture.rego",
+            "row": 57,
+            "col": 5,
+            "text": "ZXZlcnkgZyBpbiBvYmplY3QuZ2V0KGlucHV0LCAiaXRlbXMiLCBbXSkgeyBnLm9rIH0="
+          },
+          "terms": {
+            "body": [
+              {
+                "index": 0,
+                "location": {
+                  "file": "capture.rego",
+                  "row": 57,
+                  "col": 49,
+                  "text": "Zy5vaw=="
+                },
+                "terms": {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 57,
+                    "col": 49,
+                    "text": "Zy5vaw=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "capture.rego",
+                        "row": 57,
+                        "col": 49,
+                        "text": "Zw=="
+                      },
+                      "type": "var",
+                      "value": "g"
+                    },
+                    {
+                      "location": {
+                        "file": "capture.rego",
+                        "row": 57,
+                        "col": 51,
+                        "text": "b2s="
+                      },
+                      "type": "string",
+                      "value": "ok"
+                    }
+                  ]
+                }
+              }
+            ],
+            "domain": {
+              "location": {
+                "file": "capture.rego",
+                "row": 57,
+                "col": 16,
+                "text": "b2JqZWN0LmdldChpbnB1dCwgIml0ZW1zIiwgW10p"
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 57,
+                    "col": 16,
+                    "text": "b2JqZWN0LmdldA=="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "capture.rego",
+                        "row": 57,
+                        "col": 16,
+                        "text": "b2JqZWN0"
+                      },
+                      "type": "var",
+                      "value": "object"
+                    },
+                    {
+                      "location": {
+                        "file": "capture.rego",
+                        "row": 57,
+                        "col": 23,
+                        "text": "Z2V0"
+                      },
+                      "type": "string",
+                      "value": "get"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 57,
+                    "col": 27,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "capture.rego",
+                        "row": 57,
+                        "col": 27,
+                        "text": "aW5wdXQ="
+                      },
+                      "type": "var",
+                      "value": "input"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 57,
+                    "col": 34,
+                    "text": "Iml0ZW1zIg=="
+                  },
+                  "type": "string",
+                  "value": "items"
+                },
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 57,
+                    "col": 43,
+                    "text": "W10="
+                  },
+                  "type": "array",
+                  "value": []
+                }
+              ]
+            },
+            "key": null,
+            "location": {
+              "file": "capture.rego",
+              "row": 57,
+              "col": 5,
+              "text": "ZXZlcnk="
+            },
+            "value": {
+              "location": {
+                "file": "capture.rego",
+                "row": 57,
+                "col": 11,
+                "text": "Zw=="
+              },
+              "type": "var",
+              "value": "g"
+            }
+          }
+        }
+      ],
+      "head": {
+        "name": "every_over_it",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "capture.rego",
+              "row": 56,
+              "col": 1,
+              "text": "ZXZlcnlfb3Zlcl9pdA=="
+            },
+            "type": "var",
+            "value": "every_over_it"
+          }
+        ],
+        "location": {
+          "file": "capture.rego",
+          "row": 56,
+          "col": 1,
+          "text": "ZXZlcnlfb3Zlcl9pdA=="
+        }
+      },
+      "location": {
+        "file": "capture.rego",
+        "row": 56,
+        "col": 1,
+        "text": "ZXZlcnlfb3Zlcl9pdCBpZiB7CiAgICBldmVyeSBnIGluIG9iamVjdC5nZXQoaW5wdXQsICJpdGVtcyIsIFtdKSB7IGcub2sgfQp9"
+      }
+    },
+    {
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "capture.rego",
+            "row": 61,
+            "col": 5,
+            "text": "Y291bnQoW2cgfCBzb21lIGcgaW4gb2JqZWN0LmdldChpbnB1dCwgIml0ZW1zIiwgW10pOyBnLmtpbmQgPT0gIngiXSkgPiAx"
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 61,
+                "col": 74,
+                "text": "Pg=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 61,
+                    "col": 74,
+                    "text": "Pg=="
+                  },
+                  "type": "var",
+                  "value": "gt"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 61,
+                "col": 5,
+                "text": "Y291bnQoW2cgfCBzb21lIGcgaW4gb2JqZWN0LmdldChpbnB1dCwgIml0ZW1zIiwgW10pOyBnLmtpbmQgPT0gIngiXSk="
+              },
+              "type": "call",
+              "value": [
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 61,
+                    "col": 5,
+                    "text": "Y291bnQ="
+                  },
+                  "type": "ref",
+                  "value": [
+                    {
+                      "location": {
+                        "file": "capture.rego",
+                        "row": 61,
+                        "col": 5,
+                        "text": "Y291bnQ="
+                      },
+                      "type": "var",
+                      "value": "count"
+                    }
+                  ]
+                },
+                {
+                  "location": {
+                    "file": "capture.rego",
+                    "row": 61,
+                    "col": 11,
+                    "text": "W2cgfCBzb21lIGcgaW4gb2JqZWN0LmdldChpbnB1dCwgIml0ZW1zIiwgW10pOyBnLmtpbmQgPT0gIngiXQ=="
+                  },
+                  "type": "arraycomprehension",
+                  "value": {
+                    "term": {
+                      "location": {
+                        "file": "capture.rego",
+                        "row": 61,
+                        "col": 12,
+                        "text": "Zw=="
+                      },
+                      "type": "var",
+                      "value": "g"
+                    },
+                    "body": [
+                      {
+                        "index": 0,
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 61,
+                          "col": 16,
+                          "text": "c29tZSBnIGluIG9iamVjdC5nZXQoaW5wdXQsICJpdGVtcyIsIFtdKQ=="
+                        },
+                        "terms": {
+                          "location": {
+                            "file": "capture.rego",
+                            "row": 61,
+                            "col": 16,
+                            "text": "c29tZQ=="
+                          },
+                          "symbols": [
+                            {
+                              "location": {
+                                "file": "capture.rego",
+                                "row": 61,
+                                "col": 21,
+                                "text": "ZyBpbiBvYmplY3QuZ2V0KGlucHV0LCAiaXRlbXMiLCBbXSk="
+                              },
+                              "type": "call",
+                              "value": [
+                                {
+                                  "location": {
+                                    "file": "capture.rego",
+                                    "row": 61,
+                                    "col": 23,
+                                    "text": "aW4="
+                                  },
+                                  "type": "ref",
+                                  "value": [
+                                    {
+                                      "location": {
+                                        "file": "capture.rego",
+                                        "row": 61,
+                                        "col": 23,
+                                        "text": "aW4="
+                                      },
+                                      "type": "var",
+                                      "value": "internal"
+                                    },
+                                    {
+                                      "location": {
+                                        "file": "capture.rego",
+                                        "row": 61,
+                                        "col": 23,
+                                        "text": "aW4="
+                                      },
+                                      "type": "string",
+                                      "value": "member_2"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "location": {
+                                    "file": "capture.rego",
+                                    "row": 61,
+                                    "col": 21,
+                                    "text": "Zw=="
+                                  },
+                                  "type": "var",
+                                  "value": "g"
+                                },
+                                {
+                                  "location": {
+                                    "file": "capture.rego",
+                                    "row": 61,
+                                    "col": 26,
+                                    "text": "b2JqZWN0LmdldChpbnB1dCwgIml0ZW1zIiwgW10p"
+                                  },
+                                  "type": "call",
+                                  "value": [
+                                    {
+                                      "location": {
+                                        "file": "capture.rego",
+                                        "row": 61,
+                                        "col": 26,
+                                        "text": "b2JqZWN0LmdldA=="
+                                      },
+                                      "type": "ref",
+                                      "value": [
+                                        {
+                                          "location": {
+                                            "file": "capture.rego",
+                                            "row": 61,
+                                            "col": 26,
+                                            "text": "b2JqZWN0"
+                                          },
+                                          "type": "var",
+                                          "value": "object"
+                                        },
+                                        {
+                                          "location": {
+                                            "file": "capture.rego",
+                                            "row": 61,
+                                            "col": 33,
+                                            "text": "Z2V0"
+                                          },
+                                          "type": "string",
+                                          "value": "get"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "location": {
+                                        "file": "capture.rego",
+                                        "row": 61,
+                                        "col": 37,
+                                        "text": "aW5wdXQ="
+                                      },
+                                      "type": "ref",
+                                      "value": [
+                                        {
+                                          "location": {
+                                            "file": "capture.rego",
+                                            "row": 61,
+                                            "col": 37,
+                                            "text": "aW5wdXQ="
+                                          },
+                                          "type": "var",
+                                          "value": "input"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "location": {
+                                        "file": "capture.rego",
+                                        "row": 61,
+                                        "col": 44,
+                                        "text": "Iml0ZW1zIg=="
+                                      },
+                                      "type": "string",
+                                      "value": "items"
+                                    },
+                                    {
+                                      "location": {
+                                        "file": "capture.rego",
+                                        "row": 61,
+                                        "col": 53,
+                                        "text": "W10="
+                                      },
+                                      "type": "array",
+                                      "value": []
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "location": {
+                          "file": "capture.rego",
+                          "row": 61,
+                          "col": 58,
+                          "text": "Zy5raW5kID09ICJ4Ig=="
+                        },
+                        "terms": [
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 61,
+                              "col": 65,
+                              "text": "PT0="
+                            },
+                            "type": "ref",
+                            "value": [
+                              {
+                                "location": {
+                                  "file": "capture.rego",
+                                  "row": 61,
+                                  "col": 65,
+                                  "text": "PT0="
+                                },
+                                "type": "var",
+                                "value": "equal"
+                              }
+                            ]
+                          },
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 61,
+                              "col": 58,
+                              "text": "Zy5raW5k"
+                            },
+                            "type": "ref",
+                            "value": [
+                              {
+                                "location": {
+                                  "file": "capture.rego",
+                                  "row": 61,
+                                  "col": 58,
+                                  "text": "Zw=="
+                                },
+                                "type": "var",
+                                "value": "g"
+                              },
+                              {
+                                "location": {
+                                  "file": "capture.rego",
+                                  "row": 61,
+                                  "col": 60,
+                                  "text": "a2luZA=="
+                                },
+                                "type": "string",
+                                "value": "kind"
+                              }
+                            ]
+                          },
+                          {
+                            "location": {
+                              "file": "capture.rego",
+                              "row": 61,
+                              "col": 68,
+                              "text": "Ingi"
+                            },
+                            "type": "string",
+                            "value": "x"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "capture.rego",
+                "row": 61,
+                "col": 76,
+                "text": "MQ=="
+              },
+              "type": "number",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "comprehended",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "capture.rego",
+              "row": 60,
+              "col": 1,
+              "text": "Y29tcHJlaGVuZGVk"
+            },
+            "type": "var",
+            "value": "comprehended"
+          }
+        ],
+        "location": {
+          "file": "capture.rego",
+          "row": 60,
+          "col": 1,
+          "text": "Y29tcHJlaGVuZGVk"
+        }
+      },
+      "location": {
+        "file": "capture.rego",
+        "row": 60,
+        "col": 1,
+        "text": "Y29tcHJlaGVuZGVkIGlmIHsKICAgIGNvdW50KFtnIHwgc29tZSBnIGluIG9iamVjdC5nZXQoaW5wdXQsICJpdGVtcyIsIFtdKTsgZy5raW5kID09ICJ4Il0pID4gMQp9"
+      }
+    }
+  ]
+}

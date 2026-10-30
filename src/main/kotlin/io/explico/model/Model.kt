@@ -251,8 +251,16 @@ public sealed interface Condition {
      * promotion) additionally binds [key] -- both names resolve later var-rooted paths against
      * the same [collection], since Rego makes no distinction in how a key vs. value variable can
      * be used once bound. `key` is null for the single-variable form.
+     *
+     * [defaultValue] is set only for `some x in object.get(<path>, "<key>", [])` (spec §14.62): [collection] is then the path extended by the key,
+     * and this is the default the policy states for it, as written (`[]`); null for every other iteration.
      */
-    public data class SomeIn(val variable: String, val collection: Operand, val key: String? = null) : Condition
+    public data class SomeIn @JvmOverloads constructor(
+        val variable: String,
+        val collection: Operand,
+        val key: String? = null,
+        val defaultValue: String? = null,
+    ) : Condition
 
     /** A reference to another rule defined in the policy set (same or an imported package). */
     public data class RuleReference(val packagePath: String, val ruleName: String, val negated: Boolean) : Condition

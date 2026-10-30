@@ -51,7 +51,7 @@ internal object PathHumanizer {
                         else -> crumbs += wordsOf(segment.name).joinToString(" ") // rule 2
                     }
                 }
-                is PathSegment.KeyLiteral -> crumbs += "\"${segment.key}\"" // rule 3: verbatim, not split
+                is PathSegment.KeyLiteral -> crumbs += "\"${MarkdownText.controlCharacters(segment.key)}\"" // rule 3: verbatim, not split
                 is PathSegment.AnyIndex -> hasAnyIndex = true // rule 5: dropped from breadcrumb, one flag regardless of count
                 is PathSegment.VarIndex -> crumbs += "[each ${segment.name}]" // rules 6/7
                 is PathSegment.KeyPath -> {

@@ -82,7 +82,8 @@ internal object ExpressionRenderer {
         is Condition.SomeIn -> {
             val (text, hasAnyIndex) = renderOperand(condition.collection, ruleValueAnchorFor)
             val vars = if (condition.key != null) "${condition.key}, ${condition.variable}" else condition.variable
-            withAnyOfPrefix("for some $vars in $text", hasAnyIndex)
+            val default = condition.defaultValue?.let { " (default `$it`)" } ?: ""
+            withAnyOfPrefix("for some $vars in $text$default", hasAnyIndex)
         }
         // Spec §14.49: ONLY the head phrase; the nested conditions are rendered as their own (indented) bullets by the caller. It says outright
         // that an empty collection satisfies it -- the one thing a reader could otherwise miss.
@@ -207,7 +208,7 @@ internal object ExpressionRenderer {
      * identically to every other position; only a bare [Operand.Literal] is special-cased here.
      */
     private fun renderMembershipCollection(operand: Operand, ruleValueAnchorFor: (Operand.RuleValueReference) -> String?): Pair<String, Boolean> =
-        if (operand is Operand.Literal) "`${operand.rendered}`" to false else renderOperand(operand, ruleValueAnchorFor)
+        if (operand is Operand.Literal) "`${MarkdownText.controlCharacters(operand.rendered)}`" to false else renderOperand(operand, ruleValueAnchorFor)
 
     private fun renderOperand(operand: Operand, ruleValueAnchorFor: (Operand.RuleValueReference) -> String?): Pair<String, Boolean> = when (operand) {
         is Operand.Path -> PathHumanizer.humanize(operand.segments).let { it.rendered to it.hasAnyIndex }
@@ -221,7 +222,7 @@ internal object ExpressionRenderer {
                 LiteralCollection.SET -> "{${operand.rendered}}"
                 null -> operand.rendered
             }
-            "`$text`" to false
+            "`${MarkdownText.controlCharacters(text)}`" to false
         }
         is Operand.Variable -> "`${operand.name}`" to false
         // Review item 8: a declared function parameter, named explicitly as such -- distinguished

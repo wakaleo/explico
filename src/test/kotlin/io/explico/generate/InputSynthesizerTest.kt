@@ -247,6 +247,16 @@ class InputSynthesizerTest {
         }
 
         @Test
+        @org.junit.jupiter.api.DisplayName("spec §14.62: an iteration that states a default is solved like a plain one -- the list is present, so the default is never needed")
+        fun someInWithAStatedDefaultCreatesTheSameArray() {
+            val b = body(
+                Condition.SomeIn("c", path("containers"), defaultValue = "[]"),
+                eq(path("containers", each("c"), "privileged"), lit("true")),
+            )
+            assertThat(solved(b)).isEqualTo(json("""{"containers": [{"privileged": true}]}"""))
+        }
+
+        @Test
         fun aWildcardPathUsesTheOneElementToo() {
             val b = body(eq(path("containers", any, "image"), lit("\"busybox\"")))
             assertThat(solved(b)).isEqualTo(json("""{"containers": [{"image": "busybox"}]}"""))

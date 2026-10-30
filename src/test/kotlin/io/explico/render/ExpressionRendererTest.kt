@@ -808,4 +808,40 @@ class ExpressionRendererTest {
             assertThat(ExpressionRenderer.render(condition, noAnchor)).isEqualTo("the number of `[\"a\", \"b\"]` is greater than `1`")
         }
     }
+
+    @Nested
+    @DisplayName("spec §14.62: iteration over object.get(...) and control characters in literals")
+    inner class RealWorldFixes {
+
+        private val items = Operand.Path(listOf(PathSegment.Field("input"), PathSegment.Field("items")))
+
+        @Test
+        @DisplayName("an iteration that states a default shows it after the collection; one that does not is unchanged")
+        fun iterationDefault() {
+            assertThat(ExpressionRenderer.render(Condition.SomeIn("g", items, defaultValue = "[]"), noAnchor)).isEqualTo("for some g in `items` (default `[]`)")
+            assertThat(ExpressionRenderer.render(Condition.SomeIn("g", items), noAnchor)).isEqualTo("for some g in `items`")
+            assertThat(ExpressionRenderer.render(Condition.SomeIn("v", items, "k", "[]"), noAnchor)).isEqualTo("for some k, v in `items` (default `[]`)")
+        }
+
+        @Test
+        @DisplayName("a literal with a tab, line feed and carriage return is written with escapes, in a comparison and in a membership collection")
+        fun literalEscapes() {
+            val text = Operand.Literal("\"a\tb\nc\r\"")
+            assertThat(ExpressionRenderer.render(Condition.Comparison(deploymentEnv, Operator.EQ, text), noAnchor))
+                .isEqualTo("`deployment ▸ environment` is `\"a\\tb\\nc\\r\"`")
+            assertThat(ExpressionRenderer.render(Condition.Membership(false, deploymentEnv, Operand.Literal("\"a\tb\", \"c\u0001\"")), noAnchor))
+                .isEqualTo("`deployment ▸ environment` is one of `\"a\\tb\", \"c\\u0001\"`")
+        }
+
+        @Test
+        @DisplayName("a literal inside an operand builtin (trim(value, \" \\t\")) and a collection literal are escaped too; backslash, quote and non-ASCII are untouched")
+        fun literalInsideBuiltin() {
+            val trimmed = Operand.BuiltinCall("trim", listOf(deploymentEnv, Operand.Literal("\" \t\"")))
+            assertThat(ExpressionRenderer.renderValue(trimmed)).contains("`\" \\t\"`")
+            val plain = Operand.Literal("\"caf\u00e9 \\ \"")
+            assertThat(ExpressionRenderer.render(Condition.Comparison(deploymentEnv, Operator.EQ, plain), noAnchor)).isEqualTo("`deployment ▸ environment` is `\"caf\u00e9 \\ \"`")
+            val array = Operand.Literal("\"a\tb\"", LiteralCollection.ARRAY)
+            assertThat(ExpressionRenderer.render(Condition.Comparison(deploymentEnv, Operator.EQ, array), noAnchor)).contains("[\"a\\tb\"]")
+        }
+    }
 }
