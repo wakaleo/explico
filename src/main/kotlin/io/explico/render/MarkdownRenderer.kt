@@ -810,7 +810,7 @@ internal object MarkdownRenderer {
             )
         }
 
-        appendQualityFindings(sb, Quality.findingsOf(policySet, groups))
+        appendQualityFindings(sb, Quality.findingsOf(policySet, groups, examplesByPackage))
 
         // Compliance quick win: a closing legend, so "Rendered" is never mistaken for a statement about the
         // control itself -- it measures how much of the rule's logic explico could turn into prose, nothing more.
@@ -940,7 +940,7 @@ internal object MarkdownRenderer {
         }
     }
 
-    /** Spec §14.46: controls with no description, no framework, or a shared title. Nothing at all when there is nothing to report. */
+    /** Spec §14.46/§14.63: controls with no description, no framework, no matching example, a raw decision object, or a shared title. Nothing at all when there is nothing to report. */
     private fun appendQualityFindings(sb: StringBuilder, findings: Quality.Findings) {
         if (findings.isEmpty()) return
         // Blank line BEFORE (the heading follows the overall/below-100% line); none after -- the legend supplies its own.
@@ -952,6 +952,16 @@ internal object MarkdownRenderer {
         }
         if (findings.noFramework.isNotEmpty()) {
             sb.appendLine("- **No framework (${findings.noFramework.size}):** ${findings.noFramework.joinToString(", ") { it.link() }}")
+        }
+        // Spec §14.63: each ends with the one thing to do about it.
+        if (findings.noMatchingExample.isNotEmpty()) {
+            sb.appendLine("- **No matching example (${findings.noMatchingExample.size}):** ${findings.noMatchingExample.joinToString(", ") { it.link() }} — add a fixture that makes it match")
+        }
+        if (findings.rawDecisionObject.isNotEmpty()) {
+            sb.appendLine(
+                "- **Raw decision object (${findings.rawDecisionObject.size}):** ${findings.rawDecisionObject.joinToString(", ") { it.link() }} — " +
+                    "declare custom.verdict (outcome, reason) in its METADATA so its examples read as verdicts instead of raw JSON",
+            )
         }
         for ((title, controls) in findings.duplicateTitles) {
             sb.appendLine("- **Duplicate title (${controls.size}):** ${controls.joinToString(", ") { it.link() }} -- \"$title\"")

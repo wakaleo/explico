@@ -54,7 +54,7 @@ internal object JsonExport {
             put("schema", SCHEMA)
             put("policyDigest", policyDigest)
             put("coverage", coverage(overall))
-            put("quality", qualityObject(Quality.findingsOf(policySet, groups)))
+            put("quality", qualityObject(Quality.findingsOf(policySet, groups, examplesByPackage)))
             put("requirements", Quality.normalise(requirements).takeIf { it.isNotEmpty() }?.let { requirementsObject(Quality.coverageOf(policySet, it, groups)) } ?: JsonNull)
             if (groups != null) put("controls", controlsArray(groups))
             put("packages", buildJsonArray {
@@ -67,6 +67,8 @@ internal object JsonExport {
     private fun qualityObject(f: Quality.Findings) = buildJsonObject {
         put("missingDescription", buildJsonArray { f.missingDescription.forEach { add(JsonPrimitive(it.label)) } })
         put("noFramework", buildJsonArray { f.noFramework.forEach { add(JsonPrimitive(it.label)) } })
+        put("noMatchingExample", buildJsonArray { f.noMatchingExample.forEach { add(JsonPrimitive(it.label)) } })
+        put("rawDecisionObject", buildJsonArray { f.rawDecisionObject.forEach { add(JsonPrimitive(it.label)) } })
         put("duplicateTitles", buildJsonArray {
             f.duplicateTitles.forEach { (title, controls) ->
                 add(buildJsonObject { put("title", title); put("controls", buildJsonArray { controls.forEach { add(JsonPrimitive(it.label)) } }) })

@@ -232,6 +232,17 @@ or shares its `title` with another control, `index.md` gains a **Documentation q
 card; the same findings are in `explico.json` (`quality`). There is no section when there is nothing to report. Rules without a
 control id are not checked — give a rule a control id to make it a control.
 
+When you also give example fixtures (`--examples`), two more findings appear, each ending with what to do about it:
+
+- **No matching example** — no fixture makes the control match (or it has none), so the card never shows it holding. Add a fixture that
+  makes it match.
+- **Raw decision object** — the control returns an object (a decision) and declares no `custom.verdict`, so its worked examples show
+  raw JSON. Declare `custom.verdict` (see above) so they read as verdicts. A function, a rule whose object has only `true` values (a
+  partial-object rule) and a rule that already declares a verdict are not listed. A `custom.verdict` that is wrongly shaped is ignored
+  with a warning, so the control is listed until you fix it.
+
+These two are findings, not gaps: `--fail-on-gaps` does not fail on them.
+
 **Requirement gap analysis** (`--requirements <file>`). The index can tell you which controls claim a requirement; to find
 requirements *no* control claims, give explico the list. A plain text file, one requirement per line:
 

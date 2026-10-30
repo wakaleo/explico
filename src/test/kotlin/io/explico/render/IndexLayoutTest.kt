@@ -41,6 +41,26 @@ class IndexLayoutTest {
     }
 
     @Test
+    @org.junit.jupiter.api.DisplayName("spec §14.63: with every kind of finding present the bullets run missing description, no framework, no matching example, raw decision object, duplicate title; spacing holds")
+    fun allQualityFindingsAreInTheDocumentedOrder() {
+        val fixture = Fixture("f", null, kotlinx.serialization.json.JsonObject(emptyMap()))
+        val decision = kotlinx.serialization.json.buildJsonObject { put("compliant", kotlinx.serialization.json.JsonPrimitive(false)) }
+        val examples = mapOf(
+            "p" to mapOf(
+                "r_C-1" to listOf(WorkedExample(fixture, true, emptyList(), emptyList(), decision)),
+                "r_C-2" to listOf(WorkedExample(fixture, false, emptyList(), emptyList(), null)),
+            ),
+        )
+        val markdown = MarkdownRenderer.renderIndex(
+            PolicySet(listOf(PolicyPackage("p", listOf(control("C-1", rendered), control("C-2", rendered)), listOf("f.rego")))), examplesByPackage = examples,
+        )
+        val order = listOf("- **Missing description", "- **No framework", "- **No matching example", "- **Raw decision object", "- **Duplicate title").map { markdown.indexOf(it) }
+        assertThat(order).describedAs("every bullet is present").doesNotContain(-1)
+        assertThat(order).isSorted()
+        assertWellSpaced(markdown)
+    }
+
+    @Test
     fun qualityFindingsAfterTheBelow100NoteAreSpaced() {
         val markdown = index(emptyList(), control("C-1", unrendered))
         assertThat(markdown.indexOf("*Below 100%:")).isLessThan(markdown.indexOf("## Documentation quality"))

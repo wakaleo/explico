@@ -1641,3 +1641,8 @@ The solver stays a CANDIDATE producer: opa verification is what makes a result s
 `AstMapper.objectGetCollectionOrNull` is called from `mapSomeIn` ONLY: `some x in object.get(<plain path or bare input>, "<string literal>", [])` becomes a `SomeIn` over the path plus the key (`Field` when the key is an identifier, else `KeyLiteral`) with `defaultValue = "[]"`. Only an
 empty-array default; never route `every` through it (an absent list makes `every` undefined, not vacuously true). A function (`rule.parameters` non-empty) has NO worked examples (`WorkedExamples.forGroup`) and no `workedExamples` JSON key. `MarkdownText.controlCharacters` is the single place a
 control character in a rendered literal is escaped; verbatim source is never passed through it.
+
+## Quality hints (spec §14.63)
+
+`Quality.findingsOf(policySet, groups, examplesByPackage)` is the ONLY place the two example-based findings (`noMatchingExample`, `rawDecisionObject`) are decided, from `WorkedExamples.forGroup` outcomes (never a second evaluation). The gap path (`Explico.render` -> `gapDescriptions`) calls it WITHOUT examples and
+must keep doing so: these are findings, not gaps. Never list a function, an id-less rule or a split default; a grouped control is one entry.
