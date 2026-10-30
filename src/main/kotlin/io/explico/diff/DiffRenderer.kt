@@ -201,6 +201,10 @@ internal object DiffRenderer {
         val oldTiming = oldMeta?.projection?.timing
         val newTiming = newMeta?.projection?.timing
         if (oldTiming != newTiming) sb.appendLine("| Timing | ${timingText(oldTiming)} | ${timingText(newTiming)} |")
+        // Spec §14.61: the masked input paths, only when they differ.
+        val oldMask = oldMeta?.projection?.mask
+        val newMask = newMeta?.projection?.mask
+        if (oldMask != newMask) sb.appendLine("| Mask | ${maskText(oldMask)} | ${maskText(newMask)} |")
     }
 
     private fun authorsText(authors: List<io.explico.model.Author>): String =
@@ -215,6 +219,8 @@ internal object DiffRenderer {
     private fun actionsText(actions: io.explico.model.ActionsProjection?): String = actions?.let { "at `${it.at}`, label `${it.label}`" } ?: "—"
 
     private fun annotationsText(annotations: io.explico.model.AnnotationsProjection?): String = annotations?.let { "at `${it.at}`" } ?: "—"
+
+    private fun maskText(mask: List<String>?): String = mask?.takeIf { it.isNotEmpty() }?.joinToString(", ") { "`$it`" } ?: "—"
 
     private fun timingText(timing: io.explico.model.TimingProjection?): String =
         timing?.let { listOfNotNull(it.dueBy?.let { f -> "dueBy `$f`" }, it.startBefore?.let { f -> "startBefore `$f`" }).joinToString(", ") } ?: "—"

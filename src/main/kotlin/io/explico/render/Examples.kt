@@ -193,6 +193,7 @@ internal object WorkedExamples {
     }
 
     private fun renderJsonScalar(element: JsonElement): String {
+        if (element === InputMask.MASK) return "***"
         val primitive = element as? JsonPrimitive ?: return element.toString()
         return if (primitive.isString) "\"${primitive.content}\"" else primitive.content
     }

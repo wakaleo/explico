@@ -194,6 +194,8 @@ internal object JsonExport {
         metadata?.projection?.actions?.let { a -> put("actions", buildJsonObject { put("at", a.at); put("label", a.label) }) }
         metadata?.projection?.annotations?.let { n -> put("annotations", buildJsonObject { put("at", n.at) }) }
         metadata?.projection?.timing?.let { t -> put("timing", buildJsonObject { put("dueBy", nullable(t.dueBy)); put("startBefore", nullable(t.startBefore)) }) }
+        // Spec §14.61: the declared mask paths (not secret: they name where, never what), only when declared.
+        metadata?.projection?.mask?.let { m -> put("mask", buildJsonArray { m.forEach { add(JsonPrimitive(it)) } }) }
         put("parameters", buildJsonArray { rule.parameters.forEach { add(JsonPrimitive(it)) } })
         // "❌ denied" -> "denied": the same convention (and exclusions) as the card's line, minus the glyph.
         put("effectOfMatch", nullable(MarkdownRenderer.effectOfMatchWord(rule)?.substringAfter(' ')))
@@ -273,7 +275,11 @@ internal object JsonExport {
         put("value", value ?: JsonNull)
     }
 
-    private fun exampleObject(rule: RuleGroup, name: String, outcome: WorkedExample, generated: Boolean): JsonObject = buildJsonObject {
+    private fun exampleObject(rule: RuleGroup, shownName: String, shownOutcome: WorkedExample, generated: Boolean): JsonObject = buildJsonObject {
+        // Spec §14.61: the same masked view the card reads.
+        val view = ExampleMasking.view(rule.metadata?.projection?.mask, shownName, shownOutcome)
+        val name = view.name
+        val outcome = view.example
         put("name", name)
         put("matched", outcome.matched)
         put("outcome", WorkedExamples.outcomeWord(rule.name, outcome.matched))

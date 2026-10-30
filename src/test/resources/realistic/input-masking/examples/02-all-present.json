@@ -1,0 +1,12 @@
+{
+  "name": "all present",
+  "input": {
+    "subjectId": "S-99999",
+    "requester": {"email": "carol@example.com"},
+    "ticket": "T-1",
+    "approval": true,
+    "form": {"done": true},
+    "accountNumber": 111222333,
+    "people": [{"email": "dave@example.com", "active": true}]
+  }
+}

@@ -287,6 +287,7 @@ internal object AstMapper {
             val actions = custom?.actions
             val annotations = custom?.annotations
             val timing = custom?.timing
+            val mask = custom?.mask
             // Spec §14.54: actions / annotations / timing are read the same way; one warning per wrongly-shaped key, in this fixed order.
             listOf("verdict" to verdict?.problem, "actions" to actions?.problem, "annotations" to annotations?.problem, "timing" to timing?.problem)
                 .forEach { (key, problem) -> problem?.let { System.err.println("explico: warning: ignoring custom.$key on rule '$entryPackage.$ruleName': $it") } }
@@ -299,7 +300,7 @@ internal object AstMapper {
                 relatedResources = entry.annotations.relatedResources.mapNotNull { r -> r.ref?.let { RelatedResource(it, r.description) } },
                 customFields = entry.annotations.custom?.customFields ?: emptyMap(),
                 // Null unless at least one valid declaration exists, so a rule without any renders and hashes exactly as before.
-                projection = DeclaredProjection(verdict?.projection, actions?.projection, annotations?.projection, timing?.projection)
+                projection = DeclaredProjection(verdict?.projection, actions?.projection, annotations?.projection, timing?.projection, mask?.paths, mask?.problem)
                     .takeIf { it != DeclaredProjection() },
             )
             val candidateFiles = (filesByPackage[entryPackage] ?: emptyList())

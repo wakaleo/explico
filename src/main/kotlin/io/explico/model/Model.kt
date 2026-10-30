@@ -119,6 +119,16 @@ public data class DeclaredProjection @JvmOverloads constructor(
     val actions: ActionsProjection? = null,
     val annotations: AnnotationsProjection? = null,
     val timing: TimingProjection? = null,
+    /**
+     * `custom.mask` (spec §14.61): paths inside a fixture's input whose values every worked example shows as `***` -- dotted keys, `[]` for every element
+     * of an array (`people[].email`). Null when not declared.
+     */
+    val mask: List<String>? = null,
+    /**
+     * Set INSTEAD of [mask] when `custom.mask` was declared but is malformed. A malformed mask is never ignored (that would show the values it was
+     * written to hide): the render refuses, naming the rule and this problem. Null otherwise.
+     */
+    val maskProblem: String? = null,
 )
 
 /**

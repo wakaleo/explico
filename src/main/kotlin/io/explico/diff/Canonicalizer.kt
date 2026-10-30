@@ -243,6 +243,7 @@ internal object Canonicalizer {
                 put("projection", buildJsonObject {
                     projection.actions?.let { a -> put("actions", buildJsonObject { put("at", JsonPrimitive(a.at)); put("label", JsonPrimitive(a.label)) }) }
                     projection.annotations?.let { n -> put("annotations", buildJsonObject { put("at", JsonPrimitive(n.at)) }) }
+                    projection.mask?.let { m -> put("mask", buildJsonArray { m.forEach { add(JsonPrimitive(it)) } }) }
                     projection.timing?.let { t ->
                         put("timing", buildJsonObject {
                             put("dueBy", t.dueBy?.let { JsonPrimitive(it) } ?: JsonNull)

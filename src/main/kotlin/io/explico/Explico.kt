@@ -14,6 +14,7 @@ import io.explico.opa.OpaRunner
 import io.explico.parse.AstMapper
 import io.explico.parse.ParsedFile
 import io.explico.render.CompanionLinks
+import io.explico.render.InvalidMaskException
 import io.explico.render.ControlGroups
 import io.explico.render.ControlIdFromFilename
 import io.explico.render.Coverage
@@ -160,6 +161,8 @@ public object Explico {
     ): RenderedDocs {
         // Validate the URL template before any (slow) opa work: a template without {file} is the caller's mistake.
         val sourceLinks = SourceLinks.of(sourceUrl)
+        // Spec §14.61: a malformed custom.mask is refused, never ignored (it would show the values it was written to hide) -- before any opa work.
+        requireValidMasks(policySet)
         // Spec §14.58: likewise the companion template and its label.
         val companion = CompanionLinks.of(companionUrl, companionLabel)
         // Spec §14.55: likewise the control-id options -- an invalid pattern or template is the caller's mistake, found before any opa work.
@@ -225,6 +228,14 @@ public object Explico {
     ): DiffReport {
         val entries = PolicyDiff.diff(old, new, groupByControl)
         return DiffReport(entries, DiffRenderer.render(entries, old, new), DiffJson.render(entries))
+    }
+
+    /** Throws [InvalidMaskException] listing every rule (sorted) whose `custom.mask` is malformed. */
+    private fun requireValidMasks(policySet: PolicySet) {
+        val problems = policySet.packages.flatMap { pkg ->
+            pkg.rules.mapNotNull { rule -> rule.metadata?.projection?.maskProblem?.let { "custom.mask on rule '${pkg.path}.${rule.name}': $it" } }
+        }.distinct().sorted()
+        if (problems.isNotEmpty()) throw InvalidMaskException("a rule's custom.mask is malformed and would not hide what it names -- fix it: ${problems.joinToString("; ")}")
     }
 
     /**

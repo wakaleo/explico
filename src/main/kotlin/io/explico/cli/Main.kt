@@ -28,6 +28,7 @@ import io.explico.opa.OpaUnavailableException
 import io.explico.render.CompanionLinks
 import io.explico.render.ControlIdFromFilename
 import io.explico.render.DuplicateFixtureNameException
+import io.explico.render.InvalidMaskException
 import io.explico.render.SourceLinks
 import java.nio.file.Files
 import java.nio.file.Path
@@ -130,6 +131,9 @@ private class RenderCommand : CliktCommand(name = "render") {
             failWith(2, e.stderr)
         } catch (e: DuplicateFixtureNameException) {
             failWith(4, e.message ?: "duplicate fixture name")
+        } catch (e: InvalidMaskException) {
+            // Spec §14.61: a malformed custom.mask is refused, never ignored; nothing has been written yet.
+            failWith(1, e.message ?: "invalid custom.mask")
         }
     }
 }

@@ -1,0 +1,9 @@
+{
+  "name": "everything missing",
+  "input": {
+    "subjectId": "S-12345",
+    "requester": {"email": "alice@example.com"},
+    "accountNumber": 987654321,
+    "people": [{"email": "bob@example.com", "active": false}]
+  }
+}

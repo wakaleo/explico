@@ -132,6 +132,22 @@ internal data class OpaCustomAnnotation(val raw: JsonObject = JsonObject(emptyMa
             return Declaration(TimingProjection(fields[0], fields[1]))
         }
 
+    /**
+     * The declared `mask` (spec §14.61): a list of input paths. Unlike the projections above a malformed one is NOT merely ignored -- it is reported as a
+     * [MaskDeclaration.problem] the render turns into an error, because ignoring it would show the very values it was written to hide.
+     */
+    val mask: MaskDeclaration
+        get() {
+            if (!raw.containsKey("mask")) return MaskDeclaration()
+            val declared = raw["mask"] as? JsonArray ?: return MaskDeclaration(problem = "`mask` must be a list of input paths")
+            val paths = declared.map { entry ->
+                val text = (entry as? JsonPrimitive)?.takeIf { it.isString }?.content ?: return MaskDeclaration(problem = "`mask` entry $entry is not a string")
+                if (!MASK_PATH.matches(text)) return MaskDeclaration(problem = "`mask` entry '$text' is not a path (dotted keys, each non-empty; `[]` after a key means every array element)")
+                text
+            }
+            return MaskDeclaration(paths)
+        }
+
     private fun mappingOrNull(key: String): JsonObject? = raw[key] as? JsonObject
 
     /** Not a mapping: undeclared when the key is absent, otherwise a wrongly-shaped declaration worth a warning. */
@@ -158,7 +174,13 @@ internal data class OpaCustomAnnotation(val raw: JsonObject = JsonObject(emptyMa
 }
 
 /** Keys explico itself interprets (§14.43, §14.53, §14.54): never repeated in the 'Custom:' passthrough line, even when malformed. */
-private val RESERVED_KEYS = setOf("control-id", "frameworks", "verdict", "actions", "annotations", "timing")
+private val RESERVED_KEYS = setOf("control-id", "frameworks", "verdict", "actions", "annotations", "timing", "mask")
+
+/** A mask path: dot-separated keys, each non-empty and free of `[`, `]` and `.`, optionally followed by `[]` (once or more) for every element of an array. */
+private val MASK_PATH = Regex("""[^.\[\]]+(\[\])*(\.[^.\[\]]+(\[\])*)*""")
+
+/** The outcome of reading `custom.mask`: the [paths], a [problem] (declared but malformed), or neither (not declared). */
+internal data class MaskDeclaration(val paths: List<String>? = null, val problem: String? = null)
 
 /** The outcome of reading `custom.verdict`: a [projection], a [problem] (declared but wrongly shaped), or neither (not declared). */
 internal data class VerdictDeclaration(val projection: VerdictProjection? = null, val problem: String? = null)

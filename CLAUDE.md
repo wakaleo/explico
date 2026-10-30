@@ -1606,6 +1606,13 @@ the index, `Quality`, `JsonExport` and `Explico.render` all read it, so they can
 - Anything that counts or lists controls must go through `Quality.entries` (a grouped control is ONE entry). The index builds its rows the same way.
 - `RenderedDocs.files` now has `controls/...` keys: any code writing them must create parent directories (the CLI does; the docs snippets do).
 
+## Input masking (spec §14.61)
+
+`custom.mask: [paths]` (dotted keys INSIDE the fixture input, `[]` = every element) hides values in every worked example of that rule. `render/InputMask` is pure; `ExampleMasking.view(mask, name, example)` is the ONE place an example is masked and BOTH `MarkdownRenderer.appendExampleEntry` and
+`JsonExport.exampleObject` read only that view -- never read `outcome`/`fixture` from the raw example there. Strings are scrubbed by substring (longest first), numbers by whole token; `InputMask.MASK` is a single instance so `resolvePathValue` prints it unquoted. In italic message/reason lines the marker is written `\*\*\*` (`ExampleMasking.italic`).
+FAIL CLOSED: a malformed declaration is `DeclaredProjection.maskProblem`, and `Explico.render` throws `InvalidMaskException` (an `IllegalArgumentException`; CLI exit 1) listing every one BEFORE opa work -- do not turn it into a warning, ignoring it would show what it was written to hide.
+`mask` is a reserved custom key, hashed in `canonicalMetadata` only when present, `mask` in `changedMetadataFields`. Only values present in the fixture input can be hidden: a derived or `data`-sourced value cannot, and docs say so.
+
 ## Generator: count and time (spec §14.60)
 
 `InputSynthesizer` models `count(<path>) <op> <int>` (a list of the exact length; the length is PINNED in `Tree.counted` so a later membership/iteration/second count conflicts -- never silently broken) and `time.parse_rfc3339_ns(<path>) <op> <path>` (the other path pinned to `NOW_NS`). Caps/refusals: negative length, > 50 (`MAX_COUNT`), non-integer, `data.*`.

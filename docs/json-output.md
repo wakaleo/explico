@@ -55,6 +55,7 @@ Library: `Explico.render(policySet, policyDir, examples, dataDir, generateExampl
 | `authors` | `{name, email}`[] | METADATA `authors`; either field may be null |
 | `relatedResources` | `{ref, description}`[] | METADATA `related_resources` |
 | `custom` | object | Other scalar `custom:` keys, sorted; a list is comma-joined; structured values are omitted |
+| `mask` | string[] | **Only when the rule declares `custom.mask`** (spec §14.61): the declared input paths, in declared order. Their values are shown as `***` in every example's messages, verdict, remediation, status and timing (here and in the Markdown). Absent otherwise |
 | `parameters` | string[] | A function's parameter names |
 | `effectOfMatch` | `"denied"`, `"allowed"` or null | By the `deny`/`violation`/`allow` naming convention only; null for any other rule |
 | `default`, `constantValue` | string or null | The rule's `default` outcome / constant value, as the card shows it |

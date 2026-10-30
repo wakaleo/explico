@@ -195,7 +195,7 @@ object Explico {
   then `rulesWithExamples` of `rulesConsidered`. A trailing `json = true` also adds `explico.json` to `files`
   (see [`json-output.md`](json-output.md)); a further trailing `requirements: List<String>` and `sourceUrl: String?` add the *Requirements coverage* section (see
   *Keeping your documentation complete* in [`policy-authoring.md`](policy-authoring.md)). `RenderedDocs.gaps` is always filled: one line
-  per documentation gap, worded once for every consumer (empty when the documentation is complete). `controlIdFrom` / `controlIdTemplate` are the `--control-id-from` / `--control-id-template` options; an invalid value throws `IllegalArgumentException` before any `opa` work. `groupByControl = true` is `--group-by-control`: `files` then also holds `controls/<slug>.md` pages, so **a caller writing the files must create parent directories** (the snippets below do).
+  per documentation gap, worded once for every consumer (empty when the documentation is complete). `controlIdFrom` / `controlIdTemplate` are the `--control-id-from` / `--control-id-template` options; an invalid value throws `IllegalArgumentException` before any `opa` work; so does a rule whose `custom.mask` is malformed (see *Keeping values out of the documentation* in [`policy-authoring.md`](policy-authoring.md)). `groupByControl = true` is `--group-by-control`: `files` then also holds `controls/<slug>.md` pages, so **a caller writing the files must create parent directories** (the snippets below do).
 - **`diff(old, new, groupByControl = false)`** — returns `DiffReport(entries: List<DiffEntry>,
   markdown: String, json: String)`. Each `DiffEntry` carries its `category`
   (`DiffCategory`: `ADDED`/`REMOVED`/`LOGIC_CHANGED`/`DOCS_CHANGED`/`UNCHANGED`),

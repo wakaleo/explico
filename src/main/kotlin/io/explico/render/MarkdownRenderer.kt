@@ -479,7 +479,12 @@ internal object MarkdownRenderer {
      * Every declared part comes from [ExampleProjections.of], the same result `explico.json` reads, and is independent of the others: what the
      * evaluated value does not fully support is simply absent, and the example is rendered exactly as it always was.
      */
-    private fun appendExampleEntry(sb: StringBuilder, rule: RuleGroup, name: String, outcome: WorkedExample, referencedPaths: List<Operand.Path>) {
+    private fun appendExampleEntry(sb: StringBuilder, rule: RuleGroup, shownName: String, shownOutcome: WorkedExample, referencedPaths: List<Operand.Path>) {
+        // Spec §14.61: from here on only the MASKED view of the example exists, so nothing below can show a masked value.
+        val view = ExampleMasking.view(rule.metadata?.projection?.mask, shownName, shownOutcome)
+        val name = view.name
+        val outcome = view.example
+        val italic = { text: String -> ExampleMasking.italic(text, view.active) }
         val projected = ExampleProjections.of(rule.metadata?.projection, outcome)
         // The status goes on the summary line, after the verdict words (or after "matched").
         val status = projected.annotations?.takeIf { it.isNotEmpty() }
@@ -488,7 +493,7 @@ internal object MarkdownRenderer {
         if (verdict != null) {
             sb.appendLine("- **$name** — ${verdict.summary}$status")
             // A reason may span lines; continuation lines are indented so they stay inside this list item.
-            verdict.reason?.let { sb.appendLine("  *\"${it.lines().joinToString("\n  ")}\"*") }
+            verdict.reason?.let { sb.appendLine("  *\"${italic(it).lines().joinToString("\n  ")}\"*") }
         } else {
             val outcomeWord = WorkedExamples.outcomeWord(rule.name, outcome.matched)
             // A single message's situation label goes on the summary line, matching spec's own
@@ -499,11 +504,11 @@ internal object MarkdownRenderer {
             val summaryLabel = if (outcome.messages.size == 1) outcome.situationLabels.single()?.let { " *(Situation $it)*" } ?: "" else ""
             sb.appendLine("- **$name** — $outcomeWord$summaryLabel$status")
             if (outcome.messages.size == 1) {
-                sb.appendLine("  *\"${outcome.messages.single()}\"*")
+                sb.appendLine("  *\"${italic(outcome.messages.single())}\"*")
             } else if (outcome.messages.size > 1) {
                 outcome.messages.zip(outcome.situationLabels).forEach { (message, label) ->
                     val label2 = label?.let { " *(Situation $it)*" } ?: ""
-                    sb.appendLine("  *\"$message\"*$label2")
+                    sb.appendLine("  *\"${italic(message)}\"*$label2")
                 }
             }
         }

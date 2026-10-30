@@ -34,6 +34,7 @@ OPA-compliant reader can see.
 | `authors` | Yes | The `*Authors: ...*` line: `name <email>`, a bare name, or a bare email, exactly as declared (opa itself splits a `"Name <email>"` string) |
 | `related_resources` | Yes | The `*Related resources: ...*` line: each entry a link, labelled by its `description` (or by the `ref` itself when it has none) |
 | `custom.verdict` | Yes | Declares which fields of an object-valued rule are its verdict, so worked examples read `✅ compliant` instead of a JSON blob; see "Declaring a verdict for an object-valued rule" below. Never shown in the `*Custom:*` line |
+| `custom.mask` | Yes | A list of input paths whose values every worked example shows as `***`; see "Keeping values out of the documentation" below. Never shown in the `*Custom:*` line; a malformed one is an error |
 | `custom.actions`, `custom.annotations`, `custom.timing` | Yes | Declare more fields of an object-valued rule's decision, shown under each worked example; see "Declaring a verdict for an object-valued rule" below. Never shown in the `*Custom:*` line |
 | Any other `custom.*` key besides `control-id`/`frameworks`/`verdict`/`actions`/`annotations`/`timing` | Yes, if its value is a scalar or a list of scalars | The `*Custom: key: value, ...*` line, keys sorted alphabetically (a list is comma-joined). A key whose value has structure (an object, a list containing an object) is skipped entirely — explico never guesses at what it means |
 | The same `authors` / `related_resources` / `custom.*` fields on a `scope: package` block | Yes | The same three lines on the package page, after the description and before the first card. A package-scope `control-id`/`frameworks` is not used |
@@ -532,9 +533,39 @@ The same object can carry more. Three more declarations, all optional and indepe
 - The same rules for paths as the verdict: a dot is a separator, and a literal key containing a dot cannot be named.
 - Free text is shown safely: a line break in a label becomes a space and a backtick cannot end its code span; markdown characters in a status are escaped.
 - Editing any of them is a documentation change in `explico diff` (DOCS_CHANGED), with a row in the report for each one that changed.
-- **Reserved names.** `verdict`, `actions`, `annotations` and `timing` are reserved `custom:` keys. If you already used one of them as a plain note (say `timing: quarterly`), it is no longer
+- **Reserved names.** `verdict`, `actions`, `annotations`, `timing` (and `mask`, which behaves differently when malformed: see "Keeping values out of the documentation") are reserved `custom:` keys. If you already used one of them as a plain note (say `timing: quarterly`), it is no longer
   shown in the card's `*Custom:*` line and explico warns once that the value is not the mapping it expects: rename your key (for example `review-timing`) to keep showing it.
 - The remediation labels are nested one level deeper than the input-path values that follow them, so the two read as two lists.
+
+## Keeping values out of the documentation
+
+Fixture inputs often carry real-looking subject ids and e-mail addresses that must not end up in a document. Declare the paths on the rule and every worked example of
+that rule shows `***` instead:
+
+```rego
+# METADATA
+# custom:
+#   control-id: CTRL-ATTEST
+#   mask:
+#     - subjectId
+#     - requester.email
+#     - people[].email
+```
+
+- **Paths** are keys inside the fixture's `input` (no `input.` prefix), separated by dots; `[]` after a key means every element of that array (`people[].email`, or `tags[]`
+  for a list of strings). A string or a number found there is masked; an object or array there is masked whole. A path that the fixture does not have is ignored.
+- **Where it applies:** the real input is still evaluated, so every verdict stays true, and then every masked value is hidden everywhere that example shows it: the
+  `path: value` bullets, the produced message (`alice@example.com has no ticket` becomes `*** has no ticket`), a declared verdict's reason, remediation labels, status and
+  timing text, the raw value, and the fixture's own name and description. The same in `explico.json` and in generated examples. It is per rule: another rule that does not
+  declare the path shows its values.
+- **How values are found:** a string is hidden wherever its text occurs, in any letter case (so a message built with `lower(input.email)` is hidden too) and even inside a longer word, which errs on the safe side: masking `al` also turns `also` into `***so`; a number only as a whole token written as in the fixture, so
+  masking `1` leaves `11` and `1.5` alone, and a fixture value `1.0` does not hide the `1` OPA prints.
+- **A malformed declaration stops the render** (`IllegalArgumentException`; the CLI prints it and exits `1`, writing nothing): not a list, an empty or malformed path, an entry
+  that is not a string. Every other declaration (`verdict`, `actions`, ...) is ignored with a warning; this one is not, because ignoring it would show exactly what it was written to hide.
+- **What it cannot do:** only values that are in the fixture's input are known, so only they can be hidden. A value the rule derives, looks up, or reads from `data` that never appears in
+  the input is **not** masked, and neither is text outside the examples (a rule's own description, a `msg` that is a fixed string, opa's stderr diagnostics when an example fails to
+  evaluate). Review the output once for a new rule.
+- The declaration is not secret: it names where a value is, never what it is, and it is shown in `explico.json` (`mask`). Changing it is a documentation change in `diff`.
 
 ## Generated examples: what explico can derive for you
 

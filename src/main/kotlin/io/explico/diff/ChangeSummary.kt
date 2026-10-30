@@ -128,6 +128,8 @@ internal object ChangeSummary {
         if (old?.projection?.actions != new?.projection?.actions) fields += "actions"
         if (old?.projection?.annotations != new?.projection?.annotations) fields += "annotations"
         if (old?.projection?.timing != new?.projection?.timing) fields += "timing"
+        // Spec §14.61: which input paths are masked in the examples.
+        if (old?.projection?.mask != new?.projection?.mask) fields += "mask"
         return fields
     }
 
