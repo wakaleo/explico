@@ -971,6 +971,13 @@ internal object MarkdownRenderer {
                     " — move what readers need into a rule's description in its METADATA",
             )
         }
+        // Spec §14.66: advisory -- what explico needs for each kind of construct it shows as source (it explains, it never prescribes a rewrite).
+        if (findings.shownAsSource.isNotEmpty()) {
+            sb.appendLine("- **Shown as source (${findings.shownAsSource.sumOf { it.count }}):**")
+            for (item in findings.shownAsSource) {
+                sb.appendLine("  - `${item.reason}` ×${item.count} in ${item.cards.joinToString(", ") { it.link() }} — ${UnrenderedReasons.why(item.reason)}")
+            }
+        }
         for ((title, controls) in findings.duplicateTitles) {
             sb.appendLine("- **Duplicate title (${controls.size}):** ${controls.joinToString(", ") { it.link() }} -- \"$title\"")
         }

@@ -36,6 +36,20 @@ A helper rule can legitimately show 0%: if its only condition is a construct exp
 says nothing about the rules that call it. A number below 100% is not a bug, and not necessarily a problem with the policy. It means:
 *read this part as source*.
 
+**Why was it shown as source?** The index's *Documentation quality* section has a **Shown as source** bullet right under the
+*Below 100%* note. It groups the unrendered conditions by reason and says, for each, in one sentence what explico needs before it
+can render that kind of construct:
+
+```
+- **Shown as source (2):**
+  - `comprehension` ×1 in [FB-001](fallbacks.md#fb-001) — a comprehension is shown only when its head and every condition inside it can be rendered
+  - `every` ×1 in [every_container_limited](...) — an every block is shown only when its domain is a plain path and every condition in its body can be rendered
+```
+
+The sentence explains; it does not tell you to rewrite the policy, because a rewrite can change what the policy means. It counts
+conditions only (the unrendered *operands* mentioned above carry no reason), across every card including helper rules, and it is
+advisory: it is not a gap, and `--fail-on-gaps` ignores it.
+
 ## Using it as a gate
 
 `render --fail-under <percent>` exits with code `5` when overall coverage is below the threshold. It is compared exactly (18 of 20

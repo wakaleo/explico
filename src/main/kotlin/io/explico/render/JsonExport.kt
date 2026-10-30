@@ -79,6 +79,11 @@ internal object JsonExport {
         put("unpublishedComments", buildJsonArray {
             f.unpublishedComments.forEach { add(buildJsonObject { put("file", it.file); put("row", it.row); put("lines", it.lines) }) }
         })
+        put("shownAsSource", buildJsonArray {
+            f.shownAsSource.forEach { item ->
+                add(buildJsonObject { put("reason", item.reason); put("count", item.count); put("rules", buildJsonArray { item.cards.forEach { add(JsonPrimitive(it.label)) } }) })
+            }
+        })
         // Spec §14.64: which of these properties the caller made gaps (the effective set, canonical order).
         put("required", buildJsonArray { required.names.forEach { add(JsonPrimitive(it)) } })
     }

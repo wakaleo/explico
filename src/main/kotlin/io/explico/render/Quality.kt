@@ -7,6 +7,7 @@
 package io.explico.render
 
 import io.explico.model.CommentBlock
+import io.explico.model.Condition
 import io.explico.model.PolicyPackage
 import io.explico.model.PolicySet
 import io.explico.model.RuleGroup
@@ -43,11 +44,16 @@ internal object Quality {
         val missingTitle: List<ControlRef> = emptyList(),
         /** Spec §14.65: plain comment blocks of every package that never reach the documentation, sorted by file then row. Shown (advisory), never a gap. */
         val unpublishedComments: List<CommentBlock> = emptyList(),
+        /** Spec §14.66: the condition-level fallbacks of every card grouped by reason, sorted by reason. Advisory, never a gap. */
+        val shownAsSource: List<ShownAsSource> = emptyList(),
     ) {
         fun isEmpty(): Boolean =
             missingDescription.isEmpty() && noFramework.isEmpty() && duplicateTitles.isEmpty() && noMatchingExample.isEmpty() && rawDecisionObject.isEmpty() &&
-                unpublishedComments.isEmpty()
+                unpublishedComments.isEmpty() && shownAsSource.isEmpty()
     }
+
+    /** [count] conditions shown as source for [reason], in [cards] (distinct, in index order). */
+    data class ShownAsSource(val reason: String, val count: Int, val cards: List<ControlRef>)
 
     data class RequirementItem(val requirement: String, val controls: List<ControlRef>)
 
@@ -115,12 +121,27 @@ internal object Quality {
         return Findings(
             missingTitle = controls.filter { it.title.isNullOrBlank() }.map { it.ref },
             unpublishedComments = policySet.packages.flatMap { it.unpublishedComments }.sortedWith(compareBy({ it.file }, { it.row })),
+            shownAsSource = shownAsSource(entries(policySet, groups).filter { !it.isSplitDefault }),
             missingDescription = controls.filter { !it.hasDescription }.map { it.ref },
             noFramework = controls.filter { it.frameworks.isEmpty() }.map { it.ref },
             duplicateTitles = byTitle.filterValues { it.size > 1 }.entries.sortedBy { it.key }.map { (title, group) -> title to group.map { it.ref } },
             noMatchingExample = ofRules.filter { entry -> entry.members.none { (pkg, rule) -> outcomesOf(pkg, rule).any { it.matched } } }.map { it.ref },
             rawDecisionObject = ofRules.filter { entry -> entry.members.any { (pkg, rule) -> isRawDecisionObject(pkg, rule, ::outcomesOf) } }.map { it.ref },
         )
+    }
+
+    /**
+     * Spec §14.66: every card's condition-level fallbacks (its own and its `else` branches', as the card and the coverage count them), grouped by reason. A grouped
+     * control is one card holding all its rules' conditions. Cards stay in the order [entries] gives (index order), each once per reason.
+     */
+    private fun shownAsSource(cards: List<Entry>): List<ShownAsSource> {
+        val byReason = sortedMapOf<String, MutableList<Pair<Entry, Int>>>()
+        for (card in cards) {
+            val reasons = card.members.flatMap { (_, rule) -> rule.bodies.flatMap { Coverage.flatten(Coverage.conditionsOf(it)) } }
+                .filterIsInstance<Condition.Unrendered>().groupingBy { it.reason }.eachCount()
+            for ((reason, count) in reasons) byReason.getOrPut(reason) { mutableListOf() } += card to count
+        }
+        return byReason.map { (reason, found) -> ShownAsSource(reason, found.sumOf { it.second }, found.map { it.first.ref }) }
     }
 
     /**
