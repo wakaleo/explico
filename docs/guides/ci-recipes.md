@@ -4,9 +4,9 @@ explico is built to run in a pipeline: it is deterministic, it writes its output
 codes say why it stopped.
 
 !!! note "Versions"
-    The gate flags (`--fail-under`, `--fail-on-gaps`, `--requirements`, `diff --fail-on`) and exit code `5` are in **0.2.0**. If that
-    release is not yet published when you read this, build the jar yourself (`./gradlew shadowJar`, then use
-    `build/libs/explico-0.2.0-all.jar`); 0.1.1 renders and diffs but has no gates. Set `EXPLICO_VERSION` below to the version you use.
+    The gate flags (`--fail-under`, `--fail-on-gaps`, `--requirements`, `diff --fail-on`) and exit code `5` are in **0.2.0** and later; 0.1.1 renders and diffs
+    but has no gates. To try an unreleased build, build the jar yourself (`./gradlew shadowJar`, then use `build/libs/explico-<version>-all.jar`). Set
+    `EXPLICO_VERSION` below to the version you use.
 
 ## Exit codes
 
@@ -53,7 +53,7 @@ on:
     branches: [main]
 
 env:
-  EXPLICO_VERSION: "0.2.0"
+  EXPLICO_VERSION: "0.3.0"
 
 jobs:
   docs:
@@ -108,7 +108,7 @@ name: Policy change report
 on: pull_request
 
 env:
-  EXPLICO_VERSION: "0.2.0"
+  EXPLICO_VERSION: "0.3.0"
 
 jobs:
   diff:
@@ -164,7 +164,7 @@ the same flags as the gate step, and no `--source-url`; see [One workflow](#one-
 policy-docs:
   image: eclipse-temurin:21
   variables:
-    EXPLICO_VERSION: "0.2.0"
+    EXPLICO_VERSION: "0.3.0"
     OPA_VERSION: "1.19.0"
   before_script:
     - curl -fsSL -o /usr/local/bin/opa "https://github.com/open-policy-agent/opa/releases/download/v${OPA_VERSION}/opa_linux_amd64_static"

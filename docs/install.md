@@ -16,7 +16,7 @@ Using explico from your own Kotlin or Java code instead is covered in [CLI and l
 ## Check it works
 
 ```sh
-java -jar explico.jar version      # prints: explico 0.2.0
+java -jar explico.jar version      # prints: explico 0.3.0
 opa version                        # Version: 1.x.y
 ```
 

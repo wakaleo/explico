@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
+
+Rendering of the decision-object policies that were shown as source (`else` chains, object-valued rules), one page per multi-file control, and `diff` and the example generator catching up. Everything new is opt-in or additive; read the two **Changed** entries (reserved `custom:` keys, no "Effect of a match" on an `else` chain) and the **Fixed** entry (links inside a diff report) before upgrading.
+
 
 - **Added:** `else` chains are rendered. A chain whose every branch can be rendered is now shown as ordered situations -- "This rule is decided in order; the first matching situation wins", then `Situation 1`, `Situation 2 -- no earlier situation applies and ...`, each with a `*Then:*` value, and `Otherwise` for a bodiless final `else` -- instead of a source block. All-or-nothing: one unrenderable branch keeps the whole chain as source. Every branch's conditions count towards coverage, are hashed by `diff` in order (so a reordered or edited later branch is a logic change) and appear in `explico.json` as `elseBranches` on the body. Not rendered as a chain: one of several definitions of the same name. This changes the output of any policy that uses `else`. Public model: `RuleBody` gains `elseBranches` (a new `ElseBranch` class). Spec §14.52.
 - **Added:** declared verdicts for object-valued rules. A rule that returns a decision object can say which fields are its verdict in `custom.verdict` (`outcome`: a boolean field, `reason`: an optional string field); its worked examples then read `✅ compliant` / `❌ not compliant` with the quoted reason instead of a JSON blob and "matched". explico reads only the declared names, is strict about types (an example that does not fit keeps its raw JSON), warns once on stderr about a wrongly-shaped declaration and ignores it, and carries the same facts in `explico.json` (`verdict` on the rule and on projected examples). Editing the declaration is a documentation change in `diff`. Opt-in: output is unchanged without it. Public model: `RuleMetadata` gains `projection` (new `DeclaredProjection`, `VerdictProjection`). Spec §14.53.
