@@ -39,9 +39,18 @@ data.*      ──opa eval────▶ reference-data values ─────�
    `.rego` files, shown on every document) and `JsonExport` (the opt-in
    `explico.json`: a projection of exactly what the Markdown uses, never a second
    interpretation).
+   The newer opt-in features are each one small, pure unit here, read by every consumer so they cannot disagree:
+   `ControlGroups` (which control ids are shared and where each rule then lives, for `--group-by-control`; the
+   package pages, control pages, index, quality findings and JSON all read it), `CompanionLinks` and `SourceLinks`
+   (the only places a source URL is built), `ControlIdFromFilename` (a derived id), `ExampleProjections` (what a rule's
+   declared `custom.verdict`/`actions`/`annotations`/`timing` find in one example's value; the card and the JSON both read
+   it), and `InputMask`/`ExampleMasking` (`custom.mask`: the one place an example is masked, so neither the card nor the
+   JSON can show a masked value).
    `generate/` (`InputSynthesizer`, `ExampleGenerator`) derives candidate inputs
-   from a rule's conditions for `--generate-examples`; every candidate is
-   verified by `opa eval` through the same worked-example path before it is shown.
+   from a rule's conditions for `--generate-examples` (comparisons, membership, string and type builtins, iteration,
+   `count(<path>) <op> N`, and `time.parse_rfc3339_ns(<path>)` against a path); every candidate is
+   verified by `opa eval` through the same worked-example path before it is shown, so the solver may be incomplete but a
+   wrong guess never reaches the output.
 4. **`diff/`** — also pure functions over the domain model:
    `Canonicalizer` (SHA-256 of a rule's logic/metadata, insensitive to
    formatting/comments/variable names), `ChangeSummary` (the plain "What changed"
@@ -49,7 +58,10 @@ data.*      ──opa eval────▶ reference-data values ─────�
    ADDED/REMOVED/LOGIC_CHANGED/DOCS_CHANGED/UNCHANGED classification),
    `LineDiffer` (dependency-free LCS line diff), `DiffRenderer` (the change
    report, reusing `MarkdownRenderer.renderCard` rather than a second,
-   divergent card implementation).
+   divergent card implementation), `Situations` (the lines that name which situation of an `else` chain or of several
+   definitions moved, changed value, or was added or removed) and `ChangeAnchors` (unique anchors in a report). With
+   `diff --group-by-control`, `PolicyDiff` identifies the rules of a control id shared by several rules by control id,
+   package and rule.
 5. **`Explico.kt`** — the public facade (`load`/`loadExamples`/`render`/`diff`)
    orchestrating the above; the only other public surface is the domain model
    itself (`model/Model.kt`) and a handful of return types that live next to

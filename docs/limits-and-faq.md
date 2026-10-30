@@ -7,6 +7,8 @@
 - **No HTML output or server.** Markdown, plus opt-in [JSON](json-output.md) for other tools.
 - **No inlining of helper rules.** A reference to another rule is a link to its card, not a copy of its body.
 - **No git integration.** `explico diff` takes two directories; check out the versions yourself (for example with `git worktree`).
+- **No guarantee that masking hides everything.** `custom.mask` hides values that are in the fixture input. A value a rule derives, looks up, or reads from `data`,
+  and text outside the examples, are not covered. See the FAQ below and [Writing policies](policy-authoring.md#keeping-values-out-of-the-documentation).
 - **No decision-flip analysis across versions.** `diff` reports structural change; it does not evaluate old and new on the same inputs.
 
 ## What it shows as source
@@ -47,6 +49,20 @@ The path has a wildcard (`pods[_]`, or an index variable used once): the conditi
 
 **Why did my coverage change after upgrading?**
 A release can render more constructs, or stop counting statements that test nothing. See [Coverage](concepts/coverage.md).
+
+**Can I keep personal data in my fixtures out of the documentation?**
+Declare `custom.mask: [paths]` on the rule (for example `subjectId`, `requester.email`, `people[].email`). Every worked example of that rule then shows `***` for those
+values, including where a message or a remediation label echoes them, and in `explico.json`. It hides what is in the **fixture input**: a value the rule derives or
+reads from `data`, a fixed string in the rule, and `opa`'s own error output are not masked, so read the output once for a new rule. A path that matches nothing
+produces a warning, and a malformed declaration stops the render.
+
+**Why does `diff` stop with exit code 4 on "duplicate control-id"?**
+Two rules in one version share a control id. If that is deliberate (one control split over several files), pass `diff --group-by-control`: each rule is then its own entry,
+named with its package and rule. Otherwise give the rules different ids.
+
+**Can one control be documented on one page when it is split over several files?**
+Yes: `render --group-by-control` gives every control id shared by two or more rules one page, `controls/<id>.md`, with a section per rule. See
+[Reading a card](concepts/reading-a-card.md).
 
 **Is the output stable?**
 Yes. The same policy directories give byte-identical output: files, rules, fixtures and map keys are all sorted, and nothing depends on

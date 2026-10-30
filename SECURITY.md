@@ -24,6 +24,16 @@ Only the latest release receives fixes (0.x: the API may still change). Releases
   checked first and only queried when it names no loaded rule or package (or an ancestor of one), so this call never
   evaluates Rego rule logic and cannot reach a builtin. The supplied data is still copied into the rendered Markdown
   verbatim, same as any other value shown on a card.
+- **Masking (`custom.mask`) is a documentation aid, not a security boundary.** It hides values that are in the fixture input from the rendered Markdown and
+  JSON. It does not stop `opa` from reading and evaluating the real fixture (the fixture is written to a temporary file for the duration of the run), it does
+  not hide a value the rule derives or reads from `data`, a fixed string in a rule or its METADATA, or what `opa` prints to stderr when an example fails
+  (explico passes that through, and a "Skipping fixture" warning names the fixture). A malformed `custom.mask` stops the render rather than being ignored,
+  and a path that hides nothing in any example is warned about, but neither can know what a rule echoes. Review the output of a new rule before publishing it.
+- **Text you supply is written into the output.** The `--companion-url` and `--source-url` templates and the `--companion-label` are the operator's; file and
+  package names are percent-encoded into the URLs and the label is limited to plain text, so a policy author cannot break out of a link. Control ids, titles
+  and descriptions come from METADATA and are shown as written.
+- **`--out` is replaced.** `render --out <dir>` deletes the directory's existing contents before writing (so output never goes stale). Point it at a
+  directory dedicated to the documents.
 - **explico drives an external `opa` binary.** It uses the `opa` on `PATH` or the one named by `OPA_BIN`. Install `opa`
   from a source you trust. `explico demo --fetch-opa` downloads `opa` from the official GitHub release and verifies its
   SHA-256 checksum against the release's own checksum file.

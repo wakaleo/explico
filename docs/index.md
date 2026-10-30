@@ -76,12 +76,16 @@ cost of the example.
 
 - A **control card** for every rule: title, description, control id, frameworks, what a match means, every condition in plain words,
   and the worked examples.
+- **Decision objects**: a rule written as an `else` chain is shown as ordered situations, and a rule that returns an object can declare which fields are
+  its verdict, remediation, status and timing, so its worked examples read as decisions. [See it →](showcase/decision-objects.md)
+- **One page per control** when a control is split over several files and packages (`--group-by-control`), in `render` and in `diff`.
 - An **index** of all controls, a framework-to-controls matrix, documentation-quality findings and, for a list of requirements you
   supply, the requirements that have **no control**.
 - **`explico diff`**: what changed between two versions of a policy set, in plain words, insensitive to formatting, comments and
   variable names. [Reviewing a change →](guides/living-documentation.md#6-what-a-change-looks-like-in-review)
 - **CI gates** for coverage, documentation gaps and policy changes, and **JSON** for dashboards and GRC tools.
-- **Links** from every card to the exact Rego line at the commit under review.
+- **Links** from every card to the exact Rego line at the commit under review, and optionally a second link to the module that owns the policy.
+- **Masking** (`custom.mask`) keeps subject ids and e-mail addresses from your fixtures out of the documents.
 
 ## Start here
 

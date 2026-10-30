@@ -13,10 +13,10 @@ codes say why it stopped.
 | Code | Meaning |
 |---|---|
 | 0 | Success |
-| 1 | Usage error (bad flags, missing required option, nonexistent path) |
+| 1 | Usage error (bad flags, missing required option, nonexistent path), or a rule whose `custom.mask` is malformed (nothing is written) |
 | 2 | Rego parse error: `opa`'s own message is passed through verbatim |
 | 3 | `opa` missing or not version 1.x |
-| 4 | Duplicate control ids (`diff`) or duplicate fixture names (`render --examples`) |
+| 4 | Duplicate control ids (`diff`; pass `--group-by-control` if one control is deliberately split over several rules) or duplicate fixture names (`render --examples`) |
 | 5 | A CI gate failed: the output is still written and stderr says which gate and why |
 
 ## What you need on the runner
@@ -28,8 +28,8 @@ codes say why it stopped.
 ## One workflow: gates and drift together
 
 If you commit the rendered documents (see [From Rego to living documentation](living-documentation.md)), use **one** `render` command for
-both the gates and the drift check. They must use the same flags, and must not include `--source-url` (a commit-pinned link changes on
-every commit):
+both the gates and the drift check. They must use the same flags (including `--group-by-control` or `--control-id-from` if you use them), and must not include `--source-url` or a commit-pinned
+`--companion-url` (a commit-pinned link changes on every commit):
 
 ```yaml
       - name: Render, enforce the gates, and fail if the committed documents are stale
@@ -143,6 +143,11 @@ jobs:
 renamed rule that keeps its id is not reported as a removal and an addition. The report starts with a **What changed** section naming,
 for each changed control, exactly which conditions, messages or documentation fields moved. With `--fail-on REMOVED,LOGIC_CHANGED` a
 pull request that changes what a control *does* fails until someone looks, while a wording-only change passes.
+
+If one control is split over several files, so that several rules share a control id, `diff` stops with exit code 4 unless you pass
+`--group-by-control`. With it, each rule of such a control is its own entry, named with its package and rule (`SEC-28 — Sign-off (grp_signoff.signed_off)`),
+so editing one rule is one `LOGIC_CHANGED` line, and `--fail-on` lists each failing rule separately. For a rule with several situations (an `else` chain)
+the sub-bullets name the situation that moved: `situations reordered: …`, `situation 2: value changed from … to …`.
 
 ## Keep committed documents from drifting
 

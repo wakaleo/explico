@@ -57,6 +57,12 @@ deny contains msg if {
 The control id is also how `explico diff` recognises a control across versions, so renaming a rule does not look like a removal. The
 full field-by-field walkthrough is in [Writing policies](../policy-authoring.md).
 
+Two more `custom:` keys are worth knowing about once the basics work. A rule that **returns an object** can declare which of its fields are the
+verdict, the remediation, the status and the timing (`custom.verdict`, `custom.actions`, `custom.annotations`, `custom.timing`), so its worked
+examples read as decisions instead of JSON. And if your fixtures hold real subject ids or e-mail addresses, `custom.mask: [subjectId, requester.email]`
+makes every example of that rule show `***` instead. Both are described in [Writing policies](../policy-authoring.md); a control split over several
+files can be given one page with `--group-by-control` (see the same page).
+
 Two things worth knowing before you write your rules:
 
 - **Rule names carry meaning.** A rule named exactly `deny` or `violation` is described on its card as ❌ denied when it matches, and `allow`
@@ -140,6 +146,9 @@ Commit `docs/policy-docs/`. Then have CI regenerate it and fail if anything diff
     with `--requirements requirements.txt` (which adds a *Requirements coverage* section to `index.md`) and check them without it, the
     check reports a permanent difference. Keep one `render` command and run it for both the gates and the drift check, as in the
     [combined workflow](ci-recipes.md#one-workflow-gates-and-drift-together).
+
+    The same goes for every option that changes the output: `--group-by-control`, `--control-id-from` and `--control-id-template`, `--companion-url`
+    and `--companion-label`. Decide once, and use the same command everywhere.
 
     **Do not pass `--source-url` to the render you commit.** Pinning the link to a commit (the right thing for a published document) makes
     the package pages differ on every commit, so the drift check could never pass. Commit the plain render; add `--source-url` only in the
@@ -248,6 +257,7 @@ Be clear about this with your auditors:
 
 - [ ] Each control has a `title`, `description`, `control-id` and `frameworks` in METADATA.
 - [ ] Each control has at least one triggering and one passing example (the *Example coverage* column shows `✓ / ✓`).
+- [ ] If fixtures hold personal data, the rules that echo it declare `custom.mask`, and you have read the output once for a leak (only values in the fixture input can be hidden).
 - [ ] The generated documents are committed, and CI regenerates them and fails on drift.
 - [ ] Pull requests that change policies show the document diff, and `explico diff --fail-on` flags logic changes for review.
 - [ ] The explico and `opa` versions are pinned in CI, so a coverage figure or a phrase cannot change under you.
