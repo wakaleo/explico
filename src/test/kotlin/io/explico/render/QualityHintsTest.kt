@@ -194,4 +194,36 @@ class QualityHintsTest {
             assertThat(raw(s, examples("deny" to listOf(outcome(true, decision))))).isEmpty()
         }
     }
+
+    @Nested
+    @DisplayName("Comments not published (spec §14.65)")
+    inner class UnpublishedComments {
+
+        private fun packageWith(path: String, vararg blocks: io.explico.model.CommentBlock) =
+            PolicyPackage(path, listOf(rule("r_$path")), listOf("f.rego"), unpublishedComments = blocks.toList())
+
+        @Test
+        @DisplayName("the blocks of every package are collected, sorted by file then row, and make the findings non-empty without any examples")
+        fun collected() {
+            val set = PolicySet(
+                listOf(
+                    packageWith("a", io.explico.model.CommentBlock("z.rego", 3, 2), io.explico.model.CommentBlock("b.rego", 9, 4)),
+                    packageWith("b", io.explico.model.CommentBlock("b.rego", 2, 2)),
+                ),
+            )
+            val findings = Quality.findingsOf(set)
+            assertThat(findings.unpublishedComments).containsExactly(
+                io.explico.model.CommentBlock("b.rego", 2, 2), io.explico.model.CommentBlock("b.rego", 9, 4), io.explico.model.CommentBlock("z.rego", 3, 2),
+            )
+            assertThat(findings.isEmpty()).isFalse()
+        }
+
+        @Test
+        @DisplayName("none: empty, and a finding that is not a gap whatever is required")
+        fun noneAndNeverAGap() {
+            assertThat(Quality.findingsOf(set(rule("a"))).unpublishedComments).isEmpty()
+            val withBlocks = PolicySet(listOf(packageWith("a", io.explico.model.CommentBlock("a.rego", 1, 3))))
+            assertThat(Quality.gapDescriptions(Quality.findingsOf(withBlocks), null, RequiredSet.of(RequiredSet.ALL.filter { it != "fixture" && it != "verdict" }, examplesSupplied = false))).isEmpty()
+        }
+    }
 }

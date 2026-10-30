@@ -6,6 +6,7 @@
  */
 package io.explico.render
 
+import io.explico.model.CommentBlock
 import io.explico.model.PolicyPackage
 import io.explico.model.PolicySet
 import io.explico.model.RuleGroup
@@ -40,9 +41,12 @@ internal object Quality {
          * exists so a caller can require titles, which makes it a gap.
          */
         val missingTitle: List<ControlRef> = emptyList(),
+        /** Spec §14.65: plain comment blocks of every package that never reach the documentation, sorted by file then row. Shown (advisory), never a gap. */
+        val unpublishedComments: List<CommentBlock> = emptyList(),
     ) {
         fun isEmpty(): Boolean =
-            missingDescription.isEmpty() && noFramework.isEmpty() && duplicateTitles.isEmpty() && noMatchingExample.isEmpty() && rawDecisionObject.isEmpty()
+            missingDescription.isEmpty() && noFramework.isEmpty() && duplicateTitles.isEmpty() && noMatchingExample.isEmpty() && rawDecisionObject.isEmpty() &&
+                unpublishedComments.isEmpty()
     }
 
     data class RequirementItem(val requirement: String, val controls: List<ControlRef>)
@@ -110,6 +114,7 @@ internal object Quality {
         val ofRules = controls.filter { supplied && it.members.any { (_, rule) -> rule.parameters.isEmpty() } }
         return Findings(
             missingTitle = controls.filter { it.title.isNullOrBlank() }.map { it.ref },
+            unpublishedComments = policySet.packages.flatMap { it.unpublishedComments }.sortedWith(compareBy({ it.file }, { it.row })),
             missingDescription = controls.filter { !it.hasDescription }.map { it.ref },
             noFramework = controls.filter { it.frameworks.isEmpty() }.map { it.ref },
             duplicateTitles = byTitle.filterValues { it.size > 1 }.entries.sortedBy { it.key }.map { (title, group) -> title to group.map { it.ref } },

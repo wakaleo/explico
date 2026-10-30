@@ -1,0 +1,908 @@
+{
+  "package": {
+    "location": {
+      "file": "uc.rego",
+      "row": 4,
+      "col": 1,
+      "text": "cGFja2FnZQ=="
+    },
+    "path": [
+      {
+        "location": {
+          "file": "uc.rego",
+          "row": 4,
+          "col": 9,
+          "text": "dWM="
+        },
+        "type": "var",
+        "value": "data"
+      },
+      {
+        "location": {
+          "file": "uc.rego",
+          "row": 4,
+          "col": 9,
+          "text": "dWM="
+        },
+        "type": "string",
+        "value": "uc"
+      }
+    ]
+  },
+  "imports": [
+    {
+      "location": {
+        "file": "uc.rego",
+        "row": 6,
+        "col": 1,
+        "text": "aW1wb3J0"
+      },
+      "path": {
+        "location": {
+          "file": "uc.rego",
+          "row": 6,
+          "col": 8,
+          "text": "cmVnby52MQ=="
+        },
+        "type": "ref",
+        "value": [
+          {
+            "location": {
+              "file": "uc.rego",
+              "row": 6,
+              "col": 8,
+              "text": "cmVnbw=="
+            },
+            "type": "var",
+            "value": "rego"
+          },
+          {
+            "location": {
+              "file": "uc.rego",
+              "row": 6,
+              "col": 13,
+              "text": "djE="
+            },
+            "type": "string",
+            "value": "v1"
+          }
+        ]
+      }
+    }
+  ],
+  "annotations": [
+    {
+      "custom": {
+        "control-id": "UC-1",
+        "frameworks": [
+          "ISO 27001 A.8.32"
+        ]
+      },
+      "description": "Fixture control UC-1.",
+      "location": {
+        "file": "uc.rego",
+        "row": 8,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBCb2R5IGNvbW1lbnRzCiMgZGVzY3JpcHRpb246IEZpeHR1cmUgY29udHJvbCBVQy0xLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFVDLTEKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMg=="
+      },
+      "scope": "document",
+      "title": "Body comments"
+    },
+    {
+      "custom": {
+        "control-id": "UC-2",
+        "frameworks": [
+          "ISO 27001 A.8.32"
+        ]
+      },
+      "description": "Fixture control UC-2.",
+      "location": {
+        "file": "uc.rego",
+        "row": 26,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBBZnRlciB0aGUgZGV0YWNoZWQgbm90ZQojIGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgVUMtMi4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBVQy0yCiMgICBmcmFtZXdvcmtzOgojICAgICAtIElTTyAyNzAwMSBBLjguMzI="
+      },
+      "scope": "document",
+      "title": "After the detached note"
+    },
+    {
+      "custom": {
+        "control-id": "UC-3",
+        "frameworks": [
+          "ISO 27001 A.8.32"
+        ]
+      },
+      "description": "Fixture control UC-3.",
+      "location": {
+        "file": "uc.rego",
+        "row": 43,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBQbGFpbiBsaW5lcyB0aGVuIE1FVEFEQVRBCiMgZGVzY3JpcHRpb246IEZpeHR1cmUgY29udHJvbCBVQy0zLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFVDLTMKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMg=="
+      },
+      "scope": "document",
+      "title": "Plain lines then METADATA"
+    }
+  ],
+  "rules": [
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "UC-1",
+            "frameworks": [
+              "ISO 27001 A.8.32"
+            ]
+          },
+          "description": "Fixture control UC-1.",
+          "location": {
+            "file": "uc.rego",
+            "row": 8,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBCb2R5IGNvbW1lbnRzCiMgZGVzY3JpcHRpb246IEZpeHR1cmUgY29udHJvbCBVQy0xLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFVDLTEKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMg=="
+          },
+          "scope": "document",
+          "title": "Body comments"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "uc.rego",
+            "row": 17,
+            "col": 2,
+            "text": "aW5wdXQua2luZCA9PSAiYSI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "uc.rego",
+                "row": 17,
+                "col": 13,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "uc.rego",
+                    "row": 17,
+                    "col": 13,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "uc.rego",
+                "row": 17,
+                "col": 2,
+                "text": "aW5wdXQua2luZA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "uc.rego",
+                    "row": 17,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "uc.rego",
+                    "row": 17,
+                    "col": 8,
+                    "text": "a2luZA=="
+                  },
+                  "type": "string",
+                  "value": "kind"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "uc.rego",
+                "row": 17,
+                "col": 16,
+                "text": "ImEi"
+              },
+              "type": "string",
+              "value": "a"
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "location": {
+            "file": "uc.rego",
+            "row": 20,
+            "col": 2,
+            "text": "aW5wdXQub2sgPT0gdHJ1ZQ=="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "uc.rego",
+                "row": 20,
+                "col": 11,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "uc.rego",
+                    "row": 20,
+                    "col": 11,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "uc.rego",
+                "row": 20,
+                "col": 2,
+                "text": "aW5wdXQub2s="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "uc.rego",
+                    "row": 20,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "uc.rego",
+                    "row": 20,
+                    "col": 8,
+                    "text": "b2s="
+                  },
+                  "type": "string",
+                  "value": "ok"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "uc.rego",
+                "row": 20,
+                "col": 14,
+                "text": "dHJ1ZQ=="
+              },
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "uc_one",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "uc.rego",
+              "row": 16,
+              "col": 1,
+              "text": "dWNfb25l"
+            },
+            "type": "var",
+            "value": "uc_one"
+          }
+        ],
+        "location": {
+          "file": "uc.rego",
+          "row": 16,
+          "col": 1,
+          "text": "dWNfb25l"
+        }
+      },
+      "location": {
+        "file": "uc.rego",
+        "row": 16,
+        "col": 1,
+        "text": "dWNfb25lIGlmIHsKCWlucHV0LmtpbmQgPT0gImEiCgkjIGluZGVudGVkIGNvbW1lbnQgaW5zaWRlIHRoZSBib2R5CiMgY29sdW1uLW9uZSBjb21tZW50IGluc2lkZSB0aGUgYm9keQoJaW5wdXQub2sgPT0gdHJ1ZQp9"
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "UC-2",
+            "frameworks": [
+              "ISO 27001 A.8.32"
+            ]
+          },
+          "description": "Fixture control UC-2.",
+          "location": {
+            "file": "uc.rego",
+            "row": 26,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBBZnRlciB0aGUgZGV0YWNoZWQgbm90ZQojIGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgVUMtMi4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBVQy0yCiMgICBmcmFtZXdvcmtzOgojICAgICAtIElTTyAyNzAwMSBBLjguMzI="
+          },
+          "scope": "document",
+          "title": "After the detached note"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "uc.rego",
+            "row": 35,
+            "col": 2,
+            "text": "aW5wdXQua2luZCA9PSAiYiI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "uc.rego",
+                "row": 35,
+                "col": 13,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "uc.rego",
+                    "row": 35,
+                    "col": 13,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "uc.rego",
+                "row": 35,
+                "col": 2,
+                "text": "aW5wdXQua2luZA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "uc.rego",
+                    "row": 35,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "uc.rego",
+                    "row": 35,
+                    "col": 8,
+                    "text": "a2luZA=="
+                  },
+                  "type": "string",
+                  "value": "kind"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "uc.rego",
+                "row": 35,
+                "col": 16,
+                "text": "ImIi"
+              },
+              "type": "string",
+              "value": "b"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "uc_two",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "uc.rego",
+              "row": 34,
+              "col": 1,
+              "text": "dWNfdHdv"
+            },
+            "type": "var",
+            "value": "uc_two"
+          }
+        ],
+        "location": {
+          "file": "uc.rego",
+          "row": 34,
+          "col": 1,
+          "text": "dWNfdHdv"
+        }
+      },
+      "location": {
+        "file": "uc.rego",
+        "row": 34,
+        "col": 1,
+        "text": "dWNfdHdvIGlmIHsKCWlucHV0LmtpbmQgPT0gImIiICMgdHJhaWxpbmcgcmVtYXJrCn0="
+      }
+    },
+    {
+      "annotations": [
+        {
+          "custom": {
+            "control-id": "UC-3",
+            "frameworks": [
+              "ISO 27001 A.8.32"
+            ]
+          },
+          "description": "Fixture control UC-3.",
+          "location": {
+            "file": "uc.rego",
+            "row": 43,
+            "col": 1,
+            "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBQbGFpbiBsaW5lcyB0aGVuIE1FVEFEQVRBCiMgZGVzY3JpcHRpb246IEZpeHR1cmUgY29udHJvbCBVQy0zLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFVDLTMKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMg=="
+          },
+          "scope": "document",
+          "title": "Plain lines then METADATA"
+        }
+      ],
+      "body": [
+        {
+          "index": 0,
+          "location": {
+            "file": "uc.rego",
+            "row": 52,
+            "col": 2,
+            "text": "aW5wdXQua2luZCA9PSAiYyI="
+          },
+          "terms": [
+            {
+              "location": {
+                "file": "uc.rego",
+                "row": 52,
+                "col": 13,
+                "text": "PT0="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "uc.rego",
+                    "row": 52,
+                    "col": 13,
+                    "text": "PT0="
+                  },
+                  "type": "var",
+                  "value": "equal"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "uc.rego",
+                "row": 52,
+                "col": 2,
+                "text": "aW5wdXQua2luZA=="
+              },
+              "type": "ref",
+              "value": [
+                {
+                  "location": {
+                    "file": "uc.rego",
+                    "row": 52,
+                    "col": 2,
+                    "text": "aW5wdXQ="
+                  },
+                  "type": "var",
+                  "value": "input"
+                },
+                {
+                  "location": {
+                    "file": "uc.rego",
+                    "row": 52,
+                    "col": 8,
+                    "text": "a2luZA=="
+                  },
+                  "type": "string",
+                  "value": "kind"
+                }
+              ]
+            },
+            {
+              "location": {
+                "file": "uc.rego",
+                "row": 52,
+                "col": 16,
+                "text": "ImMi"
+              },
+              "type": "string",
+              "value": "c"
+            }
+          ]
+        }
+      ],
+      "head": {
+        "name": "uc_three",
+        "value": {
+          "type": "boolean",
+          "value": true
+        },
+        "ref": [
+          {
+            "location": {
+              "file": "uc.rego",
+              "row": 51,
+              "col": 1,
+              "text": "dWNfdGhyZWU="
+            },
+            "type": "var",
+            "value": "uc_three"
+          }
+        ],
+        "location": {
+          "file": "uc.rego",
+          "row": 51,
+          "col": 1,
+          "text": "dWNfdGhyZWU="
+        }
+      },
+      "location": {
+        "file": "uc.rego",
+        "row": 51,
+        "col": 1,
+        "text": "dWNfdGhyZWUgaWYgewoJaW5wdXQua2luZCA9PSAiYyIKfQ=="
+      }
+    }
+  ],
+  "comments": [
+    {
+      "Text": "IExpY2VuY2Utc3R5bGUgaGVhZGVyLCB0aHJlZSBsaW5lczo=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 1,
+        "col": 1,
+        "text": "IyBMaWNlbmNlLXN0eWxlIGhlYWRlciwgdGhyZWUgbGluZXM6"
+      }
+    },
+    {
+      "Text": "IHdobyBvd25zIHRoaXMgZmlsZSw=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 2,
+        "col": 1,
+        "text": "IyB3aG8gb3ducyB0aGlzIGZpbGUs"
+      }
+    },
+    {
+      "Text": "IGFuZCB3aHkgaXQgZXhpc3RzLg==",
+      "Location": {
+        "file": "uc.rego",
+        "row": 3,
+        "col": 1,
+        "text": "IyBhbmQgd2h5IGl0IGV4aXN0cy4="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "uc.rego",
+        "row": 8,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBCb2R5IGNvbW1lbnRzCiMgZGVzY3JpcHRpb246IEZpeHR1cmUgY29udHJvbCBVQy0xLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFVDLTEKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMg=="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "uc.rego",
+        "row": 9,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBCb2R5IGNvbW1lbnRz",
+      "Location": {
+        "file": "uc.rego",
+        "row": 10,
+        "col": 1,
+        "text": "IyB0aXRsZTogQm9keSBjb21tZW50cw=="
+      }
+    },
+    {
+      "Text": "IGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgVUMtMS4=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 11,
+        "col": 1,
+        "text": "IyBkZXNjcmlwdGlvbjogRml4dHVyZSBjb250cm9sIFVDLTEu"
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 12,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogVUMtMQ==",
+      "Location": {
+        "file": "uc.rego",
+        "row": 13,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IFVDLTE="
+      }
+    },
+    {
+      "Text": "ICAgZnJhbWV3b3Jrczo=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 14,
+        "col": 1,
+        "text": "IyAgIGZyYW1ld29ya3M6"
+      }
+    },
+    {
+      "Text": "ICAgICAtIElTTyAyNzAwMSBBLjguMzI=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 15,
+        "col": 1,
+        "text": "IyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+      }
+    },
+    {
+      "Text": "IGluZGVudGVkIGNvbW1lbnQgaW5zaWRlIHRoZSBib2R5",
+      "Location": {
+        "file": "uc.rego",
+        "row": 18,
+        "col": 2,
+        "text": "IyBpbmRlbnRlZCBjb21tZW50IGluc2lkZSB0aGUgYm9keQ=="
+      }
+    },
+    {
+      "Text": "IGNvbHVtbi1vbmUgY29tbWVudCBpbnNpZGUgdGhlIGJvZHk=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 19,
+        "col": 1,
+        "text": "IyBjb2x1bW4tb25lIGNvbW1lbnQgaW5zaWRlIHRoZSBib2R5"
+      }
+    },
+    {
+      "Text": "IEEgZGV0YWNoZWQgbm90ZSBvZiB0d28gbGluZXM=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 23,
+        "col": 1,
+        "text": "IyBBIGRldGFjaGVkIG5vdGUgb2YgdHdvIGxpbmVz"
+      }
+    },
+    {
+      "Text": "IGJldHdlZW4gdHdvIHJ1bGVzLg==",
+      "Location": {
+        "file": "uc.rego",
+        "row": 24,
+        "col": 1,
+        "text": "IyBiZXR3ZWVuIHR3byBydWxlcy4="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "uc.rego",
+        "row": 26,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBBZnRlciB0aGUgZGV0YWNoZWQgbm90ZQojIGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgVUMtMi4KIyBjdXN0b206CiMgICBjb250cm9sLWlkOiBVQy0yCiMgICBmcmFtZXdvcmtzOgojICAgICAtIElTTyAyNzAwMSBBLjguMzI="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "uc.rego",
+        "row": 27,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBBZnRlciB0aGUgZGV0YWNoZWQgbm90ZQ==",
+      "Location": {
+        "file": "uc.rego",
+        "row": 28,
+        "col": 1,
+        "text": "IyB0aXRsZTogQWZ0ZXIgdGhlIGRldGFjaGVkIG5vdGU="
+      }
+    },
+    {
+      "Text": "IGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgVUMtMi4=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 29,
+        "col": 1,
+        "text": "IyBkZXNjcmlwdGlvbjogRml4dHVyZSBjb250cm9sIFVDLTIu"
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 30,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogVUMtMg==",
+      "Location": {
+        "file": "uc.rego",
+        "row": 31,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IFVDLTI="
+      }
+    },
+    {
+      "Text": "ICAgZnJhbWV3b3Jrczo=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 32,
+        "col": 1,
+        "text": "IyAgIGZyYW1ld29ya3M6"
+      }
+    },
+    {
+      "Text": "ICAgICAtIElTTyAyNzAwMSBBLjguMzI=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 33,
+        "col": 1,
+        "text": "IyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+      }
+    },
+    {
+      "Text": "IHRyYWlsaW5nIHJlbWFyaw==",
+      "Location": {
+        "file": "uc.rego",
+        "row": 35,
+        "col": 20,
+        "text": "IyB0cmFpbGluZyByZW1hcms="
+      }
+    },
+    {
+      "Text": "IG9uZSBzaW5nbGUtbGluZSBjb21tZW50LCBub3QgcmVwb3J0ZWQ=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 38,
+        "col": 1,
+        "text": "IyBvbmUgc2luZ2xlLWxpbmUgY29tbWVudCwgbm90IHJlcG9ydGVk"
+      }
+    },
+    {
+      "Text": "IFBsYWluIGV4cGxhbmF0aW9uLCBsaW5lIG9uZS4=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 40,
+        "col": 1,
+        "text": "IyBQbGFpbiBleHBsYW5hdGlvbiwgbGluZSBvbmUu"
+      }
+    },
+    {
+      "Text": "IFBsYWluIGV4cGxhbmF0aW9uLCBsaW5lIHR3by4=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 41,
+        "col": 1,
+        "text": "IyBQbGFpbiBleHBsYW5hdGlvbiwgbGluZSB0d28u"
+      }
+    },
+    {
+      "Text": "IFBsYWluIGV4cGxhbmF0aW9uLCBsaW5lIHRocmVlLg==",
+      "Location": {
+        "file": "uc.rego",
+        "row": 42,
+        "col": 1,
+        "text": "IyBQbGFpbiBleHBsYW5hdGlvbiwgbGluZSB0aHJlZS4="
+      }
+    },
+    {
+      "Text": "IE1FVEFEQVRB",
+      "Location": {
+        "file": "uc.rego",
+        "row": 43,
+        "col": 1,
+        "text": "IyBNRVRBREFUQQojIHNjb3BlOiBkb2N1bWVudAojIHRpdGxlOiBQbGFpbiBsaW5lcyB0aGVuIE1FVEFEQVRBCiMgZGVzY3JpcHRpb246IEZpeHR1cmUgY29udHJvbCBVQy0zLgojIGN1c3RvbToKIyAgIGNvbnRyb2wtaWQ6IFVDLTMKIyAgIGZyYW1ld29ya3M6CiMgICAgIC0gSVNPIDI3MDAxIEEuOC4zMg=="
+      }
+    },
+    {
+      "Text": "IHNjb3BlOiBkb2N1bWVudA==",
+      "Location": {
+        "file": "uc.rego",
+        "row": 44,
+        "col": 1,
+        "text": "IyBzY29wZTogZG9jdW1lbnQ="
+      }
+    },
+    {
+      "Text": "IHRpdGxlOiBQbGFpbiBsaW5lcyB0aGVuIE1FVEFEQVRB",
+      "Location": {
+        "file": "uc.rego",
+        "row": 45,
+        "col": 1,
+        "text": "IyB0aXRsZTogUGxhaW4gbGluZXMgdGhlbiBNRVRBREFUQQ=="
+      }
+    },
+    {
+      "Text": "IGRlc2NyaXB0aW9uOiBGaXh0dXJlIGNvbnRyb2wgVUMtMy4=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 46,
+        "col": 1,
+        "text": "IyBkZXNjcmlwdGlvbjogRml4dHVyZSBjb250cm9sIFVDLTMu"
+      }
+    },
+    {
+      "Text": "IGN1c3RvbTo=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 47,
+        "col": 1,
+        "text": "IyBjdXN0b206"
+      }
+    },
+    {
+      "Text": "ICAgY29udHJvbC1pZDogVUMtMw==",
+      "Location": {
+        "file": "uc.rego",
+        "row": 48,
+        "col": 1,
+        "text": "IyAgIGNvbnRyb2wtaWQ6IFVDLTM="
+      }
+    },
+    {
+      "Text": "ICAgZnJhbWV3b3Jrczo=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 49,
+        "col": 1,
+        "text": "IyAgIGZyYW1ld29ya3M6"
+      }
+    },
+    {
+      "Text": "ICAgICAtIElTTyAyNzAwMSBBLjguMzI=",
+      "Location": {
+        "file": "uc.rego",
+        "row": 50,
+        "col": 1,
+        "text": "IyAgICAgLSBJU08gMjcwMDEgQS44LjMy"
+      }
+    }
+  ]
+}

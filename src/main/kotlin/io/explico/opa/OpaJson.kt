@@ -272,6 +272,15 @@ internal data class OpaModule(
     val imports: List<OpaImport> = emptyList(),
     val annotations: List<OpaAnnotationBody> = emptyList(),
     val rules: List<OpaRule> = emptyList(),
+    /** Every comment in the file (spec §14.65), METADATA lines included; absent when the file has none. */
+    val comments: List<OpaComment> = emptyList(),
+)
+
+/** One comment as `opa parse` reports it: its text WITHOUT the `#` (note the capitalised keys) and where it is. */
+@Serializable
+internal data class OpaComment(
+    @SerialName("Text") val text: String,
+    @SerialName("Location") val location: OpaLocation,
 )
 
 @Serializable

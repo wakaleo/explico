@@ -1647,6 +1647,11 @@ control character in a rendered literal is escaped; verbatim source is never pas
 `Quality.findingsOf(policySet, groups, examplesByPackage)` is the ONLY place the two example-based findings (`noMatchingExample`, `rawDecisionObject`) are decided, from `WorkedExamples.forGroup` outcomes (never a second evaluation). The gap path (`Explico.render` -> `gapDescriptions`) calls it WITHOUT examples and
 must keep doing so: these are findings, not gaps. Never list a function, an id-less rule or a split default; a grouped control is one entry.
 
+## Unpublished comments (spec §14.65)
+
+`parse/CommentBlocks` is the ONE place a plain comment block is decided, from opa's own `comments` locations (never the source text); `AstMapper.unpublishedCommentsOf` feeds it and fills `PolicyPackage.unpublishedComments`. Advisory: it is in `Findings.isEmpty()` (it alone makes the
+section appear) but never in `gapDescriptions`, and comments never reach `Canonicalizer`/`diff`. No keyword or licence heuristics.
+
 ## The required set (spec §14.64)
 
 `render/RequiredSet` validates and normalises the names; `Quality.gapDescriptions(findings, coverage, required)` is the ONE place gap lines are worded and ordered (description, frameworks, title, fixture, verdict, then shared titles, then requirement gaps). `Explico.render` validates BEFORE opa work and computes the

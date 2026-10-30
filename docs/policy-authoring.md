@@ -241,6 +241,12 @@ When you also give example fixtures (`--examples`), two more findings appear, ea
   partial-object rule) and a rule that already declares a verdict are not listed. A `custom.verdict` that is wrongly shaped is ignored
   with a warning, so the control is listed until you fix it.
 
+**Comments not published.** explico publishes METADATA only: an ordinary `#` comment above a rule, a package or between rules never
+appears in the documentation. When a run of two or more plain comment lines (outside any rule, not part of a `# METADATA` block) is
+found, the section lists it as `file:row` with its length, so you can move what readers need into the rule's `description`. It does
+not matter whether the comment sits next to the rule it explains. This is advisory, mechanical and never a gap; a licence header at
+the top of a file is listed too, and a single-line comment, a comment after code and a comment inside a rule are not.
+
 These two are findings, not gaps by default: `--fail-on-gaps` does not fail on them unless you require them (below).
 
 **Choosing what a gap is** (`--require`, with `--fail-on-gaps`). By default the gate fails on a control without a description or a

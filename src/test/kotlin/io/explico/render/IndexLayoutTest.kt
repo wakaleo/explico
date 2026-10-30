@@ -61,6 +61,23 @@ class IndexLayoutTest {
     }
 
     @Test
+    @org.junit.jupiter.api.DisplayName("spec §14.65: the comments bullet sits after the example-based bullets and before duplicate titles; it alone makes the section")
+    fun commentsBulletPosition() {
+        val blocks = listOf(io.explico.model.CommentBlock("a.rego", 1, 3), io.explico.model.CommentBlock("b/c.rego", 7, 2))
+        val rules = listOf(control("C-1", rendered, description = "d", frameworks = listOf("F")), control("C-2", rendered, description = "d", frameworks = listOf("F")))
+        val markdown = MarkdownRenderer.renderIndex(PolicySet(listOf(PolicyPackage("p", rules, listOf("f.rego"), unpublishedComments = blocks))))
+        assertThat(markdown).contains(
+            "- **Comments not published (2):** `a.rego:1` (3 lines), `b/c.rego:7` (2 lines) — move what readers need into a rule's description in its METADATA",
+        )
+        assertThat(markdown).contains("- **Duplicate title")
+        assertThat(markdown.indexOf("- **Comments not published")).isLessThan(markdown.indexOf("- **Duplicate title"))
+        assertWellSpaced(markdown)
+        val alone = MarkdownRenderer.renderIndex(PolicySet(listOf(PolicyPackage("p", emptyList(), listOf("f.rego"), unpublishedComments = blocks))))
+        assertThat(alone).contains("## Documentation quality").contains("- **Comments not published (2):**")
+        assertWellSpaced(alone)
+    }
+
+    @Test
     fun qualityFindingsAfterTheBelow100NoteAreSpaced() {
         val markdown = index(emptyList(), control("C-1", unrendered))
         assertThat(markdown.indexOf("*Below 100%:")).isLessThan(markdown.indexOf("## Documentation quality"))

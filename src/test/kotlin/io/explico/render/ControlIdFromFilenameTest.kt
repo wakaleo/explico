@@ -227,6 +227,20 @@ class ControlIdFromFilenameTest {
         }
 
         @Test
+        @DisplayName("spec §14.65: the package's other facts survive -- its unpublished comment blocks, source files and package METADATA are carried over unchanged")
+        fun packageFactsSurvive() {
+            val blocks = listOf(io.explico.model.CommentBlock("ctrl_1123.rego", 1, 3))
+            val meta = PackageMetadata("Pkg", "About", emptyList(), emptyList(), emptyMap())
+            val original = PolicySet(listOf(PolicyPackage("p", listOf(rule("deny", "ctrl_1123.rego")), listOf("ctrl_1123.rego"), meta, blocks)), RegoVersion.V1)
+
+            val applied = derive().applyTo(original).packages.single()
+
+            assertThat(applied.unpublishedComments).isEqualTo(blocks)
+            assertThat(applied.sourceFiles).containsExactly("ctrl_1123.rego")
+            assertThat(applied.metadata).isEqualTo(meta)
+        }
+
+        @Test
         @DisplayName("METADATA without an id keeps everything else it declares, and gains the id")
         fun metadataWithoutId() {
             val declared = RuleMetadata("Title", "Description", null, listOf("SOC 2"), customFields = mapOf("owner" to "p"))

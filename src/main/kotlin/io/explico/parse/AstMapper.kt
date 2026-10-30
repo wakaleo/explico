@@ -45,6 +45,7 @@ package io.explico.parse
 
 import io.explico.model.ComprehensionKind
 import io.explico.model.Author
+import io.explico.model.CommentBlock
 import io.explico.model.Condition
 import io.explico.model.ConstantValue
 import io.explico.model.DeclaredProjection
@@ -208,10 +209,23 @@ internal object AstMapper {
                     rules = rules,
                     sourceFiles = orderedFiles.map { it.sourceFile },
                     metadata = packageMetadataOf(orderedFiles),
+                    unpublishedComments = orderedFiles.flatMap { unpublishedCommentsOf(it) },
                 )
             }
             .sortedBy { it.path }
         return PolicySet(packages)
+    }
+
+    /**
+     * Spec §14.65: the plain comment blocks of one file -- [CommentBlocks] decides from opa's own comment locations; a rule's span is its first row through
+     * the last row of its verbatim source (just its own row when opa gave no text), so a column-1 comment inside a body is never a block.
+     */
+    private fun unpublishedCommentsOf(file: ParsedFile): List<CommentBlock> {
+        val comments = file.module.comments.map { CommentBlocks.Comment(it.location.row, it.location.col, String(Base64.getDecoder().decode(it.text))) }
+        val spans = file.module.rules.mapNotNull { rule ->
+            rule.location?.let { it.row..(it.row + sourceText(it).count { c -> c == '\n' }) }
+        }
+        return CommentBlocks.of(file.sourceFile, comments, spans)
     }
 
     /**

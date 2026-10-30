@@ -963,6 +963,14 @@ internal object MarkdownRenderer {
                     "declare custom.verdict (outcome, reason) in its METADATA so its examples read as verdicts instead of raw JSON",
             )
         }
+        // Spec §14.65: advisory -- text the author wrote that METADATA does not carry.
+        if (findings.unpublishedComments.isNotEmpty()) {
+            sb.appendLine(
+                "- **Comments not published (${findings.unpublishedComments.size}):** " +
+                    findings.unpublishedComments.joinToString(", ") { "`${it.file}:${it.row}` (${it.lines} lines)" } +
+                    " — move what readers need into a rule's description in its METADATA",
+            )
+        }
         for ((title, controls) in findings.duplicateTitles) {
             sb.appendLine("- **Duplicate title (${controls.size}):** ${controls.joinToString(", ") { it.link() }} -- \"$title\"")
         }

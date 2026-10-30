@@ -17,13 +17,22 @@ public enum class RegoVersion { V1, V0 }
 public data class PolicySet(val packages: List<PolicyPackage>, val regoVersion: RegoVersion = RegoVersion.V1)
 
 /** One Rego package: its path, the rules it defines, and the files it came from. */
-public data class PolicyPackage(
+public data class PolicyPackage @JvmOverloads constructor(
     val path: String,
     val rules: List<RuleGroup>,
     val sourceFiles: List<String>,
     /** Package-scope METADATA (review item 4), e.g. a `# METADATA\n# scope: package` block above the `package` declaration. Null when none is present. */
     val metadata: PackageMetadata? = null,
+    /** Plain comment blocks in this package's files that are not METADATA and so never reach the documentation (spec §14.65), sorted by file then row. */
+    val unpublishedComments: List<CommentBlock> = emptyList(),
 )
+
+/**
+ * A block of two or more consecutive plain `#` comment lines, starting in column 1, outside every rule and not part of a `# METADATA` block (spec §14.65):
+ * text an author wrote that explico, which reads METADATA only, does not publish. [file] is the path relative to the policy directory, [row] the 1-based
+ * row of its first line, [lines] its length.
+ */
+public data class CommentBlock(val file: String, val row: Int, val lines: Int)
 
 /** METADATA annotations attached at package scope: title, description, and (spec §14.43) authors / related resources / extra custom keys. `control-id` and `frameworks` are rule-level concepts and stay unused here (spec review item 4). */
 public data class PackageMetadata @JvmOverloads constructor(
