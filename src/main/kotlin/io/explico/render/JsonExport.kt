@@ -82,7 +82,9 @@ internal object JsonExport {
         })
         put("shownAsSource", buildJsonArray {
             f.shownAsSource.forEach { item ->
-                add(buildJsonObject { put("reason", item.reason); put("count", item.count); put("rules", buildJsonArray { item.cards.forEach { add(JsonPrimitive(it.label)) } }) })
+                add(buildJsonObject { put("reason", item.reason); put("count", item.count); put("rules", buildJsonArray { item.cards.forEach { add(JsonPrimitive(it.label)) } })
+                    put("places", buildJsonArray { item.places.forEach { add(buildJsonObject { put("rule", it.card.label); put("file", it.file); put("row", it.row) }) } })
+                })
             }
         })
         // Spec §14.64: which of these properties the caller made gaps (the effective set, canonical order).

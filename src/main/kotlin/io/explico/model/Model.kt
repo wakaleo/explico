@@ -302,7 +302,16 @@ public sealed interface Condition {
     public data class SomeKey(val variable: String, val collection: Operand.Path) : Condition
 
     /** Anything the mapper cannot classify. Rendered as marked, verbatim source — never guessed. */
-    public data class Unrendered(val sourceText: String, val reason: String) : Condition
+    public data class Unrendered @JvmOverloads constructor(
+        val sourceText: String,
+        val reason: String,
+        /**
+         * Where the fallback statement starts (spec §14.69): the 1-based row of its first line in its file (a whole construct -- an `every` block, an else chain --
+         * starts at its first row), from opa's own location; null when unknown (a hand-built condition). The file is the holding body's own
+         * [RuleBody.sourceLocation]. Never part of what the fallback says: [sourceText] and [reason] are unchanged, and `diff` ignores it.
+         */
+        val row: Int? = null,
+    ) : Condition
 }
 
 /** A comparison operator (spec §5). */

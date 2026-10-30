@@ -40,14 +40,14 @@ class RealisticShownAsSourceAcceptanceIT {
         private const val HEAD = "- **Shown as source (9):**"
 
         private val subBullets = listOf(
-            "  - `else-chain` ×1 in [SA-3](sas.md#sa-3) — an else chain is shown only when every branch can be rendered, and it is not one of several definitions of the same rule",
-            "  - `every` ×2 in [SA-1](sas.md#sa-1), [SA-2](sas.md#sa-2) — an every block is shown only when its domain is a plain path and every condition in its body can be rendered",
-            "  - `function-call` ×2 in [SA-5](sas.md#sa-5), [helper_fallback](sas.md#sas-helper-fallback) — a call or unification explico cannot render: a built-in it does not model, " +
+            "  - `else-chain` ×1 in [SA-3](sas.md#sa-3) (`sas.rego:42`) — an else chain is shown only when every branch can be rendered, and it is not one of several definitions of the same rule",
+            "  - `every` ×2 in [SA-1](sas.md#sa-1) (`sas.rego:14`), [SA-2](sas.md#sa-2) (`sas.rego:29`) — an every block is shown only when its domain is a plain path and every condition in its body can be rendered",
+            "  - `function-call` ×2 in [SA-5](sas.md#sa-5) (`sas.rego:69`), [helper_fallback](sas.md#sas-helper-fallback) (`sas.rego:127`) — a call or unification explico cannot render: a built-in it does not model, " +
                 "a function it cannot find or whose arguments it cannot render, or a pattern on the left of =",
-            "  - `helper-assignment` ×1 in [SA-6](sas.md#sa-6) — a local assignment whose value explico cannot substitute into the conditions that use it",
-            "  - `partial-rule-reference` ×1 in [SA-7](sas.md#sa-7) — a bare reference to a set or object rule is always defined, even when empty, so it is not shown as a yes/no test",
-            "  - `unclassified` ×1 in [SA-8](sas.md#sa-8) — explico does not render this construct",
-            "  - `with-override` ×1 in [SA-4](sas.md#sa-4) — with replaces a value for one call, which explico does not model",
+            "  - `helper-assignment` ×1 in [SA-6](sas.md#sa-6) (`sas.rego:81`) — a local assignment whose value explico cannot substitute into the conditions that use it",
+            "  - `partial-rule-reference` ×1 in [SA-7](sas.md#sa-7) (`sas.rego:94`) — a bare reference to a set or object rule is always defined, even when empty, so it is not shown as a yes/no test",
+            "  - `unclassified` ×1 in [SA-8](sas.md#sa-8) (`sas.rego:107`) — explico does not render this construct",
+            "  - `with-override` ×1 in [SA-4](sas.md#sa-4) (`sas.rego:57`) — with replaces a value for one call, which explico does not model",
         )
 
         private lateinit var found: io.explico.RenderedDocs

@@ -47,9 +47,9 @@ class UnrenderedReasonsTest {
     @DisplayName("drift guard: every reason string the mapper attaches to a fallback is in the table (a new or renamed reason fails here, not at the default sentence)")
     fun mapperReasonsAreAllKnown() {
         val source = Files.readString(Path.of("src/main/kotlin/io/explico/parse/AstMapper.kt"))
-        // What the mapper attaches AS a reason: the last literal of an Unrendered(..., "reason") call, an Unsupported("reason") argument, or the partial-rule ternary.
+        // What the mapper attaches AS a reason: the last literal of an Unrendered(..., "reason") or unrenderedAt(location, "reason") call, an Unsupported("reason") argument, or the partial-rule ternary.
         val reasons = source.lines().flatMap { line ->
-            Regex("Condition\\.Unrendered\\(.*,\\s*\"([a-z]+(?:-[a-z]+)*)\"\\)").findAll(line).map { it.groupValues[1] }.toList() +
+            Regex("(?:Condition\\.Unrendered|unrenderedAt)\\(.*,\\s*\"([a-z]+(?:-[a-z]+)*)\"\\)").findAll(line).map { it.groupValues[1] }.toList() +
                 Regex("Unsupported\\(\"([a-z]+(?:-[a-z]+)*)\"").findAll(line).map { it.groupValues[1] }.toList() +
                 Regex("\"(partial-rule-reference)\" else \"(unclassified)\"").findAll(line).flatMap { listOf(it.groupValues[1], it.groupValues[2]) }.toList()
         }.toSet()

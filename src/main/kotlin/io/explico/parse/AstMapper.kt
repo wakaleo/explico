@@ -598,7 +598,7 @@ internal object AstMapper {
             val thrownIn = e.stackTrace.filter { it.className.startsWith("io.explico") }.take(2).joinToString(" <- ") { it.methodName }.ifEmpty { "?" }
             System.err.println("explico: warning: could not map rule '$ruleName' (${ctx.sourceFile}:$row): ${e.javaClass.simpleName} in $thrownIn: ${e.message?.lineSequence()?.firstOrNull()}; shown as source")
             RuleBody(
-                conditions = listOf(Condition.Unrendered(sourceText(rule.location), "mapping-error")),
+                conditions = listOf(unrenderedAt(rule.location, "mapping-error")),
                 producesValue = null,
                 messageTemplate = null,
                 sourceLocation = SourceRef(ctx.sourceFile, row),
@@ -684,7 +684,7 @@ internal object AstMapper {
             allFullyRendered(mapped.flatMap { it!!.conditions })
         if (!renderable) {
             return RuleBody(
-                conditions = listOf(Condition.Unrendered(sourceText(rule.location), "else-chain")),
+                conditions = listOf(unrenderedAt(rule.location, "else-chain")),
                 producesValue = null,
                 messageTemplate = null,
                 sourceLocation = SourceRef(ctx.sourceFile, rule.location?.row ?: 0),
@@ -757,7 +757,7 @@ internal object AstMapper {
         // which no existing Condition template describes -- demoted before shape-dispatch so it
         // can never be misclassified as testing the real input.
         if (expr.with != null) {
-            conditions += Condition.Unrendered(sourceText(expr.location), "with-override")
+            conditions += unrenderedAt(expr.location, "with-override")
             return
         }
         // A declare-only `some i, j` (no `in`) only introduces local names: it tests nothing, so it is not a condition (real-world benchmark:
@@ -804,7 +804,7 @@ internal object AstMapper {
                     // assignment the mapper can't substitute, which MarkdownRenderer groups
                     // with its own kind only (never with an adjacent, differently-reasoned
                     // fallback) into one labelled "helper definition(s)" block.
-                    conditions += Condition.Unrendered(sourceText(expr.location), "helper-assignment")
+                    conditions += unrenderedAt(expr.location, "helper-assignment")
                 }
             }
             return
@@ -997,9 +997,9 @@ internal object AstMapper {
                 "symbols" in terms -> mapSomeIn(expr, terms, symbolTable, ctx)
                 "domain" in terms -> mapEvery(expr, terms, symbolTable, ctx)
                 "type" in terms -> mapSingleTermCondition(expr, opaJson.decodeFromJsonElement(OpaTerm.serializer(), terms), symbolTable, ctx)
-                else -> Condition.Unrendered(sourceText(expr.location), "unclassified")
+                else -> unrenderedAt(expr.location, "unclassified")
             }
-            else -> Condition.Unrendered(sourceText(expr.location), "unclassified")
+            else -> unrenderedAt(expr.location, "unclassified")
         }
     }
 
@@ -1009,7 +1009,7 @@ internal object AstMapper {
         symbolTable: Map<String, VarBinding>,
         ctx: MappingContext,
     ): Condition {
-        val (name, args) = decodeCallShape(terms) ?: return Condition.Unrendered(sourceText(expr.location), "unclassified")
+        val (name, args) = decodeCallShape(terms) ?: return unrenderedAt(expr.location, "unclassified")
         val comparisonOp = COMPARISON_OPERATORS[name]
         if (comparisonOp != null && args.size == 2) {
             return buildComparisonLike(expr, args, symbolTable, ctx) { left, right -> Condition.Comparison(left, comparisonOp, right, expr.negated) }
@@ -1025,7 +1025,7 @@ internal object AstMapper {
         if (name in CONDITION_BUILTINS) {
             val mapped = args.map { mapOperand(it, symbolTable, ctx) }
             val unsupported = mapped.filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
-            if (unsupported != null) return Condition.Unrendered(sourceText(expr.location), unsupported.reason)
+            if (unsupported != null) return unrenderedAt(expr.location, unsupported.reason)
             val operands = mapped.filterIsInstance<ConstructResult.Ok>().map { it.operand }
             return Condition.BuiltinCall(name, operands, expr.negated)
         }
@@ -1042,7 +1042,7 @@ internal object AstMapper {
                 return Condition.FunctionCall(target.first, target.second, operands, expr.negated)
             }
         }
-        return Condition.Unrendered(sourceText(expr.location), "function-call")
+        return unrenderedAt(expr.location, "function-call")
     }
 
     /**
@@ -1076,7 +1076,7 @@ internal object AstMapper {
         val left = mapOperand(args[0], symbolTable, ctx)
         val right = mapOperand(args[1], symbolTable, ctx)
         val unsupported = listOf(left, right).filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
-        if (unsupported != null) return Condition.Unrendered(sourceText(expr.location), unsupported.reason)
+        if (unsupported != null) return unrenderedAt(expr.location, unsupported.reason)
         return build((left as ConstructResult.Ok).operand, (right as ConstructResult.Ok).operand)
     }
 
@@ -1135,13 +1135,13 @@ internal object AstMapper {
 
     private fun mapSomeIn(expr: OpaExpr, terms: JsonObject, symbolTable: MutableMap<String, VarBinding>, ctx: MappingContext): Condition {
         val symbols = opaJson.decodeFromJsonElement(ListSerializer(OpaTerm.serializer()), terms.getValue("symbols"))
-        val callTerm = symbols.singleOrNull() ?: return Condition.Unrendered(sourceText(expr.location), "unclassified")
+        val callTerm = symbols.singleOrNull() ?: return unrenderedAt(expr.location, "unclassified")
         // A declare-only `some x` (no `in`) has exactly one symbol too, but its value is a bare var
         // term, not a call-shaped `internal.member_2` term -- decodeTermList would otherwise crash
         // trying to deserialize a JsonPrimitive as a JsonArray (spec §14 finding: this took down the
         // whole render, not just this one condition, before the guard existed).
-        if (callTerm.type != "call") return Condition.Unrendered(sourceText(expr.location), "unclassified")
-        val (name, args) = decodeCallShape(decodeTermList(callTerm.value)) ?: return Condition.Unrendered(sourceText(expr.location), "unclassified")
+        if (callTerm.type != "call") return unrenderedAt(expr.location, "unclassified")
+        val (name, args) = decodeCallShape(decodeTermList(callTerm.value)) ?: return unrenderedAt(expr.location, "unclassified")
         // `some v in c` desugars to internal.member_2(v, c); the two-variable form
         // `some k, v in c` (spec §14 backlog rank #1) desugars to internal.member_3(k, v, c) --
         // confirmed via real `opa parse` output. v binds as VarBinding.Iteration (an element of the
@@ -1152,12 +1152,12 @@ internal object AstMapper {
                 Triple(null, stringValueOf(args[0]), args[1])
             name == "internal.member_3" && args.size == 3 && args[0].type == "var" && args[1].type == "var" ->
                 Triple(stringValueOf(args[0]), stringValueOf(args[1]), args[2])
-            else -> return Condition.Unrendered(sourceText(expr.location), "unclassified")
+            else -> return unrenderedAt(expr.location, "unclassified")
         }
         val objectGet = objectGetCollectionOrNull(collectionTerm, symbolTable, ctx)
         val collection = if (objectGet != null) ConstructResult.Ok(objectGet) else mapIterationCollection(collectionTerm, symbolTable, ctx)
         val collectionPath = (collection as? ConstructResult.Ok)?.operand as? Operand.Path
-            ?: return Condition.Unrendered(sourceText(expr.location), (collection as? ConstructResult.Unsupported)?.reason ?: "unclassified")
+            ?: return unrenderedAt(expr.location, (collection as? ConstructResult.Unsupported)?.reason ?: "unclassified")
         if (key != null) symbolTable[key] = VarBinding.IterationKey(collectionPath)
         symbolTable[variable] = VarBinding.Iteration(collectionPath)
         return Condition.SomeIn(variable, collectionPath, key, if (objectGet != null) EMPTY_ARRAY_DEFAULT else null)
@@ -1197,7 +1197,7 @@ internal object AstMapper {
      * anywhere inside -- keeps the whole block as verbatim source with the reason `every`, never half-rendered.
      */
     private fun mapEvery(expr: OpaExpr, terms: JsonObject, symbolTable: MutableMap<String, VarBinding>, ctx: MappingContext): Condition {
-        val fallback = Condition.Unrendered(sourceText(expr.location), "every")
+        val fallback = unrenderedAt(expr.location, "every")
         fun term(key: String): OpaTerm? = (terms[key] as? JsonObject)?.let { opaJson.decodeFromJsonElement(OpaTerm.serializer(), it) }
         val domain = term("domain") ?: return fallback
         val value = term("value")?.takeIf { it.type == "var" } ?: return fallback
@@ -1227,19 +1227,19 @@ internal object AstMapper {
             val name = stringValueOf(term)
             return ruleReferenceIfKnown(ctx.currentPackage, name, ctx, expr.negated)
                 ?: importedMember(name, ctx)?.let { (pkg, member) -> ruleReferenceIfKnown(pkg, member, ctx, expr.negated) }
-                ?: Condition.Unrendered(sourceText(expr.location), fallbackReasonFor(ctx.currentPackage, name, ctx))
+                ?: unrenderedAt(expr.location, fallbackReasonFor(ctx.currentPackage, name, ctx))
         }
-        if (term.type != "ref") return Condition.Unrendered(sourceText(expr.location), "unclassified")
+        if (term.type != "ref") return unrenderedAt(expr.location, "unclassified")
 
         val chain = decodeTermList(term.value)
-        if (chain.isEmpty()) return Condition.Unrendered(sourceText(expr.location), "unclassified")
+        if (chain.isEmpty()) return unrenderedAt(expr.location, "unclassified")
         val root = stringValueOf(chain.first())
 
         val aliasedPackage = ctx.importAliases[root]
         if (aliasedPackage != null && allPlainStringSegments(chain.drop(1))) {
             val ruleName = chain.drop(1).joinToString(".") { stringValueOf(it) }
             return ruleReferenceIfKnown(aliasedPackage, ruleName, ctx, expr.negated)
-                ?: Condition.Unrendered(sourceText(expr.location), fallbackReasonFor(aliasedPackage, ruleName, ctx))
+                ?: unrenderedAt(expr.location, fallbackReasonFor(aliasedPackage, ruleName, ctx))
         }
         if (root == "data" && chain.size > 1 && allPlainStringSegments(chain.drop(1))) {
             val candidatePackage = chain.drop(1).dropLast(1).joinToString(".") { stringValueOf(it) }
@@ -1250,13 +1250,13 @@ internal object AstMapper {
             // ruleReferenceIfKnown already guards against, just via a different Condition shape.
             if (ctx.registry[candidatePackage]?.contains(candidateRule) == true) {
                 return ruleReferenceIfKnown(candidatePackage, candidateRule, ctx, expr.negated)
-                    ?: Condition.Unrendered(sourceText(expr.location), "partial-rule-reference")
+                    ?: unrenderedAt(expr.location, "partial-rule-reference")
             }
         }
         val operand = mapRefChain(chain, symbolTable, ctx, term.location)
         return when (operand) {
             is ConstructResult.Ok -> Condition.Truthy(operand.operand, expr.negated)
-            is ConstructResult.Unsupported -> Condition.Unrendered(sourceText(expr.location), operand.reason)
+            is ConstructResult.Unsupported -> unrenderedAt(expr.location, operand.reason)
         }
     }
 
@@ -1825,6 +1825,10 @@ internal object AstMapper {
         val name = decodeTermList(operatorTerm.value).joinToString(".") { stringValueOf(it) }
         return name to terms.drop(1)
     }
+
+    /** A fallback for the statement at [location]: its verbatim source, why, and where it starts (spec §14.69; a missing location is no place, not row 0). */
+    private fun unrenderedAt(location: io.explico.opa.OpaLocation?, reason: String): Condition.Unrendered =
+        Condition.Unrendered(sourceText(location), reason, location?.row?.takeIf { it > 0 })
 
     private fun sourceText(location: io.explico.opa.OpaLocation?): String {
         val encoded = location?.text ?: return ""

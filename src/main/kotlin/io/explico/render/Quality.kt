@@ -59,7 +59,10 @@ internal object Quality {
     }
 
     /** [count] conditions shown as source for [reason], in [cards] (distinct, in index order). */
-    data class ShownAsSource(val reason: String, val count: Int, val cards: List<ControlRef>)
+    data class ShownAsSource(val reason: String, val count: Int, val cards: List<ControlRef>, val places: List<Place> = emptyList())
+
+    /** Where one fallback starts (spec §14.69): the [card] it is on, the policy-relative [file] of its body and the 1-based [row] of its first line. */
+    data class Place(val card: ControlRef, val file: String, val row: Int)
 
     data class RequirementItem(val requirement: String, val controls: List<ControlRef>)
 
@@ -155,14 +158,21 @@ internal object Quality {
      * control is one card holding all its rules' conditions. Cards stay in the order [entries] gives (index order), each once per reason.
      */
     private fun shownAsSource(cards: List<Entry>): List<ShownAsSource> {
-        val byReason = sortedMapOf<String, MutableList<Pair<Entry, Int>>>()
+        val byReason = sortedMapOf<String, MutableList<Triple<Entry, Int, List<Place>>>>()
         for (card in cards) {
-            val reasons = card.members.flatMap { (_, rule) -> rule.bodies.flatMap { Coverage.flatten(Coverage.conditionsOf(it)) } }
-                .filterIsInstance<Condition.Unrendered>().groupingBy { it.reason }.eachCount()
-            for ((reason, count) in reasons) byReason.getOrPut(reason) { mutableListOf() } += card to count
+            val found = card.members.flatMap { (_, rule) -> rule.bodies.flatMap { body -> fallbacksOf(body) } }
+            for ((reason, ofReason) in found.groupBy { it.second.reason }.toSortedMap()) {
+                val places = ofReason.mapNotNull { (file, condition) -> condition.row?.let { Place(card.ref, file, it) } }.distinct().sortedWith(compareBy({ it.file }, { it.row }))
+                byReason.getOrPut(reason) { mutableListOf() } += Triple(card, ofReason.size, places)
+            }
         }
-        return byReason.map { (reason, found) -> ShownAsSource(reason, found.sumOf { it.second }, found.map { it.first.ref }) }
+        return byReason.map { (reason, found) -> ShownAsSource(reason, found.sumOf { it.second }, found.map { it.first.ref }, found.flatMap { it.third }) }
     }
+
+    /** The condition-level fallbacks a body shows (its own, its `else` branches' and any nested), each with the file of the body or branch that holds it. */
+    private fun fallbacksOf(body: io.explico.model.RuleBody): List<Pair<String, Condition.Unrendered>> =
+        listOf(body.sourceLocation.file to body.conditions).plus(body.elseBranches.map { it.sourceLocation.file to it.conditions })
+            .flatMap { (file, conditions) -> Coverage.flatten(conditions).filterIsInstance<Condition.Unrendered>().map { file to it } }
 
     /**
      * Spec §14.63: [rule] declares no verdict and at least one example's evaluated value is a decision object -- a JSON object with some value that is not `true`

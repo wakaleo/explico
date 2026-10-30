@@ -107,4 +107,62 @@ class QualityShownAsSourceTest {
         )
         assertThat(found.first().cards.single().link()).isEqualTo("[C-G](controls/c-g.md#c-g)")
     }
+
+    @org.junit.jupiter.api.Nested
+    @DisplayName("Places (spec §14.69)")
+    inner class Places {
+
+        private fun at(reason: String, row: Int?) = Condition.Unrendered("src", reason, row)
+
+        private fun bodyIn(file: String, vararg conditions: Condition, elseBranches: List<ElseBranch> = emptyList()) =
+            RuleBody(conditions.toList(), null, null, SourceRef(file, 1), "", elseBranches = elseBranches)
+
+        private fun places(set: PolicySet, reason: String, groups: ControlGroups? = null) =
+            shown(set, groups).single { it.reason == reason }.places.map { Triple(it.card.label, it.file, it.row) }
+
+        @Test
+        @DisplayName("each fallback with a row is a place -- the holding body's file and the row -- rows ascending within a card, cards in index order")
+        fun rowsAscending() {
+            val s = set(rule("a", "C-2", bodyIn("a.rego", at("every", 9), at("every", 3))), rule("b", "C-1", bodyIn("b.rego", at("every", 5))))
+            assertThat(places(s, "every")).containsExactly(Triple("C-1", "b.rego", 5), Triple("C-2", "a.rego", 3), Triple("C-2", "a.rego", 9))
+        }
+
+        @Test
+        @DisplayName("a fallback with no known row has no place, but still counts and still names its card")
+        fun unknownRow() {
+            val s = set(rule("a", "C-1", bodyIn("a.rego", at("every", null), at("every", 4))))
+            val item = shown(s).single()
+            assertThat(item.count).isEqualTo(2)
+            assertThat(item.cards.map { it.label }).containsExactly("C-1")
+            assertThat(item.places.map { it.row }).containsExactly(4)
+        }
+
+        @Test
+        @DisplayName("a fallback in an else branch takes the branch's own file; a grouped control gathers the places of all its rules, sorted by file then row")
+        fun elseBranchAndGroups() {
+            val branch = ElseBranch(listOf(at("function-call", 8)), Operand.Literal("1"), SourceRef("z.rego", 7))
+            val s = set(
+                rule("a", "C-G", bodyIn("m.rego", rendered, elseBranches = listOf(branch))),
+                rule("b", "C-G", bodyIn("a.rego", at("function-call", 2))),
+            )
+            assertThat(places(s, "function-call", ControlGroups.of(s))).containsExactly(Triple("C-G", "a.rego", 2), Triple("C-G", "z.rego", 8))
+        }
+
+        @Test
+        @DisplayName("CHALLENGE: two fallbacks on ONE row (a one-line body) are two conditions but one place")
+        fun sameRowTwice() {
+            val s = set(rule("a", "C-1", bodyIn("a.rego", at("function-call", 5), at("function-call", 5))))
+            val item = shown(s).single()
+            assertThat(item.count).isEqualTo(2)
+            assertThat(item.places.map { it.row }).containsExactly(5)
+        }
+
+        @Test
+        @DisplayName("the markdown puts a card's own places in parentheses after its link, as file:row code spans; a card with none has no parentheses")
+        fun markdown() {
+            val s = set(rule("a", "C-1", bodyIn("a.rego", at("every", 3), at("every", 9))), rule("b", "C-2", bodyIn("b.rego", at("every", null))))
+            val index = MarkdownRenderer.renderIndex(s)
+            assertThat(index).contains("  - `every` ×3 in [C-1](p.md#c-1) (`a.rego:3`, `a.rego:9`), [C-2](p.md#c-2) — ")
+        }
+    }
 }

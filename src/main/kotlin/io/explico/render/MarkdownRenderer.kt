@@ -982,7 +982,11 @@ internal object MarkdownRenderer {
         if (findings.shownAsSource.isNotEmpty()) {
             sb.appendLine("- **Shown as source (${findings.shownAsSource.sumOf { it.count }}):**")
             for (item in findings.shownAsSource) {
-                sb.appendLine("  - `${item.reason}` ×${item.count} in ${item.cards.joinToString(", ") { it.link() }} — ${UnrenderedReasons.why(item.reason)}")
+                val cards = item.cards.joinToString(", ") { card ->
+                    val where = item.places.filter { it.card == card }.joinToString(", ") { "`${it.file}:${it.row}`" }
+                    card.link() + if (where.isEmpty()) "" else " ($where)"
+                }
+                sb.appendLine("  - `${item.reason}` ×${item.count} in $cards — ${UnrenderedReasons.why(item.reason)}")
             }
         }
         for ((title, controls) in findings.duplicateTitles) {

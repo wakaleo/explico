@@ -42,11 +42,12 @@ can render that kind of construct:
 
 ```
 - **Shown as source (2):**
-  - `comprehension` ×1 in [FB-001](fallbacks.md#fb-001) — a comprehension is shown only when its head and every condition inside it can be rendered
-  - `every` ×1 in [every_container_limited](...) — an every block is shown only when its domain is a plain path and every condition in its body can be rendered
+  - `comprehension` ×1 in [FB-001](fallbacks.md#fb-001) (`fallbacks/fb.rego:14`) — a comprehension is shown only when its head and every condition inside it can be rendered
+  - `every` ×1 in [every_container_limited](...) (`fallbacks/fb.rego:31`) — an every block is shown only when its domain is a plain path and every condition in its body can be rendered
 ```
 
-The sentence explains; it does not tell you to rewrite the policy, because a rewrite can change what the policy means. It counts
+The place after each card, `file:row`, is where the unrendered statement starts (a whole construct such as an `every` block or an `else`
+chain starts at its first row), relative to the policy directory, so you can go straight to the line. The sentence explains; it does not tell you to rewrite the policy, because a rewrite can change what the policy means. It counts
 conditions only (the unrendered *operands* mentioned above carry no reason), across every card including helper rules, and it is
 advisory: it is not a gap, and `--fail-on-gaps` ignores it.
 

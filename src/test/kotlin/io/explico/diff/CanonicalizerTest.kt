@@ -272,6 +272,12 @@ class CanonicalizerTest {
     }
 
     @Test
+    @org.junit.jupiter.api.DisplayName("spec §14.69: a fallback's row is not logic -- moving a statement (comment lines above, blank lines inside) keeps the hash")
+    fun movingAFallbackKeepsTheLogicHash() {
+        assertThat(Canonicalizer.logicHash(denyRule("fallback-shift-moved"))).isEqualTo(Canonicalizer.logicHash(denyRule("fallback-shift-base")))
+    }
+
+    @Test
     fun pureUnificationEquivalentToDoubleEqualsHashesTheSame() {
         // spec §14 promotion: `input.a = input.b` (both sides already real, non-binding paths) now
         // promotes identically to `input.a == input.b` -- a real diff-quality improvement, not just

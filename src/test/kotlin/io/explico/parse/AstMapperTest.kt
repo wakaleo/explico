@@ -4819,6 +4819,14 @@ class AstMapperTest {
         }
 
         @Test
+        @DisplayName("spec §14.69: the mapping-error fallback's place is the rule's own row (7), the statement that could not be mapped")
+        fun mappingErrorKnowsItsRow() {
+            val (policySet, _) = mapCapturingStderr()
+            val fallback = policySet.packages.single().rules.single { it.name == "broken" }.bodies.single().conditions.single() as Condition.Unrendered
+            assertThat(fallback.row).isEqualTo(7)
+        }
+
+        @Test
         @DisplayName("a rule whose mapping throws becomes a verbatim-source fallback body; the mapper does not abort")
         fun failingRuleFallsBackToItsVerbatimSource() {
             val (policySet, _) = mapCapturingStderr()

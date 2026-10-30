@@ -1657,6 +1657,11 @@ section appear) but never in `gapDescriptions`, and comments never reach `Canoni
 `render/RequiredSet` validates and normalises the names; `Quality.gapDescriptions(findings, coverage, required)` is the ONE place gap lines are worded and ordered (description, frameworks, title, fixture, verdict, then shared titles, then requirement gaps). `Explico.render` validates BEFORE opa work and computes the
 gap findings WITH the examples; the displayed index/JSON findings never depend on the set (`missingTitle` is gap-only and out of `Findings.isEmpty()`). The CLI checks the names itself before opa is needed and refuses `--require` without `--fail-on-gaps`. Never let the set change a rendered file.
 
+## Places of the fallbacks (spec §14.69)
+
+Every `Condition.Unrendered` the mapper builds goes through `AstMapper.unrenderedAt(location, reason)`, which records the statement's first row (null when opa gave no location, never 0). The row is NOT logic: `Canonicalizer` hashes `sourceText` and `reason` only, and `diff` compares fallbacks by text -- never compare two
+`Unrendered` with `==` in diff code. The file of a place is the holding body's (or else branch's) `sourceLocation.file`; `Quality.shownAsSource` builds the places and the bullet/JSON only present them.
+
 ## Rules with no control id (spec §14.68)
 
 "Used by another rule" is decided in `parse/RuleReferences` from opa's own AST (a generic walk, so a use inside a comprehension, `every` or `with` still counts) and carried as `RuleGroup.isReferenced` (default TRUE = unknown, never a finding). Never answer the question from the domain model alone: it keeps those uses
