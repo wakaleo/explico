@@ -31,12 +31,15 @@ internal object DiffRenderer {
         dataSupplied: Boolean = false,
         /** Null = no example fixtures were supplied: there is no `## Behaviour on your examples` section at all (spec §14.74). */
         exampleChanges: ExampleChangeIndex? = null,
+        /** Null = no policy directories were given: no `**Compared**` block (spec §14.76). */
+        header: DiffHeader? = null,
     ): String {
         val sb = StringBuilder()
         sb.appendLine("# Policy diff report")
         sb.appendLine()
         sb.appendLine("*${if (dataSupplied) DISCLAIMER_WITH_DATA else DISCLAIMER}*")
         sb.appendLine()
+        if (header != null) appendCompared(sb, header)
         appendSummary(sb, entries)
         val changed = entries.filter { it.category != DiffCategory.UNCHANGED }
             .sortedWith(ChangeSummary.REPORT_ORDER)
@@ -59,6 +62,16 @@ internal object DiffRenderer {
             sb.appendLine(ChangeSummary.bulletFor(entry, qualified, anchors))
             for (sub in ChangeSummary.subBulletsFor(entry, dataChanges.of(entry))) sb.appendLine("  - $sub")
         }
+        sb.appendLine()
+    }
+
+    /** Spec §14.76: the digest of each compared version, so a report can be tied to a release and to the `index.md` of the same directory. */
+    private fun appendCompared(sb: StringBuilder, header: DiffHeader) {
+        fun named(side: String, label: String?) = if (label == null) side else "$side ($label)"
+        sb.appendLine("**Compared**")
+        sb.appendLine()
+        sb.appendLine("- ${named("Old", header.oldLabel)}: `${header.oldDigest}`")
+        sb.appendLine("- ${named("New", header.newLabel)}: `${header.newDigest}`${if (header.samePolicies) " (same policies as Old)" else ""}")
         sb.appendLine()
     }
 

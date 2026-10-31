@@ -192,6 +192,20 @@ explico diff samples/policies <your-copy> --out report.md
 - REL-004 — Release governance evidence (rev. 2) — documentation changed: title, description
 ```
 
+The report file itself opens with a **Compared** block that says which two versions it
+compares: the digest of each policy directory, the same `sha256:` value `explico render`
+prints in `index.md` for that directory, so a report can be tied to a release and to the
+documentation generated from it. Add `--old-label` / `--new-label` to name the versions
+(`--old-label samples --new-label "rev. 2"` here); this is the real head of that report
+(your *New* digest is that of your own copy):
+
+```markdown
+**Compared**
+
+- Old (samples): `sha256:5f0bc88b6e15c3e7855a524b2e86bceeec63c4ab152185fccc9afbf9a1b71983`
+- New (rev. 2): `sha256:62dbb11ef4b8c2228d8051c313288a49cb54c38967f948e6b6252dd892b7cc3e`
+```
+
 Right after the summary table, a short **What changed** section lists every
 non-`UNCHANGED` control in one line each — here, just REL-004, naming
 exactly the two metadata fields that actually differ. A `LOGIC_CHANGED`

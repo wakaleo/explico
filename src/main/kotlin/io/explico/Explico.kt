@@ -4,6 +4,7 @@ package io.explico
 import io.explico.diff.DataChangeIndex
 import io.explico.diff.DataChanges
 import io.explico.diff.DiffEntry
+import io.explico.diff.DiffHeader
 import io.explico.diff.DiffJson
 import io.explico.diff.DiffRenderer
 import io.explico.diff.ExampleChanges
@@ -26,6 +27,7 @@ import io.explico.render.CoverageSummary
 import io.explico.render.JsonExport
 import io.explico.render.ExampleSet
 import io.explico.render.MarkdownRenderer
+import io.explico.render.PlainLabel
 import io.explico.render.PolicyDigest
 import io.explico.render.Quality
 import io.explico.render.RequiredSet
@@ -73,6 +75,9 @@ public data class DiffReport @JvmOverloads constructor(
     val exampleChanges: List<io.explico.diff.ExampleChange> = emptyList(),
     /** What the example comparison covered (spec §14.74); null unless `diff` was given example fixtures. */
     val exampleComparison: io.explico.diff.ExampleComparison? = null,
+    /** `sha256:<hex>` of the old and the new policy directory (the digest `render` prints in `index.md`); empty unless `diff` was given both policy directories (spec §14.76). */
+    val oldDigest: String = "",
+    val newDigest: String = "",
 )
 
 /**
@@ -274,13 +279,25 @@ public object Explico {
         examples: ExampleSet? = null,
         oldPolicyDir: Path? = null,
         newPolicyDir: Path? = null,
+        /**
+         * Optional names for the two versions (spec §14.76), shown as `Old (v1.2)` / `New (v1.3)` in the report's **Compared** block and in the JSON. Plain text: not blank,
+         * at most 80 characters, no leading/trailing space, no line break, tab or backtick. Need [oldPolicyDir] and [newPolicyDir].
+         */
+        oldLabel: String? = null,
+        newLabel: String? = null,
     ): DiffReport {
         require((dataOld == null) == (dataNew == null)) {
             "dataOld and dataNew must be given together (only ${if (dataOld != null) "dataOld" else "dataNew"} was given)"
         }
-        require(examples == null || (oldPolicyDir != null && newPolicyDir != null)) {
-            "examples need both oldPolicyDir and newPolicyDir: opa re-reads the .rego files of each version to evaluate the fixtures"
+        // Spec §14.76: all of this is checked before any file is read or opa is run, so a mistake is reported as the mistake it is.
+        require((oldPolicyDir == null) == (newPolicyDir == null)) {
+            "oldPolicyDir and newPolicyDir must be given together (only ${if (oldPolicyDir != null) "oldPolicyDir" else "newPolicyDir"} was given): " +
+                "they are the directories the report digests and, for examples, the ones opa re-reads"
         }
+        require(examples == null || oldPolicyDir != null) { "examples need both oldPolicyDir and newPolicyDir: opa re-reads the .rego files of each version to evaluate the fixtures" }
+        require((oldLabel == null && newLabel == null) || oldPolicyDir != null) { "oldLabel and newLabel name the digests of oldPolicyDir and newPolicyDir, which were not given" }
+        oldLabel?.let { PlainLabel.validate(it, "oldLabel") }
+        newLabel?.let { PlainLabel.validate(it, "newLabel") }
         val compared = PolicyDiff.diff(old, new, groupByControl)
 
         var entries = compared
@@ -299,12 +316,20 @@ public object Explico {
         } else {
             null
         }
+        // Spec §14.76: which two versions this report compares -- the same digest `render` prints in index.md -- only when the directories are known.
+        val header = if (oldPolicyDir != null && newPolicyDir != null) {
+            DiffHeader("sha256:${PolicyDigest.of(oldPolicyDir)}", "sha256:${PolicyDigest.of(newPolicyDir)}", oldLabel, newLabel)
+        } else {
+            null
+        }
         return DiffReport(
             entries,
-            DiffRenderer.render(entries, old, new, dataChanges, dataSupplied = dataOld != null, exampleChanges = exampleChanges),
-            DiffJson.render(entries, dataChanges, exampleChanges),
+            DiffRenderer.render(entries, old, new, dataChanges, dataSupplied = dataOld != null, exampleChanges = exampleChanges, header = header),
+            DiffJson.render(entries, dataChanges, exampleChanges, header),
             exampleChanges?.flat(entries).orEmpty(),
             exampleChanges?.comparison,
+            header?.oldDigest.orEmpty(),
+            header?.newDigest.orEmpty(),
         )
     }
 

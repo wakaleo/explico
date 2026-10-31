@@ -24,8 +24,8 @@ internal class CompanionLinks private constructor(private val template: String, 
     companion object {
         private const val FILE = "{file}"
         private const val PACKAGE = "{package}"
-        /** Each would break the link, the table or the italic line the link sits in. */
-        private const val FORBIDDEN_IN_LABEL = "[]|`*\n\r"
+        /** On top of the PlainLabel rules: each would break the link, the table or the italic line the link sits in. */
+        private const val FORBIDDEN_IN_LABEL = "[]|*"
         private val PLACEHOLDER = Regex("""\{(?:file|package|line)\}""")
 
         /**
@@ -42,10 +42,6 @@ internal class CompanionLinks private constructor(private val template: String, 
         }
 
         /** Throws [IllegalArgumentException] unless [label] is plain text that cannot break the link, a table or the italic line it sits in. */
-        fun validateLabel(label: String) {
-            require(label.isNotBlank() && label.none { it in FORBIDDEN_IN_LABEL }) {
-                "the companion link label must be plain text: not blank, and without [, ], |, `, * or a line break (got '${label.replace("\n", "\\n").replace("\r", "\\r")}')"
-            }
-        }
+        fun validateLabel(label: String) = PlainLabel.validate(label, "the companion link label", FORBIDDEN_IN_LABEL)
     }
 }

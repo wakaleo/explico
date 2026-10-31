@@ -1706,3 +1706,9 @@ supplied". `ExampleComparison` (compared / total / functions / unattributable / 
 LOGIC_CHANGED entry (only differing rows) are all read from it -- never add a field, a comparison or a cell renderer anywhere else. Values are compared, not cells. The sub-bullet `documentation changed: ...` is appended AFTER the fallback is decided, and JSON `fields` appears on a LOGIC_CHANGED
 change only when something differs. A data-raised entry gets them too, which closes the §14.73 limitation.
 
+## The diff report header (spec §14.76)
+
+`Explico.diff(..., oldPolicyDir, newPolicyDir, oldLabel, newLabel)` puts a `**Compared**` block under the disclaimer: `sha256:` + `PolicyDigest.of(dir)` for each side -- the SAME function and input `render` uses for `index.md`, so never compute a digest anywhere else. The directories come together;
+labels need them. `render/PlainLabel.validate` is the ONE plain-text label rule (companion label adds `[ ] | *`); all validation happens before any file access or opa. Without the directories nothing changes, byte for byte (the `diff-all-categories` golden pins it). The CLI always passes both directories, so a CLI
+report always has the block: `docs/tutorial.md`'s pasted block is a real run, regenerate it if the digest input or the wording changes.
+

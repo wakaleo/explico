@@ -17,7 +17,7 @@ internal object DiffJson {
 
     private val SECTION_ORDER = listOf(DiffCategory.REMOVED, DiffCategory.ADDED, DiffCategory.LOGIC_CHANGED, DiffCategory.DOCS_CHANGED)
 
-    fun render(entries: List<DiffEntry>, dataChanges: DataChangeIndex = DataChangeIndex.NONE, exampleChanges: ExampleChangeIndex? = null): String {
+    fun render(entries: List<DiffEntry>, dataChanges: DataChangeIndex = DataChangeIndex.NONE, exampleChanges: ExampleChangeIndex? = null, header: DiffHeader? = null): String {
         val counts = entries.groupingBy { it.category }.eachCount()
         val changed = entries.filter { it.category != DiffCategory.UNCHANGED }
             .sortedWith(ChangeSummary.REPORT_ORDER)
@@ -25,6 +25,13 @@ internal object DiffJson {
         val anchors = ChangeAnchors(changed, qualified)
         val document = buildJsonObject {
             put("schema", SCHEMA)
+            // Spec §14.76: which two versions were compared (only when the policy directories were given).
+            if (header != null) {
+                put("compared", buildJsonObject {
+                    put("old", buildJsonObject { put("digest", header.oldDigest); header.oldLabel?.let { put("label", it) } })
+                    put("new", buildJsonObject { put("digest", header.newDigest); header.newLabel?.let { put("label", it) } })
+                })
+            }
             put("summary", buildJsonObject {
                 for (category in SECTION_ORDER + DiffCategory.UNCHANGED) put(category.name, counts[category] ?: 0)
             })

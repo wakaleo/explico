@@ -30,6 +30,7 @@ import io.explico.render.RequiredSet
 import io.explico.render.ControlIdFromFilename
 import io.explico.render.DuplicateFixtureNameException
 import io.explico.render.InvalidMaskException
+import io.explico.render.PlainLabel
 import io.explico.render.SourceLinks
 import java.nio.file.Files
 import java.nio.file.Path
@@ -183,6 +184,8 @@ private class DiffCommand : CliktCommand(name = "diff") {
     ).path(mustExist = true)
     private val newData by option("--new-data", help = "Reference data of the new version (a file or directory); see --old-data").path(mustExist = true)
 
+    private val oldLabel by option("--old-label", help = "A name for the old version (e.g. v1.2), shown next to its digest in the report's Compared block")
+    private val newLabel by option("--new-label", help = "A name for the new version, shown next to its digest in the report's Compared block")
     private val examplesDir by option(
         "--examples",
         help = "Example fixtures (as for render): the report lists, per control, the fixtures whose outcome differs between the two versions",
@@ -195,6 +198,9 @@ private class DiffCommand : CliktCommand(name = "diff") {
     override fun run() {
         // Cheapest preconditions first, before opa is needed or anything is written (spec §14.73, §14.74): these options only make sense together.
         if ((oldData == null) != (newData == null)) throw UsageError("--old-data and --new-data must be given together (only ${if (oldData != null) "--old-data" else "--new-data"} was given)")
+        // Spec §14.76: the same plain-text rules as the library, reported against the option the user typed.
+        oldLabel?.let { checkLabel(it, "--old-label") }
+        newLabel?.let { checkLabel(it, "--new-label") }
         if (failOnExampleChanges && examplesDir == null) throw UsageError("--fail-on-example-changes needs --examples (there is nothing to compare without example fixtures)")
         requireOpaOrExit()
         try {
@@ -203,7 +209,7 @@ private class DiffCommand : CliktCommand(name = "diff") {
             val examples = examplesDir?.let { Explico.loadExamples(it) }
             // An empty examples directory is "not supplied" to the library; a gate on it would pass having looked at nothing.
             if (failOnExampleChanges && examples != null && examples.fixtures.isEmpty()) throw UsageError("--fail-on-example-changes: the --examples directory holds no fixture, so there is nothing to compare")
-            val report = Explico.diff(old, new, groupByControl, oldData, newData, examples, oldDir, newDir)
+            val report = Explico.diff(old, new, groupByControl, oldData, newData, examples, oldDir, newDir, oldLabel, newLabel)
             out.parent?.let { Files.createDirectories(it) }
             Files.writeString(out, report.markdown)
             jsonOut?.let { target ->
@@ -223,6 +229,15 @@ private class DiffCommand : CliktCommand(name = "diff") {
         } catch (e: DuplicateControlIdException) {
             failWith(4, (e.message ?: "duplicate control-id") + " -- if one control is split over several rules on purpose, pass --group-by-control to diff each rule separately")
         }
+    }
+}
+
+/** Throws a Clikt usage error (exit 1) naming [option] when [value] is not a plain-text label (spec §14.76). */
+private fun checkLabel(value: String, option: String) {
+    try {
+        PlainLabel.validate(value, option)
+    } catch (e: IllegalArgumentException) {
+        throw UsageError(e.message ?: "$option is not plain text")
     }
 }
 

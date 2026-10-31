@@ -77,6 +77,7 @@ unrendered), `link` (`{package, rule}` for a rule reference or function call, el
 | Key | Type | Meaning |
 |---|---|---|
 | `schema` | string | `"explico/diff/1"` |
+| `compared` | object | Which versions were compared: `old` and `new`, each `{digest, label?}` — the `sha256:` digest of the policy directory (the value `render` prints in `index.md`) and the label given with `--old-label`/`--new-label`. Present only when `diff` was given the policy directories (always, from the CLI) |
 | `summary` | object | Counts for `REMOVED`, `ADDED`, `LOGIC_CHANGED`, `DOCS_CHANGED`, `UNCHANGED` |
 | `changes` | array | Every non-`UNCHANGED` control, in report order (removed, added, logic changed, docs changed; then control id) |
 
