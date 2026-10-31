@@ -1,0 +1,16 @@
+{
+ "name": "small payment",
+ "input": {
+  "payment": {
+   "id": "P-1",
+   "amount_minor": 5000,
+   "currency": "EUR",
+   "source": "manual",
+   "beneficiary_country": "GB",
+   "screening_status": "clear",
+   "second_approver": false,
+   "treasury_preapproved": false,
+   "cfo_approved": false
+  }
+ }
+}

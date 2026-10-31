@@ -183,14 +183,27 @@ private class DiffCommand : CliktCommand(name = "diff") {
     ).path(mustExist = true)
     private val newData by option("--new-data", help = "Reference data of the new version (a file or directory); see --old-data").path(mustExist = true)
 
+    private val examplesDir by option(
+        "--examples",
+        help = "Example fixtures (as for render): the report lists, per control, the fixtures whose outcome differs between the two versions",
+    ).path(mustExist = true, canBeFile = false)
+    private val failOnExampleChanges by option(
+        "--fail-on-example-changes",
+        help = "Exit 5 if any fixture of --examples changed outcome between the two versions; the report is still written",
+    ).flag()
+
     override fun run() {
-        // Cheapest precondition first, before opa is needed or anything is written (spec §14.73): the two options only make sense together.
+        // Cheapest preconditions first, before opa is needed or anything is written (spec §14.73, §14.74): these options only make sense together.
         if ((oldData == null) != (newData == null)) throw UsageError("--old-data and --new-data must be given together (only ${if (oldData != null) "--old-data" else "--new-data"} was given)")
+        if (failOnExampleChanges && examplesDir == null) throw UsageError("--fail-on-example-changes needs --examples (there is nothing to compare without example fixtures)")
         requireOpaOrExit()
         try {
             val old = Explico.load(oldDir, parseRegoVersion(regoVersion))
             val new = Explico.load(newDir, parseRegoVersion(regoVersion))
-            val report = Explico.diff(old, new, groupByControl, oldData, newData)
+            val examples = examplesDir?.let { Explico.loadExamples(it) }
+            // An empty examples directory is "not supplied" to the library; a gate on it would pass having looked at nothing.
+            if (failOnExampleChanges && examples != null && examples.fixtures.isEmpty()) throw UsageError("--fail-on-example-changes: the --examples directory holds no fixture, so there is nothing to compare")
+            val report = Explico.diff(old, new, groupByControl, oldData, newData, examples, oldDir, newDir)
             out.parent?.let { Files.createDirectories(it) }
             Files.writeString(out, report.markdown)
             jsonOut?.let { target ->
@@ -198,9 +211,15 @@ private class DiffCommand : CliktCommand(name = "diff") {
                 Files.writeString(target, report.json)
             }
             echo(summarySection(report.markdown))
-            failOn?.let { categories -> Gates.failOn(report.entries, categories)?.let { failWith(Gates.EXIT_GATE_FAILED, it) } }
+            val gateMessages = listOfNotNull(
+                failOn?.let { categories -> Gates.failOn(report.entries, categories) },
+                if (failOnExampleChanges) Gates.failOnExampleChanges(report.exampleChanges, report.exampleComparison) else null,
+            )
+            if (gateMessages.isNotEmpty()) failWith(Gates.EXIT_GATE_FAILED, gateMessages.joinToString("\n"))
         } catch (e: OpaInvocationException) {
             failWith(2, e.stderr)
+        } catch (e: DuplicateFixtureNameException) {
+            failWith(4, e.message ?: "duplicate fixture name")
         } catch (e: DuplicateControlIdException) {
             failWith(4, (e.message ?: "duplicate control-id") + " -- if one control is split over several rules on purpose, pass --group-by-control to diff each rule separately")
         }

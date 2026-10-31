@@ -1693,3 +1693,10 @@ argument ALONE -- never with the policies loaded, so no Rego rule can run. `diff
 is public and its constructor is not to change. `ChangeSummary.dataChangeLine` is the ONE wording (Markdown, JSON `details` and the section under the card all print it). The data is NOT in `Canonicalizer`. Without data nothing changes, byte for byte (the `diff-all-categories`
 golden pins it).
 
+## The per-fixture verdict diff (spec §14.74)
+
+`diff --examples <dir>` (library `examples` + `oldPolicyDir` + `newPolicyDir`) evaluates the SAME fixtures against both versions through the worked-example path (`Explico.evaluateWorkedExamples`, shared with `render`) and `diff/ExampleChanges` compares them: pure,
+per entry with both rules, via `WorkedExamples.forGroup` (so a function / ambiguous name / no outcome is NOT compared -- never a guess), fixtures matched by name, words from `WorkedExamples.outcomeWord`. Never infer anything from a fixture's name. The result travels like
+`DataChangeIndex` (`ExampleChangeIndex`, identity lookup); `ChangeSummary.exampleLine` is the one wording (Markdown; JSON carries the fields), `ChangeSummary.labelMarkupFor` the one label, `ChangeSummary.REPORT_ORDER` the one report order. An examples set with no fixture is "not
+supplied". `ExampleComparison` (compared / total / functions / unattributable / fixturesOnOneVersion) is what keeps "No example changed outcome." honest: never print that sentence, or let the gate pass, when controls or fixtures were not compared. Without `--examples` nothing changes, byte for byte (the `diff-all-categories` golden pins it).
+

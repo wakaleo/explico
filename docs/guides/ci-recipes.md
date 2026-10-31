@@ -95,6 +95,7 @@ Notes:
 |---|---|
 | `render --fail-under <percent>` | overall rendering coverage is below the threshold |
 | `render --fail-on-gaps` | a control has no description or no framework (or whatever `--require` names), two controls share a title, and (with `--requirements`) a requirement has no control or a control names a framework that is not on your list |
+| `diff --examples <dir> --fail-on-example-changes` | any of your example fixtures comes out differently between the two versions (the report lists which, per control) |
 | `diff --fail-on <categories>` | any control is in one of the comma-separated categories `ADDED`, `REMOVED`, `LOGIC_CHANGED`, `DOCS_CHANGED`. Add `--old-data`/`--new-data` and a control whose reference data changed (a limit, a list) is `LOGIC_CHANGED` too, so a data-only change trips the gate |
 
 `--requirements <file>` is a text file with one requirement per line (blank lines and `#` comments ignored). Matching against a

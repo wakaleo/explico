@@ -57,5 +57,16 @@ internal object Gates {
         return "explico: gate failed (--fail-on ${categories.joinToString(",") { it.name }}): ${labels.size} control(s): ${labels.joinToString(", ")}"
     }
 
+    /** `--fail-on-example-changes` (spec §14.74): how many fixtures changed outcome, in how many controls (named in the report's own order). */
+    fun failOnExampleChanges(changes: List<io.explico.diff.ExampleChange>, comparison: io.explico.diff.ExampleComparison? = null): String? {
+        // A gate that could not look at anything must not pass: controls were present on both sides but none had examples that could be compared.
+        if (comparison != null && comparison.total > 0 && comparison.compared == 0) {
+            return "explico: gate failed (--fail-on-example-changes): no control could be compared (${comparison.total} present in both versions: ${comparison.functions} function(s), ${comparison.unattributable} with no examples attributable to the rule)"
+        }
+        if (changes.isEmpty()) return null
+        val controls = changes.map { it.control }.distinct()
+        return "explico: gate failed (--fail-on-example-changes): ${changes.size} example(s) changed outcome in ${controls.size} control(s): ${controls.joinToString(", ")}"
+    }
+
     private val DIFF_REPORT_ORDER = listOf(DiffCategory.REMOVED, DiffCategory.ADDED, DiffCategory.LOGIC_CHANGED, DiffCategory.DOCS_CHANGED)
 }

@@ -1,0 +1,16 @@
+{
+ "name": "mid-value payment without a second approver",
+ "input": {
+  "payment": {
+   "id": "P-2",
+   "amount_minor": 250000,
+   "currency": "EUR",
+   "source": "manual",
+   "beneficiary_country": "GB",
+   "screening_status": "clear",
+   "second_approver": false,
+   "treasury_preapproved": false,
+   "cfo_approved": false
+  }
+ }
+}

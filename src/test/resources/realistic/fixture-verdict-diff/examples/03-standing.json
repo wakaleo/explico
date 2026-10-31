@@ -1,0 +1,16 @@
+{
+ "name": "standing order pre-approved by Treasury",
+ "input": {
+  "payment": {
+   "id": "P-3",
+   "amount_minor": 900000,
+   "currency": "EUR",
+   "source": "standing_order",
+   "beneficiary_country": "GB",
+   "screening_status": "clear",
+   "second_approver": false,
+   "treasury_preapproved": true,
+   "cfo_approved": true
+  }
+ }
+}

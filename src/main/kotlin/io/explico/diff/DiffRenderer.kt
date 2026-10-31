@@ -29,6 +29,8 @@ internal object DiffRenderer {
         newPolicySet: PolicySet,
         dataChanges: DataChangeIndex = DataChangeIndex.NONE,
         dataSupplied: Boolean = false,
+        /** Null = no example fixtures were supplied: there is no `## Behaviour on your examples` section at all (spec §14.74). */
+        exampleChanges: ExampleChangeIndex? = null,
     ): String {
         val sb = StringBuilder()
         sb.appendLine("# Policy diff report")
@@ -37,10 +39,11 @@ internal object DiffRenderer {
         sb.appendLine()
         appendSummary(sb, entries)
         val changed = entries.filter { it.category != DiffCategory.UNCHANGED }
-            .sortedWith(compareBy({ SECTION_ORDER.indexOf(it.category) }, { it.controlId == null }, { it.controlId }))
+            .sortedWith(ChangeSummary.REPORT_ORDER)
         val qualified = ChangeSummary.qualifiedIds(entries)
         val anchors = ChangeAnchors(changed, qualified)
         appendWhatChanged(sb, changed, qualified, anchors, dataChanges)
+        if (exampleChanges != null) appendBehaviour(sb, changed, qualified, anchors, exampleChanges)
         val isLinkable = linkableTargetsOf(changed, anchors)
         appendChanges(sb, changed, oldPolicySet, newPolicySet, isLinkable, qualified, anchors, dataChanges)
         appendCoverageWarning(sb, entries)
@@ -57,6 +60,29 @@ internal object DiffRenderer {
             for (sub in ChangeSummary.subBulletsFor(entry, dataChanges.of(entry))) sb.appendLine("  - $sub")
         }
         sb.appendLine()
+    }
+
+    /**
+     * Spec §14.74: for each control whose outcome on one of the author's fixtures changed, those fixtures. Controls that changed without moving any outcome are not
+     * listed; when none moved, one sentence says so. Labels and anchors are the ones "What changed" uses.
+     */
+    private fun appendBehaviour(sb: StringBuilder, changed: List<DiffEntry>, qualified: Set<String>, anchors: ChangeAnchors, exampleChanges: ExampleChangeIndex) {
+        sb.appendLine("## Behaviour on your examples")
+        sb.appendLine()
+        val affected = changed.filter { exampleChanges.of(it).isNotEmpty() }
+        if (affected.isEmpty()) {
+            sb.appendLine(ChangeSummary.noExampleChangedSentence(exampleChanges.comparison))
+        }
+        for (entry in affected) {
+            sb.appendLine("- ${ChangeSummary.labelMarkupFor(entry, qualified, anchors)}")
+            for (change in exampleChanges.of(entry)) sb.appendLine("  - ${ChangeSummary.exampleLine(change)}")
+        }
+        sb.appendLine()
+        // Spec §14.74: what the section is based on, so a short list (or "no change") is never read as more than was compared.
+        ChangeSummary.comparisonLine(exampleChanges.comparison)?.let { line ->
+            sb.appendLine(line)
+            sb.appendLine()
+        }
     }
 
     /**

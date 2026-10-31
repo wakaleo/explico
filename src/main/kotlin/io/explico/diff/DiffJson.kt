@@ -17,10 +17,10 @@ internal object DiffJson {
 
     private val SECTION_ORDER = listOf(DiffCategory.REMOVED, DiffCategory.ADDED, DiffCategory.LOGIC_CHANGED, DiffCategory.DOCS_CHANGED)
 
-    fun render(entries: List<DiffEntry>, dataChanges: DataChangeIndex = DataChangeIndex.NONE): String {
+    fun render(entries: List<DiffEntry>, dataChanges: DataChangeIndex = DataChangeIndex.NONE, exampleChanges: ExampleChangeIndex? = null): String {
         val counts = entries.groupingBy { it.category }.eachCount()
         val changed = entries.filter { it.category != DiffCategory.UNCHANGED }
-            .sortedWith(compareBy({ SECTION_ORDER.indexOf(it.category) }, { it.controlId == null }, { it.controlId }))
+            .sortedWith(ChangeSummary.REPORT_ORDER)
         val qualified = ChangeSummary.qualifiedIds(entries)
         val anchors = ChangeAnchors(changed, qualified)
         val document = buildJsonObject {
@@ -28,12 +28,20 @@ internal object DiffJson {
             put("summary", buildJsonObject {
                 for (category in SECTION_ORDER + DiffCategory.UNCHANGED) put(category.name, counts[category] ?: 0)
             })
-            put("changes", buildJsonArray { changed.forEach { add(change(it, qualified, anchors, dataChanges)) } })
+            put("changes", buildJsonArray { changed.forEach { add(change(it, qualified, anchors, dataChanges, exampleChanges)) } })
+            // Spec §14.74: what the example comparison covered (only when examples were supplied).
+            if (exampleChanges != null) {
+                val c = exampleChanges.comparison
+                put("exampleComparison", buildJsonObject {
+                    put("compared", c.compared); put("total", c.total); put("functions", c.functions)
+                    put("unattributable", c.unattributable); put("fixturesOnOneVersion", c.fixturesOnOneVersion)
+                })
+            }
         }
         return JsonExport.prettyJson(document)
     }
 
-    private fun change(entry: DiffEntry, qualified: Set<String>, anchors: ChangeAnchors, dataChanges: DataChangeIndex) = buildJsonObject {
+    private fun change(entry: DiffEntry, qualified: Set<String>, anchors: ChangeAnchors, dataChanges: DataChangeIndex, exampleChanges: ExampleChangeIndex?) = buildJsonObject {
         val (packagePath, rule) = ChangeSummary.displayedTarget(entry)
         put("category", entry.category.name)
         put("controlId", entry.controlId?.let { JsonPrimitive(it) } ?: JsonNull)
@@ -45,6 +53,12 @@ internal object DiffJson {
             DiffCategory.LOGIC_CHANGED -> put("details", buildJsonArray { ChangeSummary.subBulletsFor(entry, dataChanges.of(entry)).forEach { add(JsonPrimitive(it)) } })
             DiffCategory.DOCS_CHANGED -> put("fields", buildJsonArray { ChangeSummary.changedMetadataFields(entry).forEach { add(JsonPrimitive(it)) } })
             else -> Unit
+        }
+        // Spec §14.74: only when example fixtures were supplied (an empty array when none of this control's outcomes moved).
+        if (exampleChanges != null) {
+            put("examples", buildJsonArray {
+                exampleChanges.of(entry).forEach { c -> add(buildJsonObject { put("fixture", c.fixture); put("old", c.old); put("new", c.new) }) }
+            })
         }
     }
 }

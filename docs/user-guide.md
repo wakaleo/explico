@@ -112,7 +112,7 @@ plain `data.*` document show what that document actually holds in the supplied d
 ### `explico diff`
 
 ```
-explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--group-by-control] [--old-data <path> --new-data <path>] [--fail-on <categories>] [--rego-version v1|v0]
+explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--group-by-control] [--old-data <path> --new-data <path>] [--examples <dir> [--fail-on-example-changes]] [--fail-on <categories>] [--rego-version v1|v0]
 ```
 
 | Argument/flag | Required | Meaning |
@@ -123,6 +123,8 @@ explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--group-by-co
 | `--json <file>` | no | Also write the machine-readable change report (JSON) to this file. See [`json-output.md`](json-output.md). |
 | `--group-by-control` | no | Accept a control id **shared by several rules** (one control split over files) instead of exit `4`: each of its rules is its own entry, identified by control id, package and rule (decided over both versions), and the report names the rule too (`SEC-28 — Sign-off (grp_signoff.signed_off)`). A rule renamed or moved to another package inside such a control is removed + added. Two rules of one name and one id in one package are still exit `4`. Without the flag a shared id is still exit `4`. |
 | `--old-data <path>`, `--new-data <path>` | no, but together | The supplied data (a file or a directory, as `render --data`) of each version. A control whose reference data differs — the `data.*` documents its conditions read — is `LOGIC_CHANGED` even if its Rego is identical, with a `reference data changed: <document>: <old> -> <new>` line (`absent` where a version lacks the document). A document no control reads is never reported, and no Rego rule is evaluated. One option without the other is a usage error (exit `1`). A directory is read by `opa eval --data`, so keep `.rego` files out of it (they would be loaded). A control that was `DOCS_CHANGED` and whose data also changed is reported as `LOGIC_CHANGED`; its documentation changes are not listed. |
+| `--examples <dir>` | no | Your example fixtures (as for `render`). Adds a `## Behaviour on your examples` section: the same fixtures are evaluated by OPA against the old and the new policies (each with its own `--old-data`/`--new-data` when given), and per control every fixture whose outcome changed is listed in the cards' own words (`✅ allowed -> ❌ denied`, or `still ❌ denied, message changed`). A control whose logic changed but whose outcomes did not is not listed; added and removed controls are not compared. A function, or several same-named rules whose messages cannot be attributed, are not compared (as on the cards), and the section ends with `Compared N of M controls present in both versions` and what was left out, so a short list is never read as more than was checked. |
+| `--fail-on-example-changes` | no | CI gate, needs `--examples` (else exit `1`): exit `5` if any fixture changed outcome, or if controls exist in both versions but none could be compared. The report is still written; stderr gives the counts and the controls. An `--examples` directory with no fixture is a usage error (exit `1`) with this flag. |
 | `--fail-on <categories>` | no | CI gate: exit `5` if any control is in one of these categories — comma-separated, case-insensitive: `ADDED`, `REMOVED`, `LOGIC_CHANGED`, `DOCS_CHANGED`. The report is still written and the Summary still printed; stderr names the matching controls. |
 
 Classifies every control as `ADDED`, `REMOVED`, `LOGIC_CHANGED`,

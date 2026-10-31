@@ -1,0 +1,16 @@
+{
+ "name": "payment to a sanctioned country",
+ "input": {
+  "payment": {
+   "id": "P-4",
+   "amount_minor": 5000,
+   "currency": "EUR",
+   "source": "manual",
+   "beneficiary_country": "KP",
+   "screening_status": "clear",
+   "second_approver": false,
+   "treasury_preapproved": false,
+   "cfo_approved": false
+  }
+ }
+}

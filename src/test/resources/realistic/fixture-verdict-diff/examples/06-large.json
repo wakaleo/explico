@@ -1,0 +1,16 @@
+{
+ "name": "large payment approved by a second person",
+ "input": {
+  "payment": {
+   "id": "P-6",
+   "amount_minor": 250000,
+   "currency": "GBP",
+   "source": "manual",
+   "beneficiary_country": "GB",
+   "screening_status": "clear",
+   "second_approver": true,
+   "treasury_preapproved": false,
+   "cfo_approved": true
+  }
+ }
+}

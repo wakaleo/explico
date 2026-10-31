@@ -1,0 +1,16 @@
+{
+ "name": "screening still pending",
+ "input": {
+  "payment": {
+   "id": "P-5",
+   "amount_minor": 5000,
+   "currency": "EUR",
+   "source": "manual",
+   "beneficiary_country": "GB",
+   "screening_status": "pending",
+   "second_approver": false,
+   "treasury_preapproved": false,
+   "cfo_approved": false
+  }
+ }
+}

@@ -18,10 +18,13 @@ import kotlinx.serialization.json.JsonElement
 
 internal object ChangeSummary {
 
+    private val SECTION_ORDER = listOf(DiffCategory.REMOVED, DiffCategory.ADDED, DiffCategory.LOGIC_CHANGED, DiffCategory.DOCS_CHANGED)
+
+    /** The order of every list in a diff report (Markdown, JSON, gates, example changes): removed, added, logic changed, docs changed; then control id, id-less rules last. */
+    val REPORT_ORDER: Comparator<DiffEntry> = compareBy({ SECTION_ORDER.indexOf(it.category) }, { it.controlId == null }, { it.controlId })
+
     /** `- <label> — <what>` (spec §14.42): [DiffCategory.UNCHANGED] never reaches here -- the caller filters it out. */
     fun bulletFor(entry: DiffEntry, qualifiedIds: Set<String> = emptySet(), anchors: ChangeAnchors? = null): String {
-        val (packagePath, rule) = targetOf(entry)
-        val label = labelFor(entry.controlId, packagePath, rule, qualifiedIds)
         val text = when (entry.category) {
             DiffCategory.REMOVED -> "removed"
             DiffCategory.ADDED -> "added"
@@ -29,13 +32,49 @@ internal object ChangeSummary {
             DiffCategory.DOCS_CHANGED -> "documentation changed: ${changedMetadataFields(entry).joinToString(", ")}"
             DiffCategory.UNCHANGED -> error("UNCHANGED never reaches the change summary")
         }
-        // REMOVED/ADDED/LOGIC_CHANGED each render a real card in this report (DiffRenderer.appendSection) at
-        // this exact anchor; DOCS_CHANGED renders no card at all, so its label is plain text, never a dead link.
-        // An anchor another card already claimed (two names that slug alike) leaves this label plain rather than linking to the wrong card.
-        val anchor = if (anchors != null) anchors.of(entry) else anchorOf(entry, qualifiedIds)
-        val labelMarkup = if (anchor == null) label else "[$label](#$anchor)"
-        return "- $labelMarkup — $text"
+        return "- ${labelMarkupFor(entry, qualifiedIds, anchors)} — $text"
     }
+
+    /**
+     * The entry's label, linked to its card when it has one. REMOVED/ADDED/LOGIC_CHANGED each render a real card in this report (DiffRenderer.appendSection) at
+     * this exact anchor; DOCS_CHANGED renders no card at all, so its label is plain text, never a dead link. An anchor another card already claimed (two names
+     * that slug alike) leaves the label plain rather than linking to the wrong card.
+     */
+    fun labelMarkupFor(entry: DiffEntry, qualifiedIds: Set<String> = emptySet(), anchors: ChangeAnchors? = null): String {
+        val (packagePath, rule) = targetOf(entry)
+        val label = labelFor(entry.controlId, packagePath, rule, qualifiedIds)
+        val anchor = if (anchors != null) anchors.of(entry) else anchorOf(entry, qualifiedIds)
+        return if (anchor == null) label else "[$label](#$anchor)"
+    }
+
+    /**
+     * Spec §14.74: `<fixture>: <old> -> <new>`, or -- when the verdict word is the same on both sides and only the produced message(s) differ -- `<fixture>: still <word>,
+     * message changed`. The words are the cards' own; nothing is inferred from the fixture's name.
+     */
+    /**
+     * Spec §14.74: the sentence for "no example moved", worded for what was actually compared -- "No example changed outcome." only when every control present on both
+     * sides (and every fixture) was compared; otherwise it says "compared" or that nothing could be.
+     */
+    fun noExampleChangedSentence(c: ExampleComparison): String = when {
+        c.total > 0 && c.compared == 0 -> "No example could be compared."
+        c.compared < c.total || c.fixturesOnOneVersion > 0 -> "No compared example changed outcome."
+        else -> "No example changed outcome."
+    }
+
+    /** Spec §14.74: how much was compared and why the rest was not; null when no control is present on both sides (nothing to say). */
+    fun comparisonLine(c: ExampleComparison): String? {
+        if (c.total == 0) return null
+        val skipped = listOfNotNull(
+            if (c.functions > 0) "${c.functions} function(s)" else null,
+            if (c.unattributable > 0) "${c.unattributable} with no examples attributable to the rule" else null,
+        )
+        val skippedText = if (skipped.isEmpty()) "" else "; not compared: ${skipped.joinToString(", ")}"
+        val fixturesText = if (c.fixturesOnOneVersion > 0) "; ${c.fixturesOnOneVersion} fixture(s) evaluated on one version only (see the warnings on stderr)" else ""
+        return "*Compared ${c.compared} of ${c.total} controls present in both versions$skippedText$fixturesText.*"
+    }
+
+    fun exampleLine(change: ExampleChange): String =
+        if (change.old == change.new) "${change.fixture}: still ${change.new}, message changed" else "${change.fixture}: ${change.old} -> ${change.new}"
 
     /** Indented LOGIC_CHANGED sub-bullets (spec §14.42); empty for every other category. */
     fun subBulletsFor(entry: DiffEntry, dataChanges: List<DataChange> = emptyList()): List<String> {

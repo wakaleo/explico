@@ -1,10 +1,12 @@
 /** Public library facade (spec §8.1). Everything else in this library is internal. */
 package io.explico
 
+import io.explico.diff.DataChangeIndex
 import io.explico.diff.DataChanges
 import io.explico.diff.DiffEntry
 import io.explico.diff.DiffJson
 import io.explico.diff.DiffRenderer
+import io.explico.diff.ExampleChanges
 import io.explico.diff.PolicyDiff
 import io.explico.generate.ExampleGenerator
 import io.explico.generate.GenerationResult
@@ -67,6 +69,10 @@ public data class DiffReport @JvmOverloads constructor(
     val markdown: String,
     /** The machine-readable change report (schema `explico/diff/1`, spec §14.45). */
     val json: String = "",
+    /** Fixtures whose outcome changed between the versions (empty unless `diff` was given example fixtures). */
+    val exampleChanges: List<io.explico.diff.ExampleChange> = emptyList(),
+    /** What the example comparison covered (spec §14.74); null unless `diff` was given example fixtures. */
+    val exampleComparison: io.explico.diff.ExampleComparison? = null,
 )
 
 /**
@@ -260,17 +266,46 @@ public object Explico {
         dataOld: Path? = null,
         /** The supplied data of the new version. */
         dataNew: Path? = null,
+        /**
+         * Author fixtures (spec §14.74): when given (and not empty), the SAME fixtures are evaluated by OPA against the old and the new policies -- each side with its own
+         * data when [dataOld]/[dataNew] are given -- and every fixture whose outcome changed is reported per control (`## Behaviour on your examples`, JSON `examples`,
+         * [DiffReport.exampleChanges]). Needs [oldPolicyDir] and [newPolicyDir], the directories the two sets were loaded from (opa re-reads the `.rego` files).
+         */
+        examples: ExampleSet? = null,
+        oldPolicyDir: Path? = null,
+        newPolicyDir: Path? = null,
     ): DiffReport {
         require((dataOld == null) == (dataNew == null)) {
             "dataOld and dataNew must be given together (only ${if (dataOld != null) "dataOld" else "dataNew"} was given)"
         }
+        require(examples == null || (oldPolicyDir != null && newPolicyDir != null)) {
+            "examples need both oldPolicyDir and newPolicyDir: opa re-reads the .rego files of each version to evaluate the fixtures"
+        }
         val compared = PolicyDiff.diff(old, new, groupByControl)
-        if (dataOld == null || dataNew == null) return DiffReport(compared, DiffRenderer.render(compared, old, new), DiffJson.render(compared))
 
-        val paths = DataChanges.pathsToResolve(compared, old, new)
-        fun resolve(data: Path, regoVersion: RegoVersion) = paths.associateWith { OpaRunner.evalDataPath(listOf(data), ReferenceData.dottedSegments(it), regoVersion) }
-        val result = DataChanges.apply(compared, old, new, resolve(dataOld, old.regoVersion), resolve(dataNew, new.regoVersion))
-        return DiffReport(result.entries, DiffRenderer.render(result.entries, old, new, result.changes, dataSupplied = true), DiffJson.render(result.entries, result.changes))
+        var entries = compared
+        var dataChanges = DataChangeIndex.NONE
+        if (dataOld != null && dataNew != null) {
+            val paths = DataChanges.pathsToResolve(compared, old, new)
+            fun resolve(data: Path, regoVersion: RegoVersion) = paths.associateWith { OpaRunner.evalDataPath(listOf(data), ReferenceData.dottedSegments(it), regoVersion) }
+            val result = DataChanges.apply(compared, old, new, resolve(dataOld, old.regoVersion), resolve(dataNew, new.regoVersion))
+            entries = result.entries
+            dataChanges = result.changes
+        }
+
+        // An examples set with no fixture is "not supplied": there is nothing to say about it, not even that nothing changed.
+        val exampleChanges = if (examples != null && examples.fixtures.isNotEmpty()) {
+            ExampleChanges.compute(entries, evaluateWorkedExamples(old, oldPolicyDir!!, examples, dataOld), evaluateWorkedExamples(new, newPolicyDir!!, examples, dataNew))
+        } else {
+            null
+        }
+        return DiffReport(
+            entries,
+            DiffRenderer.render(entries, old, new, dataChanges, dataSupplied = dataOld != null, exampleChanges = exampleChanges),
+            DiffJson.render(entries, dataChanges, exampleChanges),
+            exampleChanges?.flat(entries).orEmpty(),
+            exampleChanges?.comparison,
+        )
     }
 
     /**
