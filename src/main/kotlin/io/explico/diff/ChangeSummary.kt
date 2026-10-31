@@ -12,6 +12,9 @@ import io.explico.model.RuleGroup
 import io.explico.render.Coverage
 import io.explico.render.ExpressionRenderer
 import io.explico.render.MarkdownRenderer
+import io.explico.render.MarkdownText
+import io.explico.render.PathHumanizer
+import kotlinx.serialization.json.JsonElement
 
 internal object ChangeSummary {
 
@@ -35,7 +38,7 @@ internal object ChangeSummary {
     }
 
     /** Indented LOGIC_CHANGED sub-bullets (spec §14.42); empty for every other category. */
-    fun subBulletsFor(entry: DiffEntry): List<String> {
+    fun subBulletsFor(entry: DiffEntry, dataChanges: List<DataChange> = emptyList()): List<String> {
         if (entry.category != DiffCategory.LOGIC_CHANGED) return emptyList()
         val old = entry.oldRule!!
         val new = entry.newRule!!
@@ -67,10 +70,22 @@ internal object ChangeSummary {
         // Spec §14.59: which situation of an `else` chain / several definitions moved, was added or removed, or yields a different value.
         bullets += Situations.bullets(old, new)
 
+        // Spec §14.73: the reference data this control reads that differs between the two versions of the supplied data.
+        bullets += dataChanges.map(::dataChangeLine)
+
         // The canonical hash DID change (that's why this is LOGIC_CHANGED at all), but none of the mechanical
         // checks above named anything -- e.g. the same conditions regrouped across bodies. Never guess at what
         // moved; point at the one place that actually shows it.
         return bullets.ifEmpty { listOf("the rule's structure changed; see the source diff below") }
+    }
+
+    /**
+     * Spec §14.73: `reference data changed: <breadcrumb>: <old> -> <new>`. The breadcrumb is the one the Reference data block shows; a value is its compact JSON in a code span
+     * (shown whole -- the card's cut of a long array would hide the element that changed), and `absent` is the bare word for a version in which the path is undefined.
+     */
+    fun dataChangeLine(change: DataChange): String {
+        fun side(value: JsonElement?) = if (value == null) "absent" else MarkdownText.codeSpan(value.toString())
+        return "reference data changed: ${PathHumanizer.humanize(change.path.segments).rendered}: ${side(change.old)} -> ${side(change.new)}"
     }
 
     private fun targetOf(entry: DiffEntry): Pair<String, RuleGroup> = when (entry.category) {

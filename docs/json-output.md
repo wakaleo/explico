@@ -82,7 +82,7 @@ unrendered), `link` (`{package, rule}` for a rule reference or function call, el
 
 **Change:** `category`, `controlId`, `label` (e.g. `"REL-003 — Artifact provenance"`; for a control id shared by several rules under `diff --group-by-control`, with the rule added: `"SEC-28 — Sign-off (grp_signoff.signed_off)"`), `package`, `rule`, `anchor` (null for
 `DOCS_CHANGED`, which has no card), and either `details` (a `LOGIC_CHANGED` control: the exact sub-bullets of the Markdown *What
-changed* section) or `fields` (a `DOCS_CHANGED` control: which of `title`, `description`, `frameworks`, `authors`,
+changed* section, including, when `diff` was given `--old-data`/`--new-data`, one ``reference data changed: `<document>`: <old> -> <new>`` string per changed document) or `fields` (a `DOCS_CHANGED` control: which of `title`, `description`, `frameworks`, `authors`,
 `related resources`, `custom fields` differ).
 
 ## Notes

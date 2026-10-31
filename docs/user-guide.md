@@ -112,7 +112,7 @@ plain `data.*` document show what that document actually holds in the supplied d
 ### `explico diff`
 
 ```
-explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--group-by-control] [--fail-on <categories>] [--rego-version v1|v0]
+explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--group-by-control] [--old-data <path> --new-data <path>] [--fail-on <categories>] [--rego-version v1|v0]
 ```
 
 | Argument/flag | Required | Meaning |
@@ -122,6 +122,7 @@ explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--group-by-co
 | `--out <reportFile>` | yes | Output file for the single Markdown change report. |
 | `--json <file>` | no | Also write the machine-readable change report (JSON) to this file. See [`json-output.md`](json-output.md). |
 | `--group-by-control` | no | Accept a control id **shared by several rules** (one control split over files) instead of exit `4`: each of its rules is its own entry, identified by control id, package and rule (decided over both versions), and the report names the rule too (`SEC-28 — Sign-off (grp_signoff.signed_off)`). A rule renamed or moved to another package inside such a control is removed + added. Two rules of one name and one id in one package are still exit `4`. Without the flag a shared id is still exit `4`. |
+| `--old-data <path>`, `--new-data <path>` | no, but together | The supplied data (a file or a directory, as `render --data`) of each version. A control whose reference data differs — the `data.*` documents its conditions read — is `LOGIC_CHANGED` even if its Rego is identical, with a `reference data changed: <document>: <old> -> <new>` line (`absent` where a version lacks the document). A document no control reads is never reported, and no Rego rule is evaluated. One option without the other is a usage error (exit `1`). A directory is read by `opa eval --data`, so keep `.rego` files out of it (they would be loaded). A control that was `DOCS_CHANGED` and whose data also changed is reported as `LOGIC_CHANGED`; its documentation changes are not listed. |
 | `--fail-on <categories>` | no | CI gate: exit `5` if any control is in one of these categories — comma-separated, case-insensitive: `ADDED`, `REMOVED`, `LOGIC_CHANGED`, `DOCS_CHANGED`. The report is still written and the Summary still printed; stderr names the matching controls. |
 
 Classifies every control as `ADDED`, `REMOVED`, `LOGIC_CHANGED`,

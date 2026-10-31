@@ -1,0 +1,1 @@
+{"limits": {"single_approver_minor": {"EUR": 100000, "GBP": 90000}}, "high_risk_countries": ["IR", "KP", "SY"], "audit": {"retention_days": 365}}

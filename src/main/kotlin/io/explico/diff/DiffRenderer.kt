@@ -16,35 +16,45 @@ internal object DiffRenderer {
     private const val DISCLAIMER = "This report shows structural changes only. It does not " +
         "evaluate whether the policy became stricter or more permissive."
 
+    /** Spec §14.73: with data supplied the report also compares the reference data each control reads, and says so. */
+    private const val DISCLAIMER_WITH_DATA = "This report shows structural changes and changes to the reference data the controls read. It does not " +
+        "evaluate whether the policy became stricter or more permissive."
+
     private val SECTION_ORDER = listOf(DiffCategory.REMOVED, DiffCategory.ADDED, DiffCategory.LOGIC_CHANGED, DiffCategory.DOCS_CHANGED)
     private val SUMMARY_ORDER = SECTION_ORDER + DiffCategory.UNCHANGED
 
-    fun render(entries: List<DiffEntry>, oldPolicySet: PolicySet, newPolicySet: PolicySet): String {
+    fun render(
+        entries: List<DiffEntry>,
+        oldPolicySet: PolicySet,
+        newPolicySet: PolicySet,
+        dataChanges: DataChangeIndex = DataChangeIndex.NONE,
+        dataSupplied: Boolean = false,
+    ): String {
         val sb = StringBuilder()
         sb.appendLine("# Policy diff report")
         sb.appendLine()
-        sb.appendLine("*$DISCLAIMER*")
+        sb.appendLine("*${if (dataSupplied) DISCLAIMER_WITH_DATA else DISCLAIMER}*")
         sb.appendLine()
         appendSummary(sb, entries)
         val changed = entries.filter { it.category != DiffCategory.UNCHANGED }
             .sortedWith(compareBy({ SECTION_ORDER.indexOf(it.category) }, { it.controlId == null }, { it.controlId }))
         val qualified = ChangeSummary.qualifiedIds(entries)
         val anchors = ChangeAnchors(changed, qualified)
-        appendWhatChanged(sb, changed, qualified, anchors)
+        appendWhatChanged(sb, changed, qualified, anchors, dataChanges)
         val isLinkable = linkableTargetsOf(changed, anchors)
-        appendChanges(sb, changed, oldPolicySet, newPolicySet, isLinkable, qualified, anchors)
+        appendChanges(sb, changed, oldPolicySet, newPolicySet, isLinkable, qualified, anchors, dataChanges)
         appendCoverageWarning(sb, entries)
         return sb.toString()
     }
 
     /** Spec §14.42: a short, plain list before the full cards -- see [ChangeSummary]. Absent when [changed] is empty, same as `## Changes`. */
-    private fun appendWhatChanged(sb: StringBuilder, changed: List<DiffEntry>, qualified: Set<String>, anchors: ChangeAnchors) {
+    private fun appendWhatChanged(sb: StringBuilder, changed: List<DiffEntry>, qualified: Set<String>, anchors: ChangeAnchors, dataChanges: DataChangeIndex) {
         if (changed.isEmpty()) return
         sb.appendLine("## What changed")
         sb.appendLine()
         for (entry in changed) {
             sb.appendLine(ChangeSummary.bulletFor(entry, qualified, anchors))
-            for (sub in ChangeSummary.subBulletsFor(entry)) sb.appendLine("  - $sub")
+            for (sub in ChangeSummary.subBulletsFor(entry, dataChanges.of(entry))) sb.appendLine("  - $sub")
         }
         sb.appendLine()
     }
@@ -81,19 +91,19 @@ internal object DiffRenderer {
         sb.appendLine()
     }
 
-    private fun appendChanges(sb: StringBuilder, changed: List<DiffEntry>, oldPolicySet: PolicySet, newPolicySet: PolicySet, isLinkable: (String, String) -> Boolean, qualified: Set<String>, anchors: ChangeAnchors) {
+    private fun appendChanges(sb: StringBuilder, changed: List<DiffEntry>, oldPolicySet: PolicySet, newPolicySet: PolicySet, isLinkable: (String, String) -> Boolean, qualified: Set<String>, anchors: ChangeAnchors, dataChanges: DataChangeIndex) {
         if (changed.isEmpty()) return
 
         sb.appendLine("## Changes")
         sb.appendLine()
         for (entry in changed) {
-            appendSection(sb, entry, oldPolicySet, newPolicySet, isLinkable, qualified, anchors)
+            appendSection(sb, entry, oldPolicySet, newPolicySet, isLinkable, qualified, anchors, dataChanges.of(entry), dataChanges.wasRaised(entry))
             sb.appendLine("---")
             sb.appendLine()
         }
     }
 
-    private fun appendSection(sb: StringBuilder, entry: DiffEntry, oldPolicySet: PolicySet, newPolicySet: PolicySet, isLinkable: (String, String) -> Boolean, qualified: Set<String>, anchors: ChangeAnchors) {
+    private fun appendSection(sb: StringBuilder, entry: DiffEntry, oldPolicySet: PolicySet, newPolicySet: PolicySet, isLinkable: (String, String) -> Boolean, qualified: Set<String>, anchors: ChangeAnchors, dataChanges: List<DataChange>, raisedByData: Boolean) {
         sb.appendLine("**${entry.category}**")
         sb.appendLine()
         when (entry.category) {
@@ -110,11 +120,23 @@ internal object DiffRenderer {
             DiffCategory.LOGIC_CHANGED -> {
                 sb.append(card(entry.newRule!!, entry.newPackage!!, newPolicySet, isLinkable, qualified, anchors.of(entry)))
                 sb.appendLine()
+                if (dataChanges.isNotEmpty()) {
+                    sb.appendLine("**Reference data**")
+                    sb.appendLine()
+                    for (change in dataChanges) sb.appendLine("- ${ChangeSummary.dataChangeLine(change)}")
+                    sb.appendLine()
+                }
                 sb.appendLine("**Source diff**")
                 sb.appendLine()
-                sb.appendLine("```rego")
-                appendUnifiedDiff(sb, entry.oldRule!!, entry.newRule)
-                sb.appendLine("```")
+                // Spec §14.73: a change that is only in the data has no - or + line to show; say so rather than print an unchanged rule as if it were a diff.
+                // Only for an entry the DATA raised (its logic hash is equal): for one that changed on its own the hash may differ for a reason the source text does not show.
+                if (raisedByData && diffableLines(entry.oldRule!!) == diffableLines(entry.newRule)) {
+                    sb.appendLine("*The rule's source is unchanged: only the reference data it reads changed.*")
+                } else {
+                    sb.appendLine("```rego")
+                    appendUnifiedDiff(sb, entry.oldRule!!, entry.newRule)
+                    sb.appendLine("```")
+                }
                 sb.appendLine()
             }
             DiffCategory.DOCS_CHANGED -> {

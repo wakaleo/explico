@@ -177,12 +177,20 @@ private class DiffCommand : CliktCommand(name = "diff") {
         help = "Exit 5 if any control is in one of these categories (comma-separated: ADDED, REMOVED, LOGIC_CHANGED, DOCS_CHANGED); the report is still written",
     ).convert { value -> try { Gates.parseFailOn(value) } catch (e: IllegalArgumentException) { fail(e.message ?: "invalid categories") } }
 
+    private val oldData by option(
+        "--old-data",
+        help = "Reference data of the old version (a file or directory). With --new-data, a control whose referenced data differs is reported as LOGIC_CHANGED",
+    ).path(mustExist = true)
+    private val newData by option("--new-data", help = "Reference data of the new version (a file or directory); see --old-data").path(mustExist = true)
+
     override fun run() {
+        // Cheapest precondition first, before opa is needed or anything is written (spec §14.73): the two options only make sense together.
+        if ((oldData == null) != (newData == null)) throw UsageError("--old-data and --new-data must be given together (only ${if (oldData != null) "--old-data" else "--new-data"} was given)")
         requireOpaOrExit()
         try {
             val old = Explico.load(oldDir, parseRegoVersion(regoVersion))
             val new = Explico.load(newDir, parseRegoVersion(regoVersion))
-            val report = Explico.diff(old, new, groupByControl)
+            val report = Explico.diff(old, new, groupByControl, oldData, newData)
             out.parent?.let { Files.createDirectories(it) }
             Files.writeString(out, report.markdown)
             jsonOut?.let { target ->

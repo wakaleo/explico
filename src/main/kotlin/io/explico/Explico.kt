@@ -1,6 +1,7 @@
 /** Public library facade (spec §8.1). Everything else in this library is internal. */
 package io.explico
 
+import io.explico.diff.DataChanges
 import io.explico.diff.DiffEntry
 import io.explico.diff.DiffJson
 import io.explico.diff.DiffRenderer
@@ -236,9 +237,13 @@ public object Explico {
     }
 
     /**
-     * Classifies every control across [old] -> [new] (spec §7.2) and renders the change report
-     * (spec §7.3). Throws [io.explico.diff.DuplicateControlIdException] if either side has two
-     * rules sharing a control-id (with [groupByControl], only if it cannot tell two rules apart: same id, package and rule name).
+     * Classifies every control across [old] -> [new] (spec §7.2) and renders the change report (spec §7.3). Throws [io.explico.diff.DuplicateControlIdException]
+     * if either side has two rules sharing a control-id (with [groupByControl], only if it cannot tell two rules apart: same id, package and rule name).
+     *
+     * With [dataOld] and [dataNew] (spec §14.73) the report also compares the reference data each control reads: the plain `data.*` documents its conditions
+     * name (the same ones the Reference data block of `render` shows), as OPA reads them from each data file or directory. A control whose documents differ
+     * is [io.explico.diff.DiffCategory.LOGIC_CHANGED] -- even when its Rego is identical -- with one `reference data changed` line per document. A document
+     * no control reads is never reported, and no Rego rule is ever evaluated. Both or neither: giving only one throws [IllegalArgumentException].
      */
     @JvmStatic
     @JvmOverloads
@@ -251,9 +256,21 @@ public object Explico {
          * [io.explico.diff.DuplicateControlIdException], exactly as before.
          */
         groupByControl: Boolean = false,
+        /** The supplied data of the old version (a JSON/YAML file or a directory, as `render`'s data): see above. Null together with [dataNew] = data is not compared. */
+        dataOld: Path? = null,
+        /** The supplied data of the new version. */
+        dataNew: Path? = null,
     ): DiffReport {
-        val entries = PolicyDiff.diff(old, new, groupByControl)
-        return DiffReport(entries, DiffRenderer.render(entries, old, new), DiffJson.render(entries))
+        require((dataOld == null) == (dataNew == null)) {
+            "dataOld and dataNew must be given together (only ${if (dataOld != null) "dataOld" else "dataNew"} was given)"
+        }
+        val compared = PolicyDiff.diff(old, new, groupByControl)
+        if (dataOld == null || dataNew == null) return DiffReport(compared, DiffRenderer.render(compared, old, new), DiffJson.render(compared))
+
+        val paths = DataChanges.pathsToResolve(compared, old, new)
+        fun resolve(data: Path, regoVersion: RegoVersion) = paths.associateWith { OpaRunner.evalDataPath(listOf(data), ReferenceData.dottedSegments(it), regoVersion) }
+        val result = DataChanges.apply(compared, old, new, resolve(dataOld, old.regoVersion), resolve(dataNew, new.regoVersion))
+        return DiffReport(result.entries, DiffRenderer.render(result.entries, old, new, result.changes, dataSupplied = true), DiffJson.render(result.entries, result.changes))
     }
 
     /**

@@ -1685,3 +1685,11 @@ as verbatim source. Resolution must stay the mapper's own (same package, import,
 
 `render/UnrenderedReasons.why(reason)` is the ONE table of sentences; they say what explico needs, never prescribe a rewrite. A new fallback reason added to `AstMapper` MUST get a sentence (`UnrenderedReasonsTest` reads the mapper's source and fails otherwise). `Quality.shownAsSource` counts condition-level fallbacks only,
 through `Coverage.flatten(Coverage.conditionsOf(body))` so it always agrees with the cards. Advisory: never in `gapDescriptions`.
+
+## The data-aware diff (spec §14.73)
+
+`diff --old-data/--new-data` (library `dataOld`/`dataNew`, both or neither) compares the plain `data.*` documents each control reads (`ReferenceData.referencedDataPaths` on the OLD and the NEW rule), resolved by `OpaRunner.evalDataPath` against each data
+argument ALONE -- never with the policies loaded, so no Rego rule can run. `diff/DataChanges` is pure (values in, entries out) and raises an UNCHANGED/DOCS_CHANGED entry to LOGIC_CHANGED; the change travels beside the entry in a `DataChangeIndex` (identity lookup), because `DiffEntry`
+is public and its constructor is not to change. `ChangeSummary.dataChangeLine` is the ONE wording (Markdown, JSON `details` and the section under the card all print it). The data is NOT in `Canonicalizer`. Without data nothing changes, byte for byte (the `diff-all-categories`
+golden pins it).
+

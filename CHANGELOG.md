@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Added:** `diff` can compare the reference data. `explico diff <old> <new> --out report.md --old-data <file|dir> --new-data <file|dir>` (library: `Explico.diff(old, new, dataOld = ..., dataNew = ...)`) looks at the `data.*` documents each control reads -- the ones the card's *Reference data* block shows -- in each version of the data. A control whose documents differ is **`LOGIC_CHANGED` even when its Rego is identical**, with one line per document: ``reference data changed: `data ▸ limits ▸ single approver minor`: `{"EUR":100000,...}` -> `{"EUR":1000,...}` `` (`absent` for a version in which the document does not exist), in the *What changed* list, under the control's section and in the JSON `details`. Before, halving a limit in the data file was reported as `UNCHANGED` and `--fail-on` exited 0. A document no control reads is never reported; the values are compared as JSON (key order and layout do not matter); no Rego rule is evaluated. Give both options or neither (one alone is exit `1`). Without them the report is byte-for-byte what it was. A control that was only `DOCS_CHANGED` and whose data also changed is reported as `LOGIC_CHANGED` and its documentation changes are not listed in that entry.
+
 ## 0.4.0
 
 Documentation you can act on. explico now tells you, without opening `index.md`, what is suboptimal in your Rego and what to do about it: a findings block after the coverage line, a *Documentation quality* section that names each problem with a fix hint, and a configurable gate (`--require`). It also covers policy sets that declare no control ids (the entry points are listed), and fixes three rendering problems found on real decision-object policies. Read the **Changed** entry before upgrading: a render of a policy with unrendered conditions, plain comment blocks or id-less rules now prints more.
