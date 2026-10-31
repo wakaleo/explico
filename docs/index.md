@@ -92,9 +92,13 @@ cost of the example.
 | If you want to… | Go to |
 |---|---|
 | See it work in a minute | [Install and first run](install.md) |
+| Write and render your first rule in five minutes | [Quickstart](quickstart.md) |
+| Learn by documenting a policy from scratch | [Tutorial: your first policy](tutorial-first-policy.md) |
+| Do one specific task (link to source, mask values, gate requirements…) | [How-to guides](how-to/index.md) |
 | Set up living documentation for your own policies | [From Rego to living documentation](guides/living-documentation.md) |
 | See real output for Kubernetes, storage, API and more | [Showcase](showcase/README.md) |
-| Follow a guided walkthrough | [Tutorial](tutorial.md) |
+| Follow a walkthrough of a finished sample | [Tutorial: the sample release policies](tutorial.md) |
+| Fix an error or a surprising result | [Troubleshooting](troubleshooting.md) |
 | Understand a card | [Reading a card](concepts/reading-a-card.md) |
 | Improve what the index says is missing | [Policies that document well](guides/policies-that-document-well.md) |
 | Run it in a pipeline | [CI recipes](guides/ci-recipes.md) |

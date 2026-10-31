@@ -52,21 +52,9 @@ Add `--examples examples` to see worked examples. The whole workflow, including 
 
 ## When something goes wrong
 
-Every failure has a distinct exit code, and the message says what to do.
+Every failure has a distinct exit code and a message saying what to do (`1` usage, `2` Rego parse error, `3` `opa` missing, `4` duplicates, `5` a CI gate).
+[Troubleshooting](troubleshooting.md) maps each symptom to its cause and fix.
 
-| Exit | What happened | What to do |
-|---|---|---|
-| `1` | Usage error: a bad flag, a missing required option (`--out`), a path that does not exist | Re-read the command; `java -jar explico.jar render --help` lists the options. |
-| `2` | `opa` could not parse your Rego; its own message is shown unchanged, with the file and line | Fix the Rego. If the file uses the older `deny[msg] { ... }` syntax, add `--rego-version v0`. |
-| `3` | `opa` is missing or is not version 1.x: *"explico requires opa version 1.x, but it could not be run …"* | Install `opa` 1.x and put it on `PATH`, or set `OPA_BIN`. |
-| `4` | Two controls share a control id (`diff`), or two example files share a `name` (`render --examples`) | Make the ids or names unique. |
-| `5` | A CI gate failed (`--fail-under`, `--fail-on-gaps`, `diff --fail-on`); the output **was still written** | Read the stderr line, which names the gate and why. See [CI recipes](guides/ci-recipes.md). |
-
-A few things that look like problems and are not:
-
-- **My example is missing from a card.** A card shows at most three matching and two non-matching examples, in file-name order. The index's
-  *Example coverage* column counts them all. An example whose evaluation actually fails prints a warning on stderr naming it and is left out.
-- **My rule says "matched", not "denied".** Only rules named exactly `deny`, `violation` or `allow` get the denied/allowed wording.
-- **The coverage figure is below 100%.** Some construct is shown as source. See [Coverage](concepts/coverage.md).
+Next: the [Quickstart](quickstart.md) writes and renders a first rule in five minutes.
 
 Still stuck? The [Limits and FAQ](limits-and-faq.md) page covers the common questions, and the [glossary](glossary.md) defines the terms.

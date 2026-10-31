@@ -52,7 +52,18 @@ nav:
   - Home: index.md
   - Getting started:
       - Install and first run: install.md
-      - Tutorial: tutorial.md
+      - Quickstart: quickstart.md
+      - "Tutorial: your first policy": tutorial-first-policy.md
+      - "Tutorial: the sample release policies": tutorial.md
+  - How-to guides:
+      - Overview: how-to/index.md
+      - Document existing policies: how-to/document-existing-policies.md
+      - Add worked examples: how-to/add-worked-examples.md
+      - Link cards to source: how-to/link-cards-to-source.md
+      - Keep sensitive values out of examples: how-to/mask-sensitive-values.md
+      - Evidence compliance requirements: how-to/evidence-requirements.md
+      - Review a policy change: how-to/review-a-policy-change.md
+      - Use explico from Java: how-to/use-from-java.md
   - Concepts:
       - True by construction: concepts/true-by-construction.md
       - Reading a card: concepts/reading-a-card.md
@@ -86,6 +97,7 @@ nav:
           - Release governance: sample-output/release-governance.md
           - Release exemptions: sample-output/release-exemptions.md
   - Project:
+      - Troubleshooting: troubleshooting.md
       - Limits and FAQ: limits-and-faq.md
       - Glossary: glossary.md
       - README: readme.md

@@ -382,6 +382,10 @@ against the coverage percentage reported on every card and package.
 
 ## Documentation
 
+- [`docs/quickstart.md`](docs/quickstart.md) — **five minutes**: write one rule, render it, read the card.
+- [`docs/tutorial-first-policy.md`](docs/tutorial-first-policy.md) — document a policy from scratch: fix a fallback, add METADATA and examples, set a quality gate, review a change with `diff`.
+- [`docs/how-to/`](docs/how-to/index.md) — task guides: document a legacy library, add or generate examples, link cards to source, mask sensitive values, evidence compliance requirements, review a change, use from Java.
+- [`docs/troubleshooting.md`](docs/troubleshooting.md) — exit codes and surprising results, symptom by symptom.
 - [`docs/showcase/`](docs/showcase/README.md) — **start here to see it in action**: six example policies (Kubernetes admission, storage, API authorization, helpers/functions, `every`, and what a fallback looks like), each with the Rego source beside the real rendered output.
 - [`docs/guides/living-documentation.md`](docs/guides/living-documentation.md) — **from Rego to living documentation**: layout, METADATA, example inputs, CI regeneration with a drift check, what a policy change looks like in review, and publishing a site.
 - [`docs/user-guide.md`](docs/user-guide.md) — every CLI flag, every exit code, every public library function.

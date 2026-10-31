@@ -6,6 +6,8 @@ real CLI. Every command below is copy-pasteable from a checkout of this
 repository; every piece of output shown is real, taken from an actual run,
 never hand-typed.
 
+Starting from an empty directory instead? [Tutorial: your first policy](tutorial-first-policy.md) builds one control up from scratch.
+
 ## 1. Render the sample policy set
 
 ```
