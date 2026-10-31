@@ -1700,3 +1700,9 @@ per entry with both rules, via `WorkedExamples.forGroup` (so a function / ambigu
 `DataChangeIndex` (`ExampleChangeIndex`, identity lookup); `ChangeSummary.exampleLine` is the one wording (Markdown; JSON carries the fields), `ChangeSummary.labelMarkupFor` the one label, `ChangeSummary.REPORT_ORDER` the one report order. An examples set with no fixture is "not
 supplied". `ExampleComparison` (compared / total / functions / unattributable / fixturesOnOneVersion) is what keeps "No example changed outcome." honest: never print that sentence, or let the gate pass, when controls or fixtures were not compared. Without `--examples` nothing changes, byte for byte (the `diff-all-categories` golden pins it).
 
+## Documentation beside a logic change (spec §14.75)
+
+`diff/MetadataFields.of(old, new)` is the ONE list of documentation fields (name, base?, differs, old/new cell). `ChangeSummary.changedMetadataFields`, the DOCS_CHANGED table (`DiffRenderer.appendDocsRows` with the base rows always) and the `**Documentation changes**` block of a
+LOGIC_CHANGED entry (only differing rows) are all read from it -- never add a field, a comparison or a cell renderer anywhere else. Values are compared, not cells. The sub-bullet `documentation changed: ...` is appended AFTER the fallback is decided, and JSON `fields` appears on a LOGIC_CHANGED
+change only when something differs. A data-raised entry gets them too, which closes the §14.73 limitation.
+

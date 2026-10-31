@@ -115,7 +115,11 @@ internal object ChangeSummary {
         // The canonical hash DID change (that's why this is LOGIC_CHANGED at all), but none of the mechanical
         // checks above named anything -- e.g. the same conditions regrouped across bodies. Never guess at what
         // moved; point at the one place that actually shows it.
-        return bullets.ifEmpty { listOf("the rule's structure changed; see the source diff below") }
+        val logic = bullets.ifEmpty { listOf("the rule's structure changed; see the source diff below") }
+
+        // Spec §14.75: the documentation that changed WITH the logic, after everything else; the fallback above is decided without it.
+        val documentation = changedMetadataFields(entry)
+        return if (documentation.isEmpty()) logic else logic + "documentation changed: ${documentation.joinToString(", ")}"
     }
 
     /**
@@ -167,25 +171,8 @@ internal object ChangeSummary {
      * this entry), so `controlId` never needs checking here: title/description/frameworks always account for
      * every real DOCS_CHANGED difference.
      */
-    internal fun changedMetadataFields(entry: DiffEntry): List<String> {
-        val old = entry.oldRule?.metadata
-        val new = entry.newRule?.metadata
-        val fields = mutableListOf<String>()
-        if (old?.title != new?.title) fields += "title"
-        if (old?.description != new?.description) fields += "description"
-        if (old?.frameworks != new?.frameworks) fields += "frameworks"
-        if ((old?.authors.orEmpty()) != (new?.authors.orEmpty())) fields += "authors"
-        if ((old?.relatedResources.orEmpty()) != (new?.relatedResources.orEmpty())) fields += "related resources"
-        if ((old?.customFields ?: emptyMap<String, String>()) != (new?.customFields ?: emptyMap<String, String>())) fields += "custom fields"
-        // Spec §14.53, §14.54: each declared projection on its own, in a fixed order.
-        if (old?.projection?.verdict != new?.projection?.verdict) fields += "verdict"
-        if (old?.projection?.actions != new?.projection?.actions) fields += "actions"
-        if (old?.projection?.annotations != new?.projection?.annotations) fields += "annotations"
-        if (old?.projection?.timing != new?.projection?.timing) fields += "timing"
-        // Spec §14.61: which input paths are masked in the examples.
-        if (old?.projection?.mask != new?.projection?.mask) fields += "mask"
-        return fields
-    }
+    internal fun changedMetadataFields(entry: DiffEntry): List<String> =
+        MetadataFields.of(entry.oldRule?.metadata, entry.newRule?.metadata).filter { it.differs }.map { it.name }
 
     private val NO_RULE_LINK: (Condition.RuleReference) -> String? = { null }
     private val NO_FUNCTION_LINK: (Condition.FunctionCall) -> String? = { null }

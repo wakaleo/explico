@@ -50,7 +50,12 @@ internal object DiffJson {
         put("rule", rule.name)
         put("anchor", anchors.of(entry)?.let { JsonPrimitive(it) } ?: JsonNull)
         when (entry.category) {
-            DiffCategory.LOGIC_CHANGED -> put("details", buildJsonArray { ChangeSummary.subBulletsFor(entry, dataChanges.of(entry)).forEach { add(JsonPrimitive(it)) } })
+            DiffCategory.LOGIC_CHANGED -> {
+                put("details", buildJsonArray { ChangeSummary.subBulletsFor(entry, dataChanges.of(entry)).forEach { add(JsonPrimitive(it)) } })
+                // Spec §14.75: the documentation fields that changed with the logic -- only when some did.
+                val fields = ChangeSummary.changedMetadataFields(entry)
+                if (fields.isNotEmpty()) put("fields", buildJsonArray { fields.forEach { add(JsonPrimitive(it)) } })
+            }
             DiffCategory.DOCS_CHANGED -> put("fields", buildJsonArray { ChangeSummary.changedMetadataFields(entry).forEach { add(JsonPrimitive(it)) } })
             else -> Unit
         }

@@ -152,6 +152,14 @@ internal object DiffRenderer {
                     for (change in dataChanges) sb.appendLine("- ${ChangeSummary.dataChangeLine(change)}")
                     sb.appendLine()
                 }
+                // Spec §14.75: documentation that changed together with the logic -- only the rows that differ, after the card and before the source.
+                val documentation = MetadataFields.of(entry.oldRule!!.metadata, entry.newRule.metadata).filter { it.differs }
+                if (documentation.isNotEmpty()) {
+                    sb.appendLine("**Documentation changes**")
+                    sb.appendLine()
+                    appendDocsRows(sb, documentation)
+                    sb.appendLine()
+                }
                 sb.appendLine("**Source diff**")
                 sb.appendLine()
                 // Spec §14.73: a change that is only in the data has no - or + line to show; say so rather than print an unchanged rule as if it were a diff.
@@ -216,70 +224,15 @@ internal object DiffRenderer {
         return defaultLine + constantLine + bodyLines
     }
 
-    private fun appendDocsTable(sb: StringBuilder, entry: DiffEntry) {
-        val oldMeta = entry.oldRule?.metadata
-        val newMeta = entry.newRule?.metadata
+    /** The old/new table a DOCS_CHANGED shows: the three base rows always, the optional rows only when they differ. */
+    private fun appendDocsTable(sb: StringBuilder, entry: DiffEntry) =
+        appendDocsRows(sb, MetadataFields.of(entry.oldRule?.metadata, entry.newRule?.metadata).filter { it.base || it.differs })
+
+    private fun appendDocsRows(sb: StringBuilder, fields: List<DocField>) {
         sb.appendLine("| | Old | New |")
         sb.appendLine("|---|---|---|")
-        sb.appendLine("| Title | ${cellText(oldMeta?.title)} | ${cellText(newMeta?.title)} |")
-        sb.appendLine("| Description | ${cellText(oldMeta?.description)} | ${cellText(newMeta?.description)} |")
-        sb.appendLine("| Frameworks | ${frameworksText(oldMeta?.frameworks)} | ${frameworksText(newMeta?.frameworks)} |")
-        // Spec §14.43: rows for the passthrough fields only when they differ, so an edit that touches none of them renders
-        // exactly the three rows it always did.
-        val oldAuthors = oldMeta?.authors ?: emptyList()
-        val newAuthors = newMeta?.authors ?: emptyList()
-        if (oldAuthors != newAuthors) sb.appendLine("| Authors | ${authorsText(oldAuthors)} | ${authorsText(newAuthors)} |")
-        val oldResources = oldMeta?.relatedResources ?: emptyList()
-        val newResources = newMeta?.relatedResources ?: emptyList()
-        if (oldResources != newResources) sb.appendLine("| Related resources | ${resourcesText(oldResources)} | ${resourcesText(newResources)} |")
-        val oldCustom = oldMeta?.customFields ?: emptyMap()
-        val newCustom = newMeta?.customFields ?: emptyMap()
-        if (oldCustom != newCustom) sb.appendLine("| Custom fields | ${customText(oldCustom)} | ${customText(newCustom)} |")
-        // Spec §14.53: the declared verdict, only when it differs (same rule as the passthrough rows above).
-        val oldVerdict = oldMeta?.projection?.verdict
-        val newVerdict = newMeta?.projection?.verdict
-        if (oldVerdict != newVerdict) sb.appendLine("| Verdict | ${verdictText(oldVerdict)} | ${verdictText(newVerdict)} |")
-        // Spec §14.54: likewise one row each for the declared actions, annotations and timing.
-        val oldActions = oldMeta?.projection?.actions
-        val newActions = newMeta?.projection?.actions
-        if (oldActions != newActions) sb.appendLine("| Actions | ${actionsText(oldActions)} | ${actionsText(newActions)} |")
-        val oldAnnotations = oldMeta?.projection?.annotations
-        val newAnnotations = newMeta?.projection?.annotations
-        if (oldAnnotations != newAnnotations) sb.appendLine("| Annotations | ${annotationsText(oldAnnotations)} | ${annotationsText(newAnnotations)} |")
-        val oldTiming = oldMeta?.projection?.timing
-        val newTiming = newMeta?.projection?.timing
-        if (oldTiming != newTiming) sb.appendLine("| Timing | ${timingText(oldTiming)} | ${timingText(newTiming)} |")
-        // Spec §14.61: the masked input paths, only when they differ.
-        val oldMask = oldMeta?.projection?.mask
-        val newMask = newMeta?.projection?.mask
-        if (oldMask != newMask) sb.appendLine("| Mask | ${maskText(oldMask)} | ${maskText(newMask)} |")
+        for (field in fields) sb.appendLine("| ${field.label} | ${field.oldCell} | ${field.newCell} |")
     }
-
-    private fun authorsText(authors: List<io.explico.model.Author>): String =
-        authors.takeIf { it.isNotEmpty() }?.joinToString(", ") { a -> if (a.name != null && a.email != null) "${a.name} <${a.email}>" else a.name ?: a.email.orEmpty() } ?: "—"
-
-    private fun resourcesText(resources: List<io.explico.model.RelatedResource>): String =
-        resources.takeIf { it.isNotEmpty() }?.joinToString(", ") { r -> if (r.description != null) "${r.description} (${r.ref})" else r.ref } ?: "—"
-
-    private fun verdictText(verdict: io.explico.model.VerdictProjection?): String =
-        verdict?.let { "outcome `${it.outcome}`" + (it.reason?.let { r -> ", reason `$r`" } ?: "") } ?: "—"
-
-    private fun actionsText(actions: io.explico.model.ActionsProjection?): String = actions?.let { "at `${it.at}`, label `${it.label}`" } ?: "—"
-
-    private fun annotationsText(annotations: io.explico.model.AnnotationsProjection?): String = annotations?.let { "at `${it.at}`" } ?: "—"
-
-    private fun maskText(mask: List<String>?): String = mask?.takeIf { it.isNotEmpty() }?.joinToString(", ") { "`$it`" } ?: "—"
-
-    private fun timingText(timing: io.explico.model.TimingProjection?): String =
-        timing?.let { listOfNotNull(it.dueBy?.let { f -> "dueBy `$f`" }, it.startBefore?.let { f -> "startBefore `$f`" }).joinToString(", ") } ?: "—"
-
-    private fun customText(fields: Map<String, String>): String =
-        fields.takeIf { it.isNotEmpty() }?.entries?.joinToString(", ") { "${it.key}: ${it.value}" } ?: "—"
-
-    private fun cellText(text: String?): String = text?.trimEnd()?.replace("\n", "<br>") ?: "—"
-
-    private fun frameworksText(frameworks: List<String>?): String =
-        frameworks?.takeIf { it.isNotEmpty() }?.joinToString(", ") ?: "—"
 
     private fun appendCoverageWarning(sb: StringBuilder, entries: List<DiffEntry>) {
         val incomplete = entries.count { entry ->
