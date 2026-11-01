@@ -86,6 +86,50 @@ unrendered), `link` (`{package, rule}` for a rule reference or function call, el
 changed* section, including, when `diff` was given `--old-data`/`--new-data`, one ``reference data changed: `<document>`: <old> -> <new>`` string per changed document), and, when `diff` was given `--examples`, `examples`: `[{fixture, old, new}]` — every fixture whose outcome for this control changed (`old` and `new` are the cards' words, equal when only the produced message changed); an empty array when none did, and the key is absent without `--examples`. With `--examples` the document also has a top-level `exampleComparison`: `{compared, total, functions, unattributable, fixturesOnOneVersion}`, what the comparison covered or `fields` (a `DOCS_CHANGED` control, and also a `LOGIC_CHANGED` one whose documentation changed too: which of `title`, `description`, `frameworks`, `authors`,
 `related resources`, `custom fields` differ).
 
+## Typed facts of a LOGIC_CHANGED change
+
+`details` are English sentences. A change whose logic changed (`category` `LOGIC_CHANGED`, and only those) also has `facts`: an array **parallel to `details`** — same length, same
+order — one object per line, so a workflow can filter on what changed without parsing a sentence. Each fact has `kind` and `sentence`, and `facts[i].sentence` is exactly
+`details[i]` (both are produced from the same facts, so they cannot disagree). The kinds are a **closed set** of 15; a new kind would be a new schema version.
+
+| Kind | Extra fields | Meaning |
+|---|---|---|
+| `condition-removed` | `condition` | A condition the old rule had and the new one does not; `condition` is the phrase alone, as the card words it. |
+| `condition-added` | `condition` | A condition the new rule has and the old one did not. |
+| `message-removed` | `message` | A produced message only the old rule had (the message alone, without quotes). |
+| `message-added` | `message` | A produced message only the new rule has. |
+| `bodies-changed` | `old`, `new` | The number of bodies (situations) changed; both are JSON numbers. |
+| `default-outcome-changed` | — | The `default` value differs, or appears on one side only. |
+| `value-changed` | — | A constant rule's value differs. |
+| `source-fallback-changed` | — | The code shown as source (conditions explico could not render) is a different set. |
+| `situations-reordered` | — | The same situations in a different order (it matters for an `else` chain). |
+| `situation-value-changed` | — | A situation yields a different value (with or without a situation number). |
+| `situation-removed` | — | A situation with no counterpart in the new rule. |
+| `situation-added` | — | A situation with no counterpart in the old rule. |
+| `structure-changed` | — | The logic changed but nothing above names it (for example the same conditions regrouped across bodies); the source diff shows it. |
+| `reference-data-changed` | `path`, `old`, `new` | A data document the control reads differs (only with `--old-data`/`--new-data`). `path` is the breadcrumb without backticks; `old` and `new` are real JSON values, and **a key is omitted when that version has the document undefined** (a real JSON `null` is `null`). |
+| `documentation-changed` | `fields` | The METADATA changed too; `fields` are the same names as the change's `fields`. Always the last fact. |
+
+The situation kinds carry the sentence only for now (their parameters are free-form phrases). Example:
+
+```json
+{
+  "category": "LOGIC_CHANGED",
+  "controlId": "PAY-LIM-001",
+  "details": ["reference data changed: `data ▸ limits ▸ max`: `{\"EUR\":100000}` -> `{\"EUR\":50000}`", "documentation changed: description"],
+  "facts": [
+    {
+      "kind": "reference-data-changed",
+      "sentence": "reference data changed: `data ▸ limits ▸ max`: `{\"EUR\":100000}` -> `{\"EUR\":50000}`",
+      "path": "data ▸ limits ▸ max",
+      "old": {"EUR": 100000},
+      "new": {"EUR": 50000}
+    },
+    {"kind": "documentation-changed", "sentence": "documentation changed: description", "fields": ["description"]}
+  ]
+}
+```
+
 ## Notes
 
 - The JSON describes policy documentation, not policy behaviour: the same disclaimer as the Markdown applies.

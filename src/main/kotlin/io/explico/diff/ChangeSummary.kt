@@ -76,50 +76,55 @@ internal object ChangeSummary {
     fun exampleLine(change: ExampleChange): String =
         if (change.old == change.new) "${change.fixture}: still ${change.new}, message changed" else "${change.fixture}: ${change.old} -> ${change.new}"
 
-    /** Indented LOGIC_CHANGED sub-bullets (spec §14.42); empty for every other category. */
-    fun subBulletsFor(entry: DiffEntry, dataChanges: List<DataChange> = emptyList()): List<String> {
+    /** Indented LOGIC_CHANGED sub-bullets (spec §14.42); empty for every other category. Exactly the sentences of [factsFor]. */
+    fun subBulletsFor(entry: DiffEntry, dataChanges: List<DataChange> = emptyList()): List<String> = factsFor(entry, dataChanges).map { it.sentence }
+
+    /**
+     * Spec §14.78: the typed facts of a LOGIC_CHANGED entry, in the order of its sentences (empty for every other category). The single source of the "What changed" lines,
+     * the Markdown and the JSON `details`/`facts`.
+     */
+    fun factsFor(entry: DiffEntry, dataChanges: List<DataChange> = emptyList()): List<ChangeFact> {
         if (entry.category != DiffCategory.LOGIC_CHANGED) return emptyList()
         val old = entry.oldRule!!
         val new = entry.newRule!!
-        val bullets = mutableListOf<String>()
+        val facts = mutableListOf<ChangeFact>()
 
         val oldConditions = conditionPhrasesOf(old)
         val newConditions = conditionPhrasesOf(new)
         val newConditionSet = newConditions.toSet()
         val oldConditionSet = oldConditions.toSet()
-        oldConditions.filterNot { it in newConditionSet }.forEach { bullets += "condition removed: $it" }
-        newConditions.filterNot { it in oldConditionSet }.forEach { bullets += "condition added: $it" }
+        oldConditions.filterNot { it in newConditionSet }.forEach { facts += ChangeFact.conditionRemoved(it) }
+        newConditions.filterNot { it in oldConditionSet }.forEach { facts += ChangeFact.conditionAdded(it) }
 
         val oldMessages = messagesOf(old)
         val newMessages = messagesOf(new)
         val newMessageSet = newMessages.toSet()
         val oldMessageSet = oldMessages.toSet()
-        oldMessages.filterNot { it in newMessageSet }.forEach { bullets += "message removed: \"$it\"" }
-        newMessages.filterNot { it in oldMessageSet }.forEach { bullets += "message added: \"$it\"" }
+        oldMessages.filterNot { it in newMessageSet }.forEach { facts += ChangeFact.messageRemoved(it) }
+        newMessages.filterNot { it in oldMessageSet }.forEach { facts += ChangeFact.messageAdded(it) }
 
-        if (old.bodies.size != new.bodies.size) bullets += "bodies: ${old.bodies.size} -> ${new.bodies.size}"
-        if (old.default?.rendered != new.default?.rendered) bullets += "default outcome changed"
-        if (old.constantValue?.rendered != new.constantValue?.rendered) bullets += "value changed"
+        if (old.bodies.size != new.bodies.size) facts += ChangeFact.bodiesChanged(old.bodies.size, new.bodies.size)
+        if (old.default?.rendered != new.default?.rendered) facts += ChangeFact.defaultOutcomeChanged()
+        if (old.constantValue?.rendered != new.constantValue?.rendered) facts += ChangeFact.valueChanged()
         // A multiset comparison (sorted, not the original order): reordering the SAME fallback blocks between
         // old and new is not itself a change worth naming -- only a genuinely different set of them is.
-        if (unrenderedSourceTextsOf(old).sorted() != unrenderedSourceTextsOf(new).sorted()) {
-            bullets += "code shown as source changed (see the source diff below)"
-        }
+        if (unrenderedSourceTextsOf(old).sorted() != unrenderedSourceTextsOf(new).sorted()) facts += ChangeFact.sourceFallbackChanged()
 
         // Spec §14.59: which situation of an `else` chain / several definitions moved, was added or removed, or yields a different value.
-        bullets += Situations.bullets(old, new)
+        facts += Situations.facts(old, new)
 
         // Spec §14.73: the reference data this control reads that differs between the two versions of the supplied data.
-        bullets += dataChanges.map(::dataChangeLine)
+        facts += dataChanges.map(ChangeFact::referenceDataChanged)
 
         // The canonical hash DID change (that's why this is LOGIC_CHANGED at all), but none of the mechanical
         // checks above named anything -- e.g. the same conditions regrouped across bodies. Never guess at what
         // moved; point at the one place that actually shows it.
-        val logic = bullets.ifEmpty { listOf("the rule's structure changed; see the source diff below") }
+        if (facts.isEmpty()) facts += ChangeFact.structureChanged()
 
         // Spec §14.75: the documentation that changed WITH the logic, after everything else; the fallback above is decided without it.
         val documentation = changedMetadataFields(entry)
-        return if (documentation.isEmpty()) logic else logic + "documentation changed: ${documentation.joinToString(", ")}"
+        if (documentation.isNotEmpty()) facts += ChangeFact.documentationChanged(documentation)
+        return facts
     }
 
     /**

@@ -23,7 +23,10 @@ internal object Situations {
     private val NO_FUNCTION_LINK: (Condition.FunctionCall) -> String? = { null }
 
     /** The extra sub-bullets for [old] -> [new], in a fixed order: reordered, value changes (new order), removed (old numbering), added (new numbering). Empty when none applies. */
-    fun bullets(old: RuleGroup, new: RuleGroup): List<String> {
+    fun bullets(old: RuleGroup, new: RuleGroup): List<String> = facts(old, new).map { it.sentence }
+
+    /** Spec §14.78: the same lines as [bullets], as typed facts (sentence only). */
+    fun facts(old: RuleGroup, new: RuleGroup): List<ChangeFact> {
         val before = versionOf(old)
         val after = versionOf(new)
         if (before.situations.isEmpty() || after.situations.isEmpty()) return emptyList()
@@ -54,22 +57,22 @@ internal object Situations {
         }
         unmatchedOld.removeAll(reworded)
 
-        val bullets = mutableListOf<String>()
+        val bullets = mutableListOf<ChangeFact>()
         val inNewOrder = pairs.sortedBy { it.second }
         if ((before.isChain || after.isChain) && inNewOrder.map { it.first } != inNewOrder.map { it.first }.sorted()) {
-            bullets += "situations reordered: now in the order of the old situations ${inNewOrder.joinToString(", ") { (i, _) -> before.situations[i].label?.removePrefix("situation ") ?: "?" }}"
+            bullets += ChangeFact.situationsReordered("situations reordered: now in the order of the old situations ${inNewOrder.joinToString(", ") { (i, _) -> before.situations[i].label?.removePrefix("situation ") ?: "?" }}")
         }
         for ((i, j) in inNewOrder) {
             val was = before.situations[i].value
             val now = after.situations[j].value
             if (was != null && now != null && was != now) {
-                bullets += "${after.situations[j].label?.let { "$it: value" } ?: "value"} changed from $was to $now"
+                bullets += ChangeFact.situationValueChanged("${after.situations[j].label?.let { "$it: value" } ?: "value"} changed from $was to $now")
             }
         }
         // A situation with neither a value nor a chain around it (a boolean rule's extra body) is already named by the condition and body-count lines.
         fun named(version: Version, index: Int) = version.isChain || version.situations[index].value != null
-        for (i in unmatchedOld.filter { named(before, it) }) bullets += "${before.situations[i].label} removed (was: then ${before.situations[i].value ?: "no value"})"
-        for (j in unmatchedNew.filter { named(after, it) }) bullets += "${after.situations[j].label} added (then ${after.situations[j].value ?: "no value"})"
+        for (i in unmatchedOld.filter { named(before, it) }) bullets += ChangeFact.situationRemoved("${before.situations[i].label} removed (was: then ${before.situations[i].value ?: "no value"})")
+        for (j in unmatchedNew.filter { named(after, it) }) bullets += ChangeFact.situationAdded("${after.situations[j].label} added (then ${after.situations[j].value ?: "no value"})")
         return bullets
     }
 

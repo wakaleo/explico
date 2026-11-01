@@ -1718,3 +1718,9 @@ report always has the block: `docs/tutorial.md`'s pasted block is a real run, re
 It reads the card's own outcomes (`WorkedExamples.forGroup`, all fixtures -- never the few a card shows), so the bullet, the summary line and `quality.situationsWithoutExample` cannot disagree with the `*(Situation N)*` labels. Advisory, never a gap; a grouped control is skipped. The acceptance pack's REL-004 situation 3
 is genuinely matched by no fixture, so the pack's `index.md` golden and `docs/sample-output/index.md` carry this one bullet (operator-approved); a fixture set that is meant to be "nothing to report" must cover every situation of every multi-body control.
 
+## Typed diff facts (spec §14.78)
+
+`ChangeSummary.factsFor` builds a LOGIC_CHANGED entry's `List<ChangeFact>` FIRST; `subBulletsFor` is just its sentences, and `DiffJson` emits `details` (the sentences) and `facts` (kind + sentence + typed fields) from the SAME list. Every sentence is worded ONLY in a `ChangeFact` factory (and `ChangeSummary.dataChangeLine`,
+`Situations.facts` for the situation kinds) -- never concatenate a "What changed" line anywhere else. `FactKind` is a CLOSED set of 15 (an enum, not a hierarchy); `docs/json-output.md` lists it and `DiffFactsDocsTest` fails when the page and the enum disagree, so adding a kind means documenting it (and a schema decision before 1.0).
+`reference-data-changed` omits a JSON key for an undefined version: `null` in `DataChange` is undefined, `JsonNull` is a real null -- never conflate them.
+

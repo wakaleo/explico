@@ -5,6 +5,8 @@
 package io.explico.diff
 
 import io.explico.render.JsonExport
+import io.explico.render.PathHumanizer
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -48,6 +50,26 @@ internal object DiffJson {
         return JsonExport.prettyJson(document)
     }
 
+    /** Spec §14.78: `kind` and `sentence`, plus the typed fields of the kind. */
+    private fun factJson(fact: ChangeFact): JsonObject = buildJsonObject {
+        put("kind", fact.kind.wire)
+        put("sentence", fact.sentence)
+        when (fact.kind) {
+            FactKind.CONDITION_REMOVED, FactKind.CONDITION_ADDED -> put("condition", fact.text.orEmpty())
+            FactKind.MESSAGE_REMOVED, FactKind.MESSAGE_ADDED -> put("message", fact.text.orEmpty())
+            FactKind.BODIES_CHANGED -> { put("old", fact.oldCount!!); put("new", fact.newCount!!) }
+            FactKind.REFERENCE_DATA_CHANGED -> {
+                val change = fact.data!!
+                // The breadcrumb as the Reference data block shows it, without its code-span backticks. A version in which the document is undefined has NO key.
+                put("path", PathHumanizer.humanize(change.path.segments).rendered.removeSurrounding("`"))
+                change.old?.let { put("old", it) }
+                change.new?.let { put("new", it) }
+            }
+            FactKind.DOCUMENTATION_CHANGED -> put("fields", buildJsonArray { fact.fields.forEach { add(JsonPrimitive(it)) } })
+            else -> Unit
+        }
+    }
+
     private fun change(entry: DiffEntry, qualified: Set<String>, anchors: ChangeAnchors, dataChanges: DataChangeIndex, exampleChanges: ExampleChangeIndex?) = buildJsonObject {
         val (packagePath, rule) = ChangeSummary.displayedTarget(entry)
         put("category", entry.category.name)
@@ -58,7 +80,10 @@ internal object DiffJson {
         put("anchor", anchors.of(entry)?.let { JsonPrimitive(it) } ?: JsonNull)
         when (entry.category) {
             DiffCategory.LOGIC_CHANGED -> {
-                put("details", buildJsonArray { ChangeSummary.subBulletsFor(entry, dataChanges.of(entry)).forEach { add(JsonPrimitive(it)) } })
+                // Spec §14.78: `details` are the sentences of the typed `facts`, one source.
+                val facts = ChangeSummary.factsFor(entry, dataChanges.of(entry))
+                put("details", buildJsonArray { facts.forEach { add(JsonPrimitive(it.sentence)) } })
+                put("facts", buildJsonArray { facts.forEach { add(factJson(it)) } })
                 // Spec §14.75: the documentation fields that changed with the logic -- only when some did.
                 val fields = ChangeSummary.changedMetadataFields(entry)
                 if (fields.isNotEmpty()) put("fields", buildJsonArray { fields.forEach { add(JsonPrimitive(it)) } })

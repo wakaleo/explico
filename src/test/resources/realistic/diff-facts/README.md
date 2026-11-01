@@ -1,0 +1,1 @@
+Fixture for RealisticDiffFactsAcceptanceIT: the two LOGIC_CHANGED shapes no other diff fixture pair produces. DF-1 is a constant rule whose value changes (10 -> 20: the "value changed" line); DF-2 has an `every` over a literal list (shown as source) whose body changes (the "code shown as source changed" line).
