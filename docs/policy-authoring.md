@@ -235,10 +235,15 @@ or shares its `title` with another control, `index.md` gains a **Documentation q
 card; the same findings are in `explico.json` (`quality`). There is no section when there is nothing to report. Rules without a
 control id are not checked — give a rule a control id to make it a control.
 
-When you also give example fixtures (`--examples`), two more findings appear, each ending with what to do about it:
+When you also give example fixtures (`--examples`), these findings appear, each ending with what to do about it:
 
 - **No matching example** — no fixture makes the control match (or it has none), so the card never shows it holding. Add a fixture that
   makes it match.
+- **Situation without a matching example** — a control with several situations (bodies) that some fixture matches, but of which one or
+  more are triggered by no fixture, so the card never shows them holding: `[SC-1] situation 2; [SC-7] situations 2, 3`. Add a fixture
+  that makes each of them match. Only what can be claimed is listed: a control whose messages explico cannot attribute to a situation
+  (a boolean rule, a message that is not a literal or `sprintf` template, message templates that overlap so a message cannot be told from which body it came), an `else` chain, a function and a control grouped with
+  `--group-by-control` are never listed, and a control no fixture matches at all is under *No matching example* only.
 - **Raw decision object** — the control returns an object (a decision) and declares no `custom.verdict`, so its worked examples show
   raw JSON. Declare `custom.verdict` (see above) so they read as verdicts. A function, a rule whose object has only `true` values (a
   partial-object rule) and a rule that already declares a verdict are not listed. A `custom.verdict` that is wrongly shaped is ignored

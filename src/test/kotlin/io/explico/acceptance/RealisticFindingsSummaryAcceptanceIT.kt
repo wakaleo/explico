@@ -152,11 +152,11 @@ class RealisticFindingsSummaryAcceptanceIT {
     }
 
     @Test
-    @DisplayName("the five-package sample (docs/sample-output) renders byte-for-byte as committed, with no findings")
+    @DisplayName("the five-package sample (docs/sample-output) renders byte-for-byte as committed, with only the one situation finding (REL-004 situation 3, spec 14.77)")
     fun sampleOutputUntouched() {
         val dir = Path.of("samples/policies")
         val docs = Explico.render(Explico.load(dir), dir, Explico.loadExamples(Path.of("samples/examples")), Path.of("samples/data/release/data.json"))
-        assertThat(docs.findings).isEmpty()
+        assertThat(docs.findings).containsExactly("1 control has a situation no example matches")
         for ((name, text) in docs.files) {
             assertThat(text).describedAs("docs/sample-output/$name").isEqualTo(Files.readString(Path.of("docs/sample-output").resolve(name)))
         }

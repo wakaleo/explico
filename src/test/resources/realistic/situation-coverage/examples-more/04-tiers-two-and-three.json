@@ -1,0 +1,7 @@
+{
+ "name": "tiers two and three",
+ "input": {
+  "t2": true,
+  "t3": true
+ }
+}

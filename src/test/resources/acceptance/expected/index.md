@@ -28,6 +28,10 @@
 
 *Overall rendering coverage: 24 of 24 conditions (100%)*
 
+## Documentation quality
+
+- **Situation without a matching example (1):** [REL-004](release-governance.md#rel-004) situation 3 — add a fixture that makes each of them match
+
 ## How to read this index
 
 - **Rendered** — the share of a rule's conditions explico could render as readable text; the rest is shown as marked verbatim source on the rule's own card. It says nothing about whether a control is effective or complete. A helper rule can show 0% because its only condition is a construct explico does not render (such as a `with` override); that says nothing about the rules that call it.

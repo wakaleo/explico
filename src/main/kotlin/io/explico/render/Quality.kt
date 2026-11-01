@@ -58,11 +58,19 @@ internal object Quality {
          * Advisory, never a gap.
          */
         val valuesShownAsSource: List<ValueShownAsSource> = emptyList(),
+        /**
+         * Spec §14.77, only when example fixtures were supplied: controls with several situations of which some are demonstrated by no matched worked example, with the
+         * situation numbers (ascending). Only what can be claimed ([SituationCoverage]). Advisory, never a gap.
+         */
+        val situationsWithoutExample: List<SituationGap> = emptyList(),
     ) {
         fun isEmpty(): Boolean =
-            missingDescription.isEmpty() && noFramework.isEmpty() && duplicateTitles.isEmpty() && noMatchingExample.isEmpty() && rawDecisionObject.isEmpty() &&
+            missingDescription.isEmpty() && noFramework.isEmpty() && duplicateTitles.isEmpty() && noMatchingExample.isEmpty() && situationsWithoutExample.isEmpty() && rawDecisionObject.isEmpty() &&
                 unpublishedComments.isEmpty() && shownAsSource.isEmpty() && noControlId.isEmpty() && valuesShownAsSource.isEmpty()
     }
+
+    /** [situations] (1-based, ascending) of the control [ref] that no matched worked example demonstrates. */
+    data class SituationGap(val ref: ControlRef, val situations: List<Int>)
 
     /** [count] conditions shown as source for [reason], in [cards] (distinct, in index order). */
     data class ShownAsSource(val reason: String, val count: Int, val cards: List<ControlRef>, val places: List<Place> = emptyList())
@@ -147,6 +155,11 @@ internal object Quality {
             duplicateTitles = byTitle.filterValues { it.size > 1 }.entries.sortedBy { it.key }.map { (title, group) -> title to group.map { it.ref } },
             noMatchingExample = ofRules.filter { entry -> entry.members.none { (pkg, rule) -> outcomesOf(pkg, rule).any { it.matched } } }.map { it.ref },
             rawDecisionObject = ofRules.filter { entry -> entry.members.any { (pkg, rule) -> isRawDecisionObject(pkg, rule, ::outcomesOf) } }.map { it.ref },
+            // A grouped control (several rules under one id) is skipped: its situations belong to different rules.
+            situationsWithoutExample = ofRules.filter { it.members.size == 1 }.mapNotNull { entry ->
+                val (pkg, rule) = entry.members.single()
+                SituationCoverage.uncovered(rule, outcomesOf(pkg, rule))?.let { SituationGap(entry.ref, it) }
+            },
         )
     }
 
@@ -248,6 +261,7 @@ internal object Quality {
         val rules = findings.noControlId.size
         if (rules > 0) add(if (rules == 1) "1 rule has no control id and is not used by another rule" else "$rules rules have no control id and are not used by another rule")
         controls(findings.noMatchingExample.size, "has no matching example", "have no matching example")
+        controls(findings.situationsWithoutExample.size, "has a situation no example matches", "have a situation no example matches")
         controls(findings.rawDecisionObject.size, "returns an object but declares no custom.verdict", "return an object but declare no custom.verdict")
         val comments = findings.unpublishedComments.size
         if (comments > 0) add(if (comments == 1) "1 comment block is not published" else "$comments comment blocks are not published")

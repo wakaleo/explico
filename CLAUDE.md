@@ -1712,3 +1712,9 @@ change only when something differs. A data-raised entry gets them too, which clo
 labels need them. `render/PlainLabel.validate` is the ONE plain-text label rule (companion label adds `[ ] | *`); all validation happens before any file access or opa. Without the directories nothing changes, byte for byte (the `diff-all-categories` golden pins it). The CLI always passes both directories, so a CLI
 report always has the block: `docs/tutorial.md`'s pasted block is a real run, regenerate it if the digest input or the wording changes.
 
+## Per-situation example coverage (spec §14.77)
+
+`render/SituationCoverage.uncovered(rule, outcomes)` is the ONE decision: which situations (bodies) no MATCHED outcome is attributed to, and null unless it can be claimed (2+ bodies; not a function/split default/`else` chain; some outcome matched; every matched outcome's messages all attributed, each matching EXACTLY ONE body's template -- overlapping templates mis-credit a message to the first match, so nothing is claimed; `SituationCoverageOverlapTest` pins the real case).
+It reads the card's own outcomes (`WorkedExamples.forGroup`, all fixtures -- never the few a card shows), so the bullet, the summary line and `quality.situationsWithoutExample` cannot disagree with the `*(Situation N)*` labels. Advisory, never a gap; a grouped control is skipped. The acceptance pack's REL-004 situation 3
+is genuinely matched by no fixture, so the pack's `index.md` golden and `docs/sample-output/index.md` carry this one bullet (operator-approved); a fixture set that is meant to be "nothing to report" must cover every situation of every multi-body control.
+

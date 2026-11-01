@@ -71,6 +71,12 @@ internal object JsonExport {
         put("noFramework", buildJsonArray { f.noFramework.forEach { add(JsonPrimitive(it.label)) } })
         put("noControlId", buildJsonArray { f.noControlId.forEach { add(JsonPrimitive(it.label)) } })
         put("noMatchingExample", buildJsonArray { f.noMatchingExample.forEach { add(JsonPrimitive(it.label)) } })
+        // Spec §14.77: always present (an empty array when no fixtures were supplied).
+        put("situationsWithoutExample", buildJsonArray {
+            f.situationsWithoutExample.forEach { gap ->
+                add(buildJsonObject { put("control", gap.ref.label); put("situations", buildJsonArray { gap.situations.forEach { add(JsonPrimitive(it)) } }) })
+            }
+        })
         put("rawDecisionObject", buildJsonArray { f.rawDecisionObject.forEach { add(JsonPrimitive(it.label)) } })
         put("duplicateTitles", buildJsonArray {
             f.duplicateTitles.forEach { (title, controls) ->

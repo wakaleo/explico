@@ -1,0 +1,12 @@
+{
+ "name": "kind a level x",
+ "input": {
+  "kind": "a",
+  "level": "x",
+  "flag": true,
+  "role": "admin",
+  "zone": "red",
+  "mode": "p",
+  "t1": true
+ }
+}

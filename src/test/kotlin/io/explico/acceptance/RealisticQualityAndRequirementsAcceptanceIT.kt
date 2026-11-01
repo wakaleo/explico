@@ -135,9 +135,12 @@ class RealisticQualityAndRequirementsAcceptanceIT {
         }
 
         @Test
-        @DisplayName("a fully documented set (the acceptance pack) has no section and empty JSON findings")
+        @DisplayName("a fully documented set (the acceptance pack) has no description, framework or title finding: its only finding is REL-004's uncovered situation 3 (spec 14.77), and the JSON findings are empty")
         fun cleanPack() {
-            assertThat(packIndex).doesNotContain("Documentation quality")
+            // Repointed (spec 14.77): the pack's REL-004 has a situation no fixture matches, so the section exists -- with exactly that one bullet and no other finding.
+            val bullets = section(packIndex, "## Documentation quality").filter { it.startsWith("- ") }
+            assertThat(bullets).hasSize(1)
+            assertThat(bullets.single()).startsWith("- **Situation without a matching example (1):** [REL-004]")
             val q = packJson.getValue("quality").jsonObject
             assertThat(q.arr("missingDescription")).isEmpty()
             assertThat(q.arr("noFramework")).isEmpty()

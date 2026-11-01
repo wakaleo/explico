@@ -964,6 +964,13 @@ internal object MarkdownRenderer {
         if (findings.noMatchingExample.isNotEmpty()) {
             sb.appendLine("- **No matching example (${findings.noMatchingExample.size}):** ${findings.noMatchingExample.joinToString(", ") { it.link() }} — add a fixture that makes it match")
         }
+        // Spec §14.77: a control one fixture matches can still have a situation no fixture triggers.
+        if (findings.situationsWithoutExample.isNotEmpty()) {
+            val controls = findings.situationsWithoutExample.joinToString("; ") { gap ->
+                "${gap.ref.link()} ${if (gap.situations.size == 1) "situation" else "situations"} ${gap.situations.joinToString(", ")}"
+            }
+            sb.appendLine("- **Situation without a matching example (${findings.situationsWithoutExample.size}):** $controls — add a fixture that makes each of them match")
+        }
         if (findings.rawDecisionObject.isNotEmpty()) {
             sb.appendLine(
                 "- **Raw decision object (${findings.rawDecisionObject.size}):** ${findings.rawDecisionObject.joinToString(", ") { it.link() }} — " +

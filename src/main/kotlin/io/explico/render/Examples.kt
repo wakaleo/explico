@@ -245,6 +245,16 @@ internal object WorkedExamples {
         return templates.map { templateToRegex(it!!) }
     }
 
+    /**
+     * True when [rule]'s bodies can be told apart by their message templates and every one of [messages] matches EXACTLY ONE body's template (spec §14.77). The card's own
+     * `*(Situation N)*` takes the first matching body, so with overlapping templates (`%v needs review` and `payment %v needs review`) a message of the second body is credited
+     * to the first: a statement about which situation fired can then be wrong, and must not be made.
+     */
+    fun attributesUnambiguously(rule: RuleGroup, messages: List<String>): Boolean {
+        val regexes = attributionRegexes(rule) ?: return false
+        return messages.all { message -> regexes.count { it.matches(message) } == 1 }
+    }
+
     private fun templateToRegex(template: String): Regex {
         val literalParts = template.split(Regex("%[vs]"))
         return Regex("^" + literalParts.joinToString(".*") { Regex.escape(it) } + "$")
