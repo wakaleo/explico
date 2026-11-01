@@ -34,8 +34,12 @@ deny contains msg if {
 ## 2. Render it
 
 ```sh
-java -jar explico.jar render policies --out docs
+java -jar explico.jar render policies --out policy-docs
 ```
+
+!!! warning "`--out` is replaced"
+    `render --out <dir>` deletes whatever is already in that directory before writing, so output never goes stale. Give it a directory
+    that holds nothing but generated documents. Do not point it at an existing `docs/`.
 
 ```text
 Rendering coverage: 4 of 4 conditions (100%)
@@ -43,12 +47,12 @@ Documentation quality (see index.md):
   - 1 rule has no control id and is not used by another rule
 ```
 
-`docs/` now holds `index.md` and `databases.md`. The second line is advice, not an error: the rule has no control id yet, which the
+`policy-docs/` now holds `index.md` and `databases.md`. The second line is advice, not an error: the rule has no control id yet, which the
 [tutorial](tutorial-first-policy.md) adds.
 
 ## 3. Read the card
 
-Open `docs/databases.md`:
+Open `policy-docs/databases.md`:
 
 ```markdown
 **Effect of a match:** ❌ denied *(by the `deny` naming convention)*

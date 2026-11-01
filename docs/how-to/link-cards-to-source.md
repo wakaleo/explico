@@ -8,7 +8,7 @@ check the plain-language text against the code.
 `--source-url` takes a URL template. `{file}` (required) is the policy file's path relative to the policy directory; `{line}` is the rule's line.
 
 ```sh
-java -jar explico.jar render policies --out docs \
+java -jar explico.jar render policies --out policy-docs \
   --source-url 'https://github.com/acme/policies/blob/3f2c1ab/policies/{file}#L{line}'
 ```
 
@@ -40,7 +40,7 @@ Policies are often vendored from another repository. `--companion-url` adds a se
 available (it needs `{file}` or `{package}`), and `--companion-label` names it (default `module`):
 
 ```sh
-java -jar explico.jar render policies --out docs \
+java -jar explico.jar render policies --out policy-docs \
   --source-url 'https://github.com/acme/policies/blob/3f2c1ab/policies/{file}#L{line}' \
   --companion-url 'https://github.com/acme/modules/blob/main/{package}/{file}#L{line}' \
   --companion-label module

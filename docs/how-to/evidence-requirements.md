@@ -26,7 +26,7 @@ SOC 2 CC6.1
 ```
 
 ```sh
-java -jar explico.jar render policies --out docs --requirements requirements.txt
+java -jar explico.jar render policies --out policy-docs --requirements requirements.txt
 ```
 
 The index shows each requirement and the controls that answer it:
@@ -45,7 +45,7 @@ The index shows each requirement and the controls that answer it:
 ## 3. Fail when one has no control
 
 ```sh
-java -jar explico.jar render policies --out docs --requirements requirements.txt --fail-on-gaps
+java -jar explico.jar render policies --out policy-docs --requirements requirements.txt --fail-on-gaps
 echo "exit $?"
 ```
 

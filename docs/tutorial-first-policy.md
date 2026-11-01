@@ -41,8 +41,10 @@ deny contains msg if {
 ```
 
 ```sh
-explico render policies --out docs
+explico render policies --out policy-docs
 ```
+
+(`--out` is emptied before each render, so keep it dedicated to generated documents.)
 
 ```text
 Rendering coverage: 5 of 5 conditions (100%)
@@ -51,7 +53,7 @@ Documentation quality (see index.md):
   - 1 value is shown as source inside a rendered condition
 ```
 
-Coverage is 100% (all five conditions were understood), but the second advice line is new. In `docs/databases.md`, Situation 3 reads:
+Coverage is 100% (all five conditions were understood), but the second advice line is new. In `policy-docs/databases.md`, Situation 3 reads:
 
 ```markdown
 - `database ▸ engine` is `retired_engines[_]`
@@ -121,7 +123,7 @@ denied production database, a short retention, a compliant one and a retired eng
 Then:
 
 ```sh
-explico render policies --examples examples --out docs
+explico render policies --examples examples --out policy-docs
 ```
 
 The card gains a **Worked examples** section. The verdicts and messages are not written by explico: `opa eval` produced them.
@@ -147,7 +149,7 @@ No fixtures yet for a rule? `--generate-examples` derives candidates from its co
 Make the build fail when documentation slips:
 
 ```sh
-explico render policies --examples examples --out docs \
+explico render policies --examples examples --out policy-docs \
   --fail-under 100 --fail-on-gaps --require title,description,frameworks,fixture
 echo "exit $?"
 ```

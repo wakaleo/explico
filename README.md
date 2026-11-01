@@ -61,7 +61,7 @@ would do.
 
 ## Status
 
-explico is an early release (0.2.x), built against
+explico is a pre-1.0 release (0.4.x; the API and output may still change), built against
 [`specs/explico-poc-specification.md`](specs/explico-poc-specification.md),
 which is the authoritative design document. The full pipeline is implemented
 and tested. What it produces:

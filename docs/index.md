@@ -91,6 +91,7 @@ cost of the example.
 
 | If you want to… | Go to |
 |---|---|
+| Decide whether to pilot it (what to rely on, what it costs, the risks) | [Evaluating explico](evaluating.md) |
 | See it work in a minute | [Install and first run](install.md) |
 | Write and render your first rule in five minutes | [Quickstart](quickstart.md) |
 | Learn by documenting a policy from scratch | [Tutorial: your first policy](tutorial-first-policy.md) |

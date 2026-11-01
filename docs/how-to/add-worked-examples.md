@@ -17,7 +17,7 @@ An optional `description` documents the fixture for whoever maintains it; the ca
 fixtures must not share a `name` (exit `4`).
 
 ```sh
-java -jar explico.jar render policies --examples examples --out docs
+java -jar explico.jar render policies --examples examples --out policy-docs
 ```
 
 Each card gains a **Worked examples** section; a card shows at most three matching and two non-matching examples, and the index's
@@ -34,7 +34,7 @@ Each card gains a **Worked examples** section; a card shows at most three matchi
 For rules you have not written fixtures for, add `--generate-examples`:
 
 ```sh
-java -jar explico.jar render policies --out docs --generate-examples
+java -jar explico.jar render policies --out policy-docs --generate-examples
 ```
 
 ```text

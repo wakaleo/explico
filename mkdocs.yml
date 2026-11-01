@@ -51,6 +51,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting started:
+      - Evaluating explico: evaluating.md
       - Install and first run: install.md
       - Quickstart: quickstart.md
       - "Tutorial: your first policy": tutorial-first-policy.md
