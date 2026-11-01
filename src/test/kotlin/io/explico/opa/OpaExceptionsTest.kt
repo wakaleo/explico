@@ -32,7 +32,7 @@ class OpaExceptionsTest {
     fun requireCompatibleVersion() {
         val e = withBinary(missing) { assertThrows(OpaNotAvailableException::class.java) { OpaRunner.requireCompatibleVersion() } }
 
-        assertThat(e.message).contains("/nonexistent/opa-binary").contains("opa version 1").contains("OPA_BIN")
+        assertThat(e.message).contains(missing.toString()).contains("opa version 1").contains("OPA_BIN")
     }
 
     @Test
@@ -42,7 +42,7 @@ class OpaExceptionsTest {
 
         val e = withBinary(missing) { assertThrows(OpaNotAvailableException::class.java) { Explico.load(dir) } }
 
-        assertThat(e.message).contains("/nonexistent/opa-binary")
+        assertThat(e.message).contains(missing.toString())
     }
 
     @Test
