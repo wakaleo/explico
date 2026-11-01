@@ -33,7 +33,7 @@ class RealisticPoliciesAcceptanceIT {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val policyDir = Path.of(POLICIES_DIR)
             val policySet = Explico.load(policyDir)
-            files = Explico.render(policySet, policyDir).files
+            files = Explico.render(policySet).files
         }
 
         /** The `## ` section whose heading line contains [marker], up to the next `## ` heading. */

@@ -32,7 +32,7 @@ class RealisticConditionalValuesAcceptanceIT {
         fun renderDocument() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val dir = Path.of("src/test/resources/realistic/values")
-            doc = Explico.render(Explico.load(dir), dir).files.getValue("values.md")
+            doc = Explico.render(Explico.load(dir)).files.getValue("values.md")
         }
 
         /** The section whose heading line is exactly [heading], up to the next `## ` heading. */

@@ -13,8 +13,16 @@ package io.explico.model
  */
 public enum class RegoVersion { V1, V0 }
 
-/** A parsed set of Rego packages, e.g. everything under one policy directory. [regoVersion] is how it was parsed, and how worked examples are later evaluated. */
-public data class PolicySet(val packages: List<PolicyPackage>, val regoVersion: RegoVersion = RegoVersion.V1)
+/**
+ * A parsed set of Rego packages, e.g. everything under one policy directory. [regoVersion] is how it was parsed, and how worked examples are later evaluated.
+ * [sourceDir] is the absolute, normalised directory it was loaded from (spec §14.80 step 2): `Explico.load` sets it and `render`/`diff` read the policies again from there
+ * (worked examples, the digest). A set built by hand has none, and cannot be rendered.
+ */
+public data class PolicySet @JvmOverloads constructor(
+    val packages: List<PolicyPackage>,
+    val regoVersion: RegoVersion = RegoVersion.V1,
+    val sourceDir: java.nio.file.Path? = null,
+)
 
 /** One Rego package: its path, the rules it defines, and the files it came from. */
 public data class PolicyPackage @JvmOverloads constructor(

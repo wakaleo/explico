@@ -29,7 +29,7 @@ class RealisticPackageMetadataAcceptanceIT {
         private lateinit var fullFilesAgain: Map<String, String>
         private lateinit var extrasFiles: Map<String, String>
 
-        private fun render(dir: Path): Map<String, String> = Explico.render(Explico.load(dir), dir).files
+        private fun render(dir: Path): Map<String, String> = Explico.render(Explico.load(dir)).files
 
         @JvmStatic
         @BeforeAll

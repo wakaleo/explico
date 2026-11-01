@@ -17,6 +17,8 @@ package io.explico.acceptance
 
 import io.explico.DiffReport
 import io.explico.Explico
+import io.explico.DataVersions
+import io.explico.DiffOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -60,7 +62,7 @@ class RealisticMetadataWithLogicDiffAcceptanceIT {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             report = Explico.diff(Explico.load(oldPolicies), Explico.load(newPolicies))
             reportAgain = Explico.diff(Explico.load(oldPolicies), Explico.load(newPolicies))
-            withData = Explico.diff(Explico.load(oldPolicies), Explico.load(newPolicies), dataOld = data("old"), dataNew = data("new"))
+            withData = Explico.diff(Explico.load(oldPolicies), Explico.load(newPolicies), DiffOptions(data = DataVersions(data("old"), data("new"))))
         }
 
         /** The bullet in `## What changed` whose line contains [id], with its `  - ` sub-bullets. */

@@ -15,7 +15,7 @@ fun main() {
     val policySet = Explico.load(samplesDir)
     check(policySet.packages.isNotEmpty()) { "Explico.load(samples/policies) produced no packages" }
 
-    val rendered = Explico.render(policySet, samplesDir)
+    val rendered = Explico.render(policySet)
     check(rendered.files.containsKey("index.md")) { "render() did not produce index.md" }
     val index = rendered.files.getValue("index.md")
     check(index.contains("REL-001")) { "index.md is missing the expected REL-001 control" }

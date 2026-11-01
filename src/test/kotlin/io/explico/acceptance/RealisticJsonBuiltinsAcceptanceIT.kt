@@ -32,7 +32,7 @@ class RealisticJsonBuiltinsAcceptanceIT {
         fun renderDocument() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val dir = Path.of("src/test/resources/realistic/json-builtins")
-            doc = Explico.render(Explico.load(dir), dir).files.getValue("jsonbuiltins.md")
+            doc = Explico.render(Explico.load(dir)).files.getValue("jsonbuiltins.md")
         }
 
         private fun card(name: String): String {

@@ -17,6 +17,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -44,7 +45,7 @@ class RealisticRealWorldFixesAcceptanceIT {
 
         private fun render(): Map<String, String> {
             val set = Explico.load(policies)
-            return Explico.render(set, policies, Explico.loadExamples(base.resolve("examples")), null, false, true).files
+            return Explico.render(set, RenderOptions(examples = Explico.loadExamples(base.resolve("examples")), json = true)).files
         }
 
         @JvmStatic
@@ -197,7 +198,7 @@ class RealisticRealWorldFixesAcceptanceIT {
         @DisplayName("the five-package sample (docs/sample-output) renders byte-for-byte as committed")
         fun sampleOutputUntouched() {
             val dir = Path.of("samples/policies")
-            val docs = Explico.render(Explico.load(dir), dir, Explico.loadExamples(Path.of("samples/examples")), Path.of("samples/data/release/data.json")).files
+            val docs = Explico.render(Explico.load(dir), RenderOptions(examples = Explico.loadExamples(Path.of("samples/examples")), dataDir = Path.of("samples/data/release/data.json"))).files
             assertThat(docs).isNotEmpty()
             for ((name, text) in docs) {
                 assertThat(text).describedAs("docs/sample-output/$name").isEqualTo(Files.readString(Path.of("docs/sample-output").resolve(name)))

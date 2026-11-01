@@ -18,6 +18,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.diff.DiffCategory
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
@@ -47,7 +48,7 @@ class RealisticInputMaskingAcceptanceIT {
         private fun render(dir: Path = policies, examples: Boolean = true): Map<String, String> {
             val set = Explico.load(dir)
             val ex = if (examples) Explico.loadExamples(base.resolve("examples")) else null
-            return Explico.render(set, dir, ex, null, false, true).files
+            return Explico.render(set, RenderOptions(examples = ex, json = true)).files
         }
 
         @JvmStatic
@@ -167,7 +168,7 @@ class RealisticInputMaskingAcceptanceIT {
         fun scalar() {
             val dir = base.resolve("malformed-scalar")
             val set = Explico.load(dir)
-            assertThatThrownBy { Explico.render(set, dir) }.isInstanceOf(IllegalArgumentException::class.java)
+            assertThatThrownBy { Explico.render(set) }.isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("custom.mask").hasMessageContaining("badmask.leaky")
         }
 
@@ -176,7 +177,7 @@ class RealisticInputMaskingAcceptanceIT {
         fun badEntry() {
             val dir = base.resolve("malformed-entry")
             val set = Explico.load(dir)
-            assertThatThrownBy { Explico.render(set, dir) }.isInstanceOf(IllegalArgumentException::class.java)
+            assertThatThrownBy { Explico.render(set) }.isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("custom.mask").hasMessageContaining("badentry.leaky")
         }
     }

@@ -21,6 +21,8 @@ package io.explico.acceptance
 
 import io.explico.DiffReport
 import io.explico.Explico
+import io.explico.DataVersions
+import io.explico.DiffOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -62,11 +64,7 @@ class RealisticFixtureVerdictDiffAcceptanceIT {
         private const val DENIED = "❌ denied"
 
         private fun diff(old: Path, new: Path, dataOld: Path? = null, dataNew: Path? = null, withExamples: Boolean = true): DiffReport =
-            Explico.diff(
-                Explico.load(old), Explico.load(new), dataOld = dataOld, dataNew = dataNew,
-                examples = if (withExamples) Explico.loadExamples(examplesDir) else null,
-                oldPolicyDir = if (withExamples) old else null, newPolicyDir = if (withExamples) new else null,
-            )
+            Explico.diff(Explico.load(old), Explico.load(new), DiffOptions(data = if (dataOld != null && dataNew != null) DataVersions(dataOld, dataNew) else null, examples = if (withExamples) Explico.loadExamples(examplesDir) else null, digests = (if (withExamples) old else null) != null))
 
         private lateinit var changed: DiffReport
         private lateinit var changedAgain: DiffReport
@@ -288,26 +286,22 @@ class RealisticFixtureVerdictDiffAcceptanceIT {
         }
 
         @Test
-        @DisplayName("examples need both policy directories, and the error names them; with both they are accepted")
+        @DisplayName("examples need the sets' directories, and the error names sourceDir; sets loaded by Explico.load have them (migrated, spec 14.80 step 2)")
         fun needsPolicyDirs() {
             val old = Explico.load(oldPolicies)
             val examples = Explico.loadExamples(examplesDir)
-            assertThat(Explico.diff(old, old, examples = examples, oldPolicyDir = oldPolicies, newPolicyDir = oldPolicies).markdown).contains(HEADING)
-            assertThatThrownBy { Explico.diff(old, old, examples = examples) }
-                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("oldPolicyDir").hasMessageContaining("newPolicyDir")
-            assertThatThrownBy { Explico.diff(old, old, examples = examples, oldPolicyDir = oldPolicies) }
-                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("oldPolicyDir").hasMessageContaining("newPolicyDir")
+            assertThat(Explico.diff(old, old, DiffOptions(examples = examples, digests = true)).markdown).contains(HEADING)
+            val hand = io.explico.model.PolicySet(emptyList())
+            assertThatThrownBy { Explico.diff(hand, hand, DiffOptions(examples = examples)) }
+                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("sourceDir").hasMessageContaining("Explico.load")
         }
 
         @Test
-        @DisplayName("data for one version only is still refused when examples are given")
+        @DisplayName("data for both versions together with examples is accepted (migrated, spec 14.80 step 2: data for one version only can no longer be written)")
         fun oneSidedDataStillRefused() {
             val old = Explico.load(oldPolicies)
             val examples = Explico.loadExamples(examplesDir)
-            // Both together are accepted by the same call, so the failure below is about the missing side.
-            assertThat(Explico.diff(old, old, dataOld = data("old"), dataNew = data("new"), examples = examples, oldPolicyDir = oldPolicies, newPolicyDir = oldPolicies).markdown).contains(HEADING)
-            assertThatThrownBy { Explico.diff(old, old, dataOld = data("old"), examples = examples, oldPolicyDir = oldPolicies, newPolicyDir = oldPolicies) }
-                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("dataOld").hasMessageContaining("dataNew")
+            assertThat(Explico.diff(old, old, DiffOptions(data = DataVersions(data("old"), data("new")), examples = examples, digests = true)).markdown).contains(HEADING)
         }
     }
 

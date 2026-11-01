@@ -1,5 +1,5 @@
 /**
- * Acceptance tests for the diff side of FR-7 of the decision-object feature requests: `Explico.diff(old, new, groupByControl = true)` (CLI: `diff --group-by-control`).
+ * Acceptance tests for the diff side of FR-7 of the decision-object feature requests: `Explico.diff(old, new, DiffOptions(groupByControl = true))` (CLI: `diff --group-by-control`).
  * A control split over several files shares ONE control id, which `diff` rejects today (`DuplicateControlIdException`, exit 4). With the option, opt-in:
  *
  * - the duplicate check is relaxed, and a rule's identity is (control id, package, rule) for any control id shared by two or more rules on EITHER side,
@@ -18,6 +18,7 @@ package io.explico.acceptance
 
 import io.explico.DiffReport
 import io.explico.Explico
+import io.explico.DiffOptions
 import io.explico.diff.DiffCategory
 import io.explico.diff.DiffEntry
 import io.explico.diff.DuplicateControlIdException
@@ -52,7 +53,7 @@ class RealisticGroupByControlDiffAcceptanceIT {
         class Outcome(val report: DiffReport?, val error: Throwable?)
 
         private fun attempt(old: io.explico.model.PolicySet, new: io.explico.model.PolicySet): Outcome =
-            try { Outcome(Explico.diff(old, new, groupByControl = true), null) } catch (e: Exception) { Outcome(null, e) }
+            try { Outcome(Explico.diff(old, new, DiffOptions(groupByControl = true)), null) } catch (e: Exception) { Outcome(null, e) }
 
         @JvmStatic
         @BeforeAll
@@ -66,7 +67,7 @@ class RealisticGroupByControlDiffAcceptanceIT {
 
         /** The grouped diff; an ASSERTION failure (not an exception) when the call threw. */
         private fun report(result: Outcome = outcome): DiffReport {
-            assertThat(result.error).describedAs("Explico.diff(old, new, groupByControl = true) must not throw").isNull()
+            assertThat(result.error).describedAs("Explico.diff(old, new, DiffOptions(groupByControl = true)) must not throw").isNull()
             return result.report!!
         }
 
@@ -142,7 +143,7 @@ class RealisticGroupByControlDiffAcceptanceIT {
         @Test
         @DisplayName("an explicit false is the same as not mentioning the option")
         fun explicitFalse() {
-            val thrown = catchThrowable { Explico.diff(oldSet, newSet, groupByControl = false) }
+            val thrown = catchThrowable { Explico.diff(oldSet, newSet) }
             assertThat(thrown).isInstanceOf(DuplicateControlIdException::class.java)
         }
 
@@ -152,7 +153,7 @@ class RealisticGroupByControlDiffAcceptanceIT {
             val before = Explico.load(Path.of("src/test/resources/diff/diff-all-categories/old"))
             val after = Explico.load(Path.of("src/test/resources/diff/diff-all-categories/new"))
             val plain = Explico.diff(before, after)
-            val grouped = Explico.diff(before, after, groupByControl = true)
+            val grouped = Explico.diff(before, after, DiffOptions(groupByControl = true))
             assertThat(grouped.markdown).isEqualTo(plain.markdown)
             assertThat(grouped.json).isEqualTo(plain.json)
             assertThat(grouped.entries).isEqualTo(plain.entries)

@@ -12,6 +12,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -38,8 +39,8 @@ class RealisticIndexAndProvenanceAcceptanceIT {
 
         fun render(policies: Path, examples: Boolean): Map<String, String> {
             val set = Explico.load(policies)
-            return if (examples) Explico.render(set, policies, Explico.loadExamples(examplesDir), dataFile).files
-            else Explico.render(set, policies).files
+            return if (examples) Explico.render(set, RenderOptions(examples = Explico.loadExamples(examplesDir), dataDir = dataFile)).files
+            else Explico.render(set).files
         }
 
         @JvmStatic

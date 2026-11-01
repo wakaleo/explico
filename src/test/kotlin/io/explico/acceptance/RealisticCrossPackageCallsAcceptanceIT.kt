@@ -28,7 +28,7 @@ class RealisticCrossPackageCallsAcceptanceIT {
         fun renderDocuments() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val dir = Path.of("src/test/resources/realistic/cross-package-calls")
-            files = Explico.render(Explico.load(dir), dir).files
+            files = Explico.render(Explico.load(dir)).files
             doc = files.getValue("xpkg.md")
         }
 

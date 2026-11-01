@@ -33,7 +33,7 @@ class RealisticRobustnessAcceptanceIT {
         fun renderDocument() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val dir = Path.of("src/test/resources/realistic/robustness")
-            doc = Explico.render(Explico.load(dir), dir).files.getValue("robust.md")
+            doc = Explico.render(Explico.load(dir)).files.getValue("robust.md")
         }
 
         private fun card(headingContains: String): String {

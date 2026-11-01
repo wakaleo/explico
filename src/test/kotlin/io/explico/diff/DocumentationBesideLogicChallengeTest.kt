@@ -5,6 +5,7 @@
 package io.explico.diff
 
 import io.explico.Explico
+import io.explico.DiffOptions
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -54,7 +55,7 @@ class DocumentationBesideLogicChallengeTest {
         write(dir, "new/a.rego", policy("a", "SHARED", "new a", 50))
         write(dir, "new/b.rego", policy("b", "SHARED", "new b", 50))
 
-        val report = Explico.diff(Explico.load(dir.resolve("old")), Explico.load(dir.resolve("new")), groupByControl = true)
+        val report = Explico.diff(Explico.load(dir.resolve("old")), Explico.load(dir.resolve("new")), DiffOptions(groupByControl = true))
 
         assertThat(report.markdown.lines().count { it == "  - documentation changed: description" }).isEqualTo(2)
         assertThat(report.markdown).contains("| Description | old a | new a |", "| Description | old b | new b |")

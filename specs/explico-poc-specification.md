@@ -583,12 +583,11 @@ policy became stricter or more permissive."*
 object Explico {
     fun load(policyDir: Path, regoVersion: RegoVersion = RegoVersion.V1): PolicySet           // §14.35
     fun loadExamples(dir: Path): ExampleSet
-    fun render(policySet: PolicySet, policyDir: Path, examples: ExampleSet? = null,
-               dataDir: Path? = null, generateExamples: Boolean = false,                    // §14.39
-               json: Boolean = false, requirements: List<String> = emptyList(),
-               sourceUrl: String? = null): RenderedDocs                                         // §14.45-§14.48
-    fun diff(old: PolicySet, new: PolicySet): DiffReport  // model + markdown + json
+    fun render(policies: PolicySet, options: RenderOptions = RenderOptions()): RenderedDocs   // §14.80 step 2: every option below is a field of RenderOptions
+    fun diff(old: PolicySet, new: PolicySet, options: DiffOptions = DiffOptions()): DiffReport  // model + markdown + json
 }
+// RenderOptions(examples, dataDir, generateExamples /*§14.39*/, json, requirements, sourceUrl /*§14.45-§14.48*/, controlId, groupByControl, companion, required)
+// PolicySet(packages, regoVersion, sourceDir): the directory it was loaded from, which render/diff read the policies again from
 data class RenderedDocs(val files: Map<String, String>, val coverage: CoverageSummary,
                         val generatedExamples: GeneratedExamplesSummary? = null,
                         val gaps: List<String> = emptyList())     // §14.47
@@ -2313,13 +2312,19 @@ of the 0.4.0 jar and `--help`).
 
 **Step 2 -- options objects.** `Explico.render(policies: PolicySet, options: RenderOptions = RenderOptions())` and `Explico.diff(old: PolicySet, new: PolicySet, options: DiffOptions = DiffOptions())`
 replace the 14- and 10-parameter forms entirely (and their `@JvmOverloads` chains).
-- `PolicySet` gains `sourceDir: Path` (last field, defaulted by the loader), so `policyDir`/`oldPolicyDir`/`newPolicyDir` are no longer parameters.
+- `PolicySet` gains `sourceDir: Path?` (last field, `null` for a set built by hand, set by the loader to the absolute normalised directory), so `policyDir`/`oldPolicyDir`/`newPolicyDir` are no longer parameters.
 - `RenderOptions(examples: ExampleSet?, dataDir: Path?, generateExamples, json, requirements: List<String>, sourceUrl: String?, controlId: ControlIdOptions?, groupByControl, companion: CompanionLink?, required: List<String>?)`;
   `ControlIdOptions(from: String, template: String = "{id}")`; `CompanionLink(url: String, label: String = "module")`.
-  `DiffOptions(groupByControl, data: DataVersions?, examples: ExampleSet?, labels: VersionLabels?)`; `DataVersions(old: Path, new: Path)`, `VersionLabels(old: String, new: String)`.
+  `DiffOptions(groupByControl, data: DataVersions?, examples: ExampleSet?, labels: VersionLabels?, digests: Boolean = false)`; `DataVersions(old: Path, new: Path)`, `VersionLabels(old: String? = null, new: String? = null)`.
   Invalid combinations are unrepresentable (one data directory without the other, a label without the other, a template without `from`). All validation stays where it is, before any opa work.
 - Kotlin: data classes with defaults. Java: each options class has a `Builder` (`RenderOptions.builder().json(true).build()`); the data class constructor stays the Kotlin API. No other abstraction.
 - The `docsSnippets`, `docs/` and every test call site are updated in the same step; the build compiles the snippets, so drift fails `check`.
+- **BUILT.** `Explico.render`/`diff` map the options onto the former long forms, which are now private (`renderPolicies`, `diffPolicies`: no logic was duplicated). As built, beyond the list above:
+  - **The diff header (a golden-safety decision).** The `**Compared**` block (the `sha256:` digests of the two policy directories, §14.76) appears only when `DiffOptions.digests` is true or `labels` is given -- never merely because the sets know their directory -- so `diff(old, new)` stays byte-identical and the `diff-all-categories` golden did not move. The CLI always passes `digests = true`. `DiffReport.oldDigest`/`newDigest` are filled exactly then.
+  - **`VersionLabels` sides are optional** (`VersionLabels(old = "v1.2")`): `--old-label` without `--new-label` always worked and is tested, so a labels pair could not be mandatory.
+  - **A set without a `sourceDir`** cannot be rendered (`IllegalArgumentException` naming `sourceDir` and `Explico.load`); `diff` of such sets works plainly, but examples, labels or digests need the directories. Version labels are validated first, before the directories are required.
+  - **`sourceDir` is part of `PolicySet` equality**: two loads of copies of one directory are unequal sets with equal packages; compare packages, or `copy(sourceDir = null)`.
+  - **Migration.** ~150 test call sites changed signature only; the seven frozen Tier-1/Tier-2 classes changed one `render` call each (operator-approved). Tests whose premise vanished with the old forms -- a data or directory pair given one-sided, a label or example set without directories, a control-id template without a pattern, and the reflection tests that pinned the old `@JvmOverloads` chains (`ControlIdApiJavaInteropTest`, `RequirementsApiJavaInteropTest`, one test of `JsonApiJavaInteropTest`) -- were rewritten to the new equivalent or removed, and are listed in the CHANGELOG.
 
 **Step 3 -- one exception base.** `public open class ExplicoException(message, cause)`; `DuplicateControlIdException`, `DuplicateFixtureNameException`, `InvalidMaskException`, `OutputDirectoryException`
 extend it, plus new `OpaNotAvailableException` (CLI exit 3) and `OpaFailedException(exitCode, stderr)` (CLI exit 2), replacing the `internal` opa exceptions at the facade boundary. An invalid

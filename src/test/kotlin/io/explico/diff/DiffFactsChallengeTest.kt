@@ -5,6 +5,7 @@
 package io.explico.diff
 
 import io.explico.Explico
+import io.explico.DiffOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -45,7 +46,7 @@ class DiffFactsChallengeTest {
         write(dir, "new/a.rego", policy("a", "SHARED", "input.amount > 50"))
         write(dir, "new/b.rego", policy("b", "SHARED", "input.amount > 100\n\tinput.region == \"eu\""))
 
-        val report = Explico.diff(Explico.load(dir.resolve("old")), Explico.load(dir.resolve("new")), groupByControl = true)
+        val report = Explico.diff(Explico.load(dir.resolve("old")), Explico.load(dir.resolve("new")), DiffOptions(groupByControl = true))
         val logic = changes(report.json).filter { it.getValue("category").jsonPrimitive.content == "LOGIC_CHANGED" }
 
         assertThat(logic).hasSize(2)

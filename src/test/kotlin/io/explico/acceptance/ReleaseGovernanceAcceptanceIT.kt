@@ -6,6 +6,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -31,7 +32,7 @@ class ReleaseGovernanceAcceptanceIT {
             val policyDir = Path.of(POLICIES_DIR)
             val policySet = Explico.load(policyDir)
             val examples = Explico.loadExamples(Path.of(EXAMPLES_DIR))
-            val rendered = Explico.render(policySet, policyDir, examples, Path.of(DATA_FILE))
+            val rendered = Explico.render(policySet, RenderOptions(examples = examples, dataDir = Path.of(DATA_FILE)))
             markdown = rendered.files["release-governance.md"] ?: ""
         }
     }

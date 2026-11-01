@@ -27,7 +27,7 @@ class ControlIdFromFilenameRenderTest {
 
     private fun render(dir: Path, vararg packages: PolicyPackage, from: String? = "ctrl_(?<id>[^.]+)", template: String = "CTRL-{id}", requirements: List<String> = emptyList()): RenderedDocs {
         Files.writeString(dir.resolve("p.rego"), "package p\n")
-        return Explico.render(PolicySet(packages.toList()), dir, requirements = requirements, controlIdFrom = from, controlIdTemplate = template)
+        return Explico.render(PolicySet(packages.toList(), sourceDir = dir), RenderOptions(requirements = requirements, controlId = from?.let { ControlIdOptions(it, template) }))
     }
 
     private fun anchors(markdown: String) = Regex("<a id=\"([^\"]*)\"></a>").findAll(markdown).map { it.groupValues[1] }.toList()
@@ -110,8 +110,7 @@ class ControlIdFromFilenameRenderTest {
     fun invalidOptionsFailFast(@TempDir dir: Path) {
         org.assertj.core.api.Assertions.assertThatThrownBy { render(dir, pkg("one", rule("a", "ctrl_5.rego")), from = "ctrl_(\\d+)") }
             .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("(?<id>")
-        org.assertj.core.api.Assertions.assertThatThrownBy { render(dir, pkg("one", rule("a", "ctrl_5.rego")), from = null, template = "CTRL-{id}") }
-            .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("control-id-from")
+        // Migrated (spec 14.80 step 2): "a template with no pattern" can no longer be written -- ControlIdOptions always has a pattern -- so its assertion went with it.
     }
 
     @Test
@@ -141,8 +140,8 @@ class ControlIdFromFilenameRenderTest {
     @DisplayName("provenance: explico.json flags a derived id (`controlIdDerived: true`) and has no such key otherwise")
     fun jsonFlag(@TempDir dir: Path) {
         Files.writeString(dir.resolve("p.rego"), "package p\n")
-        val set = PolicySet(listOf(pkg("one", rule("a", "ctrl_5.rego"), rule("m", "ctrl_6.rego", RuleMetadata("T", null, "SEC-6", emptyList())), rule("p", "helpers.rego"))))
-        val json = Explico.render(set, dir, json = true, controlIdFrom = "ctrl_(?<id>[^.]+)", controlIdTemplate = "CTRL-{id}").files.getValue("explico.json")
+        val set = PolicySet(listOf(pkg("one", rule("a", "ctrl_5.rego"), rule("m", "ctrl_6.rego", RuleMetadata("T", null, "SEC-6", emptyList())), rule("p", "helpers.rego"))), sourceDir = dir)
+        val json = Explico.render(set, RenderOptions(json = true, controlId = ControlIdOptions("ctrl_(?<id>[^.]+)", "CTRL-{id}"))).files.getValue("explico.json")
         val rules = kotlinx.serialization.json.Json.parseToJsonElement(json) as kotlinx.serialization.json.JsonObject
         val byName = (rules.getValue("packages") as kotlinx.serialization.json.JsonArray).flatMap { (it as kotlinx.serialization.json.JsonObject).getValue("rules") as kotlinx.serialization.json.JsonArray }
             .associate { r -> (r as kotlinx.serialization.json.JsonObject).let { (it.getValue("name") as kotlinx.serialization.json.JsonPrimitive).content to it } }

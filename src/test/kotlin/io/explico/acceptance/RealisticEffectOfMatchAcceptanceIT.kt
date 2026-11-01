@@ -9,6 +9,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -38,8 +39,8 @@ class RealisticEffectOfMatchAcceptanceIT {
         @BeforeAll
         fun renderDocuments() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
-            packDocs = Explico.render(Explico.load(pack), pack, Explico.loadExamples(packExamples), packData).files
-            effectDocs = Explico.render(Explico.load(effects), effects).files
+            packDocs = Explico.render(Explico.load(pack), RenderOptions(examples = Explico.loadExamples(packExamples), dataDir = packData)).files
+            effectDocs = Explico.render(Explico.load(effects)).files
             diffReport = Explico.diff(Explico.load(allCategories.resolve("old")), Explico.load(allCategories.resolve("new"))).markdown
         }
 

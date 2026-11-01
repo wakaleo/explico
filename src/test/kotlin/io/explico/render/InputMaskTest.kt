@@ -262,8 +262,9 @@ class InputMaskTest {
                     PolicyPackage("z.pkg", listOf(rule("b", DeclaredProjection(maskProblem = "`mask` must be a list of input paths"))), listOf("f.rego")),
                     PolicyPackage("a.pkg", listOf(rule("a", DeclaredProjection(maskProblem = "entry 7 is not a string")), rule("fine", DeclaredProjection(mask = listOf("x")))), listOf("g.rego")),
                 ),
+                sourceDir = Path.of("does-not-exist").toAbsolutePath(),
             )
-            assertThatThrownBy { io.explico.Explico.render(set, Path.of("does-not-exist")) }
+            assertThatThrownBy { io.explico.Explico.render(set) }
                 .isInstanceOf(IllegalArgumentException::class.java).isInstanceOf(InvalidMaskException::class.java)
                 .hasMessageContaining("custom.mask on rule 'a.pkg.a': entry 7 is not a string")
                 .hasMessageContaining("custom.mask on rule 'z.pkg.b'")

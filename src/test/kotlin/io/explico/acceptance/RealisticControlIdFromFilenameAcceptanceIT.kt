@@ -18,6 +18,8 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.ControlIdOptions
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
@@ -46,8 +48,8 @@ class RealisticControlIdFromFilenameAcceptanceIT {
 
         private fun render(from: String?, template: String? = null): Map<String, String> {
             val set = Explico.load(policies)
-            return if (template == null) Explico.render(set, policies, json = true, controlIdFrom = from).files
-            else Explico.render(set, policies, json = true, controlIdFrom = from, controlIdTemplate = template).files
+            return if (template == null) Explico.render(set, RenderOptions(json = true, controlId = from?.let { ControlIdOptions(it) })).files
+            else Explico.render(set, RenderOptions(json = true, controlId = from?.let { ControlIdOptions(it, template) })).files
         }
 
         @JvmStatic

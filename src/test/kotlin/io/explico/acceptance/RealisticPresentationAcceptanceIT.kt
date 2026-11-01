@@ -12,6 +12,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -33,7 +34,7 @@ class RealisticPresentationAcceptanceIT {
 
         private fun render(dir: String): Map<String, String> {
             val policyDir = Path.of(dir)
-            return Explico.render(Explico.load(policyDir), policyDir).files
+            return Explico.render(Explico.load(policyDir)).files
         }
 
         @JvmStatic
@@ -48,7 +49,7 @@ class RealisticPresentationAcceptanceIT {
             try {
                 val policyDir = Path.of("src/test/resources/realistic/messages/policies")
                 val examples = Explico.loadExamples(Path.of("src/test/resources/realistic/messages/examples"))
-                messageFiles = Explico.render(Explico.load(policyDir), policyDir, examples).files
+                messageFiles = Explico.render(Explico.load(policyDir), RenderOptions(examples = examples)).files
             } catch (e: Exception) {
                 messagesError = e
             }

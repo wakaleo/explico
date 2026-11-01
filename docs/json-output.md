@@ -8,7 +8,7 @@ explico render policies --out docs --json            # also writes docs/explico.
 explico diff old new --out report.md --json report.json
 ```
 
-Library: `Explico.render(policySet, policyDir, examples, dataDir, generateExamples, json = true)` adds `explico.json` to
+Library: `Explico.render(policySet, RenderOptions(json = true))` adds `explico.json` to
 `RenderedDocs.files`; `Explico.diff(old, new).json` always holds the change report's JSON.
 
 ## What it promises

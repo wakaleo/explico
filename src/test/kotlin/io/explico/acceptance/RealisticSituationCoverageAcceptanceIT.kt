@@ -16,6 +16,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.RenderedDocs
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
@@ -43,7 +44,7 @@ class RealisticSituationCoverageAcceptanceIT {
 
         private fun render(dir: Path = policies, examples: Path? = base.resolve("examples"), group: Boolean = false, required: List<String>? = null): RenderedDocs {
             val set = Explico.load(dir)
-            return Explico.render(set, dir, examples?.let { Explico.loadExamples(it) }, json = true, groupByControl = group, required = required)
+            return Explico.render(set, RenderOptions(examples = examples?.let { Explico.loadExamples(it) }, json = true, groupByControl = group, required = required))
         }
 
         private lateinit var withExamples: RenderedDocs
@@ -65,7 +66,7 @@ class RealisticSituationCoverageAcceptanceIT {
             grouped = render(base.resolve("grouped/policies"), base.resolve("grouped/examples"), group = true)
             allRequired = render(required = listOf("title", "description", "frameworks", "fixture", "verdict"))
             val samples = Path.of("samples/policies")
-            samplePack = Explico.render(Explico.load(samples), samples, Explico.loadExamples(Path.of("samples/examples")), Path.of("samples/data/release/data.json"), json = true)
+            samplePack = Explico.render(Explico.load(samples), RenderOptions(examples = Explico.loadExamples(Path.of("samples/examples")), dataDir = Path.of("samples/data/release/data.json"), json = true))
         }
 
         /** The bullets of the index's "Documentation quality" section (empty when the section is absent). */

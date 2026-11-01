@@ -33,7 +33,7 @@ class RealisticLiteralDelimitersAcceptanceIT {
         fun renderDocument() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val dir = Path.of("src/test/resources/realistic/literal-delimiters")
-            doc = Explico.render(Explico.load(dir), dir).files.getValue("litdelims.md")
+            doc = Explico.render(Explico.load(dir)).files.getValue("litdelims.md")
         }
 
         private fun card(name: String): String {

@@ -5,6 +5,8 @@
 package io.explico.diff
 
 import io.explico.Explico
+import io.explico.DiffOptions
+import io.explico.VersionLabels
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -29,7 +31,7 @@ class DiffHeaderChallengeTest {
         val old = Path.of("src/test/resources/realistic/metadata-with-logic/old")
         val new = Path.of("src/test/resources/realistic/metadata-with-logic/new")
 
-        val report = Explico.diff(Explico.load(old), Explico.load(new), groupByControl = true, oldPolicyDir = old, newPolicyDir = new, oldLabel = "v1", newLabel = "v2")
+        val report = Explico.diff(Explico.load(old), Explico.load(new), DiffOptions(groupByControl = true, labels = VersionLabels(old = "v1", new = "v2"), digests = true))
         val lines = report.markdown.lines()
 
         assertThat(lines.count { it == "**Compared**" }).isEqualTo(1)
@@ -44,7 +46,7 @@ class DiffHeaderChallengeTest {
         val old = base.resolve("policies/old")
         val new = base.resolve("policies/new")
 
-        val report = Explico.diff(Explico.load(old), Explico.load(new), examples = Explico.loadExamples(base.resolve("examples")), oldPolicyDir = old, newPolicyDir = new)
+        val report = Explico.diff(Explico.load(old), Explico.load(new), DiffOptions(examples = Explico.loadExamples(base.resolve("examples")), digests = true))
         val lines = report.markdown.lines()
 
         assertThat(lines.indexOf("**Compared**")).isGreaterThanOrEqualTo(0).isLessThan(lines.indexOf("## Behaviour on your examples"))

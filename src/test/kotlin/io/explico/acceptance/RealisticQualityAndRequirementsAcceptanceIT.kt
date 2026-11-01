@@ -10,6 +10,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -55,8 +56,8 @@ class RealisticQualityAndRequirementsAcceptanceIT {
         private fun renderPack(requirements: List<String>? = null, json: Boolean = false): Map<String, String> {
             val set = Explico.load(pack)
             val examples = Explico.loadExamples(packExamples)
-            return if (requirements == null) Explico.render(set, pack, examples, packData, false, json).files
-            else Explico.render(set, pack, examples, packData, false, json, requirements).files
+            return if (requirements == null) Explico.render(set, RenderOptions(examples = examples, dataDir = packData, json = json)).files
+            else Explico.render(set, RenderOptions(examples = examples, dataDir = packData, json = json, requirements = requirements)).files
         }
 
         private fun parse(text: String?): JsonObject =
@@ -75,10 +76,10 @@ class RealisticQualityAndRequirementsAcceptanceIT {
             withRequirementsJson = parse(withRequirements["explico.json"])
             withTypos = renderPack(typoRequirements, json = true)
             withTyposJson = parse(withTypos["explico.json"])
-            val q = Explico.render(Explico.load(quality), quality, null, null, false, true).files
+            val q = Explico.render(Explico.load(quality), RenderOptions(json = true)).files
             qualityIndex = q.getValue("index.md")
             qualityJson = parse(q["explico.json"])
-            qualityAgain = Explico.render(Explico.load(quality), quality, null, null, false, true).files.getValue("index.md")
+            qualityAgain = Explico.render(Explico.load(quality), RenderOptions(json = true)).files.getValue("index.md")
         }
 
         private fun JsonElement.arr(key: String): List<JsonElement> {

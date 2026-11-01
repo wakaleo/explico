@@ -258,6 +258,7 @@ date with the real `Explico` API:
 
 ```kotlin
 import io.explico.Explico
+import io.explico.RenderOptions
 import java.nio.file.Path
 
 fun main() {
@@ -265,9 +266,7 @@ fun main() {
     val examples = Explico.loadExamples(Path.of("samples/examples"))
     val rendered = Explico.render(
         policySet,
-        Path.of("samples/policies"),
-        examples,
-        Path.of("samples/data/release/data.json"),
+        RenderOptions(examples = examples, dataDir = Path.of("samples/data/release/data.json")),
     )
     println(rendered.files["release-approvals.md"])
     println("Coverage: ${rendered.coverage.percent}%")
@@ -279,9 +278,9 @@ fun main() {
 }
 ```
 
-Same `load` → `render` → `diff` sequence as steps 1 and 4 above, same
-`policyDir` re-passed to `render` for the same reason the CLI needs it
-(worked examples re-invoke `opa eval` against the real files). See
+Same `load` → `render` → `diff` sequence as steps 1 and 4 above. A loaded `PolicySet` remembers the
+directory it came from (`sourceDir`), which `render` reads again for the same reason the CLI needs it
+(worked examples re-invoke `opa eval` against the real files); options travel in a `RenderOptions`. See
 [`user-guide.md`](user-guide.md#library) for the full facade reference,
 including the Java-callable form (`@JvmStatic`/`@JvmOverloads` — no
 `INSTANCE`, no explicit nulls) and the write-files-to-disk pattern for both

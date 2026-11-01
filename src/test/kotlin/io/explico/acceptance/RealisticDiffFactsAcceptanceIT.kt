@@ -16,6 +16,8 @@ package io.explico.acceptance
 
 import io.explico.DiffReport
 import io.explico.Explico
+import io.explico.DataVersions
+import io.explico.DiffOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -45,7 +47,7 @@ class RealisticDiffFactsAcceptanceIT {
         )
 
         private fun diff(old: Path, new: Path, dataOld: Path? = null, dataNew: Path? = null): DiffReport =
-            Explico.diff(Explico.load(old), Explico.load(new), dataOld = dataOld, dataNew = dataNew)
+            Explico.diff(Explico.load(old), Explico.load(new), DiffOptions(data = if (dataOld != null && dataNew != null) DataVersions(dataOld, dataNew) else null))
 
         private lateinit var reports: Map<String, DiffReport>
         private lateinit var metadataAgain: DiffReport
@@ -67,10 +69,7 @@ class RealisticDiffFactsAcceptanceIT {
             )
             metadataAgain = diff(meta.resolve("old"), meta.resolve("new"), meta.resolve("data/old.json"), meta.resolve("data/new.json"))
             val verdict = resources.resolve("realistic/fixture-verdict-diff")
-            withExamples = Explico.diff(
-                Explico.load(verdict.resolve("policies/old")), Explico.load(verdict.resolve("policies/new")),
-                examples = Explico.loadExamples(verdict.resolve("examples")), oldPolicyDir = verdict.resolve("policies/old"), newPolicyDir = verdict.resolve("policies/new"),
-            )
+            withExamples = Explico.diff(Explico.load(verdict.resolve("policies/old")), Explico.load(verdict.resolve("policies/new")), DiffOptions(examples = Explico.loadExamples(verdict.resolve("examples")), digests = true))
         }
 
         private fun changes(report: DiffReport): List<JsonObject> = Json.parseToJsonElement(report.json).jsonObject.getValue("changes").jsonArray.map { it.jsonObject }

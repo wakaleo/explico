@@ -196,35 +196,36 @@ stderr — never a raw stack trace.
 object Explico {
     fun load(policyDir: Path): PolicySet
     fun loadExamples(dir: Path): ExampleSet
-    fun render(policySet: PolicySet, policyDir: Path, examples: ExampleSet? = null, dataDir: Path? = null): RenderedDocs
-    fun diff(old: PolicySet, new: PolicySet): DiffReport
+    fun render(policies: PolicySet, options: RenderOptions = RenderOptions()): RenderedDocs
+    fun diff(old: PolicySet, new: PolicySet, options: DiffOptions = DiffOptions()): DiffReport
 }
 ```
 
 - **`load(policyDir)`** / **`load(policyDir, RegoVersion.V0)`** — parses every `.rego` file under `policyDir` (via
-  `opa parse`/`opa inspect`) into a `PolicySet`; `RegoVersion.V0` is for legacy-syntax policies (the version travels with the `PolicySet`, so `render()` evaluates worked examples the same way). `policyDir` must be kept
-  around and passed to `render()` later — worked examples need to re-invoke
+  `opa parse`/`opa inspect`) into a `PolicySet`; `RegoVersion.V0` is for legacy-syntax policies (the version travels with the `PolicySet`, so `render()` evaluates worked examples the same way). The set also remembers
+  the absolute directory it was loaded from (`PolicySet.sourceDir`), which `render()` reads again — worked examples need to re-invoke
   `opa eval` against the real files, which the domain model alone can't
-  locate.
+  locate. A set built by hand has no `sourceDir` and cannot be rendered. Note that `sourceDir` is part of the set's equality: two loads of
+  copies of one directory are unequal sets with equal `packages`.
 - **`loadExamples(dir)`** — loads `*.json` fixtures from `dir`, in filename
   order. Throws `io.explico.render.DuplicateFixtureNameException` (public)
   if two fixtures share a `name`.
-- **`render(policySet, policyDir, examples, dataDir, generateExamples = false, json = false, requirements = emptyList(), sourceUrl = null, controlIdFrom = null, controlIdTemplate = "{id}", groupByControl = false, companionUrl = null, companionLabel = "module", required = null)`** — returns
+- **`render(policies, options = RenderOptions())`** — the options are `RenderOptions(examples, dataDir, generateExamples, json, requirements, sourceUrl, controlId: ControlIdOptions?, groupByControl, companion: CompanionLink?, required)`, every one defaulting to "not asked"; Java uses `RenderOptions.builder()`. Returns
   `RenderedDocs(files: Map<String, String>, coverage: CoverageSummary,
   generatedExamples: GeneratedExamplesSummary?)`, the rendered Markdown keyed by
   output filename plus overall coverage (`coverage.rendered`, `coverage.total`,
   `coverage.percent`). `generatedExamples` is null unless `generateExamples = true`,
-  then `rulesWithExamples` of `rulesConsidered`. A trailing `json = true` also adds `explico.json` to `files`
-  (see [`json-output.md`](json-output.md)); a further trailing `requirements: List<String>` and `sourceUrl: String?` add the *Requirements coverage* section (see
+  then `rulesWithExamples` of `rulesConsidered`. `json = true` also adds `explico.json` to `files`
+  (see [`json-output.md`](json-output.md)); `requirements: List<String>` adds the *Requirements coverage* section (see
   *Keeping your documentation complete* in [`policy-authoring.md`](policy-authoring.md)). `RenderedDocs.gaps` is always filled: one line
-  per documentation gap, worded once for every consumer (empty when the documentation is complete). `RenderedDocs.findings` is the advisory counterpart: one line per kind of finding the index's *Documentation quality* section shows (`2 controls have no description`), in its order, empty when the section is absent; nothing fails on it. `controlIdFrom` / `controlIdTemplate` are the `--control-id-from` / `--control-id-template` options; an invalid value throws `IllegalArgumentException` before any `opa` work; so does a rule whose `custom.mask` is malformed (see *Keeping values out of the documentation* in [`policy-authoring.md`](policy-authoring.md)). `groupByControl = true` is `--group-by-control`: `files` then also holds `controls/<slug>.md` pages, so **a caller writing the files must create parent directories** (the snippets below do).
-- **`diff(old, new, groupByControl = false)`** — returns `DiffReport(entries: List<DiffEntry>,
+  per documentation gap, worded once for every consumer (empty when the documentation is complete). `RenderedDocs.findings` is the advisory counterpart: one line per kind of finding the index's *Documentation quality* section shows (`2 controls have no description`), in its order, empty when the section is absent; nothing fails on it. `controlId = ControlIdOptions(from, template)` is the `--control-id-from` / `--control-id-template` options, and `companion = CompanionLink(url, label)` is `--companion-url` / `--companion-label`; an invalid value throws `IllegalArgumentException` before any `opa` work; so does a rule whose `custom.mask` is malformed (see *Keeping values out of the documentation* in [`policy-authoring.md`](policy-authoring.md)). `groupByControl = true` is `--group-by-control`: `files` then also holds `controls/<slug>.md` pages, so **a caller writing the files must create parent directories** (the snippets below do).
+- **`diff(old, new, options = DiffOptions())`** — the options are `DiffOptions(groupByControl, data: DataVersions?, examples, labels: VersionLabels?, digests)`; Java uses `DiffOptions.builder()`. `data` compares the reference data of the two versions, `examples` evaluates the same fixtures against both, and the report's **Compared** block (the `sha256:` digests of the two policy directories, as in `index.md`) appears only with `digests = true` or `labels` — the CLI always asks for it. Examples, labels and digests read the sets' `sourceDir`, so they need sets from `Explico.load`. Returns `DiffReport(entries: List<DiffEntry>,
   markdown: String, json: String)`. Each `DiffEntry` carries its `category`
   (`DiffCategory`: `ADDED`/`REMOVED`/`LOGIC_CHANGED`/`DOCS_CHANGED`/`UNCHANGED`),
   `controlId`, and the old/new `PolicyPackage`+`RuleGroup` (null on the
   absent side for `ADDED`/`REMOVED`). Throws
   `io.explico.diff.DuplicateControlIdException` (public) if either side has
-  two rules sharing a control-id -- unless `groupByControl = true` (the
+  two rules sharing a control-id -- unless `DiffOptions(groupByControl = true)` (the
   `--group-by-control` option), which allows a shared id and gives each of its rules its own
   entry (identified by control id, package and rule); it still throws for two rules of one
   name and one shared id in one package.
@@ -329,7 +330,7 @@ fun main() {
     val outDir = Path.of("build/docs-snippet-output/kotlin")
 
     val policySet = Explico.load(policyDir)
-    val rendered = Explico.render(policySet, policyDir)
+    val rendered = Explico.render(policySet)
 
     Files.createDirectories(outDir)
     rendered.files.forEach { (name, content) ->
@@ -366,7 +367,7 @@ public final class LoadRenderWriteFilesJava {
         Path outDir = Path.of("build/docs-snippet-output/java");
 
         PolicySet policySet = Explico.load(policyDir);
-        RenderedDocs rendered = Explico.render(policySet, policyDir);
+        RenderedDocs rendered = Explico.render(policySet);
 
         Files.createDirectories(outDir);
         for (Map.Entry<String, String> entry : rendered.getFiles().entrySet()) {

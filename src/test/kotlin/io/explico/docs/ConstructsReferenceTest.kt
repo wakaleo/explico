@@ -6,6 +6,7 @@
 package io.explico.docs
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -85,7 +86,7 @@ class ConstructsReferenceTest {
         val dir = Files.createTempDirectory("constructs-ref")
         try {
             Files.writeString(dir.resolve("p.rego"), rego)
-            val json = Json.parseToJsonElement(Explico.render(Explico.load(dir), dir, null, null, false, true).files.getValue("explico.json")).jsonObject
+            val json = Json.parseToJsonElement(Explico.render(Explico.load(dir), RenderOptions(json = true)).files.getValue("explico.json")).jsonObject
             val rules = json.getValue("packages").jsonArray.flatMap { it.jsonObject.getValue("rules").jsonArray }.associateBy { it.jsonObject.getValue("name").jsonPrimitive.content }
 
             val problems = mutableListOf<String>()

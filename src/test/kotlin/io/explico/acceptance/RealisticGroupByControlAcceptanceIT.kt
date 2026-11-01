@@ -21,6 +21,8 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.ControlIdOptions
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -50,8 +52,8 @@ class RealisticGroupByControlAcceptanceIT {
         private fun render(group: Boolean, derive: Boolean = false): Map<String, String> {
             val set = Explico.load(policies)
             val ex = Explico.loadExamples(examples)
-            return if (derive) Explico.render(set, policies, ex, null, false, true, groupByControl = group, controlIdFrom = "ctrl_(?<id>\\d+)", controlIdTemplate = "CTRL-{id}").files
-            else Explico.render(set, policies, ex, null, false, true, groupByControl = group).files
+            return if (derive) Explico.render(set, RenderOptions(examples = ex, json = true, controlId = ControlIdOptions("ctrl_(?<id>\\d+)", "CTRL-{id}"), groupByControl = group)).files
+            else Explico.render(set, RenderOptions(examples = ex, json = true, groupByControl = group)).files
         }
 
         @JvmStatic
@@ -137,7 +139,7 @@ class RealisticGroupByControlAcceptanceIT {
             assertThat(plain.keys.none { it.startsWith("controls/") }).isTrue()
             assertThat(page(plain, "grp_signoff.md")).contains("## SEC-28 — Sign-off").contains("## SEC-28 — valid_signature")
             val set = Explico.load(policies)
-            assertThat(Explico.render(set, policies, Explico.loadExamples(examples), null, false, true).files).isEqualTo(plain)
+            assertThat(Explico.render(set, RenderOptions(examples = Explico.loadExamples(examples), json = true)).files).isEqualTo(plain)
         }
 
         @Test

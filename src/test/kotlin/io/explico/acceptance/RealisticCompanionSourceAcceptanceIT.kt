@@ -11,6 +11,8 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.CompanionLink
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -50,7 +52,7 @@ class RealisticCompanionSourceAcceptanceIT {
             sourceUrl: String? = null, companionUrl: String? = null, label: String = "module", group: Boolean = false, json: Boolean = true,
         ): Map<String, String> {
             val set = Explico.load(policies)
-            return Explico.render(set, policies, null, null, false, json, emptyList(), sourceUrl, null, "{id}", group, companionUrl, label).files
+            return Explico.render(set, RenderOptions(json = json, sourceUrl = sourceUrl, companion = companionUrl?.let { CompanionLink(it, label) }, groupByControl = group)).files
         }
 
         @JvmStatic
@@ -66,7 +68,7 @@ class RealisticCompanionSourceAcceptanceIT {
             sourceOnly = render(SOURCE)
             plain = render()
             val set = Explico.load(policies)
-            plainExplicit = Explico.render(set, policies, null, null, false, true).files
+            plainExplicit = Explico.render(set, RenderOptions(json = true)).files
         }
 
         private fun page(files: Map<String, String>, name: String): String {
@@ -198,7 +200,7 @@ class RealisticCompanionSourceAcceptanceIT {
         @DisplayName("a template with neither {file} nor {package} is rejected before any opa work, naming both placeholders")
         fun templateNeedsAPlaceholder() {
             val set = Explico.load(policies)
-            assertThatThrownBy { Explico.render(set, policies, null, null, false, false, emptyList(), null, null, "{id}", false, "https://x.example.com/only-line#L{line}") }
+            assertThatThrownBy { Explico.render(set, RenderOptions(companion = CompanionLink("https://x.example.com/only-line#L{line}"))) }
                 .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("{file}").hasMessageContaining("{package}")
         }
 
@@ -214,7 +216,7 @@ class RealisticCompanionSourceAcceptanceIT {
         fun badLabels() {
             val set = Explico.load(policies)
             for (label in listOf("", "   ", "a]b", "a\nb")) {
-                assertThatThrownBy { Explico.render(set, policies, null, null, false, false, emptyList(), null, null, "{id}", false, COMPANION, label) }
+                assertThatThrownBy { Explico.render(set, RenderOptions(companion = COMPANION?.let { CompanionLink(it, label) })) }
                     .describedAs("label '%s'", label.replace("\n", "\\n")).isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("label")
             }
         }

@@ -33,7 +33,7 @@ class RealisticExpressionAssignmentsAcceptanceIT {
         fun renderDocument() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val dir = Path.of("src/test/resources/realistic/expressions")
-            doc = Explico.render(Explico.load(dir), dir).files.getValue("exprs.md")
+            doc = Explico.render(Explico.load(dir)).files.getValue("exprs.md")
         }
 
         private fun card(name: String): String {

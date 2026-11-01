@@ -22,6 +22,7 @@ package io.explico.acceptance
 
 import io.explico.DiffReport
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.OutputDirectoryException
 import io.explico.RenderedDocs
 import io.explico.opa.OpaRunner
@@ -53,7 +54,7 @@ class RealisticOutputGuardAcceptanceIT {
         @BeforeAll
         fun renderAll() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
-            docs = Explico.render(Explico.load(policies), policies, groupByControl = true)
+            docs = Explico.render(Explico.load(policies), RenderOptions(groupByControl = true))
             report = Explico.diff(Explico.load(diffBase.resolve("old")), Explico.load(diffBase.resolve("new")))
         }
 

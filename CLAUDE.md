@@ -1739,3 +1739,11 @@ the call site as plain `unrenderedAt(loc, "reason")` calls, not an inline `if`).
 - The CLI pre-checks before `requireOpaOrExit` and refuses with `failWith(1, ...)` -- ONE stderr line, never `UsageError` (that prints usage text). Real deletion happens only at the final write, so exit 3 deletes nothing.
 - A write the file system rejects (dangling symlink, parent is a file) goes through `Main.kt`'s `writing(target)` helper: exit 1, one line, no stack trace. It wraps the WRITE only -- never widen it to the whole `try`, or an unrelated `IOException` is mislabelled.
 - Tests of the guard inject home/cwd (`OutputGuardTest`); never aim a test at a real home/cwd/root with a half-written guard.
+
+## Options objects (spec §14.80 step 2)
+
+`Explico.render(policies, RenderOptions())` and `Explico.diff(old, new, DiffOptions())` are the ONLY entry points; the long forms are private (`renderPolicies`, `diffPolicies`) -- change behaviour there, never by adding a public parameter. A new option is a LAST field with a default on the options class, a builder method in `Options.kt`, an `Explico.render`/`diff` mapping line, and a row in `PublicApiShapeTest`.
+- `PolicySet.sourceDir` is how `render`/`diff` find the `.rego` files again. It is part of data-class equality: two loads of copies of one directory are unequal sets with equal packages -- compare packages in tests. A hand-built set has none and cannot be rendered (tests that build one give it `sourceDir = dir`).
+- THE DIFF HEADER: the `**Compared**` block only with `digests = true` or `labels`; the default must stay byte-identical (the `diff-all-categories` golden pins it). The CLI passes `digests = true`. Do not make the block depend on `sourceDir` being set.
+- Impossible states are unrepresentable on purpose (data versions, a link label without a link, a template without a pattern); validation of the rest stays in `renderPolicies`/`diff` BEFORE any opa work, and version labels are validated before the directories are required.
+- `VersionLabels` sides are nullable: one `--old-label` alone is a supported call.

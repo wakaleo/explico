@@ -16,7 +16,10 @@
 package io.explico.acceptance
 
 import io.explico.DiffReport
+import io.explico.DiffOptions
+import io.explico.RenderOptions
 import io.explico.Explico
+import io.explico.VersionLabels
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -43,11 +46,14 @@ class RealisticDiffHeaderAcceptanceIT {
         private val sha = Regex("sha256:[0-9a-f]{64}")
 
         private fun diff(old: Path = oldDir, new: Path = newDir, oldPolicyDir: Path? = old, newPolicyDir: Path? = new, oldLabel: String? = null, newLabel: String? = null, loadOld: Path = oldDir): DiffReport =
-            Explico.diff(Explico.load(loadOld), Explico.load(new), oldPolicyDir = oldPolicyDir, newPolicyDir = newPolicyDir, oldLabel = oldLabel, newLabel = newLabel)
+            Explico.diff(
+                Explico.load(loadOld), Explico.load(new),
+                DiffOptions(labels = if (oldLabel != null || newLabel != null) VersionLabels(oldLabel, newLabel) else null, digests = oldPolicyDir != null && newPolicyDir != null),
+            )
 
         /** The digest `explico render` writes into `index.md` for [dir], optionally with data (which must not matter). */
         private fun renderDigest(dir: Path, data: Path? = null): String {
-            val index = Explico.render(Explico.load(dir), dir, null, data).files.getValue("index.md")
+            val index = Explico.render(Explico.load(dir), RenderOptions(dataDir = data)).files.getValue("index.md")
             return sha.find(index)?.value ?: error("no digest in index.md of $dir")
         }
 
@@ -123,7 +129,7 @@ class RealisticDiffHeaderAcceptanceIT {
             Files.writeString(copy.resolve("README.txt"), "not a policy\n")
             Files.writeString(copy.resolve("data.json"), "{}\n")
 
-            assertThat(diff(oldPolicyDir = copy).oldDigest).isEqualTo(oldIndexDigest)
+            assertThat(diff(loadOld = copy).oldDigest).isEqualTo(oldIndexDigest)
         }
 
         @Test
@@ -162,29 +168,28 @@ class RealisticDiffHeaderAcceptanceIT {
         fun invalid() {
             val old = Explico.load(oldDir)
             val nowhere = Path.of("does-not-exist-so-no-work-can-have-happened")
+            val located = old.copy(sourceDir = nowhere.toAbsolutePath())
             // The same call is accepted with a good label, so the refusals below are about the LABEL.
             assertThat(diff(oldLabel = "release 2026-10 (rc1)").oldDigest).isEqualTo(oldIndexDigest)
             val bad = listOf("", "two\nlines", "back`tick", " leading", "trailing ", "x".repeat(81))
             for (label in bad) {
-                assertThatThrownBy { Explico.diff(old, old, oldPolicyDir = nowhere, newPolicyDir = nowhere, oldLabel = label) }
+                assertThatThrownBy { Explico.diff(located, located, DiffOptions(labels = VersionLabels(old = label))) }
                     .describedAs("oldLabel '%s'", label).isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("oldLabel")
-                assertThatThrownBy { Explico.diff(old, old, oldPolicyDir = nowhere, newPolicyDir = nowhere, newLabel = label) }
+                assertThatThrownBy { Explico.diff(located, located, DiffOptions(labels = VersionLabels(new = label))) }
                     .describedAs("newLabel '%s'", label).isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("newLabel")
             }
             assertThat(diff(oldLabel = "x".repeat(80)).oldDigest).describedAs("80 characters is the limit, not 79").isEqualTo(oldIndexDigest)
         }
 
         @Test
-        @DisplayName("labels need the policy directories, and the directories come together; the errors name them")
+        @DisplayName("labels and digests need the sets' directories: a set built by hand names sourceDir and Explico.load")
         fun needDirectories() {
-            val old = Explico.load(oldDir)
+            val hand = io.explico.model.PolicySet(emptyList())
 
-            assertThatThrownBy { Explico.diff(old, old, oldLabel = "v1") }
-                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("oldPolicyDir").hasMessageContaining("newPolicyDir")
-            assertThatThrownBy { Explico.diff(old, old, oldPolicyDir = oldDir) }
-                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("oldPolicyDir").hasMessageContaining("newPolicyDir")
-            assertThatThrownBy { Explico.diff(old, old, newPolicyDir = oldDir) }
-                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("oldPolicyDir").hasMessageContaining("newPolicyDir")
+            assertThatThrownBy { Explico.diff(hand, hand, DiffOptions(labels = VersionLabels(old = "v1"))) }
+                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("sourceDir").hasMessageContaining("Explico.load")
+            assertThatThrownBy { Explico.diff(hand, hand, DiffOptions(digests = true)) }
+                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("sourceDir").hasMessageContaining("Explico.load")
         }
     }
 

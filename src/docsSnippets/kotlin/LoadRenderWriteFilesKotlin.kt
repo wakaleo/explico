@@ -10,7 +10,7 @@ fun main() {
     val outDir = Path.of("build/docs-snippet-output/kotlin")
 
     val policySet = Explico.load(policyDir)
-    val rendered = Explico.render(policySet, policyDir)
+    val rendered = Explico.render(policySet)
 
     Files.createDirectories(outDir)
     rendered.files.forEach { (name, content) ->

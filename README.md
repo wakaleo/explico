@@ -331,6 +331,7 @@ classified `UNCHANGED`/`LOGIC_CHANGED`, never a spurious remove-and-add pair).
 
 ```kotlin
 import io.explico.Explico
+import io.explico.RenderOptions
 import java.nio.file.Path
 
 fun main() {
@@ -338,9 +339,7 @@ fun main() {
     val examples = Explico.loadExamples(Path.of("samples/examples"))
     val rendered = Explico.render(
         policySet,
-        Path.of("samples/policies"),
-        examples,
-        Path.of("samples/data/release/data.json"),
+        RenderOptions(examples = examples, dataDir = Path.of("samples/data/release/data.json")),
     )
     println(rendered.files["release-approvals.md"])
     println("Coverage: ${rendered.coverage.percent}%")

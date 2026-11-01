@@ -26,7 +26,7 @@ class RealisticStringBuiltinsAcceptanceIT {
         fun renderDocument() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val dir = Path.of("src/test/resources/realistic/string-builtins")
-            doc = Explico.render(Explico.load(dir), dir).files.getValue("strs.md")
+            doc = Explico.render(Explico.load(dir)).files.getValue("strs.md")
         }
 
         private fun section(marker: String): String {

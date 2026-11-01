@@ -28,7 +28,7 @@ class RealisticUnificationBindingsAcceptanceIT {
         fun renderDocument() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val dir = Path.of("src/test/resources/realistic/unification-bindings")
-            doc = Explico.render(Explico.load(dir), dir).files.getValue("unif.md")
+            doc = Explico.render(Explico.load(dir)).files.getValue("unif.md")
         }
 
         private fun section(marker: String): String {
