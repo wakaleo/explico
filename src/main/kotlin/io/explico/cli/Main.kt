@@ -19,6 +19,9 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.choice
 import com.github.ajalt.clikt.parameters.types.path
 import io.explico.Explico
+import io.explico.OutputDirectoryException
+import io.explico.OutputGuard
+import io.explico.OutputWriter
 import io.explico.diff.DuplicateControlIdException
 import io.explico.model.RegoVersion
 import io.explico.opa.OpaFetcher
@@ -34,7 +37,6 @@ import io.explico.render.PlainLabel
 import io.explico.render.SourceLinks
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.Comparator
 
 /** The exact opa version the demo's guidance recommends (spec §13.2), matching CI's pin (spec §10.2). */
 private const val PINNED_OPA_VERSION = "1.19.0"
@@ -61,7 +63,15 @@ private class RenderCommand : CliktCommand(name = "render") {
 
     private val policyDir by argument(help = "Directory containing .rego policy files")
         .path(mustExist = true, canBeFile = false)
-    private val out by option("--out", help = "Output directory for the rendered Markdown").path().required()
+    private val out by option(
+        "--out",
+        help = "Output DIRECTORY for the rendered Markdown; it is deleted and recreated on every run, so it must be empty, missing or a directory explico wrote earlier (see --force)",
+    ).path().required()
+    private val force by option(
+        "--force",
+        help = "Replace --out even when it is not empty and was not written by explico. Never overrides the safety refusals: --out may not be, or contain, the policies, --examples or --data, " +
+            "the working directory, your home directory or a filesystem root",
+    ).flag()
     private val examplesDir by option("--examples", help = "Directory of worked-example fixtures (*.json)")
         .path(mustExist = true, canBeFile = false)
     private val dataDir by option("--data", help = "Data document/directory for worked-example evaluation")
@@ -125,6 +135,9 @@ private class RenderCommand : CliktCommand(name = "render") {
         if (controlIdTemplate != null && controlIdFrom == null) throw UsageError("--control-id-template needs --control-id-from (it says how a derived id is written)")
         // Likewise a label with no link to label.
         if (companionLabel != null && companionUrl == null) throw UsageError("--companion-label needs --companion-url (it names the link that option adds)")
+        // Spec §14.80: refuse a dangerous --out BEFORE opa is needed or any work is done; the same check runs again at the write, which is the only place anything is deleted.
+        val inputs = listOfNotNull(policyDir, examplesDir, dataDir)
+        refusalExit { OutputGuard.checkDirectory(out, force, inputs) }
         requireOpaOrExit()
         try {
             val policySet = Explico.load(policyDir, parseRegoVersion(regoVersion))
@@ -133,7 +146,7 @@ private class RenderCommand : CliktCommand(name = "render") {
                 policySet, policyDir, examples, dataDir, generateExamples, json, requirementsFile?.let { parseRequirements(Files.readString(it)) } ?: emptyList(), sourceUrl,
                 controlIdFrom, controlIdTemplate ?: ControlIdFromFilename.DEFAULT_TEMPLATE, groupByControl, companionUrl, companionLabel ?: "module", required,
             )
-            replaceOutputDirectory(out, rendered.files)
+            writing(out) { rendered.writeTo(out, force, inputs) }
             echo("Rendering coverage: ${rendered.coverage.rendered} of ${rendered.coverage.total} conditions (${rendered.coverage.percent}%)")
             rendered.generatedExamples?.let { echo("Generated examples for ${it.rulesWithExamples} of ${it.rulesConsidered} rules") }
             // Spec §14.67: what is suboptimal, without opening index.md. Nothing at all when there is nothing to say; printed before any gate message (a gate never suppresses output).
@@ -150,6 +163,8 @@ private class RenderCommand : CliktCommand(name = "render") {
             failWith(2, e.stderr)
         } catch (e: DuplicateFixtureNameException) {
             failWith(4, e.message ?: "duplicate fixture name")
+        } catch (e: OutputDirectoryException) {
+            failWith(1, e.message ?: "refusing to write the output")
         } catch (e: InvalidMaskException) {
             // Spec §14.61: a malformed custom.mask is refused, never ignored; nothing has been written yet.
             failWith(1, e.message ?: "invalid custom.mask")
@@ -165,7 +180,11 @@ private class DiffCommand : CliktCommand(name = "diff") {
 
     private val oldDir by argument(help = "Old policy directory").path(mustExist = true, canBeFile = false)
     private val newDir by argument(help = "New policy directory").path(mustExist = true, canBeFile = false)
-    private val out by option("--out", help = "Output file for the change report").path().required()
+    private val out by option("--out", help = "Output FILE for the change report (an existing file is overwritten; a directory is refused)").path().required()
+    private val force by option(
+        "--force",
+        help = "Accepted for consistency with render; it has no effect here, because a report file is always overwritten and a directory is never replaced",
+    ).flag()
     private val regoVersion by option("--rego-version", help = "Rego syntax of the policies: v1 (default) or v0 (legacy, e.g. the Gatekeeper library)")
         .choice("v1", "v0").default("v1")
     private val jsonOut by option("--json", help = "Also write the machine-readable change report (JSON) to this file").path()
@@ -202,6 +221,8 @@ private class DiffCommand : CliktCommand(name = "diff") {
         oldLabel?.let { checkLabel(it, "--old-label") }
         newLabel?.let { checkLabel(it, "--new-label") }
         if (failOnExampleChanges && examplesDir == null) throw UsageError("--fail-on-example-changes needs --examples (there is nothing to compare without example fixtures)")
+        // Spec §14.80: a directory given as an output file is refused before opa is needed.
+        refusalExit { OutputGuard.checkFile(out); jsonOut?.let { OutputGuard.checkFile(it) } }
         requireOpaOrExit()
         try {
             val old = Explico.load(oldDir, parseRegoVersion(regoVersion))
@@ -210,12 +231,8 @@ private class DiffCommand : CliktCommand(name = "diff") {
             // An empty examples directory is "not supplied" to the library; a gate on it would pass having looked at nothing.
             if (failOnExampleChanges && examples != null && examples.fixtures.isEmpty()) throw UsageError("--fail-on-example-changes: the --examples directory holds no fixture, so there is nothing to compare")
             val report = Explico.diff(old, new, groupByControl, oldData, newData, examples, oldDir, newDir, oldLabel, newLabel)
-            out.parent?.let { Files.createDirectories(it) }
-            Files.writeString(out, report.markdown)
-            jsonOut?.let { target ->
-                target.parent?.let { Files.createDirectories(it) }
-                Files.writeString(target, report.json)
-            }
+            writing(out) { report.writeTo(out, force) }
+            jsonOut?.let { target -> writing(target) { OutputWriter.writeFile(target, report.json) } }
             echo(summarySection(report.markdown))
             val gateMessages = listOfNotNull(
                 failOn?.let { categories -> Gates.failOn(report.entries, categories) },
@@ -224,6 +241,8 @@ private class DiffCommand : CliktCommand(name = "diff") {
             if (gateMessages.isNotEmpty()) failWith(Gates.EXIT_GATE_FAILED, gateMessages.joinToString("\n"))
         } catch (e: OpaInvocationException) {
             failWith(2, e.stderr)
+        } catch (e: OutputDirectoryException) {
+            failWith(1, e.message ?: "refusing to write the report")
         } catch (e: DuplicateFixtureNameException) {
             failWith(4, e.message ?: "duplicate fixture name")
         } catch (e: DuplicateControlIdException) {
@@ -286,7 +305,7 @@ private class DemoCommand : CliktCommand(name = "demo") {
             val examples = Explico.loadExamples(demoDir.resolve("examples"))
             val rendered = Explico.render(policySet, policyDir, examples, demoDir.resolve("data/release/data.json"))
             val outDir = demoDir.resolve("docs")
-            replaceOutputDirectory(outDir, rendered.files)
+            writing(outDir) { rendered.writeTo(outDir) }
 
             echo("Rendered ${rendered.files.size} documents to $outDir/ (${rendered.coverage.percent}% coverage).")
             echo("Open ${outDir.resolve("release-approvals.md")} to see a rendered control card.")
@@ -325,18 +344,17 @@ private fun CliktCommand.failWith(exitCode: Int, message: String): Nothing {
     throw ProgramResult(exitCode)
 }
 
-/** `--out` contents are fully replaced (spec §8.2): delete the whole directory first, then rewrite it. */
-private fun replaceOutputDirectory(dir: Path, files: Map<String, String>) {
-    if (Files.exists(dir)) {
-        Files.walk(dir).use { paths -> paths.sorted(Comparator.reverseOrder()).forEach(Files::delete) }
-    }
-    Files.createDirectories(dir)
-    // A name may carry a directory (`controls/sec-28.md`, spec §14.56).
-    files.forEach { (name, content) ->
-        val target = dir.resolve(name)
-        Files.createDirectories(target.parent)
-        Files.writeString(target, content)
-    }
+/**
+ * Runs a write; a file-system failure (a dangling symlink, a parent that is a file, no permission) is exit 1 with ONE line naming [target], never a JVM stack trace (spec §8.2).
+ * Wraps the write only, so an `IOException` from reading the inputs is never mislabelled. A refusal ([OutputDirectoryException]) passes through to the command's own handler.
+ */
+private fun CliktCommand.writing(target: Path, write: () -> Unit) {
+    try { write() } catch (e: java.io.IOException) { failWith(1, "could not write $target: ${e.javaClass.simpleName}${e.message?.let { ": " + it.lines().first() } ?: ""}") }
+}
+
+/** Runs a pre-flight output check; a refusal is exit 1 with the guard's single line (spec §14.80), never a stack trace or Clikt's usage text. */
+private fun CliktCommand.refusalExit(check: () -> Unit) {
+    try { check() } catch (e: OutputDirectoryException) { failWith(1, e.message ?: "refusing to write the output") }
 }
 
 /**

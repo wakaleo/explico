@@ -112,7 +112,7 @@ and clearly labelled as generated. See [Writing policies](../policy-authoring.md
 java -jar explico.jar render policies --out docs/policy-docs --examples examples --data data
 ```
 
-The output directory is replaced on every run, so never put anything else in it. You get one document per Rego package plus an
+The output directory is replaced on every run (explico refuses a non-empty directory it did not write itself, so a wrong `--out` fails instead of deleting), so never put anything else in it. You get one document per Rego package plus an
 `index.md` that lists every control, its coverage, and a framework-to-controls matrix. A card ends with the verdicts for your examples:
 
 <!-- excerpt: docs/sample-output/release-approvals.md -->
@@ -149,6 +149,11 @@ Commit `docs/policy-docs/`. Then have CI regenerate it and fail if anything diff
 
     The same goes for every option that changes the output: `--group-by-control`, `--control-id-from` and `--control-id-template`, `--companion-url`
     and `--companion-label`. Decide once, and use the same command everywhere.
+
+!!! note "The output directory carries a marker file"
+    explico writes `.explico-output` into every output directory, and replaces only a directory that is missing, empty or marked. Commit it with the rest
+    (`git add docs/policy-docs` includes dotfiles). If `docs/policy-docs/` was committed by an explico from before the marker, the first render refuses it
+    (exit `1`, "not empty"): run the same `render` command once locally with `--force` added, commit the new `.explico-output`, and the CI step needs no `--force`.
 
     **Do not pass `--source-url` to the render you commit.** Pinning the link to a commit (the right thing for a published document) makes
     the package pages differ on every commit, so the drift check could never pass. Commit the plain render; add `--source-url` only in the

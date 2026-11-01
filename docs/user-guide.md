@@ -18,7 +18,8 @@ explico render <policyDir> --out <outDir> [--examples <dir>] [--data <dir>] [--r
 | Argument/flag | Required | Meaning |
 |---|---|---|
 | `<policyDir>` | yes | Directory containing `.rego` policy files. Scanned recursively. |
-| `--out <outDir>` | yes | Output directory for the rendered Markdown. **Fully replaced on every run** — the whole directory is deleted and rewritten, so don't point it at a directory with other content in it. |
+| `--out <outDir>` | yes | Output **directory** for the rendered Markdown. **Replaced on every run**: the directory is deleted and rewritten, which explico does only to one that is missing, empty or holds the `.explico-output` marker it writes into every output directory. Any other non-empty directory is refused (exit `1`, one line, nothing deleted) unless `--force`. |
+| `--force` | no | Replace `--out` even when it is not empty and carries no marker. It never overrides the safety refusals: `--out` may not be, or contain, the policies directory, `--examples` or `--data`, the working directory, your home directory or a filesystem root (those are refused with or without it). |
 | `--examples <dir>` | no | Directory of worked-example fixtures (`*.json`, spec §6.7's format — see `policy-authoring.md`). When supplied, control cards gain a **Worked examples** section and `index.md` gains an example-coverage column. |
 | `--data <dir>` | no | A JSON data file or a directory of them, made available to `opa eval`, for policies that reference `data.*` paths beyond a fixture's own `input`. Independent of `--examples`: supplying it alone (no fixtures at all) also runs `opa eval` -- see *Reference data* below -- and makes every card whose bodies read a plain `data.*` document show what that document holds. |
 | `--generate-examples` | no | Also derive worked examples from each rule's conditions where `--examples` leaves a gap (each verified by `opa eval`; labelled as generated; runs the policy). See *Generated examples* below. |
@@ -119,7 +120,8 @@ explico diff <oldDir> <newDir> --out <reportFile> [--json <file>] [--group-by-co
 |---|---|---|
 | `<oldDir>` | yes | The "before" policy directory. |
 | `<newDir>` | yes | The "after" policy directory. |
-| `--out <reportFile>` | yes | Output file for the single Markdown change report. |
+| `--out <reportFile>` | yes | Output **file** for the single Markdown change report. |
+| `--force` | no | Accepted for consistency with `render`; it has no effect on `diff`: a report file is always overwritten, and a directory given as `--out` is refused with or without it (exit `1`, nothing touched). |
 | `--json <file>` | no | Also write the machine-readable change report (JSON) to this file. See [`json-output.md`](json-output.md). |
 | `--group-by-control` | no | Accept a control id **shared by several rules** (one control split over files) instead of exit `4`: each of its rules is its own entry, identified by control id, package and rule (decided over both versions), and the report names the rule too (`SEC-28 — Sign-off (grp_signoff.signed_off)`). A rule renamed or moved to another package inside such a control is removed + added. Two rules of one name and one id in one package are still exit `4`. Without the flag a shared id is still exit `4`. |
 | `--old-data <path>`, `--new-data <path>` | no, but together | The supplied data (a file or a directory, as `render --data`) of each version. A control whose reference data differs — the `data.*` documents its conditions read — is `LOGIC_CHANGED` even if its Rego is identical, with a `reference data changed: <document>: <old> -> <new>` line (`absent` where a version lacks the document). A document no control reads is never reported, and no Rego rule is evaluated. One option without the other is a usage error (exit `1`). A directory is read by `opa eval --data`, so keep `.rego` files out of it (they would be loaded). |
@@ -455,9 +457,11 @@ runtime.
 ### Output-directory guidance
 
 - **A dedicated output directory is recommended** — `render()`'s CLI form
-  fully replaces `--out`'s target directory on every run (see the CLI table
-  above), and the same expectation applies programmatically: don't point it
-  at a directory holding anything you didn't generate.
+  replaces `--out`'s target directory on every run (see the CLI table
+  above) and refuses a directory it did not write itself unless `--force`.
+  Programmatically, `RenderedDocs.writeTo(dir)` applies the same guard
+  (`force`, and a `protect` list of the policy, example and data paths you
+  rendered from); a refusal is an `OutputDirectoryException`.
 - **Rendering alongside your policy sources is possible but not usually
   what you want**: output is organized **per Rego *package*** (one
   `<package-path>.md` file per package, plus `index.md`), not per source

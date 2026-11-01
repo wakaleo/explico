@@ -32,8 +32,10 @@ Only the latest release receives fixes (0.x: the API may still change). Releases
 - **Text you supply is written into the output.** The `--companion-url` and `--source-url` templates and the `--companion-label` are the operator's; file and
   package names are percent-encoded into the URLs and the label is limited to plain text, so a policy author cannot break out of a link. Control ids, titles
   and descriptions come from METADATA and are shown as written.
-- **`--out` is replaced.** `render --out <dir>` deletes the directory's existing contents before writing (so output never goes stale). Point it at a
-  directory dedicated to the documents.
+- **`--out` is replaced, but only where it is safe to.** `render --out <dir>` deletes the directory and writes it again (so output never goes stale). It does that only
+  to a directory that is missing, empty, or marked `.explico-output` (written into every output directory); any other non-empty directory is refused, and nothing is
+  deleted, unless you pass `--force`. Nothing overrides these refusals, even `--force`: `--out` may not be, or contain, the policy, example or data paths, the working
+  directory, your home directory or a filesystem root. Paths are compared by real path, so `..` and symlinks do not get round them.
 - **explico drives an external `opa` binary.** It uses the `opa` on `PATH` or the one named by `OPA_BIN`. Install `opa`
   from a source you trust. `explico demo --fetch-opa` downloads `opa` from the official GitHub release and verifies its
   SHA-256 checksum against the release's own checksum file.

@@ -13,7 +13,7 @@ codes say why it stopped.
 | Code | Meaning |
 |---|---|
 | 0 | Success |
-| 1 | Usage error (bad flags, missing required option, nonexistent path), or a rule whose `custom.mask` is malformed (nothing is written) |
+| 1 | Usage error (bad flags, missing required option, nonexistent path), a rule whose `custom.mask` is malformed (nothing is written), or an output path explico will not write to: a non-empty `--out` it did not create (add `--force` once; see [the marker file](living-documentation.md)), one that holds your inputs, or one the file system rejects. One stderr line, nothing deleted |
 | 2 | Rego parse error: `opa`'s own message is passed through verbatim |
 | 3 | `opa` missing or not version 1.x |
 | 4 | Duplicate control ids (`diff`; pass `--group-by-control` if one control is deliberately split over several rules) or duplicate fixture names (`render --examples`) |
