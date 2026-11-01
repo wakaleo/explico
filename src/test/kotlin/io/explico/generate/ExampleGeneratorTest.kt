@@ -14,7 +14,7 @@ import io.explico.model.PolicySet
 import io.explico.model.RuleBody
 import io.explico.model.RuleGroup
 import io.explico.model.SourceRef
-import io.explico.opa.OpaInvocationException
+import io.explico.OpaFailedException
 import io.explico.render.Fixture
 import io.explico.render.WorkedExample
 import kotlinx.serialization.json.JsonArray
@@ -100,7 +100,7 @@ class ExampleGeneratorTest {
         @Test
         fun anEvaluationFailureDiscardsTheCandidateWithAWarningAndNeverAborts() {
             val warnings = mutableListOf<String>()
-            val failing: (String, Fixture) -> JsonElement = { _, _ -> throw OpaInvocationException("boom: rego_type_error") }
+            val failing: (String, Fixture) -> JsonElement = { _, _ -> throw OpaFailedException(1, "boom: rego_type_error") }
             val result = generate(policy(group("r", body(eq("x", "1")))), warnings = warnings, eval = failing)
             assertThat(result.forRule()).isNull()
             assertThat(warnings).isNotEmpty().allSatisfy { assertThat(it).contains("boom: rego_type_error") }

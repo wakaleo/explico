@@ -11,7 +11,7 @@ import io.explico.model.PathSegment
 import io.explico.model.RuleBody
 import io.explico.model.RuleGroup
 import io.explico.model.SourceRef
-import io.explico.opa.OpaInvocationException
+import io.explico.OpaFailedException
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -65,7 +65,7 @@ class ExamplesTest {
             val warnings = mutableListOf<String>()
 
             val outcomes = WorkedExamples.evaluatePackage(listOf(fixtureA, fixtureB), pkg, warn = { warnings.add(it) }) { fixture ->
-                if (fixture.name == "bad") throw OpaInvocationException("boom: syntax error")
+                if (fixture.name == "bad") throw OpaFailedException(1, "boom: syntax error")
                 buildJsonObject { put("deny", buildJsonArray { add(JsonPrimitive("x")) }) }
             }
 
@@ -79,7 +79,7 @@ class ExamplesTest {
         fun successfulFixturesStillEvaluateAfterAFailedOne() {
             val fixtures = listOf(Fixture("fails", null, buildJsonObject { }), Fixture("succeeds", null, buildJsonObject { }))
             val outcomes = WorkedExamples.evaluatePackage(fixtures, pkg, warn = {}) { fixture ->
-                if (fixture.name == "fails") throw OpaInvocationException("nope")
+                if (fixture.name == "fails") throw OpaFailedException(1, "nope")
                 buildJsonObject { put("deny", buildJsonArray { }) }
             }
             assertThat(outcomes.getValue("deny").map { it.fixture.name }).containsExactly("succeeds")

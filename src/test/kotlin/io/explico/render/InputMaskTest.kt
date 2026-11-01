@@ -265,7 +265,7 @@ class InputMaskTest {
                 sourceDir = Path.of("does-not-exist").toAbsolutePath(),
             )
             assertThatThrownBy { io.explico.Explico.render(set) }
-                .isInstanceOf(IllegalArgumentException::class.java).isInstanceOf(InvalidMaskException::class.java)
+                .isInstanceOf(io.explico.ExplicoException::class.java).isInstanceOf(InvalidMaskException::class.java)
                 .hasMessageContaining("custom.mask on rule 'a.pkg.a': entry 7 is not a string")
                 .hasMessageContaining("custom.mask on rule 'z.pkg.b'")
                 .satisfies({ e -> assertThat(e.message!!.indexOf("a.pkg.a")).isLessThan(e.message!!.indexOf("z.pkg.b")) })

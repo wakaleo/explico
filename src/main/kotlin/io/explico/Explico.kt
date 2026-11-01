@@ -106,12 +106,6 @@ public data class DiffReport @JvmOverloads constructor(
 }
 
 /**
- * An output path explico refuses to write to, because writing would delete something it must not (spec §14.80 step 1). [path] is the path as the caller gave it.
- * Becomes an `ExplicoException` in step 3.
- */
-public class OutputDirectoryException(public val path: Path, message: String) : RuntimeException(message)
-
-/**
  * Renders `.rego` policy directories into Markdown and reports rendering coverage.
  *
  * Every member is `@JvmStatic` (spec §13.5): from Java, this is `Explico.load(dir)`, not
@@ -125,6 +119,8 @@ public object Explico {
      * Parses every `.rego` file under [policyDir] (via the `opa` binary) into a [PolicySet]. Pass
      * [RegoVersion.V0] for policies written in the legacy Rego syntax (see [RegoVersion]); the default
      * is [RegoVersion.V1], which is what OPA 1.x accepts without flags.
+     *
+     * @throws OpaFailedException when `opa` rejects a file (a Rego syntax error); @throws OpaNotAvailableException when `opa` is missing or not 1.x; [java.io.IOException] when [policyDir] does not exist.
      */
     @JvmStatic
     @JvmOverloads
@@ -144,6 +140,8 @@ public object Explico {
      * Loads worked-example fixtures from [dir] (spec §6.7's `*.json` fixture format), in
      * filename order. Throws [io.explico.render.DuplicateFixtureNameException] if two fixtures
      * share a `name`.
+     *
+     * @throws java.io.IOException when [dir] does not exist.
      */
     @JvmStatic
     public fun loadExamples(dir: Path): ExampleSet {
@@ -168,6 +166,8 @@ public object Explico {
      *
      * Every option is validated before any (slow) `opa` work: a bad template, pattern, label or required property is an [IllegalArgumentException]; a malformed `custom.mask` is an
      * [io.explico.render.InvalidMaskException]; duplicate fixture names are a [io.explico.render.DuplicateFixtureNameException].
+     *
+     * @throws OpaFailedException when `opa` rejects the input while evaluating; @throws OpaNotAvailableException when `opa` is missing; (the unexpected-argument cases above stay [IllegalArgumentException]).
      */
     @JvmStatic
     @JvmOverloads

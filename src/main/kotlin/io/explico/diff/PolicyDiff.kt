@@ -5,6 +5,7 @@
  */
 package io.explico.diff
 
+import io.explico.ExplicoException
 import io.explico.model.PolicyPackage
 import io.explico.model.PolicySet
 import io.explico.model.RuleGroup
@@ -29,7 +30,7 @@ public data class DiffEntry(
 
 /** Two rules share a control-id within one policy set (spec §7.1: "exit code 4 with an error listing them"). */
 public class DuplicateControlIdException(public val controlIds: List<String>) :
-    RuntimeException("Duplicate control-id(s) within one policy set: ${controlIds.joinToString(", ")}")
+    ExplicoException("Duplicate control-id(s) within one policy set: ${controlIds.joinToString(", ")}")
 
 internal object PolicyDiff {
 

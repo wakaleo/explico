@@ -53,10 +53,9 @@ Points that surprise people:
 
 - **Pass the policy directory to `render` as well as `load`.** Worked examples re-run `opa eval` against the real files, and the loaded model keeps
   only relative paths.
-- **No `INSTANCE`, no explicit nulls.** `Explico`'s members are static, and `render`'s optional trailing parameters (examples, data directory, `json`, `sourceUrl`, …) have overloads, so you pass only as many as you need.
+- **No `INSTANCE`, no explicit nulls.** `Explico`'s members are static, and `render`/`diff` take an optional options object (`render(policySet)`, `render(policySet, options)`), so you pass only what you need.
 - **A file name can contain a directory** (`controls/<id>.md` with `groupByControl`), so create parent directories before writing.
-- **Failures are exceptions.** The two you can catch by type are `DuplicateFixtureNameException` and `DuplicateControlIdException`; the rest
-  are internal types. See [Exceptions a library consumer can catch by type](../user-guide.md#exceptions-a-library-consumer-can-catch-by-type).
+- **Failures are exceptions.** Every expected failure extends `ExplicoException` (a Rego syntax error is `OpaFailedException`, a missing opa `OpaNotAvailableException`, …); an invalid argument stays an `IllegalArgumentException`. See [Exceptions a library consumer can catch by type](../user-guide.md#exceptions-a-library-consumer-can-catch-by-type).
 - **Policies bundled in your jar must be extracted first.** A classpath resource is not a filesystem path, so it cannot be passed to `load`.
   [Where policy files come from](../user-guide.md#where-policy-files-come-from-two-patterns) shows the extraction pattern.
 

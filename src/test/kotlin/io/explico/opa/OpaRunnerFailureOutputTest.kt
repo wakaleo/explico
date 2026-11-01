@@ -5,6 +5,7 @@
  */
 package io.explico.opa
 
+import io.explico.OpaFailedException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
@@ -39,7 +40,7 @@ class OpaRunnerFailureOutputTest {
         assumeFalse(System.getProperty("os.name").lowercase().contains("windows"), "needs a shell-script opa")
         val opa = fakeOpa(dir, """echo '{"errors":[{"message":"rego_type_error: boom"}]}'; exit 2""")
         assertThatThrownBy { evalWith(opa, dir) }
-            .isInstanceOf(OpaInvocationException::class.java)
+            .isInstanceOf(OpaFailedException::class.java)
             .hasMessageContaining("rego_type_error: boom")
     }
 
@@ -55,7 +56,7 @@ class OpaRunnerFailureOutputTest {
         assumeFalse(System.getProperty("os.name").lowercase().contains("windows"), "needs a shell-script opa")
         val opa = fakeOpa(dir, "exit 3")
         val failure = org.assertj.core.api.Assertions.catchThrowable { evalWith(opa, dir) }
-        assertThat(failure).isInstanceOf(OpaInvocationException::class.java)
+        assertThat(failure).isInstanceOf(OpaFailedException::class.java)
         assertThat(failure.message).contains("3")
     }
 }

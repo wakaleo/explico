@@ -6,12 +6,13 @@
  */
 package io.explico.render
 
+import io.explico.ExplicoException
 import io.explico.model.Condition
 import io.explico.model.Operand
 import io.explico.model.PathSegment
 import io.explico.model.PolicyPackage
 import io.explico.model.RuleGroup
-import io.explico.opa.OpaInvocationException
+import io.explico.OpaFailedException
 import io.explico.opa.opaJson
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -36,7 +37,7 @@ public data class ExampleSet(val fixtures: List<Fixture>)
 
 /** Two fixtures share a `name` (spec §6.7: "must be unique across the set"). */
 public class DuplicateFixtureNameException(public val name: String) :
-    RuntimeException("Duplicate fixture name across the examples set: '$name'")
+    ExplicoException("Duplicate fixture name across the examples set: '$name'")
 
 /** Parses fixture JSON texts (already read from disk, in filename order) into an [ExampleSet]. */
 internal fun parseExampleSet(fixtureJsonTexts: List<String>): ExampleSet {
@@ -82,7 +83,7 @@ internal object WorkedExamples {
         for (fixture in fixtures) {
             val packageValue = try {
                 evalPackage(fixture).jsonObject
-            } catch (e: OpaInvocationException) {
+            } catch (e: OpaFailedException) {
                 warn("Skipping fixture '${fixture.name}' for package '${pkg.path}': opa eval failed:\n${e.stderr}")
                 continue
             }
