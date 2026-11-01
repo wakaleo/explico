@@ -21,10 +21,7 @@ internal object DiffJson {
 
     fun render(entries: List<DiffEntry>, dataChanges: DataChangeIndex = DataChangeIndex.NONE, exampleChanges: ExampleChangeIndex? = null, header: DiffHeader? = null): String {
         val counts = entries.groupingBy { it.category }.eachCount()
-        val changed = entries.filter { it.category != DiffCategory.UNCHANGED }
-            .sortedWith(ChangeSummary.REPORT_ORDER)
-        val qualified = ChangeSummary.qualifiedIds(entries)
-        val anchors = ChangeAnchors(changed, qualified)
+        val changed = ChangedSet.of(entries)
         val document = buildJsonObject {
             put("schema", SCHEMA)
             // Spec §14.76: which two versions were compared (only when the policy directories were given).
@@ -37,7 +34,7 @@ internal object DiffJson {
             put("summary", buildJsonObject {
                 for (category in SECTION_ORDER + DiffCategory.UNCHANGED) put(category.name, counts[category] ?: 0)
             })
-            put("changes", buildJsonArray { changed.forEach { add(change(it, qualified, anchors, dataChanges, exampleChanges)) } })
+            put("changes", buildJsonArray { changed.entries.forEach { add(change(it, changed.changeOf(it), dataChanges, exampleChanges)) } })
             // Spec §14.74: what the example comparison covered (only when examples were supplied).
             if (exampleChanges != null) {
                 val c = exampleChanges.comparison
@@ -70,14 +67,13 @@ internal object DiffJson {
         }
     }
 
-    private fun change(entry: DiffEntry, qualified: Set<String>, anchors: ChangeAnchors, dataChanges: DataChangeIndex, exampleChanges: ExampleChangeIndex?) = buildJsonObject {
-        val (packagePath, rule) = ChangeSummary.displayedTarget(entry)
-        put("category", entry.category.name)
-        put("controlId", entry.controlId?.let { JsonPrimitive(it) } ?: JsonNull)
-        put("label", ChangeSummary.plainLabelOf(entry, qualified))
-        put("package", packagePath)
-        put("rule", rule.name)
-        put("anchor", anchors.of(entry)?.let { JsonPrimitive(it) } ?: JsonNull)
+    private fun change(entry: DiffEntry, change: DiffChange, dataChanges: DataChangeIndex, exampleChanges: ExampleChangeIndex?) = buildJsonObject {
+        put("category", change.category.name)
+        put("controlId", change.controlId?.let { JsonPrimitive(it) } ?: JsonNull)
+        put("label", change.label)
+        put("package", change.packagePath)
+        put("rule", change.ruleName)
+        put("anchor", change.anchor?.let { JsonPrimitive(it) } ?: JsonNull)
         when (entry.category) {
             DiffCategory.LOGIC_CHANGED -> {
                 // Spec §14.78: `details` are the sentences of the typed `facts`, one source.

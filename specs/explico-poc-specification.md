@@ -584,7 +584,7 @@ object Explico {
     fun load(policyDir: Path, regoVersion: RegoVersion = RegoVersion.V1): PolicySet           // §14.35
     fun loadExamples(dir: Path): ExampleSet
     fun render(policies: PolicySet, options: RenderOptions = RenderOptions()): RenderedDocs   // §14.80 step 2: every option below is a field of RenderOptions
-    fun diff(old: PolicySet, new: PolicySet, options: DiffOptions = DiffOptions()): DiffReport  // model + markdown + json
+    fun diff(old: PolicySet, new: PolicySet, options: DiffOptions = DiffOptions()): DiffReport  // markdown + json + changes; entries is the opt-in structural model (§14.80 step 4)
 }
 // RenderOptions(examples, dataDir, generateExamples /*§14.39*/, json, requirements, sourceUrl /*§14.45-§14.48*/, controlId, groupByControl, companion, required)
 // PolicySet(packages, regoVersion, sourceDir): the directory it was loaded from, which render/diff read the policies again from
@@ -2330,7 +2330,7 @@ replace the 14- and 10-parameter forms entirely (and their `@JvmOverloads` chain
 extend it, plus new `OpaNotAvailableException` (CLI exit 3) and `OpaFailedException(exitCode, stderr)` (CLI exit 2), replacing the `internal` opa exceptions at the facade boundary. An invalid
 argument stays `IllegalArgumentException` (documented). The CLI maps by type, one place.
 
-**Step 4 -- what is stable in the model.** The structural model (`Condition`, `Operand`, `PathSegment`, `RuleGroup`, `RuleBody`, `ElseBranch`, ... everything in `model/Model.kt` below the
+**Step 4 -- what is stable in the model. BUILT** (`ExplicoStructuralModel.kt`, `diff/DiffChange.kt`, `diff/ChangedSet.kt`). As built: the marker is `@RequiresOptIn(level = WARNING)` with RUNTIME retention, applied at class level to 22 model types and `DiffEntry`, and at property level to `PolicyPackage.rules`/`metadata`/`unpublishedComments` and `DiffReport.entries`; `StructuralModelAnnotationTest` pins the exact set and fails on an unclassified new model class. The library opts in with `optIn.add(...)` in `build.gradle.kts` (zero marker warnings from a clean compile of main, test and docsSnippets; 4298 without it in main alone). Kotlin propagates the requirement to nested subtypes of a marked sealed interface (checked with a consumer build, qualified or directly imported), so none is annotated. `DiffReport.changes: List<DiffChange>` is a projection (`ChangedSet`): the JSON `changes` array and the facade read ONE decision of entries, order, labels and anchors, so they cannot disagree. A consumer build against the published artifact compiles with warnings only. Original plan: The structural model (`Condition`, `Operand`, `PathSegment`, `RuleGroup`, `RuleBody`, `ElseBranch`, ... everything in `model/Model.kt` below the
 metadata and set types) is annotated `@ExplicoStructuralModel` (a `@RequiresOptIn(level = WARNING)` annotation): usable, but outside the 1.x promise because a new construct adds a variant. Stable:
 `Explico`, `PolicySet`, `PolicyPackage` (names only), `ExampleSet`, `Fixture`, `RenderedDocs`, `DiffReport`, `DiffCategory`, `RegoVersion`, the options classes, the exceptions, and the JSON schemas.
 `DiffReport` gains `changes: List<DiffChange>` (`id`, `category`, `label`, `package`, `rule`) so a consumer need not touch `RuleGroup`; `entries` stays but is opt-in.

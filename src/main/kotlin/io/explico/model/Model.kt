@@ -5,6 +5,8 @@
  */
 package io.explico.model
 
+import io.explico.ExplicoStructuralModel
+
 /**
  * The Rego language version the policies are written in. OPA 1.x parses [V1] by default and rejects v0
  * syntax (`deny[msg] { ... }`, no `if`/`contains`); [V0] passes `--v0-compatible` to every `opa`
@@ -27,12 +29,12 @@ public data class PolicySet @JvmOverloads constructor(
 /** One Rego package: its path, the rules it defines, and the files it came from. */
 public data class PolicyPackage @JvmOverloads constructor(
     val path: String,
-    val rules: List<RuleGroup>,
+    @ExplicoStructuralModel val rules: List<RuleGroup>,
     val sourceFiles: List<String>,
     /** Package-scope METADATA (review item 4), e.g. a `# METADATA\n# scope: package` block above the `package` declaration. Null when none is present. */
-    val metadata: PackageMetadata? = null,
+    @ExplicoStructuralModel val metadata: PackageMetadata? = null,
     /** Plain comment blocks in this package's files that are not METADATA and so never reach the documentation (spec §14.65), sorted by file then row. */
-    val unpublishedComments: List<CommentBlock> = emptyList(),
+    @ExplicoStructuralModel val unpublishedComments: List<CommentBlock> = emptyList(),
 )
 
 /**
@@ -40,9 +42,11 @@ public data class PolicyPackage @JvmOverloads constructor(
  * text an author wrote that explico, which reads METADATA only, does not publish. [file] is the path relative to the policy directory, [row] the 1-based
  * row of its first line, [lines] its length.
  */
+@ExplicoStructuralModel
 public data class CommentBlock(val file: String, val row: Int, val lines: Int)
 
 /** METADATA annotations attached at package scope: title, description, and (spec §14.43) authors / related resources / extra custom keys. `control-id` and `frameworks` are rule-level concepts and stay unused here (spec review item 4). */
+@ExplicoStructuralModel
 public data class PackageMetadata @JvmOverloads constructor(
     val title: String?,
     val description: String?,
@@ -55,6 +59,7 @@ public data class PackageMetadata @JvmOverloads constructor(
 )
 
 /** All rule definitions sharing one name in one package. Bodies are OR-ed. */
+@ExplicoStructuralModel
 public data class RuleGroup @JvmOverloads constructor(
     val name: String,
     val metadata: RuleMetadata?,
@@ -103,9 +108,11 @@ public data class RuleGroup @JvmOverloads constructor(
  * [sourceLocation] is the rule's own row, used for the card's "defined in" line since `bodies` is
  * empty for this shape (the same need [DefaultValue.sourceLocation] was added for).
  */
+@ExplicoStructuralModel
 public data class ConstantValue(val rendered: String, val sourceLocation: SourceRef)
 
 /** METADATA annotations attached to a rule, at rule or document scope. */
+@ExplicoStructuralModel
 public data class RuleMetadata @JvmOverloads constructor(
     val title: String?,
     val description: String?,
@@ -137,6 +144,7 @@ public data class RuleMetadata @JvmOverloads constructor(
  * The projections a rule's author declared in `custom:` METADATA (spec §14.53, §14.54). Each is independent of the others and null when
  * not declared (or declared wrongly); a [DeclaredProjection] is itself only present when at least one is.
  */
+@ExplicoStructuralModel
 public data class DeclaredProjection @JvmOverloads constructor(
     val verdict: VerdictProjection? = null,
     val actions: ActionsProjection? = null,
@@ -159,6 +167,7 @@ public data class DeclaredProjection @JvmOverloads constructor(
  * such as `result.allowed` walks nested objects), [reason] optionally a string field that explains it. A worked example reads
  * `✅ <outcome>` / `❌ not <outcome>` followed by the quoted reason; a value that does not have these fields keeps its raw JSON.
  */
+@ExplicoStructuralModel
 public data class VerdictProjection(val outcome: String, val reason: String? = null)
 
 /**
@@ -166,21 +175,26 @@ public data class VerdictProjection(val outcome: String, val reason: String? = n
  * within each element, of a string naming it. A worked example lists the labels under "Remediation offered". Only the declared label is shown --
  * explico never words what an action means.
  */
+@ExplicoStructuralModel
 public data class ActionsProjection(val at: String, val label: String)
 
 /** `custom.annotations` (spec §14.54): [at] is the field path of an array of STRINGS, shown as the example's status. */
+@ExplicoStructuralModel
 public data class AnnotationsProjection(val at: String)
 
 /**
  * `custom.timing` (spec §14.54): the field paths of two instants in the rule's evaluated object, at least one declared. Their string values are
  * printed exactly as evaluated -- explico never reformats a date.
  */
+@ExplicoStructuralModel
 public data class TimingProjection(val dueBy: String? = null, val startBefore: String? = null)
 
 /** One entry of `authors:` METADATA; opa parses a bare `"Name <email>"` string into both fields. */
+@ExplicoStructuralModel
 public data class Author(val name: String?, val email: String?)
 
 /** One entry of `related_resources:` METADATA: a [ref] (usually a URL) and an optional [description]. */
+@ExplicoStructuralModel
 public data class RelatedResource(val ref: String, val description: String?)
 
 /**
@@ -189,9 +203,11 @@ public data class RelatedResource(val ref: String, val description: String?)
  * own (review item 14's follow-up) rather than only ever riding along on a sibling card that
  * already had a body to source its own "defined in" line from.
  */
+@ExplicoStructuralModel
 public data class DefaultValue(val rendered: String, val sourceLocation: SourceRef)
 
 /** One rule body: conditions are AND-ed. */
+@ExplicoStructuralModel
 public data class RuleBody @JvmOverloads constructor(
     val conditions: List<Condition>,
     val producesValue: String?,
@@ -248,9 +264,11 @@ public data class RuleBody @JvmOverloads constructor(
  * (a bodiless `else = v`), which is only ever the LAST branch -- the mapper refuses to build a chain otherwise.
  * [yieldsValue] is the value the branch produces; [sourceLocation] is the branch's own row.
  */
+@ExplicoStructuralModel
 public data class ElseBranch(val conditions: List<Condition>, val yieldsValue: Operand, val sourceLocation: SourceRef)
 
 /** A single leaf condition within a rule body. */
+@ExplicoStructuralModel
 public sealed interface Condition {
     /**
      * `left <op> right`, e.g. `input.deployment.environment == "production"`, or its negation
@@ -323,15 +341,19 @@ public sealed interface Condition {
 }
 
 /** A comparison operator (spec §5). */
+@ExplicoStructuralModel
 public enum class Operator { EQ, NEQ, GT, GTE, LT, LTE }
 
 /** The collection a [Operand.Comprehension] builds. */
+@ExplicoStructuralModel
 public enum class ComprehensionKind { SET, ARRAY, OBJECT }
 
 /** Which Rego collection syntax a promoted literal collection used (spec §14 promotion); see [Operand.Literal]. */
+@ExplicoStructuralModel
 public enum class LiteralCollection { ARRAY, SET }
 
 /** One side of a comparison, membership test, or builtin call. */
+@ExplicoStructuralModel
 public sealed interface Operand {
     /** An `input`/`data` field-chain reference, e.g. `input.deployment.environment`. */
     public data class Path(val segments: List<PathSegment>) : Operand
@@ -414,6 +436,7 @@ public sealed interface Operand {
 }
 
 /** One segment of an `input`/`data` path reference. */
+@ExplicoStructuralModel
 public sealed interface PathSegment {
     /** A plain field/attribute name, e.g. `environment` in `input.deployment.environment`. */
     public data class Field(val name: String) : PathSegment
@@ -436,4 +459,5 @@ public sealed interface PathSegment {
 }
 
 /** A location in a source file, for slicing verbatim fallback text and diff extraction. */
+@ExplicoStructuralModel
 public data class SourceRef(val file: String, val row: Int)

@@ -79,7 +79,7 @@ unrendered), `link` (`{package, rule}` for a rule reference or function call, el
 | `schema` | string | `"explico/diff/1"` |
 | `compared` | object | Which versions were compared: `old` and `new`, each `{digest, label?}` — the `sha256:` digest of the policy directory (the value `render` prints in `index.md`) and the label given with `--old-label`/`--new-label`. Present only when `diff` was given the policy directories (always, from the CLI) |
 | `summary` | object | Counts for `REMOVED`, `ADDED`, `LOGIC_CHANGED`, `DOCS_CHANGED`, `UNCHANGED` |
-| `changes` | array | Every non-`UNCHANGED` control, in report order (removed, added, logic changed, docs changed; then control id) |
+| `changes` | array | Every non-`UNCHANGED` control, in report order (removed, added, logic changed, docs changed; then control id). The library's `DiffReport.changes` is this same list (`category`, `controlId`, `label`, `package` as `packagePath`, `rule` as `ruleName`, `anchor`) |
 
 **Change:** `category`, `controlId`, `label` (e.g. `"REL-003 — Artifact provenance"`; for a control id shared by several rules under `diff --group-by-control`, with the rule added: `"SEC-28 — Sign-off (grp_signoff.signed_off)"`), `package`, `rule`, `anchor` (null for
 `DOCS_CHANGED`, which has no card), and either `details` (a `LOGIC_CHANGED` control: the exact sub-bullets of the Markdown *What

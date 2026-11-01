@@ -219,8 +219,8 @@ object Explico {
   (see [`json-output.md`](json-output.md)); `requirements: List<String>` adds the *Requirements coverage* section (see
   *Keeping your documentation complete* in [`policy-authoring.md`](policy-authoring.md)). `RenderedDocs.gaps` is always filled: one line
   per documentation gap, worded once for every consumer (empty when the documentation is complete). `RenderedDocs.findings` is the advisory counterpart: one line per kind of finding the index's *Documentation quality* section shows (`2 controls have no description`), in its order, empty when the section is absent; nothing fails on it. `controlId = ControlIdOptions(from, template)` is the `--control-id-from` / `--control-id-template` options, and `companion = CompanionLink(url, label)` is `--companion-url` / `--companion-label`; an invalid value throws `IllegalArgumentException` before any `opa` work; a rule whose `custom.mask` is malformed throws `InvalidMaskException`, an `ExplicoException` (see *Keeping values out of the documentation* in [`policy-authoring.md`](policy-authoring.md)). `groupByControl = true` is `--group-by-control`: `files` then also holds `controls/<slug>.md` pages, so **a caller writing the files must create parent directories** (the snippets below do).
-- **`diff(old, new, options = DiffOptions())`** — the options are `DiffOptions(groupByControl, data: DataVersions?, examples, labels: VersionLabels?, digests)`; Java uses `DiffOptions.builder()`. `data` compares the reference data of the two versions, `examples` evaluates the same fixtures against both, and the report's **Compared** block (the `sha256:` digests of the two policy directories, as in `index.md`) appears only with `digests = true` or `labels` — the CLI always asks for it. Examples, labels and digests read the sets' `sourceDir`, so they need sets from `Explico.load`. Returns `DiffReport(entries: List<DiffEntry>,
-  markdown: String, json: String)`. Each `DiffEntry` carries its `category`
+- **`diff(old, new, options = DiffOptions())`** — the options are `DiffOptions(groupByControl, data: DataVersions?, examples, labels: VersionLabels?, digests)`; Java uses `DiffOptions.builder()`. `data` compares the reference data of the two versions, `examples` evaluates the same fixtures against both, and the report's **Compared** block (the `sha256:` digests of the two policy directories, as in `index.md`) appears only with `digests = true` or `labels` — the CLI always asks for it. Examples, labels and digests read the sets' `sourceDir`, so they need sets from `Explico.load`. Returns `DiffReport(entries: List<DiffEntry>` (opt-in: every control, `UNCHANGED` included), `changes: List<DiffChange>` (the changed controls as plain values, the stable way to read what changed),
+  markdown: String, json: String)`. Each `DiffEntry` (part of the opt-in structural model) carries its `category`
   (`DiffCategory`: `ADDED`/`REMOVED`/`LOGIC_CHANGED`/`DOCS_CHANGED`/`UNCHANGED`),
   `controlId`, and the old/new `PolicyPackage`+`RuleGroup` (null on the
   absent side for `ADDED`/`REMOVED`). Throws
@@ -268,14 +268,23 @@ try {
 }
 ```
 
-### Domain model
+### Domain model: the stable surface and the opt-in structural model
 
-`PolicySet` → `PolicyPackage` → `RuleGroup` → `RuleBody` → a sealed
-`Condition`/`Operand`/`PathSegment` hierarchy — the full parsed shape of a
-policy set, and the type `DiffEntry` carries on each side. Every type is
-public and KDoc'd; see `model/Model.kt` in the source (or the published
-artifact's attached sources/javadoc jars) for the exhaustive, authoritative
-field-level reference — not duplicated here, to avoid the two drifting apart.
+What is promised stable in 1.x is small: `Explico`, `PolicySet` (its `packages`, `regoVersion`, `sourceDir`), `PolicyPackage`'s `path` and `sourceFiles`, `RegoVersion`, `RenderedDocs`, `DiffReport`
+(its `markdown`, `json`, `changes`, digests and example comparison), `DiffChange`, `DiffCategory`, `ExampleSet` and `Fixture`, the options classes, the exceptions, and the shape of `explico.json` and the diff JSON.
+
+Everything else is the **structural model**: the parsed shape of a policy (`PolicyPackage.rules` → `RuleGroup` → `RuleBody` → the sealed `Condition`/`Operand`/`PathSegment` hierarchies, the METADATA
+types, and `DiffEntry`). It is public and KDoc'd, and usable, but **outside the compatibility promise**: a new Rego construct adds a variant, and nearly every release has. It carries
+`@ExplicoStructuralModel`, an opt-in marker, so a Kotlin caller who touches it gets a *warning* (never an error) and decides on purpose:
+
+```kotlin
+@OptIn(ExplicoStructuralModel::class)
+fun unchangedControls(report: DiffReport) = report.entries.count { it.category == DiffCategory.UNCHANGED }
+```
+
+Java callers are unaffected (the marker is a Kotlin compile-time check). To read a result without it, use `explico.json`, or `DiffReport.changes`: the changed controls as plain values (`controlId`,
+`category`, `label`, `packagePath`, `ruleName`, `anchor`), the same list as the diff JSON's `changes`. See `model/Model.kt` for the exhaustive field-level reference of the structural model — not
+duplicated here, to avoid the two drifting apart.
 
 ## Programmatic use: load → render → write files
 

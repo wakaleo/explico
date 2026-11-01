@@ -1,6 +1,7 @@
 /** Public library facade (spec §8.1). Everything else in this library is internal. */
 package io.explico
 
+import io.explico.diff.ChangedSet
 import io.explico.diff.DataChangeIndex
 import io.explico.diff.DataChanges
 import io.explico.diff.DiffEntry
@@ -81,7 +82,7 @@ public data class GeneratedExamplesSummary(val rulesWithExamples: Int, val rules
 
 /** The classified change entries between two policy versions, plus the rendered change report (spec §7). */
 public data class DiffReport @JvmOverloads constructor(
-    val entries: List<DiffEntry>,
+    @ExplicoStructuralModel val entries: List<DiffEntry>,
     val markdown: String,
     /** The machine-readable change report (schema `explico/diff/1`, spec §14.45). */
     val json: String = "",
@@ -92,6 +93,8 @@ public data class DiffReport @JvmOverloads constructor(
     /** `sha256:<hex>` of the old and the new policy directory (the digest `render` prints in `index.md`); empty unless `diff` was given both policy directories (spec §14.76). */
     val oldDigest: String = "",
     val newDigest: String = "",
+    /** The changed controls (everything but `UNCHANGED`), in the report's order, as plain values that need no structural model: see [io.explico.diff.DiffChange]. The same list as `explico.json`'s `changes`. */
+    val changes: List<io.explico.diff.DiffChange> = emptyList(),
 ) {
     /**
      * Writes [markdown] to [file], creating its parent directories and replacing a regular file (spec §14.80 step 1). An existing directory is refused whatever [force] says (it
@@ -337,6 +340,7 @@ public object Explico {
             exampleChanges?.comparison,
             header?.oldDigest.orEmpty(),
             header?.newDigest.orEmpty(),
+            ChangedSet.of(entries).changes,
         )
     }
 

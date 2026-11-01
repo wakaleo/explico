@@ -31,6 +31,8 @@ kotlin {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         // Compile against the JDK 17 API surface, so a call to a newer JDK API fails here, not on a consumer's machine.
         freeCompilerArgs.add("-Xjdk-release=17")
+        // The structural model is opt-in for consumers (spec §14.80 step 4), not for the library itself: main, test and the docs snippets use it freely.
+        optIn.add("io.explico.ExplicoStructuralModel")
     }
 }
 tasks.withType<JavaCompile> { options.release.set(17) }

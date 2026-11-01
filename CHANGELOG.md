@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Changed (library): the structural model is opt-in; `DiffReport.changes` is the stable way to read a diff.** The parsed shape of a policy (`PolicyPackage.rules`, `RuleGroup`, `RuleBody`, `Condition`, `Operand`, `PathSegment`, the METADATA types, `DiffEntry` and `DiffReport.entries`) now carries `@ExplicoStructuralModel`, a Kotlin opt-in marker at **warning** level: it stays public and usable, but is outside the 1.x compatibility promise because a new Rego construct adds a variant. Kotlin callers touching it get a compiler warning (add `@OptIn(ExplicoStructuralModel::class)` to accept it); Java callers and the compiled behaviour are unaffected. New: `DiffReport.changes: List<DiffChange>` -- the changed controls as plain values (`controlId`, `category`, `label`, `packagePath`, `ruleName`, `anchor`), the same list as the diff JSON's `changes`, so a consumer rarely needs `entries`. `DiffReport` gains `changes` as a trailing field (`copy()` changes as before; the two-argument constructor stays). Before / after:
+  ```kotlin
+  val removed = report.entries.filter { it.category == DiffCategory.REMOVED }.map { it.controlId }   // now a warning
+  val removed = report.changes.filter { it.category == DiffCategory.REMOVED }.map { it.controlId }   // stable
+  ```
+
 - **BREAKING (library): one exception base.** Everything a library consumer is meant to catch now extends the public `io.explico.ExplicoException`: `OpaFailedException(exitCode, stderr)` (opa rejected the input, e.g. a Rego syntax error), `OpaNotAvailableException` (opa missing, unrunnable or not 1.x -- `Explico.load` used to surface a raw `IOException` for a missing binary), `OutputDirectoryException`, `DuplicateControlIdException`, `DuplicateFixtureNameException` and `InvalidMaskException` (now public). The internal opa exceptions are gone. **`InvalidMaskException` is no longer an `IllegalArgumentException`**: catch `ExplicoException` (or the class itself). An invalid argument is still an `IllegalArgumentException` and a missing directory an `IOException`. The CLI's messages and exit codes are unchanged; it now maps the exception type to the code in one place. Before / after:
   ```kotlin
   try { Explico.render(set, options) } catch (e: IllegalArgumentException) { /* a malformed mask, but also every bad option */ } catch (e: RuntimeException) { /* opa failures: internal types, message only */ }
