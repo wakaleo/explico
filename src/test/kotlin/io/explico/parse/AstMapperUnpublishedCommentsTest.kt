@@ -53,6 +53,20 @@ class AstMapperUnpublishedCommentsTest {
     }
 
     @Test
+    @DisplayName("a bare `#` comment line: opa reports its text as null, which reads as an empty comment line -- it must not crash the load, and it belongs to its block")
+    fun nullCommentText() {
+        val module = module(
+            """
+            {"package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"p"}]},
+             "comments": [{"Text": "${b64(" one")}", "Location": {"file":"c.rego","row":2,"col":1,"text":"${b64("# one")}"}},
+                          {"Text": null, "Location": {"file":"c.rego","row":3,"col":1,"text":"${b64("#")}"}},
+                          {"Text": "${b64(" two")}", "Location": {"file":"c.rego","row":4,"col":1,"text":"${b64("# two")}"}}]}
+            """.trimIndent(),
+        )
+        assertThat(AstMapper.mapPolicySet(listOf(ParsedFile("c.rego", module))).packages.single().unpublishedComments).containsExactly(CommentBlock("c.rego", 2, 3))
+    }
+
+    @Test
     @DisplayName("a rule without a location text still has its own row as its span, so a comment at that row is not a block")
     fun ruleWithoutLocationText() {
         val module = module(

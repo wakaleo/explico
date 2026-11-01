@@ -276,10 +276,13 @@ internal data class OpaModule(
     val comments: List<OpaComment> = emptyList(),
 )
 
-/** One comment as `opa parse` reports it: its text WITHOUT the `#` (note the capitalised keys) and where it is. */
+/**
+ * One comment as `opa parse` reports it: its text WITHOUT the `#` (note the capitalised keys) and where it is. A bare `#` line has NO text: opa reports it as `null`
+ * (found by the real-world corpus benchmark -- it crashed the load of every file that had one), which reads as an empty comment.
+ */
 @Serializable
 internal data class OpaComment(
-    @SerialName("Text") val text: String,
+    @SerialName("Text") val text: String? = null,
     @SerialName("Location") val location: OpaLocation,
 )
 

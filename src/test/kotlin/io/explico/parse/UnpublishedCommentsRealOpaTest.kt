@@ -33,6 +33,22 @@ class UnpublishedCommentsRealOpaTest {
     }
 
     @Test
+    @DisplayName("a bare `#` line (opa reports its text as null) loads, and is part of its block: found by the real-world corpus benchmark, it crashed every file that had one")
+    fun bareHashLine(@TempDir dir: Path) {
+        assertThat(blocks(dir, "p.rego", "# one\n#\n# two\npackage p\n\nr if {\n\tinput.a == 1\n}\n")).containsExactly(CommentBlock("p.rego", 1, 3))
+    }
+
+    @Test
+    @DisplayName("a bare `#` line inside a METADATA block, and one that is the only comment of a file, load without a finding or a crash")
+    fun bareHashInMetadataAndAlone(@TempDir dir: Path) {
+        val metadata = "# METADATA\n# title: T\n#\n# description: D\n# custom:\n#   control-id: C-1\npackage p\n\nr if {\n\tinput.a == 1\n}\n"
+        assertThat(blocks(dir, "m.rego", metadata)).isEmpty()
+        val alone = dir.resolve("alone")
+        Files.createDirectories(alone)
+        assertThat(blocks(alone, "a.rego", "package q\n\n#\nr if {\n\tinput.a == 1\n}\n")).isEmpty()
+    }
+
+    @Test
     @DisplayName("Windows line endings give the same rows as Unix ones")
     fun crlf(@TempDir dir: Path) {
         val unix = "# one\n# two\npackage p\n\nr if {\n\tinput.a == 1\n}\n"
