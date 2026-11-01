@@ -26,7 +26,7 @@ class RealisticNoControlIdTestRulesAcceptanceIT {
         @BeforeAll
         fun renderAll() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
-            docs = Explico.render(Explico.load(dir), dir)
+            docs = Explico.render(Explico.load(dir))
         }
 
         private fun bullet(): String {

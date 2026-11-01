@@ -7,6 +7,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -27,7 +28,7 @@ class RealisticSameNameExamplesAcceptanceIT {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val dir = Path.of("src/test/resources/realistic/same-name")
             val examples = Explico.loadExamples(dir.resolve("examples"))
-            doc = Explico.render(Explico.load(dir.resolve("policies")), dir.resolve("policies"), examples).files.getValue("samename.md")
+            doc = Explico.render(Explico.load(dir.resolve("policies")), RenderOptions(examples = examples)).files.getValue("samename.md")
         }
 
         private fun section(marker: String): String {

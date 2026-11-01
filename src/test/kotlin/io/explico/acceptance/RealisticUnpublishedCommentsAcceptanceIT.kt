@@ -15,6 +15,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
@@ -45,7 +46,7 @@ class RealisticUnpublishedCommentsAcceptanceIT {
         private lateinit var foundAgain: io.explico.RenderedDocs
         private lateinit var none: io.explico.RenderedDocs
 
-        private fun render(dir: Path) = Explico.render(Explico.load(dir), dir, null, null, false, true)
+        private fun render(dir: Path) = Explico.render(Explico.load(dir), RenderOptions(json = true))
 
         @JvmStatic
         @BeforeAll
@@ -132,7 +133,7 @@ class RealisticUnpublishedCommentsAcceptanceIT {
     @DisplayName("the five-package sample (docs/sample-output) renders byte-for-byte as committed")
     fun sampleOutputUntouched() {
         val dir = Path.of("samples/policies")
-        val docs = Explico.render(Explico.load(dir), dir, Explico.loadExamples(Path.of("samples/examples")), Path.of("samples/data/release/data.json")).files
+        val docs = Explico.render(Explico.load(dir), RenderOptions(examples = Explico.loadExamples(Path.of("samples/examples")), dataDir = Path.of("samples/data/release/data.json"))).files
         assertThat(docs).isNotEmpty()
         for ((name, text) in docs) {
             assertThat(text).describedAs("docs/sample-output/$name").isEqualTo(Files.readString(Path.of("docs/sample-output").resolve(name)))

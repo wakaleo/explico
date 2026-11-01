@@ -18,10 +18,16 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.choice
 import com.github.ajalt.clikt.parameters.types.path
+import io.explico.CompanionLink
+import io.explico.ControlIdOptions
+import io.explico.DataVersions
+import io.explico.DiffOptions
 import io.explico.Explico
 import io.explico.OutputDirectoryException
 import io.explico.OutputGuard
 import io.explico.OutputWriter
+import io.explico.RenderOptions
+import io.explico.VersionLabels
 import io.explico.diff.DuplicateControlIdException
 import io.explico.model.RegoVersion
 import io.explico.opa.OpaFetcher
@@ -143,8 +149,13 @@ private class RenderCommand : CliktCommand(name = "render") {
             val policySet = Explico.load(policyDir, parseRegoVersion(regoVersion))
             val examples = examplesDir?.let { Explico.loadExamples(it) }
             val rendered = Explico.render(
-                policySet, policyDir, examples, dataDir, generateExamples, json, requirementsFile?.let { parseRequirements(Files.readString(it)) } ?: emptyList(), sourceUrl,
-                controlIdFrom, controlIdTemplate ?: ControlIdFromFilename.DEFAULT_TEMPLATE, groupByControl, companionUrl, companionLabel ?: "module", required,
+                policySet,
+                RenderOptions(
+                    examples = examples, dataDir = dataDir, generateExamples = generateExamples, json = json,
+                    requirements = requirementsFile?.let { parseRequirements(Files.readString(it)) } ?: emptyList(), sourceUrl = sourceUrl,
+                    controlId = controlIdFrom?.let { ControlIdOptions(it, controlIdTemplate ?: ControlIdFromFilename.DEFAULT_TEMPLATE) },
+                    groupByControl = groupByControl, companion = companionUrl?.let { CompanionLink(it, companionLabel ?: "module") }, required = required,
+                ),
             )
             writing(out) { rendered.writeTo(out, force, inputs) }
             echo("Rendering coverage: ${rendered.coverage.rendered} of ${rendered.coverage.total} conditions (${rendered.coverage.percent}%)")
@@ -230,7 +241,14 @@ private class DiffCommand : CliktCommand(name = "diff") {
             val examples = examplesDir?.let { Explico.loadExamples(it) }
             // An empty examples directory is "not supplied" to the library; a gate on it would pass having looked at nothing.
             if (failOnExampleChanges && examples != null && examples.fixtures.isEmpty()) throw UsageError("--fail-on-example-changes: the --examples directory holds no fixture, so there is nothing to compare")
-            val report = Explico.diff(old, new, groupByControl, oldData, newData, examples, oldDir, newDir, oldLabel, newLabel)
+            // The CLI always showed the Compared block (spec §14.76), so it always asks for the digests.
+            val report = Explico.diff(
+                old, new,
+                DiffOptions(
+                    groupByControl = groupByControl, data = if (oldData != null && newData != null) DataVersions(oldData!!, newData!!) else null, examples = examples,
+                    labels = if (oldLabel != null || newLabel != null) VersionLabels(oldLabel, newLabel) else null, digests = true,
+                ),
+            )
             writing(out) { report.writeTo(out, force) }
             jsonOut?.let { target -> writing(target) { OutputWriter.writeFile(target, report.json) } }
             echo(summarySection(report.markdown))
@@ -303,7 +321,7 @@ private class DemoCommand : CliktCommand(name = "demo") {
             val policyDir = demoDir.resolve("policies")
             val policySet = Explico.load(policyDir)
             val examples = Explico.loadExamples(demoDir.resolve("examples"))
-            val rendered = Explico.render(policySet, policyDir, examples, demoDir.resolve("data/release/data.json"))
+            val rendered = Explico.render(policySet, RenderOptions(examples = examples, dataDir = demoDir.resolve("data/release/data.json")))
             val outDir = demoDir.resolve("docs")
             writing(outDir) { rendered.writeTo(outDir) }
 

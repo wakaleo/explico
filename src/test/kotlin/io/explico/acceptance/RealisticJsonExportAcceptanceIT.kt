@@ -9,6 +9,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -56,7 +57,7 @@ class RealisticJsonExportAcceptanceIT {
 
         private fun renderJson(dir: Path, data: Path? = null): Map<String, String> {
             val set = Explico.load(dir)
-            return Explico.render(set, dir, null, data, false, true).files
+            return Explico.render(set, RenderOptions(dataDir = data, json = true)).files
         }
 
         @JvmStatic
@@ -65,9 +66,9 @@ class RealisticJsonExportAcceptanceIT {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val set = Explico.load(pack)
             val examples = Explico.loadExamples(packExamples)
-            packOff = Explico.render(set, pack, examples, packData).files
-            packOn = Explico.render(set, pack, examples, packData, false, true).files
-            packOnAgain = Explico.render(set, pack, examples, packData, false, true).files
+            packOff = Explico.render(set, RenderOptions(examples = examples, dataDir = packData)).files
+            packOn = Explico.render(set, RenderOptions(examples = examples, dataDir = packData, json = true)).files
+            packOnAgain = Explico.render(set, RenderOptions(examples = examples, dataDir = packData, json = true)).files
             packJson = parse(packOn["explico.json"])
             effects = parse(renderJson(realistic.resolve("effect-of-match/policies"))["explico.json"])
             ruleMeta = parse(renderJson(realistic.resolve("metadata-passthrough/policies"))["explico.json"])

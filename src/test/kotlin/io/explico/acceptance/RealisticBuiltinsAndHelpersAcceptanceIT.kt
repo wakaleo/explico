@@ -35,7 +35,7 @@ class RealisticBuiltinsAndHelpersAcceptanceIT {
 
         private fun render(dir: String): Map<String, String> {
             val policyDir = Path.of(dir)
-            return Explico.render(Explico.load(policyDir), policyDir).files
+            return Explico.render(Explico.load(policyDir)).files
         }
 
         @JvmStatic

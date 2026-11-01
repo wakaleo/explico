@@ -137,7 +137,7 @@ public object Explico {
             ParsedFile(relativePath, OpaRunner.parse(file, regoVersion))
         }
         val inspectResult = OpaRunner.inspect(policyDir, regoVersion)
-        return AstMapper.mapPolicySet(parsedFiles, inspectResult).copy(regoVersion = regoVersion)
+        return AstMapper.mapPolicySet(parsedFiles, inspectResult).copy(regoVersion = regoVersion, sourceDir = policyDir.toAbsolutePath().normalize())
     }
 
     /**
@@ -154,70 +154,54 @@ public object Explico {
     }
 
     /**
-     * Renders [policySet] to Markdown, one document per package plus `index.md`. [policyDir] must
-     * be the same directory [policySet] was loaded from -- worked examples (spec §6.7) re-invoke
-     * `opa eval` against the actual `.rego` files, which the domain model alone can't locate. If
-     * [examples] is supplied, control cards gain a worked-examples section evaluated via `opa
-     * eval` against [dataDir]; a fixture whose evaluation fails is skipped with a stderr warning.
+     * Renders [policies] to Markdown, one document per package plus `index.md`, as [options] ask (spec §14.80 step 2); `RenderOptions()` is the plain render. The policies are
+     * read again from [PolicySet.sourceDir] -- worked examples (spec §6.7) re-invoke `opa eval` against the actual `.rego` files, and the digest below is computed from them -- so
+     * the set must come from [load]; a set built by hand throws [IllegalArgumentException].
      *
-     * With [generateExamples], rules whose author examples leave a gap (no matching case, or no non-matching case) also get a
-     * separately labelled **Generated examples** section: inputs derived mechanically from the rule's conditions, each
-     * VERIFIED by `opa eval` before it is shown (spec §14.39). Off by default; the output is then byte-identical to a render
-     * that never mentions the option. Like author examples, generation executes the policy via `opa eval` -- see SECURITY.md.
+     * If [RenderOptions.examples] is supplied, control cards gain a worked-examples section evaluated via `opa eval` against [RenderOptions.dataDir]; a fixture whose evaluation
+     * fails is skipped with a stderr warning. With [RenderOptions.generateExamples], rules whose author examples leave a gap also get a separately labelled **Generated examples**
+     * section, each verified by `opa eval` before it is shown (spec §14.39); like author examples, generation executes the policy -- see SECURITY.md.
      *
-     * Every render also computes a SHA-256 over [policyDir]'s `.rego` files (spec §14.40) and shows it on `index.md` and
-     * every package document, so a reader can confirm which exact policy version the documentation describes. It depends
-     * only on the policy source -- never [examples], [dataDir], or explico's own version.
+     * Every render also computes a SHA-256 over the `.rego` files (spec §14.40) and shows it on `index.md` and every package document, so a reader can confirm which exact policy
+     * version the documentation describes. It depends only on the policy source -- never the examples, the data, or explico's own version. When [RenderOptions.dataDir] is
+     * supplied, a card whose bodies read a plain `data.*` document also gains a **Reference data** section (spec §14.41).
      *
-     * When [dataDir] is supplied, a card whose bodies read a plain `data.*` document (not a loaded policy rule) also
-     * gains a **Reference data** section showing what that document holds, resolved by `opa eval`, never read or
-     * parsed in Kotlin (spec §14.41). Off entirely -- not merely empty -- without a [dataDir].
+     * Every option is validated before any (slow) `opa` work: a bad template, pattern, label or required property is an [IllegalArgumentException]; a malformed `custom.mask` is an
+     * [io.explico.render.InvalidMaskException]; duplicate fixture names are a [io.explico.render.DuplicateFixtureNameException].
      */
     @JvmStatic
     @JvmOverloads
-    public fun render(
+    public fun render(policies: PolicySet, options: RenderOptions = RenderOptions()): RenderedDocs {
+        val policyDir = requireSourceDir(policies, "render")
+        return renderPolicies(
+            policies, policyDir, options.examples, options.dataDir, options.generateExamples, options.json, options.requirements, options.sourceUrl,
+            options.controlId?.from, options.controlId?.template ?: ControlIdFromFilename.DEFAULT_TEMPLATE, options.groupByControl,
+            options.companion?.url, options.companion?.label ?: "module", options.required,
+        )
+    }
+
+    /** The directory [set] was loaded from, or an [IllegalArgumentException] saying where to get one (spec §14.80 step 2). */
+    private fun requireSourceDir(set: PolicySet, what: String): Path =
+        set.sourceDir ?: throw IllegalArgumentException(
+            "$what needs the policy set's sourceDir (the directory it was loaded from, which it reads the policies from again), but this set has none: " +
+                "build it with Explico.load(dir), not by hand",
+        )
+
+    private fun renderPolicies(
         policySet: PolicySet,
         policyDir: Path,
-        examples: ExampleSet? = null,
-        dataDir: Path? = null,
-        generateExamples: Boolean = false,
-        /** When true, `files` also contains `explico.json` (schema `explico/render/1`, spec §14.45). Off by default. */
-        json: Boolean = false,
-        /** The requirements (framework strings) the organisation must evidence, for the index's requirements coverage (spec §14.46). */
-        requirements: List<String> = emptyList(),
-        /** A URL template (`{file}`, `{line}`) that links cards, package pages and the index to the Rego source (spec §14.48). Off by default. */
-        sourceUrl: String? = null,
-        /**
-         * A regular expression with a named group `id`, matched against each rule's source FILE NAME (base name, not the directory), that derives a
-         * control id for a rule whose METADATA does not declare one (spec §14.55). Null (the default) derives nothing and the output is unchanged.
-         * METADATA's `control-id` always wins; only the id is derived, never a title. Must contain `(?<id>...)`, else [IllegalArgumentException].
-         */
-        controlIdFrom: String? = null,
-        /** How a derived id is written: `{id}` is replaced by the `id` group, e.g. `CTRL-{id}` (default `{id}`). Must contain `{id}`, else [IllegalArgumentException]. */
-        controlIdTemplate: String = "{id}",
-        /**
-         * When true, every control id shared by two or more rules gets ONE page, `controls/<id>.md`, with each rule as a sub-section (sorted by source path), instead
-         * of its cards being scattered over the package pages; the index lists the control once and `explico.json` gains a `controls` array (spec §14.56). Off by
-         * default, and the output is then unchanged. The returned `files` then contain keys with a `controls/` prefix, so a caller writing them must create the directory.
-         */
-        groupByControl: Boolean = false,
-        /**
-         * A second URL template, for the module that OWNS a policy (spec §14.58): `{file}` (the policy file's path, as for [sourceUrl]), `{package}` (the Rego package
-         * path, e.g. `app.billing`) and `{line}`, all percent-encoded; at least one of `{file}` and `{package}` is required, else [IllegalArgumentException]. Each card's
-         * *defined in* line and each package page's source files then gain a second link, labelled [companionLabel]; `explico.json` gains `companionUrl`.
-         * Null (the default) adds nothing and the output is unchanged.
-         */
-        companionUrl: String? = null,
-        /** The text of the second link (default `module`); must be non-blank plain text: no line break, `[`, `]`, `|`, backtick or `*`, else [IllegalArgumentException]. */
-        companionLabel: String = "module",
-        /**
-         * Which documentation properties of a CONTROL count as gaps in [RenderedDocs.gaps] (what `--fail-on-gaps` fails on), by name: `title`, `description`, `frameworks`,
-         * `fixture` (a matching worked example) and `verdict` (a declared `custom.verdict` on an object-valued rule). Null (the default) is `description` and `frameworks`,
-         * exactly as before; an empty list requires none. Duplicate titles and requirement gaps are always gaps. It never changes the rendered files, except that
-         * `explico.json` echoes the effective set as `quality.required`. An unknown name, or `fixture`/`verdict` without [examples], is an [IllegalArgumentException].
-         * From Java the parameter is the last of the `@JvmOverloads` chain, so it is only reachable by passing every earlier argument.
-         */
-        required: List<String>? = null,
+        examples: ExampleSet?,
+        dataDir: Path?,
+        generateExamples: Boolean,
+        json: Boolean,
+        requirements: List<String>,
+        sourceUrl: String?,
+        controlIdFrom: String?,
+        controlIdTemplate: String,
+        groupByControl: Boolean,
+        companionUrl: String?,
+        companionLabel: String,
+        required: List<String>?,
     ): RenderedDocs {
         // Validate the URL template before any (slow) opa work: a template without {file} is the caller's mistake.
         val sourceLinks = SourceLinks.of(sourceUrl)
@@ -279,56 +263,48 @@ public object Explico {
     }
 
     /**
-     * Classifies every control across [old] -> [new] (spec §7.2) and renders the change report (spec §7.3). Throws [io.explico.diff.DuplicateControlIdException]
-     * if either side has two rules sharing a control-id (with [groupByControl], only if it cannot tell two rules apart: same id, package and rule name).
+     * Classifies every control across [old] -> [new] (spec §7.2) and renders the change report (spec §7.3), as [options] ask (spec §14.80 step 2); `DiffOptions()` is the plain
+     * report. Throws [io.explico.diff.DuplicateControlIdException] if either side has two rules sharing a control-id (with [DiffOptions.groupByControl], only if it cannot tell
+     * two rules apart: same id, package and rule name).
      *
-     * With [dataOld] and [dataNew] (spec §14.73) the report also compares the reference data each control reads: the plain `data.*` documents its conditions
-     * name (the same ones the Reference data block of `render` shows), as OPA reads them from each data file or directory. A control whose documents differ
-     * is [io.explico.diff.DiffCategory.LOGIC_CHANGED] -- even when its Rego is identical -- with one `reference data changed` line per document. A document
-     * no control reads is never reported, and no Rego rule is ever evaluated. Both or neither: giving only one throws [IllegalArgumentException].
+     * With [DiffOptions.data] (spec §14.73) the report also compares the reference data each control reads: the plain `data.*` documents its conditions name, as OPA reads them
+     * from each data file or directory. A control whose documents differ is [io.explico.diff.DiffCategory.LOGIC_CHANGED] even when its Rego is identical, with one `reference data
+     * changed` line per document; a document no control reads is never reported, and no Rego rule is ever evaluated. With [DiffOptions.examples] (spec §14.74) the SAME fixtures are
+     * evaluated against both versions and every fixture whose outcome changed is reported per control. The report's **Compared** block (spec §14.76: the `sha256:` digests of the
+     * two policy directories, the same ones `render` prints in `index.md`) appears only with [DiffOptions.digests] or [DiffOptions.labels].
+     *
+     * Examples, labels and digests read the policies again from each set's [PolicySet.sourceDir], so those sets must come from [load] ([IllegalArgumentException] otherwise); a plain
+     * diff of sets built by hand works.
      */
     @JvmStatic
     @JvmOverloads
-    public fun diff(
+    public fun diff(old: PolicySet, new: PolicySet, options: DiffOptions = DiffOptions()): DiffReport {
+        // Spec §14.76: the labels are checked before any file is read or opa is run, so a mistake is reported as the mistake it is.
+        options.labels?.old?.let { PlainLabel.validate(it, "oldLabel") }
+        options.labels?.new?.let { PlainLabel.validate(it, "newLabel") }
+        val showHeader = options.digests || options.labels != null
+        val needsDirs = showHeader || options.examples != null
+        return diffPolicies(
+            old, new, options.groupByControl, options.data?.old, options.data?.new, options.examples,
+            if (needsDirs) requireSourceDir(old, "diff with examples, labels or digests") else null,
+            if (needsDirs) requireSourceDir(new, "diff with examples, labels or digests") else null,
+            options.labels?.old, options.labels?.new, showHeader,
+        )
+    }
+
+    private fun diffPolicies(
         old: PolicySet,
         new: PolicySet,
-        /**
-         * When true, a control id shared by two or more rules (one control split over several files) is allowed instead of an error, and any such rule is
-         * identified by (control id, package, rule) -- decided per id over BOTH versions. Off by default: shared ids still throw
-         * [io.explico.diff.DuplicateControlIdException], exactly as before.
-         */
-        groupByControl: Boolean = false,
-        /** The supplied data of the old version (a JSON/YAML file or a directory, as `render`'s data): see above. Null together with [dataNew] = data is not compared. */
-        dataOld: Path? = null,
-        /** The supplied data of the new version. */
-        dataNew: Path? = null,
-        /**
-         * Author fixtures (spec §14.74): when given (and not empty), the SAME fixtures are evaluated by OPA against the old and the new policies -- each side with its own
-         * data when [dataOld]/[dataNew] are given -- and every fixture whose outcome changed is reported per control (`## Behaviour on your examples`, JSON `examples`,
-         * [DiffReport.exampleChanges]). Needs [oldPolicyDir] and [newPolicyDir], the directories the two sets were loaded from (opa re-reads the `.rego` files).
-         */
-        examples: ExampleSet? = null,
-        oldPolicyDir: Path? = null,
-        newPolicyDir: Path? = null,
-        /**
-         * Optional names for the two versions (spec §14.76), shown as `Old (v1.2)` / `New (v1.3)` in the report's **Compared** block and in the JSON. Plain text: not blank,
-         * at most 80 characters, no leading/trailing space, no line break, tab or backtick. Need [oldPolicyDir] and [newPolicyDir].
-         */
-        oldLabel: String? = null,
-        newLabel: String? = null,
+        groupByControl: Boolean,
+        dataOld: Path?,
+        dataNew: Path?,
+        examples: ExampleSet?,
+        oldPolicyDir: Path?,
+        newPolicyDir: Path?,
+        oldLabel: String?,
+        newLabel: String?,
+        showHeader: Boolean,
     ): DiffReport {
-        require((dataOld == null) == (dataNew == null)) {
-            "dataOld and dataNew must be given together (only ${if (dataOld != null) "dataOld" else "dataNew"} was given)"
-        }
-        // Spec §14.76: all of this is checked before any file is read or opa is run, so a mistake is reported as the mistake it is.
-        require((oldPolicyDir == null) == (newPolicyDir == null)) {
-            "oldPolicyDir and newPolicyDir must be given together (only ${if (oldPolicyDir != null) "oldPolicyDir" else "newPolicyDir"} was given): " +
-                "they are the directories the report digests and, for examples, the ones opa re-reads"
-        }
-        require(examples == null || oldPolicyDir != null) { "examples need both oldPolicyDir and newPolicyDir: opa re-reads the .rego files of each version to evaluate the fixtures" }
-        require((oldLabel == null && newLabel == null) || oldPolicyDir != null) { "oldLabel and newLabel name the digests of oldPolicyDir and newPolicyDir, which were not given" }
-        oldLabel?.let { PlainLabel.validate(it, "oldLabel") }
-        newLabel?.let { PlainLabel.validate(it, "newLabel") }
         val compared = PolicyDiff.diff(old, new, groupByControl)
 
         var entries = compared
@@ -347,8 +323,8 @@ public object Explico {
         } else {
             null
         }
-        // Spec §14.76: which two versions this report compares -- the same digest `render` prints in index.md -- only when the directories are known.
-        val header = if (oldPolicyDir != null && newPolicyDir != null) {
+        // Spec §14.76: which two versions this report compares -- the same digest `render` prints in index.md -- only when asked (digests or labels).
+        val header = if (showHeader && oldPolicyDir != null && newPolicyDir != null) {
             DiffHeader("sha256:${PolicyDigest.of(oldPolicyDir)}", "sha256:${PolicyDigest.of(newPolicyDir)}", oldLabel, newLabel)
         } else {
             null

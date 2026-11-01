@@ -15,6 +15,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -56,7 +57,7 @@ class RealisticCorpusInvariantsAcceptanceIT {
         private fun render(dir: String): Map<String, String> {
             val policyDir = Path.of(ROOT, dir)
             val examples = CORPUS[dir]?.let { Explico.loadExamples(Path.of(ROOT, it)) }
-            return Explico.render(Explico.load(policyDir), policyDir, examples).files
+            return Explico.render(Explico.load(policyDir), RenderOptions(examples = examples)).files
         }
 
         private val rendered = HashMap<String, Map<String, String>>()

@@ -18,6 +18,7 @@ package io.explico.acceptance
 
 import io.explico.DiffReport
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.diff.DiffCategory
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
@@ -59,7 +60,7 @@ class RealisticVerdictProjectionAcceptanceIT {
             val buffer = ByteArrayOutputStream()
             System.setErr(PrintStream(buffer, true, Charsets.UTF_8))
             try {
-                val files = Explico.render(Explico.load(policies), policies, Explico.loadExamples(root.resolve(name).resolve("examples")), null, false, true).files
+                val files = Explico.render(Explico.load(policies), RenderOptions(examples = Explico.loadExamples(root.resolve(name).resolve("examples")), json = true)).files
                 return Rendered(files, buffer.toString(Charsets.UTF_8))
             } finally {
                 System.setErr(original)

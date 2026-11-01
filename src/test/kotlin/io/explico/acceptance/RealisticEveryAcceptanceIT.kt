@@ -9,6 +9,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -43,7 +44,7 @@ class RealisticEveryAcceptanceIT {
         fun renderAll() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val set = Explico.load(policies)
-            files = Explico.render(set, policies, Explico.loadExamples(examples), null, false, true).files
+            files = Explico.render(set, RenderOptions(examples = Explico.loadExamples(examples), json = true)).files
             json = Json.parseToJsonElement(files.getValue("explico.json")).jsonObject
             diff = Explico.diff(Explico.load(diffRoot.resolve("old")), Explico.load(diffRoot.resolve("new")))
         }
@@ -198,7 +199,7 @@ class RealisticEveryAcceptanceIT {
         @DisplayName("deterministic")
         fun deterministic() {
             val set = Explico.load(policies)
-            assertThat(Explico.render(set, policies, Explico.loadExamples(examples), null, false, true).files).isEqualTo(files)
+            assertThat(Explico.render(set, RenderOptions(examples = Explico.loadExamples(examples), json = true)).files).isEqualTo(files)
         }
     }
 

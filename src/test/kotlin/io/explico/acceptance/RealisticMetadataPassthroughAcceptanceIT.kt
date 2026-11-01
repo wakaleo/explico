@@ -27,7 +27,7 @@ class RealisticMetadataPassthroughAcceptanceIT {
         private lateinit var files: Map<String, String>
         private lateinit var filesAgain: Map<String, String>
 
-        private fun render(): Map<String, String> = Explico.render(Explico.load(policies), policies).files
+        private fun render(): Map<String, String> = Explico.render(Explico.load(policies)).files
 
         @JvmStatic
         @BeforeAll

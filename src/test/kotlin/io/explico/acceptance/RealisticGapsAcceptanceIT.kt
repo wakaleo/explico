@@ -7,6 +7,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -29,7 +30,7 @@ class RealisticGapsAcceptanceIT {
 
         private fun gaps(dir: Path, requirements: List<String> = emptyList()): List<String> {
             val set = Explico.load(dir)
-            return Explico.render(set, dir, null, null, false, false, requirements).gaps
+            return Explico.render(set, RenderOptions(requirements = requirements)).gaps
         }
     }
 

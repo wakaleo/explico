@@ -17,6 +17,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.RenderedDocs
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
@@ -45,10 +46,10 @@ class RealisticReportClarityAcceptanceIT {
         private const val FOOTER = "*Examples are evaluated against this policy version by OPA at generation time.*"
         private fun showing(shown: Int, total: Int) = "*Showing $shown of $total examples: at most 3 matching, then at most 2 non-matching, in file-name order.*"
 
-        private fun render(dir: Path): RenderedDocs = Explico.render(Explico.load(dir), dir, null, null, json = true)
+        private fun render(dir: Path): RenderedDocs = Explico.render(Explico.load(dir), RenderOptions(json = true))
 
         private fun renderWith(dir: Path, examples: Path?, group: Boolean = false, data: Path? = null): RenderedDocs =
-            Explico.render(Explico.load(dir), dir, examples?.let { Explico.loadExamples(it) }, data, json = true, groupByControl = group)
+            Explico.render(Explico.load(dir), RenderOptions(examples = examples?.let { Explico.loadExamples(it) }, dataDir = data, json = true, groupByControl = group))
 
         private lateinit var diffReport: String
         private lateinit var diffReportAgain: String

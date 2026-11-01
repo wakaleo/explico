@@ -6,6 +6,8 @@
 package io.explico.diff
 
 import io.explico.Explico
+import io.explico.DataVersions
+import io.explico.DiffOptions
 import io.explico.model.RegoVersion
 import io.explico.opa.OpaInvocationException
 import io.explico.opa.OpaRunner
@@ -58,7 +60,7 @@ class DataAwareDiffChallengeTest {
         write(dir, "new/limits.json", """{"limits": {"max": 20}}""")
         val set = Explico.load(dir.resolve("p"))
 
-        val report = Explico.diff(set, set, dataOld = dir.resolve("old"), dataNew = dir.resolve("new"))
+        val report = Explico.diff(set, set, DiffOptions(data = DataVersions(dir.resolve("old"), dir.resolve("new"))))
 
         assertThat(report.entries.single().category).isEqualTo(DiffCategory.LOGIC_CHANGED)
         assertThat(report.markdown).contains("reference data changed: `data ▸ limits ▸ max`: `10` -> `20`")
@@ -72,7 +74,7 @@ class DataAwareDiffChallengeTest {
         write(dir, "new.yaml", "limits:\n  max: 12\n")
         val set = Explico.load(dir.resolve("p"))
 
-        val report = Explico.diff(set, set, dataOld = dir.resolve("old.yaml"), dataNew = dir.resolve("new.yaml"))
+        val report = Explico.diff(set, set, DiffOptions(data = DataVersions(dir.resolve("old.yaml"), dir.resolve("new.yaml"))))
 
         assertThat(report.markdown).contains("reference data changed: `data ▸ limits ▸ max`: `10` -> `12`")
     }
@@ -100,7 +102,7 @@ class DataAwareDiffChallengeTest {
         write(dir, "new.json", """{"limits": {"max": 11}}""")
         val set = Explico.load(dir.resolve("p"), RegoVersion.V0)
 
-        val report = Explico.diff(set, set, dataOld = dir.resolve("old.json"), dataNew = dir.resolve("new.json"))
+        val report = Explico.diff(set, set, DiffOptions(data = DataVersions(dir.resolve("old.json"), dir.resolve("new.json"))))
 
         assertThat(report.entries.single().category).isEqualTo(DiffCategory.LOGIC_CHANGED)
     }
@@ -115,7 +117,7 @@ class DataAwareDiffChallengeTest {
         write(dir, "new.json", """{"limits": {"max": 2}, "other": {"max": 5}}""")
         val set = Explico.load(dir.resolve("p"))
 
-        val report = Explico.diff(set, set, groupByControl = true, dataOld = dir.resolve("old.json"), dataNew = dir.resolve("new.json"))
+        val report = Explico.diff(set, set, DiffOptions(groupByControl = true, data = DataVersions(dir.resolve("old.json"), dir.resolve("new.json"))))
 
         assertThat(report.entries.associate { "${it.newPackage!!.path}" to it.category }).containsExactlyInAnyOrderEntriesOf(
             mapOf("a" to DiffCategory.LOGIC_CHANGED, "b" to DiffCategory.LOGIC_CHANGED, "c" to DiffCategory.UNCHANGED),
@@ -131,7 +133,7 @@ class DataAwareDiffChallengeTest {
         write(dir, "old.json", """{"limits": {"max": 1}}""")
         write(dir, "new.json", """{"limits": {"max": 2}}""")
 
-        val report = Explico.diff(Explico.load(dir.resolve("old")), Explico.load(dir.resolve("new")), dataOld = dir.resolve("old.json"), dataNew = dir.resolve("new.json"))
+        val report = Explico.diff(Explico.load(dir.resolve("old")), Explico.load(dir.resolve("new")), DiffOptions(data = DataVersions(dir.resolve("old.json"), dir.resolve("new.json"))))
 
         assertThat(report.entries).hasSize(1)
         assertThat(report.entries.single().category).isEqualTo(DiffCategory.LOGIC_CHANGED)
@@ -146,7 +148,7 @@ class DataAwareDiffChallengeTest {
         write(dir, "good.json", """{"limits": {"max": 1}}""")
         val set = Explico.load(dir.resolve("p"))
 
-        assertThatThrownBy { Explico.diff(set, set, dataOld = dir.resolve("good.json"), dataNew = dir.resolve("bad.json")) }
+        assertThatThrownBy { Explico.diff(set, set, DiffOptions(data = DataVersions(dir.resolve("good.json"), dir.resolve("bad.json")))) }
             .isInstanceOf(OpaInvocationException::class.java)
     }
 }

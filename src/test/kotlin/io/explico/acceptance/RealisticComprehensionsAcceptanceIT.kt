@@ -28,7 +28,7 @@ class RealisticComprehensionsAcceptanceIT {
         fun renderDocument() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val dir = Path.of("src/test/resources/realistic/comprehensions")
-            doc = Explico.render(Explico.load(dir), dir).files.getValue("comp.md")
+            doc = Explico.render(Explico.load(dir)).files.getValue("comp.md")
         }
 
         private fun section(marker: String): String {

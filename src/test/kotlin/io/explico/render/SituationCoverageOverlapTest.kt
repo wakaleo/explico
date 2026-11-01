@@ -6,6 +6,7 @@
 package io.explico.render
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -54,7 +55,7 @@ class SituationCoverageOverlapTest {
             Files.writeString(policies.resolve("o.rego"), policy(first, second))
             val examples = dir.resolve("ex").also { Files.createDirectories(it) }
             kinds.forEachIndexed { i, kind -> Files.writeString(examples.resolve("f$i.json"), """{"name": "fixture $kind", "input": {"kind": "$kind", "id": "P-1"}}""") }
-            return Explico.render(Explico.load(policies), policies, Explico.loadExamples(examples)).files.getValue("index.md")
+            return Explico.render(Explico.load(policies), RenderOptions(examples = Explico.loadExamples(examples))).files.getValue("index.md")
         }
     }
 

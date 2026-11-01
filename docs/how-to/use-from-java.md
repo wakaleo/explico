@@ -36,7 +36,7 @@ Path policyDir = Path.of("samples/policies");
 Path outDir = Path.of("build/docs-snippet-output/java");
 
 PolicySet policySet = Explico.load(policyDir);
-RenderedDocs rendered = Explico.render(policySet, policyDir);
+RenderedDocs rendered = Explico.render(policySet);
 
 Files.createDirectories(outDir);
 for (Map.Entry<String, String> entry : rendered.getFiles().entrySet()) {
@@ -62,7 +62,7 @@ Points that surprise people:
 
 ## Add examples and a diff
 
-Examples and data are further arguments to `render` (`Explico.loadExamples(dir)` reads the fixtures); `Explico.diff(oldSet, newSet)` returns a `DiffReport` whose `markdown` is the report. The
+Examples, data and every other option travel in a `RenderOptions`, which Java builds fluently: `Explico.render(policySet, RenderOptions.builder().examples(Explico.loadExamples(dir)).dataDir(data).json(true).build())`. `Explico.diff(oldSet, newSet)` returns a `DiffReport` whose `markdown` is the report; `DiffOptions.builder()` takes the same kind of options (reference data, fixtures, version labels, digests). The
 Kotlin version of the whole sequence is in the [tutorial](../tutorial.md#5-the-same-walkthrough-programmatically), and the facade's
 every function is in the [API reference](https://wakaleo.github.io/explico/api/).
 

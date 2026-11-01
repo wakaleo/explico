@@ -37,7 +37,7 @@ class RealisticOperandFunctionCallsAcceptanceIT {
         fun renderDocument() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val dir = Path.of("src/test/resources/realistic/function-values")
-            doc = Explico.render(Explico.load(dir), dir).files.getValue("funcvalues.md")
+            doc = Explico.render(Explico.load(dir)).files.getValue("funcvalues.md")
         }
 
         private fun card(name: String): String {

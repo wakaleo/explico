@@ -12,6 +12,7 @@
  * opa rejection fails everything, so use it on corpora that are entirely Rego v1).
  */
 import io.explico.Explico;
+import io.explico.RenderOptions;
 import io.explico.RenderedDocs;
 import java.io.*;
 import java.nio.file.*;
@@ -61,7 +62,7 @@ public class Bench {
                     try {
                         var ps = Explico.load(tmp, version);
                         try {
-                            RenderedDocs d = Explico.render(ps, tmp, null, null, false, true);
+                            RenderedDocs d = Explico.render(ps, RenderOptions.builder().json(true).build());
                             status = "OK"; r = d.getCoverage().getRendered(); t = d.getCoverage().getTotal();
                             String js = d.getFiles().getOrDefault("explico.json", "");
                             Matcher rm = REASON.matcher(js);

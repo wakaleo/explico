@@ -36,7 +36,7 @@ class RealisticDefaultsAcceptanceIT {
 
         private fun render(dir: String): Map<String, String> {
             val policyDir = Path.of("$BASE/$dir")
-            return Explico.render(Explico.load(policyDir), policyDir).files
+            return Explico.render(Explico.load(policyDir)).files
         }
 
         @JvmStatic

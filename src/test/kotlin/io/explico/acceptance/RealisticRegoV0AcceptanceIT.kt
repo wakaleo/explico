@@ -8,6 +8,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.model.RegoVersion
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
@@ -31,7 +32,7 @@ class RealisticRegoV0AcceptanceIT {
         fun renderDocument() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val set = Explico.load(policies, RegoVersion.V0)
-            doc = Explico.render(set, policies, Explico.loadExamples(examplesDir)).files.getValue("legacy-admission.md")
+            doc = Explico.render(set, RenderOptions(examples = Explico.loadExamples(examplesDir))).files.getValue("legacy-admission.md")
         }
 
         private fun section(marker: String): String {

@@ -14,6 +14,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -44,7 +45,7 @@ class RealisticReferenceDataAcceptanceIT {
         private fun render(policies: Path, examples: Boolean, data: Path?): Map<String, String> {
             val set = Explico.load(policies)
             val exampleSet = if (examples) Explico.loadExamples(packExamples) else null
-            return Explico.render(set, policies, exampleSet, data).files
+            return Explico.render(set, RenderOptions(examples = exampleSet, dataDir = data)).files
         }
 
         @JvmStatic

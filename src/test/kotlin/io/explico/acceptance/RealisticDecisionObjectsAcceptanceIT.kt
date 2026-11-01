@@ -15,6 +15,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -50,7 +51,7 @@ class RealisticDecisionObjectsAcceptanceIT {
         fun renderAll() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val set = Explico.load(policies)
-            files = Explico.render(set, policies, Explico.loadExamples(examples), null, false, true).files
+            files = Explico.render(set, RenderOptions(examples = Explico.loadExamples(examples), json = true)).files
             json = Json.parseToJsonElement(files.getValue("explico.json")).jsonObject
         }
 

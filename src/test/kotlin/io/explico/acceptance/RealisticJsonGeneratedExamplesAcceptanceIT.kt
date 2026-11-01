@@ -6,6 +6,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -30,7 +31,7 @@ class RealisticJsonGeneratedExamplesAcceptanceIT {
         private lateinit var markdown: String
 
         private fun rules(generate: Boolean): Pair<List<JsonElement>, Map<String, String>> {
-            val files = Explico.render(Explico.load(policies), policies, null, null, generate, true).files
+            val files = Explico.render(Explico.load(policies), RenderOptions(generateExamples = generate, json = true)).files
             val doc = Json.parseToJsonElement(files.getValue("explico.json")).jsonObject
             return doc.getValue("packages").jsonArray.flatMap { it.jsonObject.getValue("rules").jsonArray } to files
         }

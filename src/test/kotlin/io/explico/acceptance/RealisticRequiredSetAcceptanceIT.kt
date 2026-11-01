@@ -1,6 +1,6 @@
 /**
  * Acceptance tests for the configurable required set: which documentation properties of a CONTROL are gaps -- the list `--fail-on-gaps` fails on (`RenderedDocs.gaps`).
- * `Explico.render(..., required = [...])` names them: `title`, `description`, `frameworks`, `fixture` (a matching worked example, spec §14.63) and `verdict` (a declared
+ * `Explico.render(..., RenderOptions(required = [...]))` names them: `title`, `description`, `frameworks`, `fixture` (a matching worked example, spec §14.63) and `verdict` (a declared
  * `custom.verdict` on an object-valued rule, spec §14.63). Decisions (to be confirmed):
  *
  * - null (the default) is `description` + `frameworks`, byte-for-byte what every earlier version did; an empty list requires none; the order given and duplicates do not matter;
@@ -14,6 +14,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -54,7 +55,7 @@ class RealisticRequiredSetAcceptanceIT {
         private fun render(required: List<String>?, withExamples: Boolean = true, dir: Path = policies, exampleDir: Path = examples, group: Boolean = false): io.explico.RenderedDocs {
             val set = Explico.load(dir)
             val ex = if (withExamples) Explico.loadExamples(exampleDir) else null
-            return Explico.render(set, dir, ex, json = true, groupByControl = group, required = required)
+            return Explico.render(set, RenderOptions(examples = ex, json = true, groupByControl = group, required = required))
         }
 
         private fun gaps(required: List<String>?, withExamples: Boolean = true) = render(required, withExamples).gaps
@@ -110,7 +111,7 @@ class RealisticRequiredSetAcceptanceIT {
         @DisplayName("the five-package sample (docs/sample-output) renders byte-for-byte as committed")
         fun sampleOutputUntouched() {
             val dir = Path.of("samples/policies")
-            val docs = Explico.render(Explico.load(dir), dir, Explico.loadExamples(Path.of("samples/examples")), Path.of("samples/data/release/data.json")).files
+            val docs = Explico.render(Explico.load(dir), RenderOptions(examples = Explico.loadExamples(Path.of("samples/examples")), dataDir = Path.of("samples/data/release/data.json"))).files
             assertThat(docs).isNotEmpty()
             for ((name, text) in docs) {
                 assertThat(text).describedAs("docs/sample-output/$name").isEqualTo(Files.readString(Path.of("docs/sample-output").resolve(name)))

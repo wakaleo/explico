@@ -34,10 +34,10 @@ class ExplicoJavaInteropTest {
 
     @Test
     void renderCallableWithNoOptionalArgumentsAtAll() {
-        // Explico.render(policySet, policyDir) -- two args, not four -- would not compile without
-        // @JvmOverloads, since Java has no concept of Kotlin's default parameter values.
+        // Explico.render(policySet) -- one arg -- would not compile without @JvmOverloads, since Java has no concept of
+        // Kotlin's default parameter values.
         PolicySet policySet = Explico.load(policiesDir);
-        RenderedDocs rendered = Explico.render(policySet, policiesDir);
+        RenderedDocs rendered = Explico.render(policySet);
 
         Map<String, String> files = rendered.getFiles();
         assertThat(files).containsKey("index.md");
@@ -47,13 +47,13 @@ class ExplicoJavaInteropTest {
 
     @Test
     void generateExamplesIsAnOverloadAndTheSummaryIsNullWhenOff() {
-        // The new last parameter works positionally from Java (no Kotlin named arguments), and RenderedDocs keeps its
+        // The option is reachable from Java through the builder (no Kotlin named arguments), and RenderedDocs keeps its
         // two-argument constructor via @JvmOverloads.
         PolicySet policySet = Explico.load(policiesDir);
-        RenderedDocs off = Explico.render(policySet, policiesDir, null, null, false);
+        RenderedDocs off = Explico.render(policySet, RenderOptions.builder().generateExamples(false).build());
         assertThat(off.getGeneratedExamples()).isNull();
 
-        RenderedDocs on = Explico.render(policySet, policiesDir, null, null, true);
+        RenderedDocs on = Explico.render(policySet, RenderOptions.builder().generateExamples(true).build());
         assertThat(on.getGeneratedExamples()).isNotNull();
         assertThat(on.getGeneratedExamples().getRulesConsidered()).isGreaterThan(0);
 

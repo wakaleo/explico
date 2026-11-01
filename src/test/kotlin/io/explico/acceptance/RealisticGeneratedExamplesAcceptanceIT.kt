@@ -18,6 +18,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -54,8 +55,8 @@ class RealisticGeneratedExamplesAcceptanceIT {
             val set = Explico.load(policies)
             val fixtures = if (examples) Explico.loadExamples(dir.resolve("examples")) else null
             val docs = when (generate) {
-                null -> Explico.render(set, policies, fixtures, null)
-                else -> Explico.render(set, policies, fixtures, null, generateExamples = generate)
+                null -> Explico.render(set, RenderOptions(examples = fixtures))
+                else -> Explico.render(set, RenderOptions(examples = fixtures, generateExamples = generate))
             }
             return docs.files.getValue("genex.md")
         }
@@ -266,7 +267,7 @@ class RealisticGeneratedExamplesAcceptanceIT {
 
         private val doc: String by lazy {
             val set = Explico.load(sameNameDir.resolve("policies"))
-            Explico.render(set, sameNameDir.resolve("policies"), null, null, generateExamples = true).files.getValue("samename.md")
+            Explico.render(set, RenderOptions(generateExamples = true)).files.getValue("samename.md")
         }
 
         @Test
@@ -294,8 +295,8 @@ class RealisticGeneratedExamplesAcceptanceIT {
         @DisplayName("RenderedDocs.generatedExamples is null when off, and counts rules with examples out of rules considered when on")
         fun summaryReflectsTheOption() {
             val set = Explico.load(policies)
-            assertThat(Explico.render(set, policies).generatedExamples).isNull()
-            val on = Explico.render(set, policies, null, null, generateExamples = true).generatedExamples!!
+            assertThat(Explico.render(set).generatedExamples).isNull()
+            val on = Explico.render(set, RenderOptions(generateExamples = true)).generatedExamples!!
             // six rules take part; GX-004 calls a function and cannot be derived
             assertThat(on.rulesConsidered).isEqualTo(6)
             assertThat(on.rulesWithExamples).isEqualTo(5)
@@ -306,7 +307,7 @@ class RealisticGeneratedExamplesAcceptanceIT {
         fun regoV0() {
             val v0Policies = Path.of("src/test/resources/realistic/rego-v0/policies")
             val set = Explico.load(v0Policies, io.explico.model.RegoVersion.V0)
-            val doc = Explico.render(set, v0Policies, null, null, generateExamples = true).files.getValue("legacy-admission.md")
+            val doc = Explico.render(set, RenderOptions(generateExamples = true)).files.getValue("legacy-admission.md")
             val card = card(doc, "LEG-001")
             assertThat(card).contains(SECTION)
             assertThat(generated(card)).contains("**satisfies every condition**").contains("**breaks only:")

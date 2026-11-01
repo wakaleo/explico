@@ -6,6 +6,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -26,7 +27,7 @@ class RealisticInputMaskingCaseAcceptanceIT {
         fun renderAll() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val policies = base.resolve("policies")
-            files = Explico.render(Explico.load(policies), policies, Explico.loadExamples(base.resolve("examples")), null, false, true).files
+            files = Explico.render(Explico.load(policies), RenderOptions(examples = Explico.loadExamples(base.resolve("examples")), json = true)).files
         }
     }
 

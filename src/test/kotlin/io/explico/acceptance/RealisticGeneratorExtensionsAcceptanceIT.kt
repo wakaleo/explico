@@ -16,6 +16,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -45,7 +46,7 @@ class RealisticGeneratorExtensionsAcceptanceIT {
 
         private fun render(generate: Boolean?): String {
             val set = Explico.load(policies)
-            val docs = if (generate == null) Explico.render(set, policies) else Explico.render(set, policies, generateExamples = generate)
+            val docs = if (generate == null) Explico.render(set) else Explico.render(set, RenderOptions(generateExamples = generate))
             return docs.files.getValue("genext.md")
         }
 

@@ -3,7 +3,7 @@
  * UNCHANGED when only the data it reads changed. Authored from a control-owner journey review (a bank halves a payment limit in `limits.json`; the report said
  * "UNCHANGED 4" and `--fail-on` exited 0), NOT from the frozen acceptance-pack README. Decisions (to be confirmed):
  *
- * - `Explico.diff(old, new, groupByControl, dataOld, dataNew)`: two optional data paths (a file or a directory, as `render`'s data is). Both or neither; one alone is an
+ * - `Explico.diff(old, new, DiffOptions(data = DataVersions(dataOld, dataNew)))`: two optional data paths (a file or a directory, as `render`'s data is). Both or neither; one alone is an
  *   `IllegalArgumentException` naming both parameters. Neither = exactly the report of today.
  * - The values compared are the plain `data.*` prefixes each control reads (spec 14.41's `referencedDataPaths`: truncated before the first dynamic segment, a loaded
  *   rule or package excluded), evaluated by OPA as `data.<path>` on each side. Rego logic is never evaluated; a data path no control reads is never reported.
@@ -17,6 +17,8 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.DataVersions
+import io.explico.DiffOptions
 import io.explico.diff.DiffCategory
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
@@ -49,7 +51,7 @@ class RealisticDataAwareDiffAcceptanceIT {
         private const val LIST_PATH = "`data ▸ high risk countries`"
 
         private fun diff(old: Path, new: Path, dataOld: Path?, dataNew: Path?) =
-            Explico.diff(Explico.load(old), Explico.load(new), dataOld = dataOld, dataNew = dataNew)
+            Explico.diff(Explico.load(old), Explico.load(new), DiffOptions(data = if (dataOld != null && dataNew != null) DataVersions(dataOld, dataNew) else null))
 
         /** Same policies on both sides; only the data differs. */
         private fun dataOnly(newData: String) = diff(oldPolicies, oldPolicies, data("old"), data(newData))
@@ -241,14 +243,10 @@ class RealisticDataAwareDiffAcceptanceIT {
         }
 
         @Test
-        @DisplayName("one side only is refused, naming both parameters; both together are accepted")
+        @DisplayName("both data versions together are accepted (migrated, spec 14.80 step 2: one side only can no longer be written -- DataVersions takes both)")
         fun oneSideOnly() {
             val old = Explico.load(oldPolicies)
-            assertThat(Explico.diff(old, old, dataOld = data("old"), dataNew = data("old")).entries).isNotEmpty()
-            assertThatThrownBy { Explico.diff(old, old, dataOld = data("old")) }
-                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("dataOld").hasMessageContaining("dataNew")
-            assertThatThrownBy { Explico.diff(old, old, dataNew = data("old")) }
-                .isInstanceOf(IllegalArgumentException::class.java).hasMessageContaining("dataOld").hasMessageContaining("dataNew")
+            assertThat(Explico.diff(old, old, DiffOptions(data = DataVersions(data("old"), data("old")))).entries).isNotEmpty()
         }
     }
 

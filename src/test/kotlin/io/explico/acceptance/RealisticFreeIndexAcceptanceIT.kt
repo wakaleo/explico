@@ -9,6 +9,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -35,7 +36,7 @@ class RealisticFreeIndexAcceptanceIT {
         @BeforeAll
         fun renderAll() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
-            val files = Explico.render(Explico.load(policies), policies, null, null, false, true).files
+            val files = Explico.render(Explico.load(policies), RenderOptions(json = true)).files
             doc = files.getValue("free-index.md")
             json = Json.parseToJsonElement(files.getValue("explico.json")).jsonObject
         }

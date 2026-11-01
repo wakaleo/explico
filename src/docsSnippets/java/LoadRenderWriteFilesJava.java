@@ -1,6 +1,6 @@
 // Shown verbatim in docs/user-guide.md (spec §13.8): the same load -> render -> write-files
 // pattern as the Kotlin snippet, from Java -- proving @JvmStatic/@JvmOverloads (spec §13.5) work
-// exactly as documented: Explico.load(...)/Explico.render(policySet, policyDir), no INSTANCE, no
+// exactly as documented: Explico.load(...)/Explico.render(policySet), no INSTANCE, no
 // explicit nulls for render()'s optional parameters. Compiled as part of the docsSnippets source set.
 package docs;
 
@@ -20,7 +20,7 @@ public final class LoadRenderWriteFilesJava {
         Path outDir = Path.of("build/docs-snippet-output/java");
 
         PolicySet policySet = Explico.load(policyDir);
-        RenderedDocs rendered = Explico.render(policySet, policyDir);
+        RenderedDocs rendered = Explico.render(policySet);
 
         Files.createDirectories(outDir);
         for (Map.Entry<String, String> entry : rendered.getFiles().entrySet()) {

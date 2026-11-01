@@ -8,6 +8,7 @@
 package io.explico.docs
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -62,7 +63,7 @@ class GuideRewritesTest {
                     Files.writeString(examples.resolve("${pair.name}-%02d.json".format(j)), """{"name": "${pair.name}-$j", "input": $input}""")
                 }
             }
-            val docs = Explico.render(Explico.load(policies), policies, Explico.loadExamples(examples), null, false, true)
+            val docs = Explico.render(Explico.load(policies), RenderOptions(examples = Explico.loadExamples(examples), json = true))
             val json = Json.parseToJsonElement(docs.files.getValue("explico.json")).jsonObject
             val rules = json.getValue("packages").jsonArray.flatMap { it.jsonObject.getValue("rules").jsonArray }.associateBy { it.jsonObject.getValue("name").jsonPrimitive.content }
             val values = json.getValue("quality").jsonObject.getValue("valuesShownAsSource").jsonArray.map { it.jsonObject }

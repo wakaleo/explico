@@ -28,7 +28,7 @@ class RealisticRuleIterationAcceptanceIT {
         fun renderDocument() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
             val dir = Path.of("src/test/resources/realistic/rule-iteration")
-            doc = Explico.render(Explico.load(dir), dir).files.getValue("riter.md")
+            doc = Explico.render(Explico.load(dir)).files.getValue("riter.md")
         }
 
         private fun section(marker: String): String {

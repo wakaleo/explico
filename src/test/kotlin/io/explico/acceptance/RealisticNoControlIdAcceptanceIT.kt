@@ -16,6 +16,8 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.ControlIdOptions
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -50,7 +52,7 @@ class RealisticNoControlIdAcceptanceIT {
 
         private fun render(dir: Path, examples: Path? = null, controlIdFrom: String? = null): io.explico.RenderedDocs {
             val set = Explico.load(dir)
-            return Explico.render(set, dir, examples?.let { Explico.loadExamples(it) }, null, false, true, emptyList(), null, controlIdFrom)
+            return Explico.render(set, RenderOptions(examples = examples?.let { Explico.loadExamples(it) }, json = true, controlId = controlIdFrom?.let { ControlIdOptions(it) }))
         }
 
         @JvmStatic
@@ -172,7 +174,7 @@ class RealisticNoControlIdAcceptanceIT {
     @DisplayName("the five-package sample (docs/sample-output) renders byte-for-byte as committed, with no such finding")
     fun sampleOutputUntouched() {
         val dir = Path.of("samples/policies")
-        val docs = Explico.render(Explico.load(dir), dir, Explico.loadExamples(Path.of("samples/examples")), Path.of("samples/data/release/data.json"))
+        val docs = Explico.render(Explico.load(dir), RenderOptions(examples = Explico.loadExamples(Path.of("samples/examples")), dataDir = Path.of("samples/data/release/data.json")))
         assertThat(docs.findings.none { "no control id" in it }).isTrue()
         for ((name, text) in docs.files) {
             assertThat(text).describedAs("docs/sample-output/$name").isEqualTo(Files.readString(Path.of("docs/sample-output").resolve(name)))

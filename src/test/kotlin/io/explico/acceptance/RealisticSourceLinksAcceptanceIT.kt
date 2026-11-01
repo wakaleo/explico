@@ -8,6 +8,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -45,8 +46,8 @@ class RealisticSourceLinksAcceptanceIT {
 
         private fun render(sourceUrl: String?, json: Boolean = false, explicitNull: Boolean = true): Map<String, String> {
             val set = Explico.load(pack)
-            return if (explicitNull) Explico.render(set, pack, null, null, false, json, emptyList(), sourceUrl).files
-            else Explico.render(set, pack, null, null, false, json).files
+            return if (explicitNull) Explico.render(set, RenderOptions(json = json, sourceUrl = sourceUrl)).files
+            else Explico.render(set, RenderOptions(json = json)).files
         }
 
         private fun parse(text: String?): JsonObject = if (text.isNullOrBlank()) JsonObject(emptyMap()) else Json.parseToJsonElement(text).jsonObject
@@ -169,7 +170,7 @@ class RealisticSourceLinksAcceptanceIT {
         @DisplayName("a template without {file} is rejected naming the placeholder")
         fun missingFile() {
             val set = Explico.load(pack)
-            assertThatThrownBy { Explico.render(set, pack, null, null, false, false, emptyList(), "https://git.example.com/no-placeholder") }
+            assertThatThrownBy { Explico.render(set, RenderOptions(sourceUrl = "https://git.example.com/no-placeholder")) }
                 .isInstanceOf(IllegalArgumentException::class.java)
                 .hasMessageContaining("{file}")
         }

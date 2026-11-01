@@ -6,6 +6,7 @@
 package io.explico.diff
 
 import io.explico.Explico
+import io.explico.DiffOptions
 import io.explico.model.RegoVersion
 import io.explico.opa.OpaRunner
 import io.explico.render.ExampleSet
@@ -43,10 +44,7 @@ class ExampleChangesChallengeTest {
         private fun fixture(dir: Path, name: String, json: String) = write(dir, "examples/$name.json", """{"name": "$name", "input": $json}""")
 
         private fun diff(dir: Path, oldName: String = "old", newName: String = "new", group: Boolean = false, version: RegoVersion = RegoVersion.V1) =
-            Explico.diff(
-                Explico.load(dir.resolve(oldName), version), Explico.load(dir.resolve(newName), version), groupByControl = group,
-                examples = Explico.loadExamples(dir.resolve("examples")), oldPolicyDir = dir.resolve(oldName), newPolicyDir = dir.resolve(newName),
-            )
+            Explico.diff(Explico.load(dir.resolve(oldName), version), Explico.load(dir.resolve(newName), version), DiffOptions(groupByControl = group, examples = Explico.loadExamples(dir.resolve("examples")), digests = true))
 
         private const val DENY_AMOUNT = "deny contains msg if {\n\tinput.amount > %d\n\tmsg := \"too much\"\n}\n"
         private fun denyRule(id: String, pkg: String, limit: Int, title: String = "Title $id") = "package $pkg\n\nimport rego.v1\n\n" + meta(id, title) + DENY_AMOUNT.format(limit)
@@ -116,10 +114,7 @@ class ExampleChangesChallengeTest {
         write(dir, "old/a.rego", denyRule("C-1", "a", 100))
         write(dir, "new/a.rego", denyRule("C-1", "a", 50))
 
-        val report = Explico.diff(
-            Explico.load(dir.resolve("old")), Explico.load(dir.resolve("new")),
-            examples = ExampleSet(emptyList()), oldPolicyDir = dir.resolve("old"), newPolicyDir = dir.resolve("new"),
-        )
+        val report = Explico.diff(Explico.load(dir.resolve("old")), Explico.load(dir.resolve("new")), DiffOptions(examples = ExampleSet(emptyList()), digests = true))
 
         assertThat(report.markdown).doesNotContain("Behaviour on your examples")
         assertThat(report.json).doesNotContain("\"examples\"")

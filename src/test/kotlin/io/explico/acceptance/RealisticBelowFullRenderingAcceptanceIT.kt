@@ -9,6 +9,7 @@
 package io.explico.acceptance
 
 import io.explico.Explico
+import io.explico.RenderOptions
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
@@ -40,9 +41,9 @@ class RealisticBelowFullRenderingAcceptanceIT {
         @BeforeAll
         fun renderIndexes() {
             assumeTrue(OpaRunner.isAvailable(), "opa binary not on PATH")
-            packIndex = Explico.render(Explico.load(everyPolicies), everyPolicies, Explico.loadExamples(everyExamples)).files.getValue("index.md")
-            packIndexWithoutExamples = Explico.render(Explico.load(everyPolicies), everyPolicies).files.getValue("index.md")
-            fullyRenderedIndex = Explico.render(Explico.load(effects), effects).files.getValue("index.md")
+            packIndex = Explico.render(Explico.load(everyPolicies), RenderOptions(examples = Explico.loadExamples(everyExamples))).files.getValue("index.md")
+            packIndexWithoutExamples = Explico.render(Explico.load(everyPolicies)).files.getValue("index.md")
+            fullyRenderedIndex = Explico.render(Explico.load(effects)).files.getValue("index.md")
         }
     }
 
@@ -77,7 +78,7 @@ class RealisticBelowFullRenderingAcceptanceIT {
         @Test
         @DisplayName("the link resolves: the card's anchor is in release-governance.md")
         fun linkTargetExists() {
-            val demo = Explico.render(Explico.load(everyPolicies), everyPolicies).files.getValue("every-demo.md")
+            val demo = Explico.render(Explico.load(everyPolicies)).files.getValue("every-demo.md")
             assertThat(demo).contains("<a id=\"ev-005\"></a>").contains("<a id=\"ev-006\"></a>")
         }
     }
