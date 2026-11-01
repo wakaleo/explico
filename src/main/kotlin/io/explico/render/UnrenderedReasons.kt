@@ -14,6 +14,7 @@ internal object UnrenderedReasons {
         "with-override" to "with replaces a value for one call, which explico does not model",
         "function-call" to "a call or unification explico cannot render: a built-in it does not model, a function it cannot find or whose arguments it cannot render, " +
             "or a pattern on the left of =",
+        "package-not-loaded" to "needs a package that is imported but not among the rendered policies; render it together with these policies to resolve it",
         "helper-assignment" to "a local assignment whose value explico cannot substitute into the conditions that use it",
         "partial-rule-reference" to "a bare reference to a set or object rule is always defined, even when empty, so it is not shown as a yes/no test",
         "comprehension" to "a comprehension is shown only when its head and every condition inside it can be rendered",

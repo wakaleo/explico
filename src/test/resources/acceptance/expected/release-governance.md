@@ -24,6 +24,8 @@
 - **self-approved change** — matched
   - `pipeline ▸ checks ▸ [each check] ▸ status`: `"passed"`
 
+*Showing 3 of 6 examples: at most 3 matching, then at most 2 non-matching, in file-name order.*
+
 *Examples are evaluated against this policy version by OPA at generation time.*
 
 *Rendering coverage: 2 of 2 conditions*
@@ -86,6 +88,8 @@ inside a freeze window, and all mandatory checks must have passed.
 - **hotfix without change ticket** — ✅ allowed
   - `deployment ▸ environment`: `"production"`
   - `deployment ▸ timestamp`: `1754060000`
+
+*Showing 3 of 6 examples: at most 3 matching, then at most 2 non-matching, in file-name order.*
 
 *Examples are evaluated against this policy version by OPA at generation time.*
 

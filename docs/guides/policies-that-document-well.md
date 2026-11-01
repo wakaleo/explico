@@ -59,8 +59,9 @@ projections (`actions`, `annotations`, `timing`, `mask`) work the same way and a
 The index groups every statement explico could not render by reason, with the `file:row` of each, and says in one sentence what explico needs. The
 [constructs reference](../reference/constructs.md) lists what renders and what does not, with the reason shown for each construct that does not. Two things to know:
 
-- A **condition** shown as source (`every`, `else-chain`, `with-override`, `function-call`, `helper-assignment`, `partial-rule-reference`, `comprehension`) is
-  verbatim and marked, and it lowers the coverage percentage.
+- A **condition** shown as source (`every`, `else-chain`, `with-override`, `function-call`, `package-not-loaded`, `helper-assignment`, `partial-rule-reference`, `comprehension`) is
+  verbatim and marked, and it lowers the coverage percentage. `package-not-loaded` means a call into a package that is imported but not among the rendered policies: render the
+  whole policy tree together (point explico at the parent directory, not one policy directory) so the helper packages are loaded and the call can be resolved.
 - A **value** shown as source (*Values shown as source*) sits inside a condition that did render. It does not lower the percentage, and it has no reason code, so
   the index lists the exact text and where it occurs. A value that recurs is the best lead: it is usually one pattern in your policy.
 
@@ -128,6 +129,23 @@ count_after if { some x in input.xs; ok(x) }
 no general rewrite that keeps the meaning and renders (a particular policy may have one; this guide only lists what can be checked), and rewriting them just to suit the
 documentation would change the policy. They are shown as marked verbatim source on purpose: that is the honest rendering, and it is never wrong. The sentences in the index say what explico needs; the
 [Rego coverage audit](../rego-coverage.md) records what has been promoted and what has not.
+
+## Make the examples tell the story
+
+- **Name a constant that has a unit.** A bare `86400000000000` in a condition is faithful and unreadable. With `one_day_ns := 86400000000000` as a rule and the condition
+  written against it, the same card reads:
+
+  ```markdown
+  - the current time minus the time `screened at` is greater than `86400000000000`
+  - the current time minus the time `screened at` is greater than rule [`one_day_ns`](#v-one-day-ns)
+  ```
+
+  (the first line is the bare number, the second the named constant: both are real output). The constant has a card of its own that shows its value, and its
+  METADATA `description` if you give it one, so put the unit there.
+- **Write at least one fixture for each situation.** A control passes the *No matching example* finding as soon as one fixture matches it; the *Situation without a
+  matching example* finding names the situations no fixture triggers. A situation with no example is the one part of the card nobody has seen hold.
+- **Expect an unstable example for a rule that reads the clock.** A rule that uses `time.now_ns()` is evaluated against the real time when the documentation is
+  generated, so its example verdict can change between two renders. Give the fixture a timestamp far enough in the past or future that the verdict cannot flip.
 
 ## Make the gate follow
 

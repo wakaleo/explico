@@ -147,7 +147,8 @@ internal object DiffRenderer {
         sb.appendLine()
         when (entry.category) {
             DiffCategory.REMOVED -> {
-                sb.appendLine("**⚠ This control has been removed.**")
+                // Spec §14.79: only a rule with a control id is a control; a helper rule (no id) is called a rule.
+                sb.appendLine("**⚠ This ${if (entry.controlId != null) "control" else "rule"} has been removed.**")
                 sb.appendLine()
                 sb.append(card(entry.oldRule!!, entry.oldPackage!!, oldPolicySet, isLinkable, qualified, anchors.of(entry)))
                 sb.appendLine()

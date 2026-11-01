@@ -1724,3 +1724,9 @@ is genuinely matched by no fixture, so the pack's `index.md` golden and `docs/sa
 `Situations.facts` for the situation kinds) -- never concatenate a "What changed" line anywhere else. `FactKind` is a CLOSED set of 15 (an enum, not a hierarchy); `docs/json-output.md` lists it and `DiffFactsDocsTest` fails when the page and the enum disagree, so adding a kind means documenting it (and a schema decision before 1.0).
 `reference-data-changed` omits a JSON key for an undefined version: `null` in `DataChange` is undefined, `JsonNull` is a real null -- never conflate them.
 
+## Report clarity: removed rules and unloaded packages (spec §14.79)
+
+A REMOVED diff entry says "rule" unless it has a control id (`DiffRenderer`). `AstMapper.callsUnloadedPackage` is the ONE decision for the fallback reason `package-not-loaded`, and ONLY for a CALL: a function can only live in a package, so "the package is not loaded" is a fact. Never extend it to a rule
+reference or `some x in alias.rule`: an import of reference data (`import data.limits`) looks identical and also falls back today (it is not rendered as a data path), so "package" would be a guess. A card that lists fewer examples than it has outcomes says so: `WorkedExamples.shownNote` (constants `MAX_MATCHING`/`MAX_NON_MATCHING` shared with `select`) prints `*Showing M of N examples: ...*` before the provenance footer; the sample pack's goldens carry it. A new reason needs a sentence in `UnrenderedReasons` (the drift guard reads the mapper's source with regexes: write
+the call site as plain `unrenderedAt(loc, "reason")` calls, not an inline `if`).
+

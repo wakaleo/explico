@@ -33,6 +33,8 @@ may be deployed, unless the service is explicitly exempt.
 - **hotfix without change ticket** — ✅ allowed
   - `pipeline ▸ stages ▸ [each stage] ▸ status`: `"passed"`
 
+*Showing 3 of 6 examples: at most 3 matching, then at most 2 non-matching, in file-name order.*
+
 *Examples are evaluated against this policy version by OPA at generation time.*
 
 *Rendering coverage: 4 of 4 conditions*
@@ -59,6 +61,8 @@ Deployments to production or staging count as release candidates.
   - `deployment ▸ environment`: `"production"`
 - **self-approved change** — matched
   - `deployment ▸ environment`: `"production"`
+
+*Showing 3 of 6 examples: at most 3 matching, then at most 2 non-matching, in file-name order.*
 
 *Examples are evaluated against this policy version by OPA at generation time.*
 

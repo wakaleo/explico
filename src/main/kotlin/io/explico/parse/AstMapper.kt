@@ -1042,6 +1042,8 @@ internal object AstMapper {
                 return Condition.FunctionCall(target.first, target.second, operands, expr.negated)
             }
         }
+        // Spec §14.79: a call whose function cannot be found because the package it names is not among the loaded policies says so; any other unresolved call stays "function-call".
+        if (target == null && callsUnloadedPackage(name, ctx)) return unrenderedAt(expr.location, "package-not-loaded")
         return unrenderedAt(expr.location, "function-call")
     }
 
@@ -1330,6 +1332,19 @@ internal object AstMapper {
         val split = path.lastIndexOf('.')
         if (split <= 0) return null
         return path.substring(0, split) to path.substring(split + 1)
+    }
+
+    /**
+     * Spec §14.79: true when a call to [name] (`alias.fn`, `alias.sub.fn`, or a bare `fn` imported by name, honouring `as`) names -- through an `import data...` -- a package that is
+     * NOT among the loaded policies, so its function cannot be found for that reason. Only a CALL qualifies: a function lives in a package, so "the package is not loaded" is
+     * a fact. (A rule reference or an iteration over `alias.rule` cannot be told from an import of reference data, so those keep their reasons.) An unknown function in a LOADED package,
+     * a name that is not an import (a built-in namespace) and an arity mismatch are false.
+     */
+    private fun callsUnloadedPackage(name: String, ctx: MappingContext): Boolean {
+        val segments = name.split('.')
+        val importPath = ctx.importAliases[segments.first()] ?: return false
+        val calledPackage = if (segments.size == 1) importPath.substringBeforeLast('.', "") else (listOf(importPath) + segments.subList(1, segments.size - 1)).joinToString(".")
+        return calledPackage.isNotEmpty() && calledPackage !in ctx.registry.keys
     }
 
     private fun fallbackReasonFor(packagePath: String, ruleName: String, ctx: MappingContext): String =

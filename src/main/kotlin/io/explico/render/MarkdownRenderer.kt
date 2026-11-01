@@ -464,6 +464,11 @@ internal object MarkdownRenderer {
         val referencedPaths = WorkedExamples.referencedPaths(rule)
         for (outcome in selected) appendExampleEntry(sb, rule, outcome.fixture.name, outcome, referencedPaths)
         sb.appendLine()
+        // Spec §14.79: say why some of the card's examples are not listed.
+        WorkedExamples.shownNote(outcomes)?.let { note ->
+            sb.appendLine(note)
+            sb.appendLine()
+        }
         // Provenance footer (spec §13.6): a muted, explicit restatement, directly in the rendered
         // artefact, of spec §6.7's own invariant that worked examples are never predicted -- always
         // freshly evaluated by opa against whatever policy version is being rendered right now.

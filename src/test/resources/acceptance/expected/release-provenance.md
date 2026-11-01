@@ -51,6 +51,8 @@ a sign-off label identifying who approved the build.
   - `artifact ▸ source branch`: `"release/2026.08"`
   - `artifact ▸ labels ▸ "signed-off-by"`: `"cdavis"`
 
+*Showing 4 of 6 examples: at most 3 matching, then at most 2 non-matching, in file-name order.*
+
 *Examples are evaluated against this policy version by OPA at generation time.*
 
 *Rendering coverage: 4 of 4 conditions*

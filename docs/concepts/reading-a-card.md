@@ -91,7 +91,7 @@ A few facts about how a package page is laid out:
 
 - **Order.** Cards in a package page are ordered by rule name; `index.md` lists controls by control id. They can differ.
 - **Which examples.** Every example is evaluated against every rule, so an example normally shows as *not matched* on the cards it does not
-  exercise. A card shows at most three matching and two non-matching examples, in file-name order; the index's *Example coverage* counts all.
+  exercise. A card shows at most three matching and two non-matching examples, in file-name order, and a line `Showing M of N examples` says so when it leaves some out; the index's *Example coverage* counts all.
 - **Which inputs are listed under an example.** The values of every `input` path the card's conditions read, including a path that is only
   an argument of a call such as `count(input.reviewers)`. A path read only inside a comprehension is not listed separately.
 - **Where it is defined.** The card says *defined in `approval.rego`* (the file name); the package header above it gives the path relative

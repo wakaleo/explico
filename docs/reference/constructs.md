@@ -129,8 +129,9 @@ a machine-readable tag, available in the [JSON output](../json-output.md).
 | `every c in input.containers { json.marshal(c) != "" }` | `every` |
 | `every x in [1, 2] { x > 0 }` | `every` |
 
-Two more cases are shown as source and are not rows above because they are not a single statement:
+Three more cases are shown as source and are not rows above because they are not a single statement:
 
+- a **call into a package that is imported but not among the rendered policies**, reason `package-not-loaded` (`import data.lib.helpers` and `helpers.is_big(input.n)`, rendering a directory that does not contain `lib.helpers`). Render the whole policy tree together and the call is resolved. A rule reference or an iteration over such an imported name keeps `unclassified`: explico cannot tell an import of a package from an import of reference data.
 - an **`else` chain** with anything in it explico cannot render, reason `else-chain`. The whole chain stays source, because half a decision would misstate it. A chain whose every branch renders is shown as numbered situations decided in order ("no earlier situation applies and ..."), each with a `*Then:*` value, and a closing *Otherwise* for a bodiless final `else`;
 - a body that could not be mapped at all, reason `mapping-error`, with a warning on stderr. This should not happen on valid Rego; if it
   does, it is a bug worth reporting.

@@ -64,9 +64,19 @@ class DiffRendererTest {
 
         assertThat(markdown).contains("| REMOVED | 1 |")
         assertThat(markdown).contains("**REMOVED**")
-        assertThat(markdown).contains("This control has been removed")
+        // Repointed (spec 14.79): exempt_service has no control id, so it is a RULE, not a control.
+        assertThat(markdown).contains("**⚠ This rule has been removed.**").doesNotContain("This control has been removed")
         assertThat(markdown).contains("exempt_service")
         assertThat(markdown).contains("release.exemptions")
+    }
+
+    @Test
+    fun aRemovedRuleWithAControlIdKeepsTheControlWording() {
+        val old = Explico.load(diffRendererFixtures.resolve("added-only"))
+        val markdown = render(old, PolicySet(emptyList()))
+
+        assertThat(markdown).contains("| REMOVED | 1 |").contains("**⚠ This control has been removed.**").doesNotContain("This rule has been removed")
+        assertThat(markdown).contains("NEW-001")
     }
 
     @Test

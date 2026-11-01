@@ -18,7 +18,7 @@ Library: `Explico.render(policySet, policyDir, examples, dataDir, generateExampl
   verbatim `source` and a machine-readable `reason`, never prose. Coverage, the policy digest, effect of a match, worked-example
   verdicts and reference data come from the same model the Markdown is built from.
 - **More than the card where the card summarises:** `workedExamples` lists *every* fixture (the card shows up to 3 matching + 2
-  non-matching), and `referenceData.value` is the *full* resolved value (the card cuts long arrays after 5).
+  non-matching and says `Showing M of N examples` when it omits some, where N is the length of this array), and `referenceData.value` is the *full* resolved value (the card cuts long arrays after 5).
 - **Deterministic:** keys are written in the order below, two-space indented, one trailing newline; the same input is byte-identical.
 - **Versioned:** `schema` is `explico/render/1` or `explico/diff/1`. A breaking change gets a new number; fields may be *added* to a
   version, so tolerate unknown keys.

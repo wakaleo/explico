@@ -36,7 +36,7 @@ a block marked with a warning sign:
 ````
 
 That block is counted against the rendering coverage, so a card full of them reads as the unfinished picture it is. Each one carries a
-machine-readable reason (for example `function-call`, `helper-assignment`, `every`, `comprehension`, `with-override`, `else-chain`),
+machine-readable reason (for example `function-call`, `package-not-loaded`, `helper-assignment`, `every`, `comprehension`, `with-override`, `else-chain`),
 available in the [JSON output](../json-output.md), so you can rank what is costing you coverage.
 
 Two rules govern the fallback:

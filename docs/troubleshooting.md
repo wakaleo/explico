@@ -29,8 +29,8 @@ directory.
 
 ## The output is not what I expected
 
-**My example is missing from a card.** A card shows at most three matching and two non-matching examples, in file-name order. The index's
-*Example coverage* column counts them all. An example whose evaluation actually fails prints a warning on stderr naming it and is left out.
+**My example is missing from a card.** A card shows at most three matching and two non-matching examples, in file-name order, and says so when it leaves some out
+(`Showing 4 of 6 examples: ...`). The index's *Example coverage* column counts them all. An example whose evaluation actually fails prints a warning on stderr naming it and is left out.
 
 **Example coverage shows `–`.** The rule has no fixture where it matches (or none where it does not). Add one for each direction:
 [Add worked examples](how-to/add-worked-examples.md).

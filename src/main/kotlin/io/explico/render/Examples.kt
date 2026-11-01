@@ -126,9 +126,23 @@ internal object WorkedExamples {
         }
     }
 
-    /** Up to 3 matching then up to 2 non-matching, each group in filename order (spec §6.7 -- confirmed against the release-approvals.md golden, which shows matched examples before non-matched ones even when a non-matched fixture's filename sorts earlier). */
+    /** How many matching, then how many non-matching, examples a card lists (spec §6.7). The only definition: [select] and [shownNote] both read these. */
+    const val MAX_MATCHING = 3
+    const val MAX_NON_MATCHING = 2
+
+    /** Up to [MAX_MATCHING] matching then up to [MAX_NON_MATCHING] non-matching, each group in filename order (spec §6.7 -- confirmed against the release-approvals.md golden, which shows matched examples before non-matched ones even when a non-matched fixture's filename sorts earlier). */
     fun select(outcomes: List<WorkedExample>): List<WorkedExample> =
-        outcomes.filter { it.matched }.take(3) + outcomes.filter { !it.matched }.take(2)
+        outcomes.filter { it.matched }.take(MAX_MATCHING) + outcomes.filter { !it.matched }.take(MAX_NON_MATCHING)
+
+    /**
+     * Spec §14.79: the line a card prints when it lists fewer examples than it has outcomes, saying why (`Showing 4 of 6 examples: at most 3 matching, then at most 2
+     * non-matching, in file-name order.`); null when everything is listed or there is nothing to list. N is [outcomes] -- the card's own, what the index's Example coverage counts.
+     */
+    fun shownNote(outcomes: List<WorkedExample>): String? {
+        val shown = select(outcomes).size
+        if (shown == outcomes.size) return null
+        return "*Showing $shown of ${outcomes.size} examples: at most $MAX_MATCHING matching, then at most $MAX_NON_MATCHING non-matching, in file-name order.*"
+    }
 
     /** Spec §6.7: name-based mapping, "documented in the README" -- simple, not configurable. */
     fun outcomeWord(ruleName: String, matched: Boolean): String = when (ruleName) {

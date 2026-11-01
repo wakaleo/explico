@@ -2767,7 +2767,7 @@ class AstMapperTest {
         private fun seg(vararg names: String) = names.joinToString(",") { """{"type":"string","value":"$it"}""" }
 
         /** `lib.kube` defines `check(x)` (arity 1); `caller` imports per [importsJson] and calls [callName] with [argCount] arguments. */
-        private fun callerBody(importsJson: String, callNameJson: String, callText: String, argCount: Int): Condition {
+        private fun callerBody(importsJson: String, callNameJson: String, callText: String, argCount: Int, negated: Boolean = false): Condition {
             val lib = moduleOf(
                 """
                 {"package": {"path": [{"type":"var","value":"data"},${seg("lib", "kube")}]},
@@ -2780,7 +2780,7 @@ class AstMapperTest {
                 {"package": {"path": [{"type":"var","value":"data"},${seg("caller")}]},
                  "imports": [$importsJson],
                  "rules": [{"head": {"name": "deny", "ref": [{"type":"var","value":"deny"}]},
-                   "body": [{"index": 0, "location": {"row":1,"text":"${b64(callText)}"},
+                   "body": [{"index": 0, ${if (negated) """"negated": true, """ else ""}"location": {"row":1,"text":"${b64(callText)}"},
                      "terms": [{"type":"ref","value":[$callNameJson]}, $args]}]}]}
                 """.trimIndent()
             )
@@ -2839,7 +2839,55 @@ class AstMapperTest {
         @Test
         fun aPackageThatIsNotLoadedStaysAFallback() {
             val c = callerBody(importOf(null, "other", "pkg"), """{"type":"var","value":"pkg"},${seg("check")}""", "pkg.check(input.a1)", 1)
-            assertThat((c as Condition.Unrendered).reason).isEqualTo("function-call")
+            // Repointed (spec 14.79): still a fallback, but it now says WHY -- the called package is imported and not loaded.
+            assertThat((c as Condition.Unrendered).reason).isEqualTo("package-not-loaded")
+        }
+
+        private fun reasonOf(c: Condition) = (c as Condition.Unrendered).reason
+
+        @Test
+        fun aNegatedCallIntoAnUnloadedPackageHasTheSameReason() {
+            assertThat(reasonOf(callerBody(importOf(null, "other", "pkg"), """{"type":"var","value":"pkg"},${seg("check")}""", "not pkg.check(input.a1)", 1, negated = true)))
+                .isEqualTo("package-not-loaded")
+        }
+
+        @Test
+        fun anAsAliasToAnUnloadedPackageHasTheReason() {
+            assertThat(reasonOf(callerBody(importOf("p", "other", "pkg"), """{"type":"var","value":"p"},${seg("check")}""", "p.check(input.a1)", 1)))
+                .isEqualTo("package-not-loaded")
+        }
+
+        @Test
+        fun aBareMemberImportOfAnUnloadedPackageHasTheReason() {
+            // `import data.other.pkg.check` then `check(x)`: the member's package is other.pkg.
+            assertThat(reasonOf(callerBody(importOf(null, "other", "pkg", "check"), """{"type":"var","value":"check"}""", "check(input.a1)", 1)))
+                .isEqualTo("package-not-loaded")
+        }
+
+        @Test
+        fun aBareMemberImportOfAFunctionMissingFromALoadedPackageStaysFunctionCall() {
+            assertThat(reasonOf(callerBody(importOf(null, "lib", "kube", "missing"), """{"type":"var","value":"missing"}""", "missing(input.a1)", 1)))
+                .isEqualTo("function-call")
+        }
+
+        @Test
+        fun aParentImportWhoseCalledSubPackageIsLoadedStaysFunctionCall() {
+            // `import data.lib` then `lib.kube.missing(x)`: the called package lib.kube IS loaded, only the function is missing.
+            assertThat(reasonOf(callerBody(importOf(null, "lib"), """{"type":"var","value":"lib"},${seg("kube", "missing")}""", "lib.kube.missing(input.a1)", 1)))
+                .isEqualTo("function-call")
+        }
+
+        @Test
+        fun aParentImportWhoseCalledSubPackageIsNotLoadedHasTheReason() {
+            assertThat(reasonOf(callerBody(importOf(null, "lib"), """{"type":"var","value":"lib"},${seg("elsewhere", "check")}""", "lib.elsewhere.check(input.a1)", 1)))
+                .isEqualTo("package-not-loaded")
+        }
+
+        @Test
+        fun anArityMismatchInALoadedPackageIsNeverPackageNotLoaded() {
+            // The first import resolves to a loaded package; this is the ordinary arity fallback, not a missing package.
+            assertThat(reasonOf(callerBody(importOf(null, "lib", "kube"), """{"type":"var","value":"kube"},${seg("check")}""", "kube.check(input.a1, input.a2)", 2)))
+                .isEqualTo("function-call")
         }
 
         @Test

@@ -29,6 +29,8 @@
 - **hotfix without change ticket** — not matched
   - `deployment ▸ service`: `"payments-api"`
 
+*Showing 3 of 6 examples: at most 3 matching, then at most 2 non-matching, in file-name order.*
+
 *Examples are evaluated against this policy version by OPA at generation time.*
 
 *Rendering coverage: 1 of 1 conditions*

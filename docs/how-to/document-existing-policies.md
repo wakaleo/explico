@@ -57,6 +57,12 @@ Things to know:
 If several rules share an id (a file with many rules, or the same id in two files), add `--group-by-control` to give the control **one page**,
 `controls/<id>.md`, instead of cards scattered over package pages. `diff` needs the same flag, otherwise a shared id is an error (exit `4`).
 
+## Point explico at the whole policy tree
+
+Policies call helpers in other packages (`import data.lib.helpers`). Render the parent directory so those packages are loaded and the calls resolve; a call into a package
+that is not among the rendered policies is shown as source with the reason `package-not-loaded`. On the redhat-cop policy library, loading each policy directory on its own renders
+54% of the conditions; loading the whole tree renders 85%.
+
 ## 4. Add METADATA gradually
 
 Nothing requires METADATA. A rule without it renders from its conditions alone, with the heading `deny` and the note

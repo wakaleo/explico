@@ -20,7 +20,7 @@ fixtures must not share a `name` (exit `4`).
 java -jar explico.jar render policies --examples examples --out policy-docs
 ```
 
-Each card gains a **Worked examples** section; a card shows at most three matching and two non-matching examples, and the index's
+Each card gains a **Worked examples** section; a card shows at most three matching and two non-matching examples (a `Showing M of N examples` line says when it leaves some out), and the index's
 *Example coverage* column counts them all.
 
 - **Name the scenario, not the data.** "production database keeping backups for a week" tells a reader what is covered; "test-7" does not.

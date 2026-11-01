@@ -250,7 +250,7 @@ When you also give example fixtures (`--examples`), these findings appear, each 
   with a warning, so the control is listed until you fix it.
 
 **Shown as source.** (What to do about each: [Policies that document well](guides/policies-that-document-well.md).) When any condition could not be rendered, a bullet groups them by reason (`every`, `else-chain`, `with-override`,
-`function-call`, `helper-assignment`, `partial-rule-reference`, `comprehension`, `unclassified`, ...) with how many there are, which
+`function-call`, `package-not-loaded`, `helper-assignment`, `partial-rule-reference`, `comprehension`, `unclassified`, ...) with how many there are, which
 cards they are on with the `file:row` where each starts, and one sentence on what explico needs to render that kind of construct. It explains why, it never tells you what
 to change: a rewrite that renders can still change what the policy means, so that is your decision. Advisory, not a gap.
 
@@ -489,7 +489,7 @@ order (prefix them `01-`, `02-`, ... to control display order — the pack in
   underneath the fixture's outcome, resolved from this object — write
   fixtures that plausibly exercise the paths you actually reference.
 
-Up to 3 matching and 2 non-matching fixtures are shown per control (a fixed
+Up to 3 matching and 2 non-matching fixtures are shown per control, and the card says `Showing M of N examples` when it omits some (a fixed
 cap, filename order, not configurable) — a fixture set can have more than 5
 entries; extras beyond the cap still count toward `index.md`'s
 example-coverage column, just aren't all shown individually on every card.
