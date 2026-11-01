@@ -362,7 +362,7 @@ explico diff main-checkout/policies pr-checkout/policies --out change-report.md 
 - `diff --fail-on` — fail when a control is `ADDED`, `REMOVED`, `LOGIC_CHANGED` or `DOCS_CHANGED`, e.g. to require a human review
   of any logic change. It reports *structure*, not whether a change is stricter or looser.
 
-Library users get the same facts without the CLI: `RenderedDocs.gaps` (one worded line per gap) and `DiffReport.entries`.
+Library users get the same facts without the CLI: `RenderedDocs.gaps` (one worded line per gap) and `DiffReport.changes` (each changed control with its `category`).
 
 ## What `--data` adds to a card
 

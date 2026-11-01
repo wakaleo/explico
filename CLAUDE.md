@@ -1471,6 +1471,12 @@ candidate `input`, or NotSolvable) and `ExampleGenerator` (candidates are VERIFI
   (`https://repo1.maven.org/maven2/io/github/wakaleo/explico/<ver>/explico-<ver>.jar`) vs `./gradlew jar`, ignoring `internal` classes. Generated
   `copy()` changes are an accepted pre-1.0 cost (noted in the CHANGELOG), not worth hand-written overloads.
 
+## What is stable in the model (spec §14.80 step 4)
+
+`@ExplicoStructuralModel` (a `RequiresOptIn` at WARNING level) marks the structural model: the 22 types in `model/Model.kt` other than `RegoVersion`/`PolicySet`/`PolicyPackage`, `DiffEntry`, and the properties through which stable classes expose them (`PolicyPackage.rules`, `.metadata`, `.unpublishedComments`, `DiffReport.entries`). `StructuralModelAnnotationTest` pins the exact set and fails when a top-level class appears in `io.explico.model` unclassified: classify it consciously (structural = annotate it; stable = add it to that test's stable list).
+- The library opts in itself (`optIn.add(...)` in `build.gradle.kts`'s `kotlin { compilerOptions }`, which reaches main, test and docsSnippets); a clean compile must show ZERO marker warnings. Kotlin propagates the requirement to NESTED subtypes of a marked sealed interface (verified with a consumer build, qualified or imported directly), so they need no annotation.
+- `DiffReport.changes` is a PROJECTION: `diff/ChangedSet` decides the changed entries, their order, labels and anchors ONCE, and both `DiffJson` and `Explico.diff` read it. Never compute a label or anchor for `DiffChange` anywhere else. A new field on `DiffChange` is a new field in the diff JSON's change object, and needs a schema decision.
+
 ## JSON output (spec §14.45)
 
 - `render/JsonExport.kt` and `diff/DiffJson.kt` build `explico.json` / `DiffReport.json`. They must stay a *projection of what the Markdown already uses*:

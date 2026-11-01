@@ -6,6 +6,7 @@
 package io.explico.diff
 
 import io.explico.ExplicoException
+import io.explico.ExplicoStructuralModel
 import io.explico.model.PolicyPackage
 import io.explico.model.PolicySet
 import io.explico.model.RuleGroup
@@ -19,6 +20,7 @@ public enum class DiffCategory { ADDED, REMOVED, LOGIC_CHANGED, DOCS_CHANGED, UN
  * possibly under a different package or rule name than each other, when a control-id-preserving
  * rename is what ties them together (spec §7.1: control-id wins over name matching).
  */
+@ExplicoStructuralModel
 public data class DiffEntry(
     val category: DiffCategory,
     val controlId: String?,
