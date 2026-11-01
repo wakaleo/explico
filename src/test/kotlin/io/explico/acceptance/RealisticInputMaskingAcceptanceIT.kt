@@ -7,7 +7,7 @@
  * - PATHS: dotted paths inside the fixture input, no `input.` prefix (a dot separates keys, as in the other projections), `[]` for every element of an array
  *   (`people[].email`); a string or number found there is masked, an object or array there whole; a path that is absent is ignored.
  * - FAIL CLOSED: a malformed declaration would otherwise leak the very values it was written to hide, so it is NOT ignored with a warning like the other
- *   projections: `Explico.render` throws `IllegalArgumentException` naming `custom.mask` and the rule, before any opa work.
+ *   projections: `Explico.render` throws `InvalidMaskException` (an `ExplicoException`; it was an `IllegalArgumentException` before 1.0) naming `custom.mask` and the rule, before any opa work.
  * - `mask` is a reserved `custom` key (no longer shown in the card's `*Custom:*` line), is echoed in `explico.json` as the rule's `mask` list, and editing it is a
  *   documentation change in `diff`. Masking is per rule: a rule that declares none shows its values.
  * Markup (decided here, to be confirmed): the marker is `***`; in a code span (path value, remediation label) and in the JSON it is written as is, inside an italic
@@ -164,11 +164,11 @@ class RealisticInputMaskingAcceptanceIT {
     inner class Malformed {
 
         @Test
-        @DisplayName("a scalar instead of a list is an IllegalArgumentException naming custom.mask and the rule, before any opa work")
+        @DisplayName("a scalar instead of a list is an InvalidMaskException (an ExplicoException) naming custom.mask and the rule, before any opa work")
         fun scalar() {
             val dir = base.resolve("malformed-scalar")
             val set = Explico.load(dir)
-            assertThatThrownBy { Explico.render(set) }.isInstanceOf(IllegalArgumentException::class.java)
+            assertThatThrownBy { Explico.render(set) }.isInstanceOf(io.explico.ExplicoException::class.java)
                 .hasMessageContaining("custom.mask").hasMessageContaining("badmask.leaky")
         }
 
@@ -177,7 +177,7 @@ class RealisticInputMaskingAcceptanceIT {
         fun badEntry() {
             val dir = base.resolve("malformed-entry")
             val set = Explico.load(dir)
-            assertThatThrownBy { Explico.render(set) }.isInstanceOf(IllegalArgumentException::class.java)
+            assertThatThrownBy { Explico.render(set) }.isInstanceOf(io.explico.ExplicoException::class.java)
                 .hasMessageContaining("custom.mask").hasMessageContaining("badentry.leaky")
         }
     }

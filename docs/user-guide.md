@@ -208,7 +208,7 @@ object Explico {
   locate. A set built by hand has no `sourceDir` and cannot be rendered. Note that `sourceDir` is part of the set's equality: two loads of
   copies of one directory are unequal sets with equal `packages`.
 - **`loadExamples(dir)`** — loads `*.json` fixtures from `dir`, in filename
-  order. Throws `io.explico.render.DuplicateFixtureNameException` (public)
+  order. Throws `io.explico.render.DuplicateFixtureNameException`
   if two fixtures share a `name`.
 - **`render(policies, options = RenderOptions())`** — the options are `RenderOptions(examples, dataDir, generateExamples, json, requirements, sourceUrl, controlId: ControlIdOptions?, groupByControl, companion: CompanionLink?, required)`, every one defaulting to "not asked"; Java uses `RenderOptions.builder()`. Returns
   `RenderedDocs(files: Map<String, String>, coverage: CoverageSummary,
@@ -218,13 +218,13 @@ object Explico {
   then `rulesWithExamples` of `rulesConsidered`. `json = true` also adds `explico.json` to `files`
   (see [`json-output.md`](json-output.md)); `requirements: List<String>` adds the *Requirements coverage* section (see
   *Keeping your documentation complete* in [`policy-authoring.md`](policy-authoring.md)). `RenderedDocs.gaps` is always filled: one line
-  per documentation gap, worded once for every consumer (empty when the documentation is complete). `RenderedDocs.findings` is the advisory counterpart: one line per kind of finding the index's *Documentation quality* section shows (`2 controls have no description`), in its order, empty when the section is absent; nothing fails on it. `controlId = ControlIdOptions(from, template)` is the `--control-id-from` / `--control-id-template` options, and `companion = CompanionLink(url, label)` is `--companion-url` / `--companion-label`; an invalid value throws `IllegalArgumentException` before any `opa` work; so does a rule whose `custom.mask` is malformed (see *Keeping values out of the documentation* in [`policy-authoring.md`](policy-authoring.md)). `groupByControl = true` is `--group-by-control`: `files` then also holds `controls/<slug>.md` pages, so **a caller writing the files must create parent directories** (the snippets below do).
+  per documentation gap, worded once for every consumer (empty when the documentation is complete). `RenderedDocs.findings` is the advisory counterpart: one line per kind of finding the index's *Documentation quality* section shows (`2 controls have no description`), in its order, empty when the section is absent; nothing fails on it. `controlId = ControlIdOptions(from, template)` is the `--control-id-from` / `--control-id-template` options, and `companion = CompanionLink(url, label)` is `--companion-url` / `--companion-label`; an invalid value throws `IllegalArgumentException` before any `opa` work; a rule whose `custom.mask` is malformed throws `InvalidMaskException`, an `ExplicoException` (see *Keeping values out of the documentation* in [`policy-authoring.md`](policy-authoring.md)). `groupByControl = true` is `--group-by-control`: `files` then also holds `controls/<slug>.md` pages, so **a caller writing the files must create parent directories** (the snippets below do).
 - **`diff(old, new, options = DiffOptions())`** — the options are `DiffOptions(groupByControl, data: DataVersions?, examples, labels: VersionLabels?, digests)`; Java uses `DiffOptions.builder()`. `data` compares the reference data of the two versions, `examples` evaluates the same fixtures against both, and the report's **Compared** block (the `sha256:` digests of the two policy directories, as in `index.md`) appears only with `digests = true` or `labels` — the CLI always asks for it. Examples, labels and digests read the sets' `sourceDir`, so they need sets from `Explico.load`. Returns `DiffReport(entries: List<DiffEntry>,
   markdown: String, json: String)`. Each `DiffEntry` carries its `category`
   (`DiffCategory`: `ADDED`/`REMOVED`/`LOGIC_CHANGED`/`DOCS_CHANGED`/`UNCHANGED`),
   `controlId`, and the old/new `PolicyPackage`+`RuleGroup` (null on the
   absent side for `ADDED`/`REMOVED`). Throws
-  `io.explico.diff.DuplicateControlIdException` (public) if either side has
+  `io.explico.diff.DuplicateControlIdException` if either side has
   two rules sharing a control-id -- unless `DiffOptions(groupByControl = true)` (the
   `--group-by-control` option), which allows a shared id and gives each of its rules its own
   entry (identified by control id, package and rule); it still throws for two rules of one
@@ -232,21 +232,41 @@ object Explico {
 
 ### Exceptions a library consumer can catch by type
 
-Only two exception types are part of the public API surface and importable
-outside the module:
+Every failure you are meant to handle extends one public base, `io.explico.ExplicoException` (a `RuntimeException`), so a single `catch` covers them all and the subclass says which:
 
-- `io.explico.render.DuplicateFixtureNameException` (has a `name: String`)
-- `io.explico.diff.DuplicateControlIdException` (has a `controlIds: List<String>`)
+| Class | Package | Raised when | Carries | CLI exit |
+|---|---|---|---|---|
+| `OpaFailedException` | `io.explico` | `opa` ran and rejected the input, e.g. a Rego syntax error | `exitCode` (opa's own; `-1` if it did not finish in time), `stderr` (opa's text, also the message) | `2` |
+| `OpaNotAvailableException` | `io.explico` | `opa` is missing, cannot be run, or is not 1.x | the message names the binary and says to install opa 1.x or set `OPA_BIN`; `cause` is the launch `IOException` | `3` |
+| `DuplicateControlIdException` | `io.explico.diff` | `diff` finds a control id shared by two rules | `controlIds` | `4` |
+| `DuplicateFixtureNameException` | `io.explico.render` | two example fixtures share a `name` | `name` | `4` |
+| `InvalidMaskException` | `io.explico.render` | a rule's `custom.mask` is malformed (a render refuses rather than show the values it was meant to hide) | the message lists every offending rule | `1` |
+| `OutputDirectoryException` | `io.explico` | `writeTo` refuses an output path | `path` | `1` |
 
-Everything else `load`/`render`/`diff` might throw (most commonly a Rego
-syntax error, or `opa` being missing/incompatible) comes from an `internal`
-exception type — not importable by name from outside the module, since it's
-not part of the deliberately small public API surface (spec §8.1: "Everything
-else is `internal`"). A consumer can still catch it generically
-(`catch (e: RuntimeException)`) and inspect `e.message`, which always
-contains `opa`'s own stderr verbatim for a parse failure, or an actionable
-description for a missing/incompatible `opa` binary — the same messages the
-CLI itself prints.
+Two things are deliberately **not** `ExplicoException`s: an invalid *argument* (a bad URL template, control-id pattern, label or required property, or rendering a `PolicySet` that was not loaded by `Explico.load`) is an `IllegalArgumentException`, and a file-system problem (a policy directory that does not exist) is the file system's own `IOException`.
+
+```kotlin
+try {
+    val docs = Explico.render(Explico.load(dir), RenderOptions(examples = examples))
+    docs.writeTo(outDir)
+} catch (e: OpaNotAvailableException) {
+    // install opa 1.x or set OPA_BIN
+} catch (e: OpaFailedException) {
+    System.err.println("opa rejected the policies (exit ${e.exitCode}):\n${e.stderr}")
+} catch (e: ExplicoException) {
+    // any other expected failure: a duplicate id, a malformed mask, a refused output path
+}
+```
+
+```java
+try {
+    Explico.render(Explico.load(dir)).writeTo(outDir);
+} catch (OpaFailedException e) {
+    System.err.println("opa rejected the policies (exit " + e.getExitCode() + "):\n" + e.getStderr());
+} catch (ExplicoException e) {
+    // everything else a caller is expected to handle
+}
+```
 
 ### Domain model
 

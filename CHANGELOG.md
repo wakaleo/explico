@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **BREAKING (library): one exception base.** Everything a library consumer is meant to catch now extends the public `io.explico.ExplicoException`: `OpaFailedException(exitCode, stderr)` (opa rejected the input, e.g. a Rego syntax error), `OpaNotAvailableException` (opa missing, unrunnable or not 1.x -- `Explico.load` used to surface a raw `IOException` for a missing binary), `OutputDirectoryException`, `DuplicateControlIdException`, `DuplicateFixtureNameException` and `InvalidMaskException` (now public). The internal opa exceptions are gone. **`InvalidMaskException` is no longer an `IllegalArgumentException`**: catch `ExplicoException` (or the class itself). An invalid argument is still an `IllegalArgumentException` and a missing directory an `IOException`. The CLI's messages and exit codes are unchanged; it now maps the exception type to the code in one place. Before / after:
+  ```kotlin
+  try { Explico.render(set, options) } catch (e: IllegalArgumentException) { /* a malformed mask, but also every bad option */ } catch (e: RuntimeException) { /* opa failures: internal types, message only */ }
+  try { Explico.render(set, options) } catch (e: OpaFailedException) { e.exitCode; e.stderr } catch (e: ExplicoException) { /* mask, duplicates, refused output */ }
+  ```
+  Tests: three assertions about the mask exception changed type only (`InputMaskTest`, two in `RealisticInputMaskingAcceptanceIT`); five tests renamed the opa exception they throw or expect.
+
 - **BREAKING (library): options objects.** `Explico.render` took 14 positional parameters and `Explico.diff` 10; both now take the policy set(s) and one options object, and a loaded `PolicySet` remembers its directory (`sourceDir`), so the directory parameters are gone. The old forms are removed, not deprecated. Before:
   ```kotlin
   Explico.render(set, dir, examples, data, generateExamples = false, json = true, controlIdFrom = "ctrl_(?<id>\\d+)", controlIdTemplate = "CTRL-{id}")

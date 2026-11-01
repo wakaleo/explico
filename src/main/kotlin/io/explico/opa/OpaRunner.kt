@@ -5,20 +5,22 @@ package io.explico.opa
 
 import io.explico.model.RegoVersion
 import kotlinx.serialization.json.JsonElement
+import io.explico.OpaFailedException
+import io.explico.OpaNotAvailableException
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
-/** A non-zero exit from an `opa` invocation. [stderr] is opa's own stderr text, passed through verbatim. */
-internal class OpaInvocationException(val stderr: String) : RuntimeException(stderr)
-
-/** `opa` is missing or its version is incompatible (spec §4: requires major version 1). */
-internal class OpaUnavailableException(message: String) : RuntimeException(message)
-
 internal object OpaRunner {
-    private const val TIMEOUT_SECONDS = 30L
+    private const val DEFAULT_TIMEOUT_SECONDS = 30L
+
+    /** How long one `opa` invocation may run before it is stopped. Settable only so a test can prove the timeout path without waiting the full default. */
+    var timeoutSeconds: Long = DEFAULT_TIMEOUT_SECONDS
     private const val REQUIRED_MAJOR_VERSION = 1
+
+    /** The [OpaFailedException.exitCode] when opa did not finish in time and was stopped: it has no exit code of its own. */
+    const val TIMED_OUT_EXIT_CODE = -1
 
     /**
      * Set once per process by `explico demo --fetch-opa` (spec §13.2) after a successful download,
@@ -33,16 +35,16 @@ internal object OpaRunner {
     /** True if the resolved binary runs and reports major version 1. */
     fun isAvailable(): Boolean = detectedMajorVersion() == REQUIRED_MAJOR_VERSION
 
-    /** Throws [OpaUnavailableException] with an actionable message if [isAvailable] is false. */
+    /** Throws [OpaNotAvailableException] with an actionable message if [isAvailable] is false. */
     fun requireCompatibleVersion() {
-        if (!isAvailable()) {
-            throw OpaUnavailableException(
-                "explico requires opa version $REQUIRED_MAJOR_VERSION.x, but it could not be run " +
-                    "(resolved binary: '${resolveBinary()}'). Install opa $REQUIRED_MAJOR_VERSION.x " +
-                    "and ensure it is on PATH, or set the OPA_BIN environment variable to its path."
-            )
-        }
+        if (!isAvailable()) throw OpaNotAvailableException(unavailableMessage())
     }
+
+    /** The one actionable message for a missing or incompatible opa: the binary tried, the version needed, and how to point explico at one. */
+    private fun unavailableMessage(): String =
+        "explico requires opa version $REQUIRED_MAJOR_VERSION.x, but it could not be run " +
+            "(resolved binary: '${resolveBinary()}'). Install opa $REQUIRED_MAJOR_VERSION.x " +
+            "and ensure it is on PATH, or set the OPA_BIN environment variable to its path."
 
     /** Runs `opa parse --format json --json-include locations <file>` and decodes the module AST. */
     fun parse(file: Path, regoVersion: RegoVersion = RegoVersion.V1): OpaModule {
@@ -115,9 +117,9 @@ internal object OpaRunner {
     private fun detectedMajorVersion(): Int? {
         val output = try {
             run("version")
-        } catch (e: OpaInvocationException) {
+        } catch (e: OpaFailedException) {
             return null
-        } catch (e: java.io.IOException) {
+        } catch (e: OpaNotAvailableException) {
             return null
         }
         val versionLine = output.lineSequence().firstOrNull { it.startsWith("Version:") } ?: return null
@@ -127,7 +129,12 @@ internal object OpaRunner {
     /** Invokes `opa` with [args], capturing stdout/stderr separately under a 30s timeout. */
     private fun run(vararg args: String): String {
         val command = listOf(resolveBinary()) + args
-        val process = ProcessBuilder(command).start()
+        // A binary that cannot even be launched (missing, not executable) is "opa is not available", whatever the library call that needed it.
+        val process = try {
+            ProcessBuilder(command).start()
+        } catch (e: java.io.IOException) {
+            throw OpaNotAvailableException(unavailableMessage(), e)
+        }
 
         val stdout = StringBuilder()
         val stderr = StringBuilder()
@@ -136,14 +143,12 @@ internal object OpaRunner {
         stdoutReader.start()
         stderrReader.start()
 
-        val finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        val finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
         if (!finished) {
             process.destroyForcibly()
             stdoutReader.join(TimeUnit.SECONDS.toMillis(1))
             stderrReader.join(TimeUnit.SECONDS.toMillis(1))
-            throw OpaInvocationException(
-                "opa invocation timed out after ${TIMEOUT_SECONDS}s: ${command.joinToString(" ")}"
-            )
+            throw OpaFailedException(TIMED_OUT_EXIT_CODE, "opa invocation timed out after ${timeoutSeconds}s: ${command.joinToString(" ")}")
         }
         stdoutReader.join()
         stderrReader.join()
@@ -152,7 +157,7 @@ internal object OpaRunner {
             // `opa eval --format json` reports an evaluation error as JSON on STDOUT and leaves stderr empty, so fall back
             // to stdout, and finally to the bare exit code: never an empty message.
             val message = stderr.toString().ifBlank { stdout.toString().trim() }.ifBlank { "opa exited with code ${process.exitValue()}" }
-            throw OpaInvocationException(message)
+            throw OpaFailedException(process.exitValue(), message)
         }
         return stdout.toString()
     }

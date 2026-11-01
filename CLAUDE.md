@@ -1747,3 +1747,10 @@ the call site as plain `unrenderedAt(loc, "reason")` calls, not an inline `if`).
 - THE DIFF HEADER: the `**Compared**` block only with `digests = true` or `labels`; the default must stay byte-identical (the `diff-all-categories` golden pins it). The CLI passes `digests = true`. Do not make the block depend on `sourceDir` being set.
 - Impossible states are unrepresentable on purpose (data versions, a link label without a link, a template without a pattern); validation of the rest stays in `renderPolicies`/`diff` BEFORE any opa work, and version labels are validated before the directories are required.
 - `VersionLabels` sides are nullable: one `--old-label` alone is a supported call.
+
+## The exception family (spec §14.80 step 3)
+
+`ExplicoException` (public, `Exceptions.kt`) is the ONE base of everything a library consumer is meant to catch: `OpaFailedException(exitCode, stderr)`, `OpaNotAvailableException`, `OutputDirectoryException`, `DuplicateControlIdException`, `DuplicateFixtureNameException`, `InvalidMaskException`. The family is CLOSED: `ExceptionHierarchyTest` scans the compiled classes and fails on a seventh. A new member needs an entry there, a branch in `cli/ExitCodes.kt` (`exitCodeOf`, plus `messageOf` if its wording differs), the table in `docs/user-guide.md` and the exit-code table in `docs/guides/ci-recipes.md`.
+- An invalid ARGUMENT stays `IllegalArgumentException`, a file-system problem stays `IOException`: neither is an `ExplicoException`. `Main.kt` catches `ExplicoException` BEFORE `IllegalArgumentException`, one catch per command; do not add per-type ladders back.
+- `OpaRunner` is the only thrower of the opa pair: a launch failure is `OpaNotAvailableException` (cause kept), a non-zero exit `OpaFailedException` with the real code. `OpaRunner.timeoutSeconds` and `binaryOverride` are test seams only; the `fake-opa` shell scripts in `OpaRunnerChallengeTest` are how to exercise a failing binary without opa.
+- `WorkedExamples` catches `OpaFailedException` to skip a fixture whose evaluation fails (stderr warning, fixture excluded): keep it narrow, never catch `ExplicoException` there.

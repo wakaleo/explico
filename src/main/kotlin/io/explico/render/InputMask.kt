@@ -9,6 +9,8 @@
  */
 package io.explico.render
 
+import io.explico.ExplicoException
+
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -159,5 +161,8 @@ internal object ExampleMasking {
     fun italic(text: String, active: Boolean): String = if (active) text.replace("***", "\\*\\*\\*") else text
 }
 
-/** A rule's `custom.mask` is malformed (spec §14.61): the render refuses rather than show the values it was written to hide. An [IllegalArgumentException] so a library caller needs no new type; the CLI reports it as exit 1. */
-internal class InvalidMaskException(message: String) : IllegalArgumentException(message)
+/**
+ * A rule's `custom.mask` is malformed (spec §14.61): the render refuses rather than show the values it was written to hide. The message lists every offending rule. An [io.explico.ExplicoException]
+ * (the CLI reports it as exit 1), and since 1.0 no longer an [IllegalArgumentException]: one base for every failure a caller catches by type.
+ */
+public class InvalidMaskException(message: String) : ExplicoException(message)

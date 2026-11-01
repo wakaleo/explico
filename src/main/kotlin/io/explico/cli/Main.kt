@@ -23,22 +23,19 @@ import io.explico.ControlIdOptions
 import io.explico.DataVersions
 import io.explico.DiffOptions
 import io.explico.Explico
+import io.explico.ExplicoException
+import io.explico.OpaNotAvailableException
 import io.explico.OutputDirectoryException
 import io.explico.OutputGuard
 import io.explico.OutputWriter
 import io.explico.RenderOptions
 import io.explico.VersionLabels
-import io.explico.diff.DuplicateControlIdException
 import io.explico.model.RegoVersion
 import io.explico.opa.OpaFetcher
-import io.explico.opa.OpaInvocationException
 import io.explico.opa.OpaRunner
-import io.explico.opa.OpaUnavailableException
 import io.explico.render.CompanionLinks
 import io.explico.render.RequiredSet
 import io.explico.render.ControlIdFromFilename
-import io.explico.render.DuplicateFixtureNameException
-import io.explico.render.InvalidMaskException
 import io.explico.render.PlainLabel
 import io.explico.render.SourceLinks
 import java.nio.file.Files
@@ -170,15 +167,9 @@ private class RenderCommand : CliktCommand(name = "render") {
                 if (failOnGaps) Gates.failOnGaps(rendered.gaps) else null,
             )
             if (failures.isNotEmpty()) failWith(Gates.EXIT_GATE_FAILED, failures.joinToString("\n"))
-        } catch (e: OpaInvocationException) {
-            failWith(2, e.stderr)
-        } catch (e: DuplicateFixtureNameException) {
-            failWith(4, e.message ?: "duplicate fixture name")
-        } catch (e: OutputDirectoryException) {
-            failWith(1, e.message ?: "refusing to write the output")
-        } catch (e: InvalidMaskException) {
-            // Spec §14.61: a malformed custom.mask is refused, never ignored; nothing has been written yet.
-            failWith(1, e.message ?: "invalid custom.mask")
+        } catch (e: ExplicoException) {
+            // One place maps the family to exit codes (spec §14.80 step 3). Includes a malformed custom.mask (spec §14.61), refused rather than ignored: nothing has been written yet.
+            failWith(exitCodeOf(e), messageOf(e, "render"))
         } catch (e: IllegalArgumentException) {
             // e.g. --require fixture with an examples directory that holds no fixture (spec §14.64); the library words it, nothing has been written yet.
             failWith(1, e.message ?: "invalid option")
@@ -257,14 +248,8 @@ private class DiffCommand : CliktCommand(name = "diff") {
                 if (failOnExampleChanges) Gates.failOnExampleChanges(report.exampleChanges, report.exampleComparison) else null,
             )
             if (gateMessages.isNotEmpty()) failWith(Gates.EXIT_GATE_FAILED, gateMessages.joinToString("\n"))
-        } catch (e: OpaInvocationException) {
-            failWith(2, e.stderr)
-        } catch (e: OutputDirectoryException) {
-            failWith(1, e.message ?: "refusing to write the report")
-        } catch (e: DuplicateFixtureNameException) {
-            failWith(4, e.message ?: "duplicate fixture name")
-        } catch (e: DuplicateControlIdException) {
-            failWith(4, (e.message ?: "duplicate control-id") + " -- if one control is split over several rules on purpose, pass --group-by-control to diff each rule separately")
+        } catch (e: ExplicoException) {
+            failWith(exitCodeOf(e), messageOf(e, "diff"))
         }
     }
 }
@@ -327,8 +312,8 @@ private class DemoCommand : CliktCommand(name = "demo") {
 
             echo("Rendered ${rendered.files.size} documents to $outDir/ (${rendered.coverage.percent}% coverage).")
             echo("Open ${outDir.resolve("release-approvals.md")} to see a rendered control card.")
-        } catch (e: OpaInvocationException) {
-            failWith(2, e.stderr)
+        } catch (e: ExplicoException) {
+            failWith(exitCodeOf(e), messageOf(e, "demo"))
         }
     }
 
@@ -351,8 +336,8 @@ private class DemoCommand : CliktCommand(name = "demo") {
 private fun CliktCommand.requireOpaOrExit() {
     try {
         OpaRunner.requireCompatibleVersion()
-    } catch (e: OpaUnavailableException) {
-        failWith(3, e.message ?: "opa is not available")
+    } catch (e: OpaNotAvailableException) {
+        failWith(exitCodeOf(e), messageOf(e, "opa"))
     }
 }
 

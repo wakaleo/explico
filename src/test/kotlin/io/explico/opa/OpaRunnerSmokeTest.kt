@@ -5,6 +5,7 @@
  */
 package io.explico.opa
 
+import io.explico.OpaFailedException
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -104,7 +105,7 @@ class OpaRunnerSmokeTest {
         Files.writeString(inputFile, "{}")
         try {
             org.assertj.core.api.Assertions.assertThatThrownBy { OpaRunner.eval(inputFile, listOf(policiesDir), "data.release.approvals ===") }
-                .isInstanceOf(OpaInvocationException::class.java)
+                .isInstanceOf(OpaFailedException::class.java)
         } finally {
             Files.deleteIfExists(inputFile)
         }
@@ -116,7 +117,7 @@ class OpaRunnerSmokeTest {
         Files.writeString(invalid, "package broken\n\nthis is not valid rego {{{")
         try {
             org.assertj.core.api.Assertions.assertThatThrownBy { OpaRunner.parse(invalid) }
-                .isInstanceOf(OpaInvocationException::class.java)
+                .isInstanceOf(OpaFailedException::class.java)
         } finally {
             Files.deleteIfExists(invalid)
         }

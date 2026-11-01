@@ -9,7 +9,7 @@ import io.explico.Explico
 import io.explico.DataVersions
 import io.explico.DiffOptions
 import io.explico.model.RegoVersion
-import io.explico.opa.OpaInvocationException
+import io.explico.OpaFailedException
 import io.explico.opa.OpaRunner
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -149,6 +149,6 @@ class DataAwareDiffChallengeTest {
         val set = Explico.load(dir.resolve("p"))
 
         assertThatThrownBy { Explico.diff(set, set, DiffOptions(data = DataVersions(dir.resolve("good.json"), dir.resolve("bad.json")))) }
-            .isInstanceOf(OpaInvocationException::class.java)
+            .isInstanceOf(OpaFailedException::class.java)
     }
 }
