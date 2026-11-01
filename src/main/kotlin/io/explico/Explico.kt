@@ -97,13 +97,12 @@ public data class DiffReport @JvmOverloads constructor(
     val changes: List<io.explico.diff.DiffChange> = emptyList(),
 ) {
     /**
-     * Writes [markdown] to [file], creating its parent directories and replacing a regular file (spec §14.80 step 1). An existing directory is refused whatever [force] says (it
-     * would mean `--out` pointing at a directory); no marker is written. [force] is accepted for symmetry with [RenderedDocs.writeTo]; a file needs no forcing.
+     * Writes [markdown] to [file], creating its parent directories and replacing a regular file (spec §14.80 step 1). An existing directory is refused (it would mean `--out`
+     * pointing at a directory), and nothing can force it; no marker is written. A file needs no `force`, unlike [RenderedDocs.writeTo] which can replace a directory.
      *
      * @throws OutputDirectoryException when [file] is an existing directory.
      */
-    @JvmOverloads
-    public fun writeTo(file: Path, @Suppress("UNUSED_PARAMETER") force: Boolean = false) {
+    public fun writeTo(file: Path) {
         OutputWriter.writeFile(file, markdown)
     }
 }
