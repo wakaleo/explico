@@ -174,6 +174,8 @@ val generateSampleDocs = tasks.register<JavaExec>("generateSampleDocs") {
     args = listOf(
         "render", "samples/policies",
         "--out", "docs/sample-output",
+        // This task owns the directory (spec §14.80): --force lets the first run adopt a directory that predates the .explico-output marker.
+        "--force",
         "--examples", "samples/examples",
         "--data", "samples/data/release/data.json",
     )
@@ -224,7 +226,7 @@ val showcaseRenderTasks = showcaseExamples.keys.sorted().map { name ->
         mainClass.set("io.explico.cli.MainKt")
         val dataFile = file("samples/showcase/$name/data/data.json")
         args = listOf("render", "samples/showcase/$name/policies",
-            "--out", "build/showcase/$name",
+            "--out", "build/showcase/$name", "--force", // build/ output of an older build may predate the marker (spec §14.80)
             "--examples", "samples/showcase/$name/examples") +
             (if (dataFile.exists()) listOf("--data", dataFile.path) else emptyList())
     }

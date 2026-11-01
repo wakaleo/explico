@@ -615,7 +615,7 @@ explico demo [--fetch-opa]                  # §13.2
 - Exit codes: `0` success · `1` usage error · `2` Rego parse error (opa stderr
   passed through) · `3` opa binary missing/incompatible · `4` duplicate control-ids ·
   `5` a CI gate failed (§14.47).
-- `--out` contents are fully replaced (delete stale files from previous runs).
+- `--out` is replaced: stale files from previous runs go (§14.80 step 1: only a directory that is missing, empty or holds the `.explico-output` marker; otherwise refused unless `--force`; some targets are never allowed).
 
 ---
 
@@ -2287,7 +2287,7 @@ The `details` of a LOGIC_CHANGED change in the diff JSON were English sentences,
 - **One source.** `ChangeSummary.factsFor` builds the typed facts FIRST and every sentence (the "What changed" lines, the Markdown, the JSON `details`) is rendered FROM its fact by the `ChangeFact` factories, so a consumer who filters on `kind` and a person who reads the sentence cannot disagree. `Situations.facts` is the typed form of `Situations.bullets` (kept as its sentences). No hierarchy: an enum and one flat data class.
 - **Unchanged.** The Markdown report (every golden), `details`, `fields`, `examples`, `compared`, and the library API (`DiffReport.json` only).
 
-### 14.79 Report clarity: removed rules and unloaded packages (B pending)
+### 14.79 Report clarity: removed rules, unloaded packages, omitted examples
 
 - **A. A removed rule without a control id is a rule.** `DiffRenderer`'s REMOVED notice reads `**⚠ This control has been removed.**` for an entry with a control id and `**⚠ This rule has been removed.**` for any other (a helper such as `is_exempt`, which is not a control). Nothing else changes.
 - **C. `package-not-loaded`.** A condition-level CALL whose function cannot be found because the package it names -- through an `import data...` (alias or `as`, a sub-package path, or a bare `fn` imported by name) -- is not among the loaded policies has the fallback reason `package-not-loaded`, with the sentence "needs a package that is imported but not among the rendered policies; render it together with these policies to resolve it". Decided in `AstMapper.callsUnloadedPackage` from the mapper's own import resolution: the called package is the import path plus any middle segments (or the import path minus its last segment for a member import), and it must not be a key of the loaded-package registry. An unknown function in a LOADED package, an arity mismatch, a built-in and a name that is not an import keep `function-call`. Coverage is unchanged (still a fallback).
@@ -2295,3 +2295,55 @@ The `details` of a LOGIC_CHANGED change in the diff JSON were English sentences,
 - **Measured** on redhat-cop/rego-policies (Rego v0, one directory at a time): all 35 `function-call` fallbacks (`openshift.*`, `kubernetes.*`) become `package-not-loaded`; the 58 `unclassified` are unchanged.
 - **B. A card says why only some examples are shown.** `WorkedExamples.select` lists at most `MAX_MATCHING` (3) matching then `MAX_NON_MATCHING` (2) non-matching outcomes. When the card has more outcomes than it lists (N = `WorkedExamples.forGroup`, what the index's Example coverage counts; M = the listed count), `WorkedExamples.shownNote` gives one italic line after the list and before the provenance footer: `*Showing M of N examples: at most 3 matching, then at most 2 non-matching, in file-name order.*` (the numbers come from the constants, so the sentence cannot drift from the rule). No line when everything is listed or there is nothing to list; the grouped control page prints one per member card (same function); generated examples and diff cards are untouched. The JSON gains nothing: `workedExamples` already lists every outcome, so N is its length (a separate `workedExamplesTotal` key was tried and dropped in review as redundant). **Operator-approved golden change:** 7 cards of the sample pack gain the line, so the five Tier-2 pack documents (`release-approvals`, `release-evidence`, `release-exemptions`, `release-governance`, `release-provenance`), the same five `docs/sample-output` pages and the README's REL-001 excerpt changed by exactly that line (14 inserted lines per tree, 7 notes and 7 blanks); `index.md`, the diff goldens and `docs/showcase` did not move.
 
+
+### 14.80 The 1.0 API and CLI freeze (design; operator decisions of 2026-11-01)
+
+The surface a 1.0 promises is decided here, then built in the order below, each step through `/accept` -> `/tdd` -> `/review`. **No backward compatibility is kept**: the pre-1.0 names and
+signatures are removed, not aliased or deprecated (operator decision), and the docs, snippets and tests move with them. Findings that led here: the review of 2026-11-01 (inventory by `javap`
+of the 0.4.0 jar and `--help`).
+
+**Step 1 -- the output-directory guard (a data-loss bug). BUILT** (`OutputDirectory.kt`: `OutputGuard` decides, purely, and `OutputWriter` is the one place output is deleted or written; `RenderedDocs.writeTo(dir, force, protect)`, `DiffReport.writeTo(file, force)`, the CLI's `render`/`diff`/`demo`). As built: the marker is written first (an interrupted run leaves a directory the next run may replace) and is not in `RenderedDocs.files`; refusals are one line naming the path as given (`not empty` + `--force`; `input`; `home directory`; `working directory`; `filesystem root`; `not a directory`; `is a directory`); order of the hard checks is root, home, working directory, inputs; a directory holding only a dotfile is non-empty (strict); output INSIDE an input directory is allowed; a symlinked `--out` is replaced at its target. The CLI checks before opa is needed (exit 1, not 3) and deletes nothing until the final write (exit 3 deletes nothing). `diff --force` is accepted and has no effect. The repo's own generators (`generateSampleDocs`, `renderShowcase_*`) pass `--force`. `render --out DIR` deleted `DIR` recursively with no check; `--out` set to a directory holding the policies deleted them (reproduced).
+- Every directory explico writes gets a marker file `.explico-output` (fixed content: one line naming the tool; no version, no time). The library owns the guarded write:
+  `RenderedDocs.writeTo(dir: Path)` and `DiffReport.writeTo(file: Path)` (the CLI calls them; no second implementation).
+- `writeTo` deletes and recreates `DIR` only when `DIR` does not exist, is empty, or contains the marker. A non-empty directory without the marker is refused (`OutputDirectoryException`, an
+  `ExplicoException`, CLI exit 1, nothing deleted) unless `force = true` (`--force`).
+- Refused even with `--force`: a directory that IS or CONTAINS (by real path) the policy, examples, data or old/new directory, the current working directory or one of its parents, the user's
+  home directory or one of its parents, a filesystem root. `diff --out` is a file: it refuses to overwrite a directory, and to overwrite a file that is not a regular file.
+- A refused write prints one stderr line naming the directory and the reason, and the exit code is 1 (usage error); no partial side effects.
+
+**Step 2 -- options objects.** `Explico.render(policies: PolicySet, options: RenderOptions = RenderOptions())` and `Explico.diff(old: PolicySet, new: PolicySet, options: DiffOptions = DiffOptions())`
+replace the 14- and 10-parameter forms entirely (and their `@JvmOverloads` chains).
+- `PolicySet` gains `sourceDir: Path` (last field, defaulted by the loader), so `policyDir`/`oldPolicyDir`/`newPolicyDir` are no longer parameters.
+- `RenderOptions(examples: ExampleSet?, dataDir: Path?, generateExamples, json, requirements: List<String>, sourceUrl: String?, controlId: ControlIdOptions?, groupByControl, companion: CompanionLink?, required: List<String>?)`;
+  `ControlIdOptions(from: String, template: String = "{id}")`; `CompanionLink(url: String, label: String = "module")`.
+  `DiffOptions(groupByControl, data: DataVersions?, examples: ExampleSet?, labels: VersionLabels?)`; `DataVersions(old: Path, new: Path)`, `VersionLabels(old: String, new: String)`.
+  Invalid combinations are unrepresentable (one data directory without the other, a label without the other, a template without `from`). All validation stays where it is, before any opa work.
+- Kotlin: data classes with defaults. Java: each options class has a `Builder` (`RenderOptions.builder().json(true).build()`); the data class constructor stays the Kotlin API. No other abstraction.
+- The `docsSnippets`, `docs/` and every test call site are updated in the same step; the build compiles the snippets, so drift fails `check`.
+
+**Step 3 -- one exception base.** `public open class ExplicoException(message, cause)`; `DuplicateControlIdException`, `DuplicateFixtureNameException`, `InvalidMaskException`, `OutputDirectoryException`
+extend it, plus new `OpaNotAvailableException` (CLI exit 3) and `OpaFailedException(exitCode, stderr)` (CLI exit 2), replacing the `internal` opa exceptions at the facade boundary. An invalid
+argument stays `IllegalArgumentException` (documented). The CLI maps by type, one place.
+
+**Step 4 -- what is stable in the model.** The structural model (`Condition`, `Operand`, `PathSegment`, `RuleGroup`, `RuleBody`, `ElseBranch`, ... everything in `model/Model.kt` below the
+metadata and set types) is annotated `@ExplicoStructuralModel` (a `@RequiresOptIn(level = WARNING)` annotation): usable, but outside the 1.x promise because a new construct adds a variant. Stable:
+`Explico`, `PolicySet`, `PolicyPackage` (names only), `ExampleSet`, `Fixture`, `RenderedDocs`, `DiffReport`, `DiffCategory`, `RegoVersion`, the options classes, the exceptions, and the JSON schemas.
+`DiffReport` gains `changes: List<DiffChange>` (`id`, `category`, `label`, `package`, `rule`) so a consumer need not touch `RuleGroup`; `entries` stays but is opt-in.
+
+**Step 5 -- the CLI, complete rename (no aliases).**
+- `diff --json` becomes a FLAG like `render --json`: it writes `<out>.json` beside the report (the `--json <path>` form is removed).
+- `render --require` becomes `--must-have` (it names properties of a control; `--requirements` names a file).
+- `diff --fail-on-example-changes` is removed; `diff --fail-on` accepts `EXAMPLE_CHANGES` as one more category.
+- New: `render --force`, `diff --force`. `--out` stays a directory for `render` and a file for `diff`; both help texts say which.
+- Exit codes 0-5 are unchanged and listed in `docs/compatibility.md`.
+
+**Step 6 -- the baselines and the promise.**
+- `api/explico.api`: a committed, sorted dump of the public JVM surface (classes, members, signatures) of the library jar, produced by a test using reflection (no new dependency) and compared byte for byte;
+  regenerated only by `-Dexplico.updateApi=true`, a reviewed act like the goldens. `api/explico.cli`: the same for every command and option name, taken from `--help`.
+- `docs/compatibility.md`: **Stable** -- the `Explico` facade and options, CLI commands/flags/exit codes, `explico.json` and the diff JSON (additive fields do not bump `schema`); **not stable** --
+  the Markdown wording and layout, the opt-in structural model, stderr text, and the file names of generated pages except `index.md`, `explico.json` and `controls/`. Deprecation from 1.0 on: one minor
+  release of warnings before a removal in the next major.
+- **Typed diff facts are strict (decision 5):** a new `FactKind` is a new `schema` version of the diff JSON, never an additive change; consumers may rely on the closed set. `docs/json-output.md` already
+  says so; `docs/compatibility.md` repeats it and `DiffFactsDocsTest` keeps the enum and the page in step.
+
+**Out of scope here:** any change to rendered Markdown, JSON field names, or rendering behaviour; the roadmap items after the freeze (corpus promotions, security/performance review, release candidate).

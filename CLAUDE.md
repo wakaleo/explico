@@ -1730,3 +1730,12 @@ A REMOVED diff entry says "rule" unless it has a control id (`DiffRenderer`). `A
 reference or `some x in alias.rule`: an import of reference data (`import data.limits`) looks identical and also falls back today (it is not rendered as a data path), so "package" would be a guess. A card that lists fewer examples than it has outcomes says so: `WorkedExamples.shownNote` (constants `MAX_MATCHING`/`MAX_NON_MATCHING` shared with `select`) prints `*Showing M of N examples: ...*` before the provenance footer; the sample pack's goldens carry it. A new reason needs a sentence in `UnrenderedReasons` (the drift guard reads the mapper's source with regexes: write
 the call site as plain `unrenderedAt(loc, "reason")` calls, not an inline `if`).
 
+
+## The output-directory guard (spec §14.80 step 1)
+
+`OutputDirectory.kt` is the ONLY place explico deletes or writes output: `OutputGuard` (pure; decides from REAL paths, longest existing prefix resolved through symlinks/`..`) then `OutputWriter`. `RenderedDocs.writeTo` / `DiffReport.writeTo` call it, and so do the CLI and `demo` -- never add a second `deleteRecursively`.
+- Hard refusals, `--force` cannot override: root, home (`user.home` read at CALL time), the working directory or a parent, an input (`protect`), an existing file. Soft: non-empty without `.explico-output` (a dotfile-only directory counts as non-empty). Output INSIDE an input directory is allowed.
+- The marker is written FIRST, by the writer, and is NOT in `RenderedDocs.files` (no golden changes). `docs/sample-output/.explico-output` is committed; the repo's generators pass `--force`.
+- The CLI pre-checks before `requireOpaOrExit` and refuses with `failWith(1, ...)` -- ONE stderr line, never `UsageError` (that prints usage text). Real deletion happens only at the final write, so exit 3 deletes nothing.
+- A write the file system rejects (dangling symlink, parent is a file) goes through `Main.kt`'s `writing(target)` helper: exit 1, one line, no stack trace. It wraps the WRITE only -- never widen it to the whole `try`, or an unrelated `IOException` is mislabelled.
+- Tests of the guard inject home/cwd (`OutputGuardTest`); never aim a test at a real home/cwd/root with a half-written guard.

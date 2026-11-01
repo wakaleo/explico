@@ -57,7 +57,21 @@ public data class RenderedDocs @JvmOverloads constructor(
      * Empty when the section is absent. Spec §14.67.
      */
     val findings: List<String> = emptyList(),
-)
+) {
+    /**
+     * Replaces the directory [dir] with [files] (spec §14.80 step 1): the directory is deleted and recreated, so it is checked first and nothing is touched when it is refused.
+     * Allowed: a directory that does not exist, is empty, or holds the marker file `.explico-output` (written here, with every directory this method writes). A non-empty
+     * directory without the marker is refused unless [force]. Never allowed, whatever [force] says: a filesystem root, the user's home directory or a parent of it, the working
+     * directory or a parent of it, an existing file, and a directory that is or contains one of the [protect]ed paths (pass the policy, example and data paths you rendered
+     * from). Paths are compared by real path, so `..` and symlinks do not get round a refusal.
+     *
+     * @throws OutputDirectoryException when the write is refused; nothing has been deleted or written.
+     */
+    @JvmOverloads
+    public fun writeTo(dir: Path, force: Boolean = false, protect: List<Path> = emptyList()) {
+        OutputWriter.writeDirectory(dir, files, force, protect)
+    }
+}
 
 /**
  * What `--generate-examples` achieved: [rulesWithExamples] of the [rulesConsidered] rules (cards with a body, not functions
@@ -78,7 +92,24 @@ public data class DiffReport @JvmOverloads constructor(
     /** `sha256:<hex>` of the old and the new policy directory (the digest `render` prints in `index.md`); empty unless `diff` was given both policy directories (spec §14.76). */
     val oldDigest: String = "",
     val newDigest: String = "",
-)
+) {
+    /**
+     * Writes [markdown] to [file], creating its parent directories and replacing a regular file (spec §14.80 step 1). An existing directory is refused whatever [force] says (it
+     * would mean `--out` pointing at a directory); no marker is written. [force] is accepted for symmetry with [RenderedDocs.writeTo]; a file needs no forcing.
+     *
+     * @throws OutputDirectoryException when [file] is an existing directory.
+     */
+    @JvmOverloads
+    public fun writeTo(file: Path, @Suppress("UNUSED_PARAMETER") force: Boolean = false) {
+        OutputWriter.writeFile(file, markdown)
+    }
+}
+
+/**
+ * An output path explico refuses to write to, because writing would delete something it must not (spec §14.80 step 1). [path] is the path as the caller gave it.
+ * Becomes an `ExplicoException` in step 3.
+ */
+public class OutputDirectoryException(public val path: Path, message: String) : RuntimeException(message)
 
 /**
  * Renders `.rego` policy directories into Markdown and reports rendering coverage.

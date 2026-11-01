@@ -38,8 +38,10 @@ java -jar explico.jar render policies --out policy-docs
 ```
 
 !!! warning "`--out` is replaced"
-    `render --out <dir>` deletes whatever is already in that directory before writing, so output never goes stale. Give it a directory
-    that holds nothing but generated documents. Do not point it at an existing `docs/`.
+    `render --out <dir>` deletes the directory and writes it again, so output never goes stale. explico only does that to a directory that is missing, empty, or
+    marked `.explico-output` (every directory it writes carries that file). Any other non-empty directory is refused with an error, and nothing is deleted; `--force`
+    overrides that. Nothing overrides the safety refusals: `--out` may not be, or contain, your policies, `--examples` or `--data`, the working directory, your
+    home directory or a filesystem root.
 
 ```text
 Rendering coverage: 4 of 4 conditions (100%)
