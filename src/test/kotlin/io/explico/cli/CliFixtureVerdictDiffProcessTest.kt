@@ -1,5 +1,5 @@
 /**
- * Process-level test for `diff --examples <dir>` and `--fail-on-example-changes` (the per-fixture verdict diff, see RealisticFixtureVerdictDiffAcceptanceIT for the
+ * Process-level test for `diff --examples <dir>` and `--fail-on EXAMPLE_CHANGES` (the per-fixture verdict diff, see RealisticFixtureVerdictDiffAcceptanceIT for the
  * contract): the report gains the `## Behaviour on your examples` section; the gate exits 5 when any example changed outcome, with the report still written; nothing
  * flipping passes it; the flag without `--examples` is a usage error (exit 1, no stack trace, nothing written). Runs the real packaged CLI like
  * [CliGroupByControlDiffProcessTest]. Requires `opa`.
@@ -45,36 +45,36 @@ class CliFixtureVerdictDiffProcessTest {
     }
 
     @Test
-    @DisplayName("--fail-on-example-changes: exit 5 when examples flipped, naming the counts and the controls on stderr, after writing the report")
+    @DisplayName("--fail-on EXAMPLE_CHANGES: exit 5 when examples flipped, naming the counts and the controls on stderr, after writing the report")
     fun gateFails(@TempDir tempDir: Path) {
-        val (result, out) = diff(tempDir, old, new, "--examples", examples, "--fail-on-example-changes")
+        val (result, out) = diff(tempDir, old, new, "--examples", examples, "--fail-on", "EXAMPLE_CHANGES")
 
         assertThat(result.exitCode).isEqualTo(5)
-        assertThat(result.stderr).contains("gate failed (--fail-on-example-changes)").contains("3 example(s)").contains("3 control(s)")
+        assertThat(result.stderr).contains("gate failed (--fail-on EXAMPLE_CHANGES)").contains("3 example(s)").contains("3 control(s)")
             .contains("BANK-EXM-001").contains("BANK-TGT-001").contains("BANK-MSG-001").doesNotContain("\tat ")
         assertThat(result.stdout).contains("| LOGIC_CHANGED |")
         assertThat(Files.readString(out)).contains("## Behaviour on your examples")
     }
 
     @Test
-    @DisplayName("--fail-on-example-changes passes (exit 0) when no example changed outcome")
+    @DisplayName("--fail-on EXAMPLE_CHANGES passes (exit 0) when no example changed outcome")
     fun gatePasses(@TempDir tempDir: Path) {
-        val (result, out) = diff(tempDir, old, old, "--examples", examples, "--fail-on-example-changes")
+        val (result, out) = diff(tempDir, old, old, "--examples", examples, "--fail-on", "EXAMPLE_CHANGES")
 
         assertThat(result.exitCode).isEqualTo(0)
         assertThat(Files.readString(out)).contains("No example changed outcome.")
     }
 
     @Test
-    @DisplayName("--fail-on-example-changes without --examples is a usage error: exit 1, both options named, no stack trace, nothing written")
+    @DisplayName("--fail-on EXAMPLE_CHANGES without --examples is a usage error: exit 1, both options named, no stack trace, nothing written")
     fun flagNeedsExamples(@TempDir tempDir: Path) {
         // The flag is accepted together with --examples, so the failure below is about the MISSING --examples.
-        assertThat(diff(tempDir, old, old, "--examples", examples, "--fail-on-example-changes").first.exitCode).isEqualTo(0)
+        assertThat(diff(tempDir, old, old, "--examples", examples, "--fail-on", "EXAMPLE_CHANGES").first.exitCode).isEqualTo(0)
         val out = tempDir.resolve("only-flag.md")
-        val result = runCli(listOf("diff", old, new, "--out", out.toString(), "--fail-on-example-changes"), tempDir)
+        val result = runCli(listOf("diff", old, new, "--out", out.toString(), "--fail-on", "EXAMPLE_CHANGES"), tempDir)
 
         assertThat(result.exitCode).isEqualTo(1)
-        assertThat(result.stderr).contains("--examples").contains("--fail-on-example-changes").doesNotContain("\tat ")
+        assertThat(result.stderr).contains("--examples").contains("--fail-on", "EXAMPLE_CHANGES").doesNotContain("\tat ")
         assertThat(Files.exists(out)).isFalse()
     }
 
@@ -83,7 +83,7 @@ class CliFixtureVerdictDiffProcessTest {
     fun dataDriven(@TempDir tempDir: Path) {
         val (result, out) = diff(
             tempDir, old, old, "--examples", examples, "--old-data", base.resolve("data/old.json").toAbsolutePath().toString(),
-            "--new-data", base.resolve("data/new.json").toAbsolutePath().toString(), "--fail-on-example-changes",
+            "--new-data", base.resolve("data/new.json").toAbsolutePath().toString(), "--fail-on", "EXAMPLE_CHANGES",
         )
 
         assertThat(result.exitCode).isEqualTo(5)

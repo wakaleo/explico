@@ -150,7 +150,7 @@ Make the build fail when documentation slips:
 
 ```sh
 explico render policies --examples examples --out policy-docs \
-  --fail-under 100 --fail-on-gaps --require title,description,frameworks,fixture
+  --fail-under 100 --fail-on-gaps --must-have title,description,frameworks,fixture
 echo "exit $?"
 ```
 
@@ -204,7 +204,7 @@ The last section is what makes the review. A one-character change turned your ow
 so in your words. explico reports that the outcome changed; it does not say whether that is what you wanted. `change.md` also holds the full
 new card and a source diff of the rule.
 
-To make a pipeline stop on such changes, add `--fail-on LOGIC_CHANGED` or `--fail-on-example-changes`.
+To make a pipeline stop on such changes, add `--fail-on LOGIC_CHANGED` or `--fail-on EXAMPLE_CHANGES` (or both: `--fail-on LOGIC_CHANGED,EXAMPLE_CHANGES`).
 
 ## What you built
 

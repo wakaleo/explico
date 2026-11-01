@@ -118,21 +118,21 @@ private class RenderCommand : CliktCommand(name = "render") {
         .int().restrictTo(0..100)
     private val failOnGaps by option(
         "--fail-on-gaps",
-        help = "Exit 5 if the documentation has gaps: a control with no description or framework (or whatever --require names), a shared title, or (with --requirements) a requirement with no control",
+        help = "Exit 5 if the documentation has gaps: a control with no description or framework (or whatever --must-have names), a shared title, or (with --requirements) a requirement with no control",
     ).flag()
 
     private val requiredProperties by option(
-        "--require",
+        "--must-have",
         help = "With --fail-on-gaps: the documentation properties a control must have, comma-separated from title, description, frameworks, fixture, verdict (default: description,frameworks). fixture and verdict need --examples",
     )
 
     override fun run() {
-        // Spec §14.64: --require only changes what --fail-on-gaps fails on, so alone it would silently do nothing.
-        if (requiredProperties != null && !failOnGaps) throw UsageError("--require only changes what --fail-on-gaps fails on; add --fail-on-gaps")
+        // Spec §14.64 (renamed from --require in §14.80 step 5): --must-have only changes what --fail-on-gaps fails on, so alone it would silently do nothing.
+        if (requiredProperties != null && !failOnGaps) throw UsageError("--must-have only changes what --fail-on-gaps fails on; add --fail-on-gaps")
         // Names are checked here, before anything else (and before opa is needed): an unknown one, or fixture/verdict with no --examples.
         val required = requiredProperties?.split(',')?.map { it.trim() }
         if (required != null) {
-            try { RequiredSet.of(required, examplesSupplied = examplesDir != null) } catch (e: IllegalArgumentException) { throw UsageError(e.message ?: "invalid --require") }
+            try { RequiredSet.of(required, examplesSupplied = examplesDir != null) } catch (e: IllegalArgumentException) { throw UsageError(e.message ?: "invalid --must-have") }
         }
         // A template says how a derived id is written; with no pattern it would silently do nothing, so it is a usage error (checked before anything else).
         if (controlIdTemplate != null && controlIdFrom == null) throw UsageError("--control-id-template needs --control-id-from (it says how a derived id is written)")
@@ -171,7 +171,7 @@ private class RenderCommand : CliktCommand(name = "render") {
             // One place maps the family to exit codes (spec §14.80 step 3). Includes a malformed custom.mask (spec §14.61), refused rather than ignored: nothing has been written yet.
             failWith(exitCodeOf(e), messageOf(e, "render"))
         } catch (e: IllegalArgumentException) {
-            // e.g. --require fixture with an examples directory that holds no fixture (spec §14.64); the library words it, nothing has been written yet.
+            // e.g. --must-have fixture with an examples directory that holds no fixture (spec §14.64); the library words it, nothing has been written yet.
             failWith(1, e.message ?: "invalid option")
         }
     }
@@ -183,20 +183,16 @@ private class DiffCommand : CliktCommand(name = "diff") {
     private val oldDir by argument(help = "Old policy directory").path(mustExist = true, canBeFile = false)
     private val newDir by argument(help = "New policy directory").path(mustExist = true, canBeFile = false)
     private val out by option("--out", help = "Output FILE for the change report (an existing file is overwritten; a directory is refused)").path().required()
-    private val force by option(
-        "--force",
-        help = "Accepted for consistency with render; it has no effect here, because a report file is always overwritten and a directory is never replaced",
-    ).flag()
     private val regoVersion by option("--rego-version", help = "Rego syntax of the policies: v1 (default) or v0 (legacy, e.g. the Gatekeeper library)")
         .choice("v1", "v0").default("v1")
-    private val jsonOut by option("--json", help = "Also write the machine-readable change report (JSON) to this file").path()
+    private val json by option("--json", help = "Also write the machine-readable change report (JSON) to <out>.json, beside the report (see docs/json-output.md)").flag()
     private val groupByControl by option(
         "--group-by-control",
         help = "Allow a control id shared by several rules (one control split over files) instead of failing with exit 4: its rules are told apart by package and rule, one report entry each",
     ).flag()
     private val failOn by option(
         "--fail-on",
-        help = "Exit 5 if any control is in one of these categories (comma-separated: ADDED, REMOVED, LOGIC_CHANGED, DOCS_CHANGED); the report is still written",
+        help = "Exit 5 if any control is in one of these categories (comma-separated: ADDED, REMOVED, LOGIC_CHANGED, DOCS_CHANGED), or, with EXAMPLE_CHANGES, if any fixture of --examples changed outcome between the two versions; the report is still written",
     ).convert { value -> try { Gates.parseFailOn(value) } catch (e: IllegalArgumentException) { fail(e.message ?: "invalid categories") } }
 
     private val oldData by option(
@@ -211,18 +207,17 @@ private class DiffCommand : CliktCommand(name = "diff") {
         "--examples",
         help = "Example fixtures (as for render): the report lists, per control, the fixtures whose outcome differs between the two versions",
     ).path(mustExist = true, canBeFile = false)
-    private val failOnExampleChanges by option(
-        "--fail-on-example-changes",
-        help = "Exit 5 if any fixture of --examples changed outcome between the two versions; the report is still written",
-    ).flag()
 
     override fun run() {
+        // The JSON goes beside the report: --out with .json appended (so it can never be the report itself).
+        val jsonOut = if (json) Path.of(out.toString() + ".json") else null
+        val gateOnExamples = failOn?.exampleChanges == true
         // Cheapest preconditions first, before opa is needed or anything is written (spec §14.73, §14.74): these options only make sense together.
         if ((oldData == null) != (newData == null)) throw UsageError("--old-data and --new-data must be given together (only ${if (oldData != null) "--old-data" else "--new-data"} was given)")
         // Spec §14.76: the same plain-text rules as the library, reported against the option the user typed.
         oldLabel?.let { checkLabel(it, "--old-label") }
         newLabel?.let { checkLabel(it, "--new-label") }
-        if (failOnExampleChanges && examplesDir == null) throw UsageError("--fail-on-example-changes needs --examples (there is nothing to compare without example fixtures)")
+        if (gateOnExamples && examplesDir == null) throw UsageError("--fail-on EXAMPLE_CHANGES needs --examples (there is nothing to compare without example fixtures)")
         // Spec §14.80: a directory given as an output file is refused before opa is needed.
         refusalExit { OutputGuard.checkFile(out); jsonOut?.let { OutputGuard.checkFile(it) } }
         requireOpaOrExit()
@@ -231,7 +226,7 @@ private class DiffCommand : CliktCommand(name = "diff") {
             val new = Explico.load(newDir, parseRegoVersion(regoVersion))
             val examples = examplesDir?.let { Explico.loadExamples(it) }
             // An empty examples directory is "not supplied" to the library; a gate on it would pass having looked at nothing.
-            if (failOnExampleChanges && examples != null && examples.fixtures.isEmpty()) throw UsageError("--fail-on-example-changes: the --examples directory holds no fixture, so there is nothing to compare")
+            if (gateOnExamples && examples != null && examples.fixtures.isEmpty()) throw UsageError("--fail-on EXAMPLE_CHANGES: the --examples directory holds no fixture, so there is nothing to compare")
             // The CLI always showed the Compared block (spec §14.76), so it always asks for the digests.
             val report = Explico.diff(
                 old, new,
@@ -240,12 +235,12 @@ private class DiffCommand : CliktCommand(name = "diff") {
                     labels = if (oldLabel != null || newLabel != null) VersionLabels(oldLabel, newLabel) else null, digests = true,
                 ),
             )
-            writing(out) { report.writeTo(out, force) }
+            writing(out) { report.writeTo(out) }
             jsonOut?.let { target -> writing(target) { OutputWriter.writeFile(target, report.json) } }
             echo(summarySection(report.markdown))
             val gateMessages = listOfNotNull(
-                failOn?.let { categories -> Gates.failOn(report.entries, categories) },
-                if (failOnExampleChanges) Gates.failOnExampleChanges(report.exampleChanges, report.exampleComparison) else null,
+                failOn?.takeIf { it.categories.isNotEmpty() }?.let { Gates.failOn(report.entries, it.categories) },
+                if (gateOnExamples) Gates.failOnExampleChanges(report.exampleChanges, report.exampleComparison) else null,
             )
             if (gateMessages.isNotEmpty()) failWith(Gates.EXIT_GATE_FAILED, gateMessages.joinToString("\n"))
         } catch (e: ExplicoException) {

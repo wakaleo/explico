@@ -282,12 +282,12 @@ the top of a file is listed too, and a single-line comment, a comment after code
 
 These two are findings, not gaps by default: `--fail-on-gaps` does not fail on them unless you require them (below).
 
-**Choosing what a gap is** (`--require`, with `--fail-on-gaps`). By default the gate fails on a control without a description or a
+**Choosing what a gap is** (`--must-have`, with `--fail-on-gaps`). By default the gate fails on a control without a description or a
 framework. Name the properties you want instead, from `title`, `description`, `frameworks`, `fixture` (a worked example in which the
 control matches) and `verdict` (a declared `custom.verdict` on a control that returns an object):
 
 ```
-explico render policies --out docs --examples examples --fail-on-gaps --require title,description,frameworks,verdict
+explico render policies --out docs --examples examples --fail-on-gaps --must-have title,description,frameworks,verdict
 ```
 
 `fixture` and `verdict` can only be judged against example fixtures, so they need `--examples`; without them the command is refused
@@ -357,7 +357,7 @@ explico diff main-checkout/policies pr-checkout/policies --out change-report.md 
 
 - `--fail-under <percent>` — the overall share of conditions rendered as readable text must reach this. Use it to stop coverage
   quietly sliding as policies change.
-- `--fail-on-gaps` — the documentation must be complete: no control without a description or framework (or whatever `--require` names), no shared titles and, with
+- `--fail-on-gaps` — the documentation must be complete: no control without a description or framework (or whatever `--must-have` names), no shared titles and, with
   `--requirements`, every requirement covered and every framework string spelled as listed.
 - `diff --fail-on` — fail when a control is `ADDED`, `REMOVED`, `LOGIC_CHANGED` or `DOCS_CHANGED`, e.g. to require a human review
   of any logic change. It reports *structure*, not whether a change is stricter or looser.

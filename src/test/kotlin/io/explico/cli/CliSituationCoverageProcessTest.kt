@@ -54,7 +54,7 @@ class CliSituationCoverageProcessTest {
     @DisplayName("it is not a gate: --fail-on-gaps still exits 0 for the complete pack, and exit 5 only for the property that is required and missing")
     fun notAGate(@TempDir tempDir: Path) {
         assertThat(render(tempDir, "--examples", examples, "--fail-on-gaps").exitCode).isEqualTo(0)
-        val required = render(tempDir, "--examples", examples, "--fail-on-gaps", "--require", "title,description,frameworks,fixture,verdict")
+        val required = render(tempDir, "--examples", examples, "--fail-on-gaps", "--must-have", "title,description,frameworks,fixture,verdict")
 
         assertThat(required.exitCode).isEqualTo(5)
         assertThat(required.stderr).contains("control SC-4 has no matching example").doesNotContain("situation")

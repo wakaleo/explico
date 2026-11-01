@@ -94,8 +94,8 @@ Notes:
 | Flag | Fails (exit 5) when |
 |---|---|
 | `render --fail-under <percent>` | overall rendering coverage is below the threshold |
-| `render --fail-on-gaps` | a control has no description or no framework (or whatever `--require` names), two controls share a title, and (with `--requirements`) a requirement has no control or a control names a framework that is not on your list |
-| `diff --examples <dir> --fail-on-example-changes` | any of your example fixtures comes out differently between the two versions (the report lists which, per control) |
+| `render --fail-on-gaps` | a control has no description or no framework (or whatever `--must-have` names), two controls share a title, and (with `--requirements`) a requirement has no control or a control names a framework that is not on your list |
+| `diff --examples <dir> --fail-on EXAMPLE_CHANGES` | any of your example fixtures comes out differently between the two versions (the report lists which, per control) |
 | `diff --fail-on <categories>` | any control is in one of the comma-separated categories `ADDED`, `REMOVED`, `LOGIC_CHANGED`, `DOCS_CHANGED`. Add `--old-data`/`--new-data` and a control whose reference data changed (a limit, a list) is `LOGIC_CHANGED` too, so a data-only change trips the gate |
 
 `--requirements <file>` is a text file with one requirement per line (blank lines and `#` comments ignored). Matching against a
@@ -107,15 +107,15 @@ and as a requirement with no control, instead of being silently accepted.
 Every run already prints the findings on stdout after the coverage line (`Documentation quality (see index.md): ...`), so a CI log shows
 what is suboptimal even when no gate fails. That block is advisory and never changes the exit code; the gates below decide what fails.
 
-`--fail-on-gaps` checks a description and a framework by default. `--require` chooses what a gap is, so you can tighten it as the
-policies catch up (`--require` is in **0.4.0** and later):
+`--fail-on-gaps` checks a description and a framework by default. `--must-have` chooses what a gap is, so you can tighten it as the
+policies catch up (`--must-have` was called `--require` before 1.0):
 
 ```
 # today: every control has a description and a framework (the default)
 explico render policies --out docs --fail-on-gaps
 
 # next: also a title, and every control exercised by a fixture and, if it returns an object, a declared verdict
-explico render policies --out docs --examples examples --fail-on-gaps --require title,description,frameworks,fixture,verdict
+explico render policies --out docs --examples examples --fail-on-gaps --must-have title,description,frameworks,fixture,verdict
 ```
 
 Add one property at a time, fix what the gate lists (each line names the control), then add the next. `fixture` and `verdict` need
@@ -149,7 +149,7 @@ jobs:
       - name: Diff the policies
         run: >
           java -jar explico.jar diff base/policies head/policies
-          --out policy-diff.md --json policy-diff.json
+          --out policy-diff.md --json
           --fail-on REMOVED,LOGIC_CHANGED
       - name: Show the report on the run page
         if: always()
@@ -204,5 +204,5 @@ policy-docs:
 
 ## Machine-readable results
 
-Add `--json` to `render` (or `--json <file>` to `diff`) for a structured result that dashboards and GRC tools can consume: every
+Add `--json` to `render` (written as `explico.json`) or to `diff` (written beside the report as `<report>.json`, e.g. `policy-diff.md.json`) for a structured result that dashboards and GRC tools can consume: every
 rule, condition, verdict and coverage figure. The schema and what each field promises is in [JSON output](../json-output.md).

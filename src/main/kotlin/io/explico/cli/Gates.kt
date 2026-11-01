@@ -28,15 +28,31 @@ internal object Gates {
     fun failOnGaps(gaps: List<String>): String? =
         if (gaps.isEmpty()) null else "explico: gate failed (--fail-on-gaps): ${gaps.size} gap(s)" + gaps.joinToString("") { "\n  - $it" }
 
-    /** Parses `--fail-on`: comma-separated, case-insensitive, duplicates dropped keeping the order given. UNCHANGED, an unknown name or an empty list is rejected. */
-    fun parseFailOn(text: String): List<DiffCategory> {
+    /** The name of the `--fail-on` category that gates on a changed example outcome (spec §14.74, renamed from `--fail-on-example-changes` in §14.80 step 5). It is not a [DiffCategory]. */
+    const val EXAMPLE_CHANGES = "EXAMPLE_CHANGES"
+
+    /** What `--fail-on` asked for: the [DiffCategory]s a control may be in, and whether a changed example outcome fails too. */
+    data class FailOn(val categories: List<DiffCategory>, val exampleChanges: Boolean)
+
+    /**
+     * Parses `--fail-on`: comma-separated, case-insensitive, duplicates dropped keeping the order given. The names are the four [DiffCategory]s that are changes, and [EXAMPLE_CHANGES].
+     * UNCHANGED, an unknown name or an empty list is rejected.
+     */
+    fun parseFailOn(text: String): FailOn {
         val names = text.split(',').map { it.trim() }.filter { it.isNotEmpty() }
-        val valid = DIFF_CATEGORIES.joinToString(", ")
+        val valid = (DIFF_CATEGORIES.map { it.name } + EXAMPLE_CHANGES).joinToString(", ")
         require(names.isNotEmpty()) { "expected one or more of: $valid" }
-        return names.map { name ->
-            DIFF_CATEGORIES.firstOrNull { it.name.equals(name, ignoreCase = true) }
-                ?: throw IllegalArgumentException("'$name' is not a category to fail on; expected one or more of: $valid")
-        }.distinct()
+        val categories = mutableListOf<DiffCategory>()
+        var exampleChanges = false
+        for (name in names) {
+            val category = DIFF_CATEGORIES.firstOrNull { it.name.equals(name, ignoreCase = true) }
+            when {
+                category != null -> if (category !in categories) categories.add(category)
+                name.equals(EXAMPLE_CHANGES, ignoreCase = true) -> exampleChanges = true
+                else -> throw IllegalArgumentException("'$name' is not a category to fail on; expected one or more of: $valid")
+            }
+        }
+        return FailOn(categories, exampleChanges)
     }
 
     /** `--fail-on`: the matching controls (control id, else `package.rule`) in the diff report's own order, with the categories echoed as given. */
@@ -57,15 +73,15 @@ internal object Gates {
         return "explico: gate failed (--fail-on ${categories.joinToString(",") { it.name }}): ${labels.size} control(s): ${labels.joinToString(", ")}"
     }
 
-    /** `--fail-on-example-changes` (spec §14.74): how many fixtures changed outcome, in how many controls (named in the report's own order). */
+    /** `--fail-on EXAMPLE_CHANGES` (spec §14.74): how many fixtures changed outcome, in how many controls (named in the report's own order). */
     fun failOnExampleChanges(changes: List<io.explico.diff.ExampleChange>, comparison: io.explico.diff.ExampleComparison? = null): String? {
         // A gate that could not look at anything must not pass: controls were present on both sides but none had examples that could be compared.
         if (comparison != null && comparison.total > 0 && comparison.compared == 0) {
-            return "explico: gate failed (--fail-on-example-changes): no control could be compared (${comparison.total} present in both versions: ${comparison.functions} function(s), ${comparison.unattributable} with no examples attributable to the rule)"
+            return "explico: gate failed (--fail-on EXAMPLE_CHANGES): no control could be compared (${comparison.total} present in both versions: ${comparison.functions} function(s), ${comparison.unattributable} with no examples attributable to the rule)"
         }
         if (changes.isEmpty()) return null
         val controls = changes.map { it.control }.distinct()
-        return "explico: gate failed (--fail-on-example-changes): ${changes.size} example(s) changed outcome in ${controls.size} control(s): ${controls.joinToString(", ")}"
+        return "explico: gate failed (--fail-on EXAMPLE_CHANGES): ${changes.size} example(s) changed outcome in ${controls.size} control(s): ${controls.joinToString(", ")}"
     }
 
     private val DIFF_REPORT_ORDER = listOf(DiffCategory.REMOVED, DiffCategory.ADDED, DiffCategory.LOGIC_CHANGED, DiffCategory.DOCS_CHANGED)

@@ -12,7 +12,7 @@
  *   `<fixture>: <old word> -> <new word>` in the card's own words (`✅ allowed`, `❌ denied`, `matched`, `not matched`), or `<fixture>: still <word>, message changed` when the
  *   verdict word is the same but the produced message set differs. A control whose logic changed but whose outcomes did not is not listed.
  * - JSON: every change gains `examples: [{fixture, old, new}]` ONLY when examples were supplied (an empty array when none differs); the schema stays `explico/diff/1`.
- * - Library: `DiffReport.exampleChanges` (control, fixture, old, new). Gate: `--fail-on-example-changes` (CLI process test: CliFixtureVerdictDiffProcessTest).
+ * - Library: `DiffReport.exampleChanges` (control, fixture, old, new). Gate: `--fail-on EXAMPLE_CHANGES` (CLI process test: CliFixtureVerdictDiffProcessTest).
  * Fixtures: `realistic/fixture-verdict-diff/` -- BANK-EXM-001 loses its Treasury exemption (the standing-order fixture flips allowed -> denied), BANK-TGT-001 tightens a
  * threshold (the mid-value fixture flips), BANK-SIT-001 gains a situation no fixture triggers, BANK-MSG-001 changes only its message, BANK-LIM-001 has identical Rego but a
  * limit in the data (two fixtures flip when only the data changes), BANK-REM-001 exists only in `old`, BANK-NEW-001 only in `new`. Facade only.

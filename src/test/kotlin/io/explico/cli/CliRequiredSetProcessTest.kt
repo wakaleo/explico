@@ -1,6 +1,6 @@
 /**
- * Process-level test for `render --require <properties>` (spec §14.64): which documentation properties of a control `--fail-on-gaps` fails on. The default is
- * unchanged, a refused option is a usage error (exit 1, nothing written, no stack trace), and `--require` alone does nothing so it is refused too. Runs the real
+ * Process-level test for `render --must-have <properties>` (spec §14.64): which documentation properties of a control `--fail-on-gaps` fails on. The default is
+ * unchanged, a refused option is a usage error (exit 1, nothing written, no stack trace), and `--must-have` alone does nothing so it is refused too. Runs the real
  * packaged CLI like [CliGatesProcessTest]. Requires `opa`.
  */
 package io.explico.cli
@@ -36,7 +36,7 @@ class CliRequiredSetProcessTest {
     }
 
     @Test
-    @DisplayName("without --require, --fail-on-gaps fails on exactly what it always did: description, framework and the shared title")
+    @DisplayName("without --must-have, --fail-on-gaps fails on exactly what it always did: description, framework and the shared title")
     fun defaultUnchanged(@TempDir tempDir: Path) {
         val result = render(tempDir, "--fail-on-gaps")
 
@@ -45,9 +45,9 @@ class CliRequiredSetProcessTest {
     }
 
     @Test
-    @DisplayName("--require title,verdict --examples: those two (and the shared title) fail the gate; description and framework no longer do; the output is still written")
+    @DisplayName("--must-have title,verdict --examples: those two (and the shared title) fail the gate; description and framework no longer do; the output is still written")
     fun titleAndVerdict(@TempDir tempDir: Path) {
-        val result = render(tempDir, "--examples", examples, "--fail-on-gaps", "--require", "title,verdict")
+        val result = render(tempDir, "--examples", examples, "--fail-on-gaps", "--must-have", "title,verdict")
 
         assertThat(result.exitCode).isEqualTo(5)
         assertThat(result.stderr).contains("3 gap(s)").contains("control RS-2 has no title").contains("control RS-6 returns an object but declares no custom.verdict")
@@ -58,7 +58,7 @@ class CliRequiredSetProcessTest {
     @Test
     @DisplayName("whitespace around the commas is ignored")
     fun whitespace(@TempDir tempDir: Path) {
-        val result = render(tempDir, "--examples", examples, "--fail-on-gaps", "--require", " fixture , verdict ")
+        val result = render(tempDir, "--examples", examples, "--fail-on-gaps", "--must-have", " fixture , verdict ")
 
         assertThat(result.exitCode).isEqualTo(5)
         assertThat(result.stderr).contains("control RS-5 has no matching example").contains("control RS-6 returns an object")
@@ -67,7 +67,7 @@ class CliRequiredSetProcessTest {
     @Test
     @DisplayName("fixture without --examples is refused (it would pass vacuously): exit 1, the reason on stderr, nothing written")
     fun fixtureNeedsExamples(@TempDir tempDir: Path) {
-        val result = render(tempDir, "--fail-on-gaps", "--require", "fixture")
+        val result = render(tempDir, "--fail-on-gaps", "--must-have", "fixture")
 
         assertRefused(tempDir, result)
         assertThat(result.stderr).contains("'fixture'").contains("example fixtures")
@@ -77,26 +77,26 @@ class CliRequiredSetProcessTest {
     @DisplayName("an unknown property, an empty list and an empty element are refused naming the valid properties")
     fun unknownNames(@TempDir tempDir: Path) {
         for (bad in listOf("titel", "Title", "", "title,", ",title")) {
-            val result = render(tempDir, "--fail-on-gaps", "--require", bad)
+            val result = render(tempDir, "--fail-on-gaps", "--must-have", bad)
             assertRefused(tempDir, result)
-            assertThat(result.stderr).describedAs("--require '$bad'").contains("title, description, frameworks, fixture, verdict")
+            assertThat(result.stderr).describedAs("--must-have '$bad'").contains("title, description, frameworks, fixture, verdict")
         }
     }
 
     @Test
-    @DisplayName("--require without --fail-on-gaps is refused: it only changes what that gate fails on")
+    @DisplayName("--must-have without --fail-on-gaps is refused: it only changes what that gate fails on")
     fun needsTheGate(@TempDir tempDir: Path) {
-        val result = render(tempDir, "--require", "title")
+        val result = render(tempDir, "--must-have", "title")
 
         assertRefused(tempDir, result)
-        assertThat(result.stderr).contains("--require").contains("--fail-on-gaps")
+        assertThat(result.stderr).contains("--must-have").contains("--fail-on-gaps")
     }
 
     @Test
     @DisplayName("an examples directory with no fixtures counts as no examples: verdict is refused, with exit 1")
     fun emptyExamplesDirectory(@TempDir tempDir: Path) {
         val empty = Files.createDirectory(tempDir.resolve("no-examples"))
-        val result = render(tempDir, "--examples", empty.toString(), "--fail-on-gaps", "--require", "verdict")
+        val result = render(tempDir, "--examples", empty.toString(), "--fail-on-gaps", "--must-have", "verdict")
 
         assertRefused(tempDir, result)
         assertThat(result.stderr).contains("example fixtures")

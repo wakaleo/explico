@@ -65,8 +65,8 @@ class CliGroupByControlDiffProcessTest {
     @Test
     @DisplayName("--json carries one change per rule, naming package and rule")
     fun withJson(@TempDir tempDir: Path) {
-        val json = tempDir.resolve("report.json")
-        val (result, _) = diff(tempDir, "--group-by-control", "--json", json.toString())
+        val json = tempDir.resolve("report.md.json")
+        val (result, _) = diff(tempDir, "--group-by-control", "--json")
 
         assertThat(result.exitCode).isEqualTo(0)
         assertThat(Files.readString(json)).contains("\"rule\": \"signed_off\"").contains("\"package\": \"grp_signoff\"")

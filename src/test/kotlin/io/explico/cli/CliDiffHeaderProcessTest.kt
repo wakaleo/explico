@@ -49,8 +49,8 @@ class CliDiffHeaderProcessTest {
     @Test
     @DisplayName("--old-label and --new-label name the versions in the bullets, and --json carries them")
     fun labels(@TempDir tempDir: Path) {
-        val json = tempDir.resolve("report.json")
-        val (result, out) = diff(tempDir, "--old-label", "v1.2", "--new-label", "v1.3", "--json", json.toString())
+        val json = tempDir.resolve("report.md.json")
+        val (result, out) = diff(tempDir, "--old-label", "v1.2", "--new-label", "v1.3", "--json")
 
         assertThat(result.exitCode).isEqualTo(0)
         val report = Files.readString(out)
