@@ -1661,7 +1661,7 @@ section appear) but never in `gapDescriptions`, and comments never reach `Canoni
 ## The required set (spec §14.64)
 
 `render/RequiredSet` validates and normalises the names; `Quality.gapDescriptions(findings, coverage, required)` is the ONE place gap lines are worded and ordered (description, frameworks, title, fixture, verdict, then shared titles, then requirement gaps). `Explico.render` validates BEFORE opa work and computes the
-gap findings WITH the examples; the displayed index/JSON findings never depend on the set (`missingTitle` is gap-only and out of `Findings.isEmpty()`). The CLI checks the names itself before opa is needed and refuses `--require` without `--fail-on-gaps`. Never let the set change a rendered file.
+gap findings WITH the examples; the displayed index/JSON findings never depend on the set (`missingTitle` is gap-only and out of `Findings.isEmpty()`). The CLI checks the names itself before opa is needed and refuses `--must-have` without `--fail-on-gaps`. Never let the set change a rendered file.
 
 ## Places of the fallbacks (spec §14.69)
 
@@ -1760,3 +1760,8 @@ the call site as plain `unrenderedAt(loc, "reason")` calls, not an inline `if`).
 - An invalid ARGUMENT stays `IllegalArgumentException`, a file-system problem stays `IOException`: neither is an `ExplicoException`. `Main.kt` catches `ExplicoException` BEFORE `IllegalArgumentException`, one catch per command; do not add per-type ladders back.
 - `OpaRunner` is the only thrower of the opa pair: a launch failure is `OpaNotAvailableException` (cause kept), a non-zero exit `OpaFailedException` with the real code. `OpaRunner.timeoutSeconds` and `binaryOverride` are test seams only; the `fake-opa` shell scripts in `OpaRunnerChallengeTest` are how to exercise a failing binary without opa.
 - `WorkedExamples` catches `OpaFailedException` to skip a fixture whose evaluation fails (stderr warning, fixture excluded): keep it narrow, never catch `ExplicoException` there.
+
+## The CLI flag freeze (spec §14.80 step 5)
+
+The renames are COMPLETE, no aliases: the old spellings are unknown options (exit 1). `diff --json` is a flag writing `<out>.json` (appended, never swapped); `render --must-have` (was `--require`); `diff --fail-on EXAMPLE_CHANGES` (was `--fail-on-example-changes`); `diff --force` is gone. `Gates.parseFailOn` returns `Gates.FailOn(categories, exampleChanges)`: `EXAMPLE_CHANGES` is not a `DiffCategory`, so the category gate runs only when `categories` is non-empty and prints only its own names, the example gate when `exampleChanges`, category gate first.
+- `CliFlagFreeze*ProcessTest` pin the new behaviour and help. A new CLI flag needs a row in `docs/user-guide.md`, a process test, and (step 6) the committed CLI baseline.

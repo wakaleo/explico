@@ -59,7 +59,7 @@ class CliOutputFailureProcessTest {
     }
 
     @Test
-    @DisplayName("diff --out below a regular file, and --json below one: the same single line")
+    @DisplayName("diff --out below a regular file: the same single line (the JSON now goes beside the report, so it fails at the same place)")
     fun diffParentIsAFile(@TempDir tempDir: Path) {
         val file = tempDir.resolve("a-file")
         Files.writeString(file, "mine")
@@ -67,10 +67,8 @@ class CliOutputFailureProcessTest {
         val new = diffBase.resolve("new").toString()
 
         val report = runCli(listOf("diff", old, new, "--out", file.resolve("r.md").toString()), tempDir)
-        val json = runCli(listOf("diff", old, new, "--out", tempDir.resolve("r.md").toString(), "--json", file.resolve("r.json").toString()), tempDir)
 
         assertOneLineFailure(report, "could not write", file.resolve("r.md").toString())
-        assertOneLineFailure(json, "could not write", file.resolve("r.json").toString())
         assertThat(Files.readString(file)).isEqualTo("mine")
     }
 }

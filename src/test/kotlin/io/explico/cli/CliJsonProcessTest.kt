@@ -51,11 +51,11 @@ class CliJsonProcessTest {
     }
 
     @Test
-    @DisplayName("diff --json <file> writes the change report JSON; stdout is still the Summary table")
+    @DisplayName("diff --json writes the change report JSON to <out>.json; stdout is still the Summary table")
     fun diffJson(@TempDir tempDir: Path) {
         val report = tempDir.resolve("report.md")
-        val json = tempDir.resolve("report.json")
-        val result = runCli(listOf("diff", oldDir.toString(), newDir.toString(), "--out", report.toString(), "--json", json.toString()), tempDir)
+        val json = tempDir.resolve("report.md.json")
+        val result = runCli(listOf("diff", oldDir.toString(), newDir.toString(), "--out", report.toString(), "--json"), tempDir)
 
         assertThat(result.exitCode).isEqualTo(0)
         assertThat(result.stdout).contains("## Summary").contains("| REMOVED | 1 |").doesNotContain("explico/diff/1")

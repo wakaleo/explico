@@ -57,11 +57,11 @@ exit 5
 ```
 
 The documents are written first, so the failing build still leaves the evidence to read. `--fail-on-gaps` also covers documentation gaps in controls.
-By default it asks for a description and a framework on every control; change that with `--require`
+By default it asks for a description and a framework on every control; change that with `--must-have`
 (`title`, `description`, `frameworks`, `fixture`, `verdict`; the last two need `--examples`):
 
 ```sh
---fail-on-gaps --require title,description,frameworks,fixture
+--fail-on-gaps --must-have title,description,frameworks,fixture
 ```
 
 ## Know what this does and does not show

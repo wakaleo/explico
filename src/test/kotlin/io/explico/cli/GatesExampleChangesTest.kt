@@ -1,5 +1,5 @@
 /**
- * Unit tests for the `--fail-on-example-changes` gate message (spec §14.74): counts and controls when something changed, and a refusal to pass when nothing could be compared.
+ * Unit tests for the `--fail-on EXAMPLE_CHANGES` gate message (spec §14.74): counts and controls when something changed, and a refusal to pass when nothing could be compared.
  */
 package io.explico.cli
 
@@ -18,7 +18,7 @@ class GatesExampleChangesTest {
     fun changed() {
         val message = Gates.failOnExampleChanges(listOf(change, change.copy(fixture = "g"), change.copy(control = "C-2")), ExampleComparison(2, 2, 0, 0, 0))
 
-        assertThat(message).isEqualTo("explico: gate failed (--fail-on-example-changes): 3 example(s) changed outcome in 2 control(s): C-1, C-2")
+        assertThat(message).isEqualTo("explico: gate failed (--fail-on EXAMPLE_CHANGES): 3 example(s) changed outcome in 2 control(s): C-1, C-2")
     }
 
     @Test
@@ -32,6 +32,6 @@ class GatesExampleChangesTest {
     @DisplayName("controls on both sides but none comparable: the gate fails saying so, rather than pass having looked at nothing")
     fun nothingComparable() {
         assertThat(Gates.failOnExampleChanges(emptyList(), ExampleComparison(0, 3, 2, 1, 0)))
-            .isEqualTo("explico: gate failed (--fail-on-example-changes): no control could be compared (3 present in both versions: 2 function(s), 1 with no examples attributable to the rule)")
+            .isEqualTo("explico: gate failed (--fail-on EXAMPLE_CHANGES): no control could be compared (3 present in both versions: 2 function(s), 1 with no examples attributable to the rule)")
     }
 }

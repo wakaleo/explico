@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- **BREAKING (CLI): four flags renamed or removed, with no aliases.** The old spellings are now unknown options (exit `1`).
+
+  | Before | Now |
+  |---|---|
+  | `diff ... --json report.json` (a file path) | `diff ... --out report.md --json` -- a flag; the JSON is written beside the report as `report.md.json` (the `--out` path with `.json` appended) |
+  | `render ... --fail-on-gaps --require title,verdict` | `render ... --fail-on-gaps --must-have title,verdict` (the file option `--requirements` is unchanged) |
+  | `diff ... --examples ex --fail-on-example-changes` | `diff ... --examples ex --fail-on EXAMPLE_CHANGES` (combine: `--fail-on LOGIC_CHANGED,EXAMPLE_CHANGES`); the gate message now reads `gate failed (--fail-on EXAMPLE_CHANGES)` |
+  | `diff ... --force` (accepted, did nothing) | removed; `render --force` is unchanged |
+
+  `--fail-on` accepts five names now (`ADDED`, `REMOVED`, `LOGIC_CHANGED`, `DOCS_CHANGED`, `EXAMPLE_CHANGES`); exit codes and every other option are unchanged. The library is unaffected (`DiffReport.writeTo(file, force)` stays). The tests that used the old spellings changed spelling only.
+
 - **Changed (library): the structural model is opt-in; `DiffReport.changes` is the stable way to read a diff.** The parsed shape of a policy (`PolicyPackage.rules`, `RuleGroup`, `RuleBody`, `Condition`, `Operand`, `PathSegment`, the METADATA types, `DiffEntry` and `DiffReport.entries`) now carries `@ExplicoStructuralModel`, a Kotlin opt-in marker at **warning** level: it stays public and usable, but is outside the 1.x compatibility promise because a new Rego construct adds a variant. Kotlin callers touching it get a compiler warning (add `@OptIn(ExplicoStructuralModel::class)` to accept it); Java callers and the compiled behaviour are unaffected. New: `DiffReport.changes: List<DiffChange>` -- the changed controls as plain values (`controlId`, `category`, `label`, `packagePath`, `ruleName`, `anchor`), the same list as the diff JSON's `changes`, so a consumer rarely needs `entries`. `DiffReport` gains `changes` as a trailing field (`copy()` changes as before; the two-argument constructor stays). Before / after:
   ```kotlin
   val removed = report.entries.filter { it.category == DiffCategory.REMOVED }.map { it.controlId }   // now a warning

@@ -44,16 +44,16 @@ class CliFixtureVerdictDiffChallengeProcessTest {
     }
 
     @Test
-    @DisplayName("--fail-on and --fail-on-example-changes together: one exit 5 whose stderr carries both messages")
+    @DisplayName("--fail-on and --fail-on EXAMPLE_CHANGES together: one exit 5 whose stderr carries both messages")
     fun bothGates(@TempDir tempDir: Path) {
         val out = tempDir.resolve("report.md")
         val result = runCli(
-            listOf("diff", old, new, "--out", out.toString(), "--examples", base.resolve("examples").toAbsolutePath().toString(), "--fail-on", "LOGIC_CHANGED", "--fail-on-example-changes"),
+            listOf("diff", old, new, "--out", out.toString(), "--examples", base.resolve("examples").toAbsolutePath().toString(), "--fail-on", "LOGIC_CHANGED,EXAMPLE_CHANGES"),
             tempDir,
         )
 
         assertThat(result.exitCode).isEqualTo(5)
-        assertThat(result.stderr).contains("gate failed (--fail-on LOGIC_CHANGED)").contains("gate failed (--fail-on-example-changes)")
+        assertThat(result.stderr).contains("gate failed (--fail-on LOGIC_CHANGED)").contains("gate failed (--fail-on EXAMPLE_CHANGES)")
         assertThat(Files.exists(out)).isTrue()
     }
 
@@ -67,7 +67,7 @@ class CliFixtureVerdictDiffChallengeProcessTest {
         val out = tempDir.resolve("report.md")
 
         val withoutGate = runCli(listOf("diff", oldDir.toString(), newDir.toString(), "--out", out.toString(), "--examples", examples.toString()), tempDir)
-        val result = runCli(listOf("diff", oldDir.toString(), newDir.toString(), "--out", out.toString(), "--examples", examples.toString(), "--fail-on-example-changes"), tempDir)
+        val result = runCli(listOf("diff", oldDir.toString(), newDir.toString(), "--out", out.toString(), "--examples", examples.toString(), "--fail-on", "EXAMPLE_CHANGES"), tempDir)
 
         assertThat(withoutGate.exitCode).isEqualTo(0)
         assertThat(result.exitCode).isEqualTo(5)
@@ -76,7 +76,7 @@ class CliFixtureVerdictDiffChallengeProcessTest {
     }
 
     @Test
-    @DisplayName("--fail-on-example-changes with an examples directory that holds no fixture is a usage error (exit 1), not a silent pass")
+    @DisplayName("--fail-on EXAMPLE_CHANGES with an examples directory that holds no fixture is a usage error (exit 1), not a silent pass")
     fun emptyExamplesDirectory(@TempDir tempDir: Path) {
         val examples = tempDir.resolve("examples").also { Files.createDirectories(it) }
         val out = tempDir.resolve("report.md")
@@ -84,7 +84,7 @@ class CliFixtureVerdictDiffChallengeProcessTest {
         assertThat(runCli(listOf("diff", old, new, "--out", out.toString(), "--examples", examples.toString()), tempDir).exitCode).isEqualTo(0)
         val gated = tempDir.resolve("gated.md")
 
-        val result = runCli(listOf("diff", old, new, "--out", gated.toString(), "--examples", examples.toString(), "--fail-on-example-changes"), tempDir)
+        val result = runCli(listOf("diff", old, new, "--out", gated.toString(), "--examples", examples.toString(), "--fail-on", "EXAMPLE_CHANGES"), tempDir)
 
         assertThat(result.exitCode).isEqualTo(1)
         assertThat(result.stderr).contains("holds no fixture").doesNotContain("\tat ")

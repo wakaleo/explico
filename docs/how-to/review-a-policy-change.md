@@ -66,7 +66,7 @@ All of these write the report first, then exit `5`:
 | Flag | Fails when |
 |---|---|
 | `--fail-on LOGIC_CHANGED` | any control is in a listed category (`ADDED`, `REMOVED`, `LOGIC_CHANGED`, `DOCS_CHANGED`) |
-| `--fail-on-example-changes` | any of your fixtures (`--examples`) changes outcome between the two versions |
+| `--fail-on EXAMPLE_CHANGES` | any of your fixtures (`--examples`) changes outcome between the two versions (needs `--examples`) |
 
 ```text
 explico: gate failed (--fail-on LOGIC_CHANGED): 1 control(s): DB-001

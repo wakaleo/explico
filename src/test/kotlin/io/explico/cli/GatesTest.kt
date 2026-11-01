@@ -71,7 +71,7 @@ class GatesTest {
 
         @Test
         fun parsesCaseInsensitivelyKeepingTheOrderGivenAndDropsDuplicates() {
-            assertThat(Gates.parseFailOn("logic_changed, REMOVED ,logic_changed")).containsExactly(DiffCategory.LOGIC_CHANGED, DiffCategory.REMOVED)
+            assertThat(Gates.parseFailOn("logic_changed, REMOVED ,logic_changed").categories).containsExactly(DiffCategory.LOGIC_CHANGED, DiffCategory.REMOVED)
         }
 
         @Test

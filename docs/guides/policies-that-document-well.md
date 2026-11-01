@@ -149,5 +149,5 @@ documentation would change the policy. They are shown as marked verbatim source 
 
 ## Make the gate follow
 
-Once the documentation is where you want it, hold it there: `--fail-on-gaps` with `--require title,description,frameworks,fixture,verdict` fails the build when a
+Once the documentation is where you want it, hold it there: `--fail-on-gaps` with `--must-have title,description,frameworks,fixture,verdict` fails the build when a
 control loses a property. See [the CI recipes](ci-recipes.md#ratchet-the-documentation-quality) for how to add one property at a time.

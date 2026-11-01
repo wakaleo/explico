@@ -66,8 +66,8 @@ class CliDataAwareDiffProcessTest {
     @Test
     @DisplayName("--json carries the data line in the control's details")
     fun json(@TempDir tempDir: Path) {
-        val json = tempDir.resolve("report.json")
-        val (result, _) = diff(tempDir, "--old-data", data("old"), "--new-data", data("list-added"), "--json", json.toString())
+        val json = tempDir.resolve("report.md.json")
+        val (result, _) = diff(tempDir, "--old-data", data("old"), "--new-data", data("list-added"), "--json")
 
         assertThat(result.exitCode).isEqualTo(0)
         assertThat(Files.readString(json)).contains("reference data changed: `data ▸ high risk countries`")

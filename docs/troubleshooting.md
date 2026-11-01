@@ -10,7 +10,7 @@ Find your symptom, read the cause, apply the fix. Every failure has its own exit
 | `2` | `opa` could not parse your Rego; its own message is shown unchanged, with the file and line | Fix the Rego. If the file uses the older `deny[msg] { ... }` syntax, add `--rego-version v0`. |
 | `3` | `opa` is missing or is not version 1.x: *"explico requires opa version 1.x, but it could not be run …"* | Install `opa` 1.x and put it on `PATH`, or set `OPA_BIN`. |
 | `4` | Two controls share a control id (`diff`), or two example files share a `name` (`render --examples`) | Make the ids or names unique; for one control deliberately split over several rules, use `--group-by-control`. |
-| `5` | A CI gate failed (`--fail-under`, `--fail-on-gaps`, `diff --fail-on`, `--fail-on-example-changes`); the output **was still written** | Read the stderr line, which names the gate and why. See [CI recipes](guides/ci-recipes.md). |
+| `5` | A CI gate failed (`--fail-under`, `--fail-on-gaps`, `diff --fail-on`, including its `EXAMPLE_CHANGES`); the output **was still written** | Read the stderr line, which names the gate and why. See [CI recipes](guides/ci-recipes.md). |
 
 ## The render does not start
 
@@ -68,9 +68,9 @@ explico: gate failed (--fail-on-gaps): 1 gap(s)
 | Gate | Fix |
 |---|---|
 | `--fail-under N` | Coverage is below N%. The index lists what is shown as source; rewrite or lower N. Zero conditions counts as 100%. |
-| `--fail-on-gaps` | Add the missing description, framework, title, fixture or verdict it names, or change `--require`. A requirement with no control needs a control that lists it under `frameworks`. |
+| `--fail-on-gaps` | Add the missing description, framework, title, fixture or verdict it names, or change `--must-have`. A requirement with no control needs a control that lists it under `frameworks`. |
 | `diff --fail-on …` | A control is in a listed category. This is a tripwire for review, not an error in the policy. |
-| `--fail-on-example-changes` | One of your fixtures changes outcome between versions. The report's *Behaviour on your examples* names it. |
+| `--fail-on EXAMPLE_CHANGES` | One of your fixtures changes outcome between versions. The report's *Behaviour on your examples* names it. |
 
 ## Still stuck
 

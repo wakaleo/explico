@@ -5,7 +5,7 @@
  * Pinned (exact wording chosen here; /tdd must match): a refusal is exit 1 with EXACTLY ONE non-blank stderr line (so `failWith`, not Clikt's multi-line usage error) that names the
  * directory as the user typed it and the reason -- `not empty` plus `--force` when force would help; `input` (policies, examples or data), `working directory`, `home directory` or
  * `filesystem root` when it would not; `is a directory` for `diff --out`. The guard runs BEFORE opa is needed and before anything is deleted, and the real deletion happens only when the
- * write itself does. `--force` is new on `render` and `diff`.
+ * write itself does. `--force` is new on `render` (it was added to `diff` too and removed again in step 5: a report file is always overwritten, so it did nothing).
  */
 package io.explico.cli
 
@@ -193,22 +193,20 @@ class CliOutputGuardProcessTest {
     }
 
     @Test
-    @DisplayName("diff --out an existing directory is refused (is a directory), with or without --force and before opa is needed; its contents survive")
+    @DisplayName("diff --out an existing directory is refused (is a directory) before opa is needed; its contents survive (diff has no --force: step 5 removed the flag that did nothing)")
     fun diffOutIsADirectory(@TempDir tempDir: Path) {
         val dir = Files.createDirectories(tempDir.resolve("report.md"))
         Files.writeString(dir.resolve("mine.txt"), "mine")
         val args = listOf("diff", diffBase.resolve("old").toString(), diffBase.resolve("new").toString(), "--out", dir.toString())
 
         val plain = runCli(args, tempDir, opaBin = noOpa)
-        val forced = runCli(args + "--force", tempDir, opaBin = noOpa)
 
         assertRefusedLine(plain, dir.toString(), "is a directory")
-        assertRefusedLine(forced, dir.toString(), "is a directory")
         assertThat(tree(dir)).containsOnlyKeys("mine.txt")
     }
 
     @Test
-    @DisplayName("diff --out an existing regular file overwrites it, with or without --force")
+    @DisplayName("diff --out an existing regular file overwrites it, run after run (no --force needed: diff has none)")
     fun diffOverwritesAFile(@TempDir tempDir: Path) {
         val file = tempDir.resolve("report.md")
         val args = listOf("diff", diffBase.resolve("old").toString(), diffBase.resolve("new").toString(), "--out", file.toString())
@@ -217,18 +215,18 @@ class CliOutputGuardProcessTest {
         val plain = runCli(args, tempDir)
         val afterPlain = Files.readString(file)
         Files.writeString(file, "an older report")
-        val forced = runCli(args + "--force", tempDir)
+        val again = runCli(args, tempDir)
 
         assertThat(plain.exitCode).describedAs(plain.stderr).isEqualTo(0)
-        assertThat(forced.exitCode).describedAs(forced.stderr).isEqualTo(0)
+        assertThat(again.exitCode).describedAs(again.stderr).isEqualTo(0)
         assertThat(afterPlain).contains("## Summary").doesNotContain("an older report")
         assertThat(Files.readString(file)).isEqualTo(afterPlain)
     }
 
     @Test
-    @DisplayName("--force is documented in the help of render and diff")
+    @DisplayName("--force is documented in the help of render (the only command that replaces a directory)")
     fun helpMentionsForce(@TempDir tempDir: Path) {
-        for (command in listOf("render", "diff")) {
+        for (command in listOf("render")) {
             val help = runCli(listOf(command, "--help"), tempDir).stdout.replace(Regex("\\s+"), " ")
             assertThat(help).describedAs("$command --help").contains("--force")
         }

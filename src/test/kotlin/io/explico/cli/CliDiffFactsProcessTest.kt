@@ -34,8 +34,8 @@ class CliDiffFactsProcessTest {
     @Test
     @DisplayName("--json carries facts parallel to details for every LOGIC_CHANGED change, and none on a documentation-only one")
     fun factsInTheJsonFile(@TempDir tempDir: Path) {
-        val json = tempDir.resolve("report.json")
-        val result = runCli(listOf("diff", old, new, "--out", tempDir.resolve("report.md").toString(), "--json", json.toString()), tempDir)
+        val json = tempDir.resolve("report.md.json")
+        val result = runCli(listOf("diff", old, new, "--out", tempDir.resolve("report.md").toString(), "--json"), tempDir)
 
         assertThat(result.exitCode).isEqualTo(0)
         val changes = Json.parseToJsonElement(Files.readString(json)).jsonObject.getValue("changes").jsonArray.map { it.jsonObject }
