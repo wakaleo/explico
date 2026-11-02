@@ -118,7 +118,7 @@ This is the code in [`BuildersJava.java`](../../src/docsSnippets/java/BuildersJa
 ```
 
 - **`dataDir` takes a data file or a directory** of them, as `opa` reads either.
-- **`DiffReport.getChanges()` is the stable way to read what changed**: each `DiffChange` has `getControlId()` (null for a rule with no control id), `getCategory()`, `getLabel()`, `getPackagePath()`, `getRuleName()` and `getAnchor()` (null for a documentation-only change). You do not need the structural model (`getEntries()`), which is outside the compatibility promise; see [Compatibility](../compatibility.md).
+- **`DiffReport.getChanges()` is the stable way to read what changed**: each `DiffChange` has `getControlId()` (null for a rule with no control id), `getCategory()`, `getLabel()`, `getPackagePath()`, `getRuleName()` and `getAnchor()` (null only when another change in the report already claimed that anchor). You do not need the structural model (`getEntries()`), which is outside the compatibility promise; see [Compatibility](../compatibility.md).
 
 The Kotlin version of the whole sequence is in the [tutorial](../tutorial.md#5-the-same-walkthrough-programmatically), and the facade's
 every function is in the [API reference](https://wakaleo.github.io/explico/api/).

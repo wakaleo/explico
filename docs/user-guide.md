@@ -213,13 +213,13 @@ object Explico {
   `RenderedDocs(files: Map<String, String>, coverage: CoverageSummary,
   generatedExamples: GeneratedExamplesSummary?)`, the rendered Markdown keyed by
   output filename plus overall coverage (`coverage.rendered`, `coverage.total`,
-  `coverage.percent`). `generatedExamples` is null unless `generateExamples = true`,
+  `coverage.percent`; `percent` is computed, so `println(coverage)` shows only `CoverageSummary(rendered=24, total=24)`). `generatedExamples` is null unless `generateExamples = true`,
   then `rulesWithExamples` of `rulesConsidered`. `json = true` also adds `explico.json` to `files`
   (see [`json-output.md`](json-output.md)); `requirements: List<String>` adds the *Requirements coverage* section (see
   *Keeping your documentation complete* in [`policy-authoring.md`](policy-authoring.md)). `RenderedDocs.gaps` is always filled: one line
   per documentation gap, worded once for every consumer (empty when the documentation is complete). `RenderedDocs.findings` is the advisory counterpart: one line per kind of finding the index's *Documentation quality* section shows (`2 controls have no description`), in its order, empty when the section is absent; nothing fails on it. `controlId = ControlIdOptions(from, template)` is the `--control-id-from` / `--control-id-template` options, and `companion = CompanionLink(url, label)` is `--companion-url` / `--companion-label`; an invalid value throws `IllegalArgumentException` before any `opa` work; a rule whose `custom.mask` is malformed throws `InvalidMaskException`, an `ExplicoException` (see *Keeping values out of the documentation* in [`policy-authoring.md`](policy-authoring.md)). `groupByControl = true` is `--group-by-control`: `files` then also holds `controls/<slug>.md` pages, so **a caller writing the files must create parent directories** (the snippets below do).
 - **`diff(old, new, options = DiffOptions())`** — the options are `DiffOptions(groupByControl, data: DataVersions?, examples, labels: VersionLabels?, digests)`; Java uses `DiffOptions.builder()`. `data` compares the reference data of the two versions, `examples` evaluates the same fixtures against both, and the report's **Compared** block (the `sha256:` digests of the two policy directories, as in `index.md`) appears only with `digests = true` or `labels` — the CLI always asks for it. Examples, labels and digests read the sets' `sourceDir`, so they need sets from `Explico.load`. Returns `DiffReport(entries: List<DiffEntry>` (opt-in: every control, `UNCHANGED` included), `changes: List<DiffChange>` (the changed controls as plain values, the stable way to read what changed),
-  markdown: String, json: String)`. Each `DiffEntry` (part of the opt-in structural model) carries its `category`
+  markdown: String, json: String)`. `DiffChange` is `io.explico.diff.DiffChange(controlId: String?, category: DiffCategory, label: String, packagePath: String, ruleName: String, anchor: String?)`: `controlId` is null for a rule with no control id, and `anchor` is null only when another change in the report already claimed that anchor. Each `DiffEntry` (part of the opt-in structural model) carries its `category`
   (`DiffCategory`: `ADDED`/`REMOVED`/`LOGIC_CHANGED`/`DOCS_CHANGED`/`UNCHANGED`),
   `controlId`, and the old/new `PolicyPackage`+`RuleGroup` (null on the
   absent side for `ADDED`/`REMOVED`). Throws
@@ -276,7 +276,12 @@ Everything else is the **structural model**: the parsed shape of a policy (`Poli
 types, and `DiffEntry`). It is public and KDoc'd, and usable, but **outside the compatibility promise**: a new Rego construct adds a variant, and nearly every release has. It carries
 `@ExplicoStructuralModel`, an opt-in marker, so a Kotlin caller who touches it gets a *warning* (never an error) and decides on purpose:
 
+The marker is `io.explico.ExplicoStructuralModel` (the top-level package, not `io.explico.model` where `PolicySet` lives); the other public types are `io.explico` (the facade, options, `RenderedDocs`, `DiffReport`, `RenderOptions`/`DiffOptions` and their small classes, the exceptions), `io.explico.diff` (`DiffChange`, `DiffCategory`) and `io.explico.render` (`ExampleSet`, `Fixture`, `CoverageSummary`). Gradle's `-q` hides compiler warnings, so run a build without it to see the marker's.
+
 ```kotlin
+import io.explico.ExplicoStructuralModel
+import io.explico.diff.DiffCategory
+
 @OptIn(ExplicoStructuralModel::class)
 fun unchangedControls(report: DiffReport) = report.entries.count { it.category == DiffCategory.UNCHANGED }
 ```
@@ -488,9 +493,10 @@ runtime.
 - **A dedicated output directory is recommended** — `render()`'s CLI form
   replaces `--out`'s target directory on every run (see the CLI table
   above) and refuses a directory it did not write itself unless `--force`.
-  Programmatically, `RenderedDocs.writeTo(dir)` applies the same guard
-  (`force`, and a `protect` list of the policy, example and data paths you
-  rendered from); a refusal is an `OutputDirectoryException`.
+  Programmatically, `RenderedDocs.writeTo(dir, force = false, protect = emptyList())` applies the same guard
+  (`force`, and a `protect` list of the policy, example, data and requirements paths you
+  rendered from); a refusal is an `OutputDirectoryException`. `DiffReport.writeTo(file)` takes only the report's path
+  and refuses an existing directory.
 - **Rendering alongside your policy sources is possible but not usually
   what you want**: output is organized **per Rego *package*** (one
   `<package-path>.md` file per package, plus `index.md`), not per source
