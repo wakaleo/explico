@@ -44,4 +44,7 @@ internal object MarkdownText {
     /** [text] for use inside `*emphasis*` on one line: line breaks become spaces and anything that would change how it renders is escaped. */
     fun emphasisText(text: String): String =
         text.replace(lineBreaks, " ").replace(emphasisSpecials, "\\\\$1").replace(wordBoundaryUnderscore, "\\\\_")
+
+    /** [text] written by a policy author, for one cell of a Markdown table: a `|` must not start a new column, and a line break must not end the row (security review L1). */
+    fun tableCell(text: String): String = text.replace(lineBreaks, " ").replace("|", "\\|")
 }

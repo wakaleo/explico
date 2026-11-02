@@ -199,4 +199,28 @@ class OutputGuardTest {
         OutputGuard.checkFile(file)
         OutputGuard.checkFile(t.resolve("missing/new.md"))
     }
+
+    @Test
+    @DisplayName("security review L3: a marker that is a symlink (or not a regular file) does not prove the directory is explico's")
+    fun markerMustBeARegularFile(@TempDir t: Path) {
+        val cwd = Files.createDirectories(t.resolve("cwd"))
+        val target = Files.writeString(t.resolve("elsewhere.txt"), OutputGuard.MARKER_TEXT)
+        val linked = dirWith(t, "linked", "data.txt")
+        try { Files.createSymbolicLink(linked.resolve(OutputGuard.MARKER), target) } catch (e: Exception) { abort("symbolic links are not available here: ${e.message}") }
+        assertThat(refusal(linked, cwd = cwd)).contains("not empty")
+
+        val asDirectory = dirWith(t, "as-dir", "data.txt")
+        Files.createDirectories(asDirectory.resolve(OutputGuard.MARKER))
+        assertThat(refusal(asDirectory, cwd = cwd)).contains("not empty")
+    }
+
+    @Test
+    @DisplayName("security review L5: a dangling symlink is refused with a plain reason, even with force")
+    fun danglingSymlink(@TempDir t: Path) {
+        val cwd = Files.createDirectories(t.resolve("cwd"))
+        val link = t.resolve("dangling")
+        try { Files.createSymbolicLink(link, t.resolve("nowhere")) } catch (e: Exception) { abort("symbolic links are not available here: ${e.message}") }
+        assertThat(refusal(link, cwd = cwd)).contains("symbolic link")
+        assertThat(refusal(link, force = true, cwd = cwd)).contains("symbolic link")
+    }
 }

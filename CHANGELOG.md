@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Security: `--data` without `--examples` could run a builtin chosen by the policy author.** A bracket-string key in a policy (`data["..."]`) was pasted unquoted into the `opa eval` query, so a crafted key could append a second statement (for example `http.send`) when the data defined the first key. Every segment is now one quoted key, so the query cannot reach a builtin; this also covers `diff --old-data/--new-data`. Found by the pre-1.0 security review.
+- **Fixed: a `|` in a control id, title, framework, package, rule or requirement no longer breaks the `index.md` tables** (it is written `\|`); a line break in such text becomes a space.
+- **Fixed: the output guard.** A symbolic link is no longer accepted as the `.explico-output` marker (it must be a regular file), a dangling-symlink `--out` is refused with a plain reason, and `--force` never deletes the `--requirements` file.
+- **Fixed: an unreadable `--requirements` file or fixture** (not text, a dangling link) is exit `1` with one line instead of a stack trace.
+
 - **Added: committed API and CLI baselines, and a compatibility page.** `api/explico.api` lists every public type and member of the library and `api/explico.cli` every command, option and exit code; the build fails (`check`) when the code drifts from either, so a change to the public surface is always a visible, reviewed diff. [`docs/compatibility.md`](docs/compatibility.md) says what is promised stable in 1.x (the facade and options, the result types, the exceptions, the CLI commands and exit codes, the two JSON schemas), what is not (the Markdown wording and layout, the opt-in structural model, stderr text, generated file names other than `index.md`, `explico.json` and `controls/`), that a new diff fact kind is a new schema version, and that a removal is preceded by one minor release of warnings. **Changed:** `io.explico.cli.MainKt.main` is no longer public API (it is the launcher; the jar's `Main-Class` and `java -cp ... io.explico.cli.MainKt` still work), and the build enables Kotlin's `explicitApi()`. No output changed.
 
 - **BREAKING (CLI): four flags renamed or removed, with no aliases.** The old spellings are now unknown options (exit `1`).

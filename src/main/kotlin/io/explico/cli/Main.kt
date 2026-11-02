@@ -142,17 +142,17 @@ private class RenderCommand : CliktCommand(name = "render") {
         // Likewise a label with no link to label.
         if (companionLabel != null && companionUrl == null) throw UsageError("--companion-label needs --companion-url (it names the link that option adds)")
         // Spec §14.80: refuse a dangerous --out BEFORE opa is needed or any work is done; the same check runs again at the write, which is the only place anything is deleted.
-        val inputs = listOfNotNull(policyDir, examplesDir, dataDir)
+        val inputs = listOfNotNull(policyDir, examplesDir, dataDir, requirementsFile)
         refusalExit { OutputGuard.checkDirectory(out, force, inputs) }
         requireOpaOrExit()
         try {
             val policySet = Explico.load(policyDir, parseRegoVersion(regoVersion))
-            val examples = examplesDir?.let { Explico.loadExamples(it) }
+            val examples = examplesDir?.let { reading(it) { Explico.loadExamples(it) } }
             val rendered = Explico.render(
                 policySet,
                 RenderOptions(
                     examples = examples, dataDir = dataDir, generateExamples = generateExamples, json = json,
-                    requirements = requirementsFile?.let { parseRequirements(Files.readString(it)) } ?: emptyList(), sourceUrl = sourceUrl,
+                    requirements = requirementsFile?.let { file -> reading(file) { parseRequirements(Files.readString(file)) } } ?: emptyList(), sourceUrl = sourceUrl,
                     controlId = controlIdFrom?.let { ControlIdOptions(it, controlIdTemplate ?: ControlIdFromFilename.DEFAULT_TEMPLATE) },
                     groupByControl = groupByControl, companion = companionUrl?.let { CompanionLink(it, companionLabel ?: "module") }, required = required,
                 ),
@@ -227,7 +227,7 @@ private class DiffCommand : CliktCommand(name = "diff") {
         try {
             val old = Explico.load(oldDir, parseRegoVersion(regoVersion))
             val new = Explico.load(newDir, parseRegoVersion(regoVersion))
-            val examples = examplesDir?.let { Explico.loadExamples(it) }
+            val examples = examplesDir?.let { reading(it) { Explico.loadExamples(it) } }
             // An empty examples directory is "not supplied" to the library; a gate on it would pass having looked at nothing.
             if (gateOnExamples && examples != null && examples.fixtures.isEmpty()) throw UsageError("--fail-on EXAMPLE_CHANGES: the --examples directory holds no fixture, so there is nothing to compare")
             // The CLI always showed the Compared block (spec §14.76), so it always asks for the digests.
@@ -352,6 +352,13 @@ private fun CliktCommand.failWith(exitCode: Int, message: String): Nothing {
 private fun CliktCommand.writing(target: Path, write: () -> Unit) {
     try { write() } catch (e: java.io.IOException) { failWith(1, "could not write $target: ${e.javaClass.simpleName}${e.message?.let { ": " + it.lines().first() } ?: ""}") }
 }
+
+/**
+ * Reads an input; a file that cannot be read (not text, a dangling link, no permission) is exit 1 with ONE line naming [source], never a JVM stack trace (spec §8.2, security review L4).
+ * Wraps the read only, so a write failure is never mislabelled.
+ */
+private fun <T> CliktCommand.reading(source: Path, read: () -> T): T =
+    try { read() } catch (e: java.io.IOException) { failWith(1, "could not read $source: ${e.javaClass.simpleName}${e.message?.let { ": " + it.lines().first() } ?: ""}") }
 
 /** Runs a pre-flight output check; a refusal is exit 1 with the guard's single line (spec §14.80), never a stack trace or Clikt's usage text. */
 private fun CliktCommand.refusalExit(check: () -> Unit) {

@@ -42,7 +42,8 @@ class CliOutputFailureProcessTest {
 
         val result = runCli(listOf("render", policies, "--out", link.toString()), tempDir)
 
-        assertOneLineFailure(result, "could not write", link.toString())
+        // Security review L5: the guard now refuses it up front with a plain reason (was: a raw FileAlreadyExistsException from the write).
+        assertOneLineFailure(result, "refusing to write to", link.toString(), "symbolic link")
     }
 
     @Test

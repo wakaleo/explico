@@ -31,10 +31,11 @@ Only the latest release receives fixes (0.x: the API may still change). Releases
   and a path that hides nothing in any example is warned about, but neither can know what a rule echoes. Review the output of a new rule before publishing it.
 - **Text you supply is written into the output.** The `--companion-url` and `--source-url` templates and the `--companion-label` are the operator's; file and
   package names are percent-encoded into the URLs and the label is limited to plain text, so a policy author cannot break out of a link. Control ids, titles
-  and descriptions come from METADATA and are shown as written.
+  and descriptions come from METADATA and are shown as written: explico escapes `|` and line breaks so text cannot break a table, but it does **not** sanitise Markdown or HTML, so the
+  generated documents are as trustworthy as the policies they came from. If you publish them through a site generator that allows raw HTML, review the policy authors' METADATA first.
 - **`--out` is replaced, but only where it is safe to.** `render --out <dir>` deletes the directory and writes it again (so output never goes stale). It does that only
   to a directory that is missing, empty, or marked `.explico-output` (written into every output directory); any other non-empty directory is refused, and nothing is
-  deleted, unless you pass `--force`. Nothing overrides these refusals, even `--force`: `--out` may not be, or contain, the policy, example or data paths, the working
+  deleted, unless you pass `--force`. Nothing overrides these refusals, even `--force`: `--out` may not be, or contain, the policy, example, data or requirements paths, the working
   directory, your home directory or a filesystem root. Paths are compared by real path, so `..` and symlinks do not get round them.
 - **explico drives an external `opa` binary.** It uses the `opa` on `PATH` or the one named by `OPA_BIN`. Install `opa`
   from a source you trust. `explico demo --fetch-opa` downloads `opa` from the official GitHub release and verifies its

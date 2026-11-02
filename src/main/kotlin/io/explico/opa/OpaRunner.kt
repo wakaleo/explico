@@ -9,6 +9,7 @@ import io.explico.OpaFailedException
 import io.explico.OpaNotAvailableException
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
@@ -88,7 +89,9 @@ internal object OpaRunner {
      * genuinely defined `null` value as "undefined" -- two different things this function must tell apart.
      */
     fun evalDataPath(dataDirs: List<Path>, path: List<String>, regoVersion: RegoVersion = RegoVersion.V1): JsonElement? {
-        val query = "data." + path.joinToString(".")
+        // Every segment is ONE quoted key (a JSON string is a valid Rego string): a key taken from a policy's `data["..."]` can never end the reference and append a statement, so this
+        // query cannot reach a builtin (security review M1).
+        val query = "data" + path.joinToString("") { "[" + JsonPrimitive(it) + "]" }
         val args = buildList {
             add("eval"); add("--format"); add("json")
             dataDirs.forEach { add("--data"); add(dataArgument(it)) }

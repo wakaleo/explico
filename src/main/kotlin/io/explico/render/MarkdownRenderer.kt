@@ -700,7 +700,7 @@ internal object MarkdownRenderer {
             // links to a nonexistent anchor), and the frameworks its METADATA names, for the title link and the "Controls by framework" matrix below.
             val href: String?, val frameworks: List<String>,
         ) {
-            val titleCell: String get() = href?.let { "[$title]($it)" } ?: title
+            val titleCell: String get() = MarkdownText.tableCell(title).let { cell -> href?.let { "[$cell]($it)" } ?: cell }
         }
 
         val hasExamples = examplesByPackage.isNotEmpty()
@@ -769,9 +769,9 @@ internal object MarkdownRenderer {
             tableRows.forEach { row ->
                 // Compliance quick win: the title links to the row's own card, the same anchor convention a
                 // RuleReference already uses -- a reader scanning the index can jump straight to a control.
-                val packages = row.packages.joinToString(", ") { "`$it`" }
-                val rules = row.rules.joinToString(", ") { "`$it`" }
-                val prefix = "| ${row.controlId ?: "—"} | ${row.titleCell} | $packages | $rules | ${row.coverage.percent}%"
+                val packages = row.packages.joinToString(", ") { "`${MarkdownText.tableCell(it)}`" }
+                val rules = row.rules.joinToString(", ") { "`${MarkdownText.tableCell(it)}`" }
+                val prefix = "| ${row.controlId?.let(MarkdownText::tableCell) ?: "—"} | ${row.titleCell} | $packages | $rules | ${row.coverage.percent}%"
                 val sources = row.sources.map { (file, line) -> sourceCell(file, line) }.distinct().joinToString(", ")
                 if (hasExamples) {
                     val exampleColumn = "${if (row.hasMatching) "✓" else "–"} / ${if (row.hasNotMatching) "✓" else "–"}"
@@ -915,10 +915,10 @@ internal object MarkdownRenderer {
             val links = controlRows
                 .sortedWith(compareBy({ it.controlId == null }, { it.controlId }, { it.ruleName }))
                 .map { row ->
-                    val label = row.controlId ?: row.ruleName
+                    val label = MarkdownText.tableCell(row.controlId ?: row.ruleName)
                     row.href?.let { "[$label]($it)" } ?: label
                 }
-            sb.appendLine("| $framework | ${links.joinToString(", ")} |")
+            sb.appendLine("| ${MarkdownText.tableCell(framework)} | ${links.joinToString(", ")} |")
         }
         sb.appendLine()
     }
@@ -936,7 +936,7 @@ internal object MarkdownRenderer {
         sb.appendLine("| Requirement | Controls |")
         sb.appendLine("|---|---|")
         for (item in coverage.items) {
-            sb.appendLine("| ${item.requirement} | ${if (item.controls.isEmpty()) "**No control**" else item.controls.joinToString(", ") { it.link() }} |")
+            sb.appendLine("| ${MarkdownText.tableCell(item.requirement)} | ${if (item.controls.isEmpty()) "**No control**" else item.controls.joinToString(", ") { MarkdownText.tableCell(it.link()) }} |")
         }
         sb.appendLine()
         if (coverage.unlisted.isNotEmpty()) {
