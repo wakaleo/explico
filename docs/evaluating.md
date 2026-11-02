@@ -38,9 +38,10 @@ adequate; reviewers still own that. [True by construction](concepts/true-by-cons
 Be sceptical of the demo: the sample policies render at 100% because they were written with explico in mind. The honest numbers come from
 the project's audit of four public libraries it was not written around (Gatekeeper, Trivy, Regal, conftest; 964 files):
 
-- **97% of files render at all** (934 of 964). The 30 that do not are rejected by OPA itself: older Rego syntax, or a file that calls a function defined in a sibling file.
-- **Rendered conditions on that third-party code were 47–61%**, against about 90% on the project's own fixtures. The rest are shown as marked source, never
-  paraphrased. That figure predates later improvements and is not a current measurement, so treat it as an order of magnitude and run your own.
+- **Almost every file renders** once Rego v0 is selected for the libraries written in it (`--rego-version v0`; it is never auto-detected). What does not is rejected by OPA itself: syntax OPA 1.x refuses, or a file that calls a function defined in a sibling file when it is loaded alone.
+- **Rendered conditions on that third-party code were 57% to 88%**: Gatekeeper 88%, conftest 83%, Trivy's Kubernetes checks 83% loaded as one unit and 66% one file at a time, Regal's own rules 57%,
+  against about 90% on the project's own fixtures ([the table and how it was taken](concepts/coverage.md#how-good-is-it-on-real-policies)). The rest is shown as marked source, never paraphrased.
+  The figures move as constructs are added, so treat them as an order of magnitude and run your own.
 
 The practical reading: expect useful cards for policies of ordinary shape (comparisons, membership, negation, iteration, user-defined functions),
 and expect heavily abstract or builtin-dense policies to show a lot of source. Each such block says why. Measure your own set in the pilot below.
@@ -62,7 +63,7 @@ Details: [Rego coverage audit](rego-coverage.md), [What explico renders](referen
   [Security policy](security.md).
 - **`--out` is emptied before each render.** Give it a dedicated directory.
 - **Masking is a documentation aid, not a security boundary.** [Mask sensitive values](how-to/mask-sensitive-values.md) lists what it does not hide.
-- **Pre-1.0.** The API and output can still change. Read the changelog's "Changed" entries before upgrading; a test pins the public model classes' constructors from earlier releases, and the pinned `opa` version is part of reproducibility.
+- **The Markdown wording can change between releases.** From 1.0 the library API, the CLI options and exit codes and the JSON schemas are stable ([Compatibility](compatibility.md)), but the phrasing and layout of the documents are not, and neither is the coverage figure for the same policies. Pin the explico version and the `opa` version in CI, and read the changelog before upgrading.
 - **Tied to OPA.** It reads standard OPA METADATA and drives the real `opa` binary, so there is no second dialect to migrate away from, but it is of no use outside Rego.
 - **Not affiliated with OPA or Styra.**
 

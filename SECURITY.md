@@ -8,7 +8,7 @@ reproduces the problem. You will get an acknowledgement, and a fix or an explana
 
 ## Supported versions
 
-Only the latest release receives fixes (0.x: the API may still change). Releases are signed with the key published on
+Only the latest release receives fixes. Releases are signed with the key published on
 `keyserver.ubuntu.com`; the signing key's fingerprint is printed in each release workflow run.
 
 ## What explico runs, and what that means for you

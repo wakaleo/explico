@@ -62,6 +62,24 @@ What the control owner reads (generated; nothing here was written by hand):
 Each verdict above came from running `opa eval` on a small JSON file named "hotfix without change ticket". That file is the whole
 cost of the example.
 
+## What happens to Rego it does not understand
+
+explico never describes logic it did not check. A construct it has no faithful template for is shown as the **verbatim Rego**, clearly marked, and counted against the rendering coverage:
+
+````markdown
+- ⚠ **not rendered — shown as source:**
+
+  ```rego
+  count({r | some r in input.regions; net.cidr_is_valid(r)}) > 3
+  ```
+
+*Rendering coverage: 0 of 1 conditions*
+````
+
+How much it understands depends on the policy. The sample policies render at 100% because they were written with explico in mind; on public libraries written by other people it rendered
+**57% to 88% of conditions** (Gatekeeper 88%, Trivy 66% to 83%, Regal's own rules 57%), the rest as marked source. Measure your own set first:
+[Evaluating explico](evaluating.md), [Coverage](concepts/coverage.md#how-good-is-it-on-real-policies).
+
 ## Why you can trust it
 
 - **True by construction.** Every statement is derived mechanically from the Rego and its METADATA. Anything explico cannot render
@@ -88,6 +106,11 @@ cost of the example.
 - **Masking** (`custom.mask`) keeps subject ids and e-mail addresses from your fixtures out of the documents.
 
 ## Start here
+
+- **Evaluating it?** Read [Evaluating explico](evaluating.md), then run the [first demo](install.md).
+- **Writing policies?** [Quickstart](quickstart.md), then [Writing policies](policy-authoring.md).
+- **Owning the pipeline?** [CI recipes](guides/ci-recipes.md) and [From Rego to living documentation](guides/living-documentation.md).
+- **Calling it from code?** [CLI and library](user-guide.md#library), [Use from Java](how-to/use-from-java.md) and [Compatibility](compatibility.md).
 
 | If you want to… | Go to |
 |---|---|

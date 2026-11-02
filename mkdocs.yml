@@ -69,6 +69,7 @@ nav:
       - True by construction: concepts/true-by-construction.md
       - Reading a card: concepts/reading-a-card.md
       - Coverage: concepts/coverage.md
+      - Relationship to OPA: concepts/relationship-to-opa.md
   - Guides:
       - From Rego to living documentation: guides/living-documentation.md
       - Writing policies: policy-authoring.md

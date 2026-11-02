@@ -88,6 +88,17 @@ applies.
 
 Before 1.0 there was no such promise. The changes made on the way to 1.0 (the long forms of `render` and `diff` replaced by options objects, four CLI options renamed, the structural model made opt-in) are recorded in the CHANGELOG.
 
+## Upgrading and support
+
+- **Which release gets fixes.** Only the latest ([security policy](../SECURITY.md)). Upgrade within 1.x freely: nothing stable is removed or changed incompatibly.
+- **Upgrading from 0.x.** The changes made on the way to 1.0 are recorded in the [CHANGELOG](../CHANGELOG.md). The ones that need action: `render` and `diff` take an options object
+  (`RenderOptions`, `DiffOptions`) instead of long parameter lists; `render --require` is now `--must-have`; `diff --fail-on-example-changes` is `--fail-on EXAMPLE_CHANGES`; `diff --json` is
+  a flag that writes `<out>.json` beside the report; `diff --force` is gone; and the structural model is opt-in for Kotlin callers. The old spellings are unknown options (exit `1`), with no aliases.
+- **Which `opa`.** The 1.x binary, developed and tested against 1.19.0, which CI pins. Another 1.x should work, but the rendered text is only guaranteed byte for byte on the tested version, so pin `opa`
+  as well as explico in CI. A 2.x is not assumed compatible. The Rego syntax of your policies is a separate choice: v1 by default, v0 with `--rego-version v0`.
+- **Which platforms.** CI runs the build and the acceptance tests on Linux, macOS and Windows, on JDK 17 and newer.
+- **Coverage moves.** The rendered-conditions percentage for an unchanged policy can change between releases, because a release may render a construct that was source. Re-baseline a `--fail-under` threshold when you upgrade.
+
 ## Updating the baselines
 
 Both baselines are checked in and compared on every build, so an accidental change fails `./gradlew check`:

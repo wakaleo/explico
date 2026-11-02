@@ -10,8 +10,10 @@ explico is a single jar. It needs a JDK and the `opa` binary, and nothing else.
 | **`opa`** | Open Policy Agent **1.x** on your `PATH` (or point the `OPA_BIN` environment variable at the binary). explico is developed and tested against **1.19.0**; another 1.x should work but is not guaranteed byte for byte. `opa version` shows what you have. |
 | **explico** | The jar `explico-<version>-all.jar` from the project's [GitHub Releases](https://github.com/wakaleo/explico/releases). To build it yourself: `./gradlew shadowJar`, which writes `build/libs/explico-<version>-all.jar`. |
 
-Using explico from your own Kotlin or Java code instead is covered in [CLI and library](user-guide.md); the README's
-[Install section](readme.md#install) has the Maven coordinates.
+Every command in these pages calls the jar `explico.jar`, so rename the download once (`mv explico-*-all.jar explico.jar`), or define
+`alias explico='java -jar explico-<version>-all.jar'` and drop the `java -jar explico.jar` prefix. explico is tested on Linux, macOS and Windows.
+
+Using explico from your own Kotlin or Java code instead is covered in [CLI and library](user-guide.md#adding-the-dependency) and [Use from Java](how-to/use-from-java.md), which have the Maven coordinates.
 
 ## Check it works
 
