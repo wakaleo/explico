@@ -25,7 +25,12 @@ repositories {
     mavenCentral()
 }
 
+// The public API is frozen by committed baselines (spec §14.80 step 6): `abiValidation` writes/checks api/explico.api from Kotlin visibility (`./gradlew updateKotlinAbi`, `checkKotlinAbi` is part of
+// `check`); `explicitApi()` makes every public declaration say so, so nothing becomes public by omission. Both are part of the Kotlin Gradle plugin already applied: no new dependency.
+@OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
 kotlin {
+    explicitApi()
+    abiValidation { }
     jvmToolchain(21)
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
@@ -287,6 +292,12 @@ tasks.test {
     inputs.files(fileTree("docs") { include("**/*.md") })
     inputs.file("README.md")
     inputs.dir("samples")
+    // ApiBaselineTest / CliBaselineTest read the committed baselines, CompatibilityDocsTest the nav, ApiBaselineTest this very script (spec §14.80 step 6).
+    inputs.files(fileTree("api"))
+    inputs.file("mkdocs.yml")
+    inputs.file("build.gradle.kts")
+    // `-Dexplico.updateCli=true` rewrites api/explico.cli instead of comparing, like the goldens: a deliberate, reviewed act.
+    systemProperty("explico.updateCli", System.getProperty("explico.updateCli", "false"))
     // Show WHY a test failed (the full assertion message) in the console/CI log, not just the exception class.
     testLogging {
         events("failed")

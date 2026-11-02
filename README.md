@@ -130,6 +130,7 @@ checksum-verified build itself: `java -jar explico.jar demo --fetch-opa`.
 For everything else — every flag, every exit code, the full library API —
 see [`docs/user-guide.md`](docs/user-guide.md). Writing policies you want
 explico to render well? See [`docs/policy-authoring.md`](docs/policy-authoring.md).
+What stays stable across versions (library, CLI, JSON)? See [`docs/compatibility.md`](docs/compatibility.md).
 Want a guided walkthrough of all five sample policies, not just one card?
 See [`docs/tutorial.md`](docs/tutorial.md).
 

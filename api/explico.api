@@ -1,0 +1,1151 @@
+public final class io/explico/CompanionLink {
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/explico/CompanionLink;
+	public static synthetic fun copy$default (Lio/explico/CompanionLink;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/CompanionLink;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLabel ()Ljava/lang/String;
+	public final fun getUrl ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/ControlIdOptions {
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/explico/ControlIdOptions;
+	public static synthetic fun copy$default (Lio/explico/ControlIdOptions;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/ControlIdOptions;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFrom ()Ljava/lang/String;
+	public final fun getTemplate ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/DataVersions {
+	public fun <init> (Ljava/nio/file/Path;Ljava/nio/file/Path;)V
+	public final fun component1 ()Ljava/nio/file/Path;
+	public final fun component2 ()Ljava/nio/file/Path;
+	public final fun copy (Ljava/nio/file/Path;Ljava/nio/file/Path;)Lio/explico/DataVersions;
+	public static synthetic fun copy$default (Lio/explico/DataVersions;Ljava/nio/file/Path;Ljava/nio/file/Path;ILjava/lang/Object;)Lio/explico/DataVersions;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNew ()Ljava/nio/file/Path;
+	public final fun getOld ()Ljava/nio/file/Path;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/DiffOptions {
+	public static final field Companion Lio/explico/DiffOptions$Companion;
+	public fun <init> ()V
+	public fun <init> (Z)V
+	public fun <init> (ZLio/explico/DataVersions;)V
+	public fun <init> (ZLio/explico/DataVersions;Lio/explico/render/ExampleSet;)V
+	public fun <init> (ZLio/explico/DataVersions;Lio/explico/render/ExampleSet;Lio/explico/VersionLabels;)V
+	public fun <init> (ZLio/explico/DataVersions;Lio/explico/render/ExampleSet;Lio/explico/VersionLabels;Z)V
+	public synthetic fun <init> (ZLio/explico/DataVersions;Lio/explico/render/ExampleSet;Lio/explico/VersionLabels;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public static final fun builder ()Lio/explico/DiffOptions$Builder;
+	public final fun component1 ()Z
+	public final fun component2 ()Lio/explico/DataVersions;
+	public final fun component3 ()Lio/explico/render/ExampleSet;
+	public final fun component4 ()Lio/explico/VersionLabels;
+	public final fun component5 ()Z
+	public final fun copy (ZLio/explico/DataVersions;Lio/explico/render/ExampleSet;Lio/explico/VersionLabels;Z)Lio/explico/DiffOptions;
+	public static synthetic fun copy$default (Lio/explico/DiffOptions;ZLio/explico/DataVersions;Lio/explico/render/ExampleSet;Lio/explico/VersionLabels;ZILjava/lang/Object;)Lio/explico/DiffOptions;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getData ()Lio/explico/DataVersions;
+	public final fun getDigests ()Z
+	public final fun getExamples ()Lio/explico/render/ExampleSet;
+	public final fun getGroupByControl ()Z
+	public final fun getLabels ()Lio/explico/VersionLabels;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/DiffOptions$Builder {
+	public final fun build ()Lio/explico/DiffOptions;
+	public final fun data (Lio/explico/DataVersions;)Lio/explico/DiffOptions$Builder;
+	public final fun digests (Z)Lio/explico/DiffOptions$Builder;
+	public final fun examples (Lio/explico/render/ExampleSet;)Lio/explico/DiffOptions$Builder;
+	public final fun groupByControl (Z)Lio/explico/DiffOptions$Builder;
+	public final fun labels (Lio/explico/VersionLabels;)Lio/explico/DiffOptions$Builder;
+}
+
+public final class io/explico/DiffOptions$Companion {
+	public final fun builder ()Lio/explico/DiffOptions$Builder;
+}
+
+public final class io/explico/DiffReport {
+	public fun <init> (Ljava/util/List;Ljava/lang/String;)V
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lio/explico/diff/ExampleComparison;)V
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lio/explico/diff/ExampleComparison;Ljava/lang/String;)V
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lio/explico/diff/ExampleComparison;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lio/explico/diff/ExampleComparison;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lio/explico/diff/ExampleComparison;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Lio/explico/diff/ExampleComparison;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun component8 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lio/explico/diff/ExampleComparison;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)Lio/explico/DiffReport;
+	public static synthetic fun copy$default (Lio/explico/DiffReport;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Lio/explico/diff/ExampleComparison;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lio/explico/DiffReport;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getChanges ()Ljava/util/List;
+	public final fun getEntries ()Ljava/util/List;
+	public final fun getExampleChanges ()Ljava/util/List;
+	public final fun getExampleComparison ()Lio/explico/diff/ExampleComparison;
+	public final fun getJson ()Ljava/lang/String;
+	public final fun getMarkdown ()Ljava/lang/String;
+	public final fun getNewDigest ()Ljava/lang/String;
+	public final fun getOldDigest ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+	public final fun writeTo (Ljava/nio/file/Path;)V
+}
+
+public final class io/explico/Explico {
+	public static final field INSTANCE Lio/explico/Explico;
+	public static final fun diff (Lio/explico/model/PolicySet;Lio/explico/model/PolicySet;)Lio/explico/DiffReport;
+	public static final fun diff (Lio/explico/model/PolicySet;Lio/explico/model/PolicySet;Lio/explico/DiffOptions;)Lio/explico/DiffReport;
+	public static synthetic fun diff$default (Lio/explico/model/PolicySet;Lio/explico/model/PolicySet;Lio/explico/DiffOptions;ILjava/lang/Object;)Lio/explico/DiffReport;
+	public static final fun load (Ljava/nio/file/Path;)Lio/explico/model/PolicySet;
+	public static final fun load (Ljava/nio/file/Path;Lio/explico/model/RegoVersion;)Lio/explico/model/PolicySet;
+	public static synthetic fun load$default (Ljava/nio/file/Path;Lio/explico/model/RegoVersion;ILjava/lang/Object;)Lio/explico/model/PolicySet;
+	public static final fun loadExamples (Ljava/nio/file/Path;)Lio/explico/render/ExampleSet;
+	public static final fun render (Lio/explico/model/PolicySet;)Lio/explico/RenderedDocs;
+	public static final fun render (Lio/explico/model/PolicySet;Lio/explico/RenderOptions;)Lio/explico/RenderedDocs;
+	public static synthetic fun render$default (Lio/explico/model/PolicySet;Lio/explico/RenderOptions;ILjava/lang/Object;)Lio/explico/RenderedDocs;
+}
+
+public class io/explico/ExplicoException : java/lang/RuntimeException {
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public abstract interface annotation class io/explico/ExplicoStructuralModel : java/lang/annotation/Annotation {
+}
+
+public final class io/explico/GeneratedExamplesSummary {
+	public fun <init> (II)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun copy (II)Lio/explico/GeneratedExamplesSummary;
+	public static synthetic fun copy$default (Lio/explico/GeneratedExamplesSummary;IIILjava/lang/Object;)Lio/explico/GeneratedExamplesSummary;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRulesConsidered ()I
+	public final fun getRulesWithExamples ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/OpaFailedException : io/explico/ExplicoException {
+	public fun <init> (ILjava/lang/String;)V
+	public final fun getExitCode ()I
+	public final fun getStderr ()Ljava/lang/String;
+}
+
+public final class io/explico/OpaNotAvailableException : io/explico/ExplicoException {
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public final class io/explico/OutputDirectoryException : io/explico/ExplicoException {
+	public fun <init> (Ljava/nio/file/Path;Ljava/lang/String;)V
+	public final fun getPath ()Ljava/nio/file/Path;
+}
+
+public final class io/explico/RenderOptions {
+	public static final field Companion Lio/explico/RenderOptions$Companion;
+	public fun <init> ()V
+	public fun <init> (Lio/explico/render/ExampleSet;)V
+	public fun <init> (Lio/explico/render/ExampleSet;Ljava/nio/file/Path;)V
+	public fun <init> (Lio/explico/render/ExampleSet;Ljava/nio/file/Path;Z)V
+	public fun <init> (Lio/explico/render/ExampleSet;Ljava/nio/file/Path;ZZ)V
+	public fun <init> (Lio/explico/render/ExampleSet;Ljava/nio/file/Path;ZZLjava/util/List;)V
+	public fun <init> (Lio/explico/render/ExampleSet;Ljava/nio/file/Path;ZZLjava/util/List;Ljava/lang/String;)V
+	public fun <init> (Lio/explico/render/ExampleSet;Ljava/nio/file/Path;ZZLjava/util/List;Ljava/lang/String;Lio/explico/ControlIdOptions;)V
+	public fun <init> (Lio/explico/render/ExampleSet;Ljava/nio/file/Path;ZZLjava/util/List;Ljava/lang/String;Lio/explico/ControlIdOptions;Z)V
+	public fun <init> (Lio/explico/render/ExampleSet;Ljava/nio/file/Path;ZZLjava/util/List;Ljava/lang/String;Lio/explico/ControlIdOptions;ZLio/explico/CompanionLink;)V
+	public fun <init> (Lio/explico/render/ExampleSet;Ljava/nio/file/Path;ZZLjava/util/List;Ljava/lang/String;Lio/explico/ControlIdOptions;ZLio/explico/CompanionLink;Ljava/util/List;)V
+	public synthetic fun <init> (Lio/explico/render/ExampleSet;Ljava/nio/file/Path;ZZLjava/util/List;Ljava/lang/String;Lio/explico/ControlIdOptions;ZLio/explico/CompanionLink;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public static final fun builder ()Lio/explico/RenderOptions$Builder;
+	public final fun component1 ()Lio/explico/render/ExampleSet;
+	public final fun component10 ()Ljava/util/List;
+	public final fun component2 ()Ljava/nio/file/Path;
+	public final fun component3 ()Z
+	public final fun component4 ()Z
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun component7 ()Lio/explico/ControlIdOptions;
+	public final fun component8 ()Z
+	public final fun component9 ()Lio/explico/CompanionLink;
+	public final fun copy (Lio/explico/render/ExampleSet;Ljava/nio/file/Path;ZZLjava/util/List;Ljava/lang/String;Lio/explico/ControlIdOptions;ZLio/explico/CompanionLink;Ljava/util/List;)Lio/explico/RenderOptions;
+	public static synthetic fun copy$default (Lio/explico/RenderOptions;Lio/explico/render/ExampleSet;Ljava/nio/file/Path;ZZLjava/util/List;Ljava/lang/String;Lio/explico/ControlIdOptions;ZLio/explico/CompanionLink;Ljava/util/List;ILjava/lang/Object;)Lio/explico/RenderOptions;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCompanion ()Lio/explico/CompanionLink;
+	public final fun getControlId ()Lio/explico/ControlIdOptions;
+	public final fun getDataDir ()Ljava/nio/file/Path;
+	public final fun getExamples ()Lio/explico/render/ExampleSet;
+	public final fun getGenerateExamples ()Z
+	public final fun getGroupByControl ()Z
+	public final fun getJson ()Z
+	public final fun getRequired ()Ljava/util/List;
+	public final fun getRequirements ()Ljava/util/List;
+	public final fun getSourceUrl ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/RenderOptions$Builder {
+	public final fun build ()Lio/explico/RenderOptions;
+	public final fun companion (Lio/explico/CompanionLink;)Lio/explico/RenderOptions$Builder;
+	public final fun controlId (Lio/explico/ControlIdOptions;)Lio/explico/RenderOptions$Builder;
+	public final fun dataDir (Ljava/nio/file/Path;)Lio/explico/RenderOptions$Builder;
+	public final fun examples (Lio/explico/render/ExampleSet;)Lio/explico/RenderOptions$Builder;
+	public final fun generateExamples (Z)Lio/explico/RenderOptions$Builder;
+	public final fun groupByControl (Z)Lio/explico/RenderOptions$Builder;
+	public final fun json (Z)Lio/explico/RenderOptions$Builder;
+	public final fun required (Ljava/util/List;)Lio/explico/RenderOptions$Builder;
+	public final fun requirements (Ljava/util/List;)Lio/explico/RenderOptions$Builder;
+	public final fun sourceUrl (Ljava/lang/String;)Lio/explico/RenderOptions$Builder;
+}
+
+public final class io/explico/RenderOptions$Companion {
+	public final fun builder ()Lio/explico/RenderOptions$Builder;
+}
+
+public final class io/explico/RenderedDocs {
+	public fun <init> (Ljava/util/Map;Lio/explico/render/CoverageSummary;)V
+	public fun <init> (Ljava/util/Map;Lio/explico/render/CoverageSummary;Lio/explico/GeneratedExamplesSummary;)V
+	public fun <init> (Ljava/util/Map;Lio/explico/render/CoverageSummary;Lio/explico/GeneratedExamplesSummary;Ljava/util/List;)V
+	public fun <init> (Ljava/util/Map;Lio/explico/render/CoverageSummary;Lio/explico/GeneratedExamplesSummary;Ljava/util/List;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/Map;Lio/explico/render/CoverageSummary;Lio/explico/GeneratedExamplesSummary;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/util/Map;
+	public final fun component2 ()Lio/explico/render/CoverageSummary;
+	public final fun component3 ()Lio/explico/GeneratedExamplesSummary;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/util/List;
+	public final fun copy (Ljava/util/Map;Lio/explico/render/CoverageSummary;Lio/explico/GeneratedExamplesSummary;Ljava/util/List;Ljava/util/List;)Lio/explico/RenderedDocs;
+	public static synthetic fun copy$default (Lio/explico/RenderedDocs;Ljava/util/Map;Lio/explico/render/CoverageSummary;Lio/explico/GeneratedExamplesSummary;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lio/explico/RenderedDocs;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCoverage ()Lio/explico/render/CoverageSummary;
+	public final fun getFiles ()Ljava/util/Map;
+	public final fun getFindings ()Ljava/util/List;
+	public final fun getGaps ()Ljava/util/List;
+	public final fun getGeneratedExamples ()Lio/explico/GeneratedExamplesSummary;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+	public final fun writeTo (Ljava/nio/file/Path;)V
+	public final fun writeTo (Ljava/nio/file/Path;Z)V
+	public final fun writeTo (Ljava/nio/file/Path;ZLjava/util/List;)V
+	public static synthetic fun writeTo$default (Lio/explico/RenderedDocs;Ljava/nio/file/Path;ZLjava/util/List;ILjava/lang/Object;)V
+}
+
+public final class io/explico/VersionLabels {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/explico/VersionLabels;
+	public static synthetic fun copy$default (Lio/explico/VersionLabels;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/VersionLabels;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNew ()Ljava/lang/String;
+	public final fun getOld ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/diff/DiffCategory : java/lang/Enum {
+	public static final field ADDED Lio/explico/diff/DiffCategory;
+	public static final field DOCS_CHANGED Lio/explico/diff/DiffCategory;
+	public static final field LOGIC_CHANGED Lio/explico/diff/DiffCategory;
+	public static final field REMOVED Lio/explico/diff/DiffCategory;
+	public static final field UNCHANGED Lio/explico/diff/DiffCategory;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/explico/diff/DiffCategory;
+	public static fun values ()[Lio/explico/diff/DiffCategory;
+}
+
+public final class io/explico/diff/DiffChange {
+	public fun <init> (Ljava/lang/String;Lio/explico/diff/DiffCategory;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/explico/diff/DiffCategory;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Lio/explico/diff/DiffCategory;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/explico/diff/DiffChange;
+	public static synthetic fun copy$default (Lio/explico/diff/DiffChange;Ljava/lang/String;Lio/explico/diff/DiffCategory;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/diff/DiffChange;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAnchor ()Ljava/lang/String;
+	public final fun getCategory ()Lio/explico/diff/DiffCategory;
+	public final fun getControlId ()Ljava/lang/String;
+	public final fun getLabel ()Ljava/lang/String;
+	public final fun getPackagePath ()Ljava/lang/String;
+	public final fun getRuleName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/diff/DiffEntry {
+	public fun <init> (Lio/explico/diff/DiffCategory;Ljava/lang/String;Lio/explico/model/PolicyPackage;Lio/explico/model/RuleGroup;Lio/explico/model/PolicyPackage;Lio/explico/model/RuleGroup;)V
+	public final fun component1 ()Lio/explico/diff/DiffCategory;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lio/explico/model/PolicyPackage;
+	public final fun component4 ()Lio/explico/model/RuleGroup;
+	public final fun component5 ()Lio/explico/model/PolicyPackage;
+	public final fun component6 ()Lio/explico/model/RuleGroup;
+	public final fun copy (Lio/explico/diff/DiffCategory;Ljava/lang/String;Lio/explico/model/PolicyPackage;Lio/explico/model/RuleGroup;Lio/explico/model/PolicyPackage;Lio/explico/model/RuleGroup;)Lio/explico/diff/DiffEntry;
+	public static synthetic fun copy$default (Lio/explico/diff/DiffEntry;Lio/explico/diff/DiffCategory;Ljava/lang/String;Lio/explico/model/PolicyPackage;Lio/explico/model/RuleGroup;Lio/explico/model/PolicyPackage;Lio/explico/model/RuleGroup;ILjava/lang/Object;)Lio/explico/diff/DiffEntry;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCategory ()Lio/explico/diff/DiffCategory;
+	public final fun getControlId ()Ljava/lang/String;
+	public final fun getNewPackage ()Lio/explico/model/PolicyPackage;
+	public final fun getNewRule ()Lio/explico/model/RuleGroup;
+	public final fun getOldPackage ()Lio/explico/model/PolicyPackage;
+	public final fun getOldRule ()Lio/explico/model/RuleGroup;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/diff/DuplicateControlIdException : io/explico/ExplicoException {
+	public fun <init> (Ljava/util/List;)V
+	public final fun getControlIds ()Ljava/util/List;
+}
+
+public final class io/explico/diff/ExampleChange {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/explico/diff/ExampleChange;
+	public static synthetic fun copy$default (Lio/explico/diff/ExampleChange;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/diff/ExampleChange;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getControl ()Ljava/lang/String;
+	public final fun getFixture ()Ljava/lang/String;
+	public final fun getNew ()Ljava/lang/String;
+	public final fun getOld ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/diff/ExampleComparison {
+	public fun <init> (IIIII)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3 ()I
+	public final fun component4 ()I
+	public final fun component5 ()I
+	public final fun copy (IIIII)Lio/explico/diff/ExampleComparison;
+	public static synthetic fun copy$default (Lio/explico/diff/ExampleComparison;IIIIIILjava/lang/Object;)Lio/explico/diff/ExampleComparison;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCompared ()I
+	public final fun getFixturesOnOneVersion ()I
+	public final fun getFunctions ()I
+	public final fun getTotal ()I
+	public final fun getUnattributable ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/ActionsProjection {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/explico/model/ActionsProjection;
+	public static synthetic fun copy$default (Lio/explico/model/ActionsProjection;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/ActionsProjection;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAt ()Ljava/lang/String;
+	public final fun getLabel ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/AnnotationsProjection {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/explico/model/AnnotationsProjection;
+	public static synthetic fun copy$default (Lio/explico/model/AnnotationsProjection;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/AnnotationsProjection;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAt ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Author {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/explico/model/Author;
+	public static synthetic fun copy$default (Lio/explico/model/Author;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/Author;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEmail ()Ljava/lang/String;
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/CommentBlock {
+	public fun <init> (Ljava/lang/String;II)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()I
+	public final fun component3 ()I
+	public final fun copy (Ljava/lang/String;II)Lio/explico/model/CommentBlock;
+	public static synthetic fun copy$default (Lio/explico/model/CommentBlock;Ljava/lang/String;IIILjava/lang/Object;)Lio/explico/model/CommentBlock;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFile ()Ljava/lang/String;
+	public final fun getLines ()I
+	public final fun getRow ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/ComprehensionKind : java/lang/Enum {
+	public static final field ARRAY Lio/explico/model/ComprehensionKind;
+	public static final field OBJECT Lio/explico/model/ComprehensionKind;
+	public static final field SET Lio/explico/model/ComprehensionKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/explico/model/ComprehensionKind;
+	public static fun values ()[Lio/explico/model/ComprehensionKind;
+}
+
+public abstract interface class io/explico/model/Condition {
+}
+
+public final class io/explico/model/Condition$BuiltinCall : io/explico/model/Condition {
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Z)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/List;
+	public final fun component3 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/util/List;Z)Lio/explico/model/Condition$BuiltinCall;
+	public static synthetic fun copy$default (Lio/explico/model/Condition$BuiltinCall;Ljava/lang/String;Ljava/util/List;ZILjava/lang/Object;)Lio/explico/model/Condition$BuiltinCall;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArgs ()Ljava/util/List;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getNegated ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Condition$Comparison : io/explico/model/Condition {
+	public fun <init> (Lio/explico/model/Operand;Lio/explico/model/Operator;Lio/explico/model/Operand;Z)V
+	public synthetic fun <init> (Lio/explico/model/Operand;Lio/explico/model/Operator;Lio/explico/model/Operand;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/explico/model/Operand;
+	public final fun component2 ()Lio/explico/model/Operator;
+	public final fun component3 ()Lio/explico/model/Operand;
+	public final fun component4 ()Z
+	public final fun copy (Lio/explico/model/Operand;Lio/explico/model/Operator;Lio/explico/model/Operand;Z)Lio/explico/model/Condition$Comparison;
+	public static synthetic fun copy$default (Lio/explico/model/Condition$Comparison;Lio/explico/model/Operand;Lio/explico/model/Operator;Lio/explico/model/Operand;ZILjava/lang/Object;)Lio/explico/model/Condition$Comparison;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLeft ()Lio/explico/model/Operand;
+	public final fun getNegated ()Z
+	public final fun getOp ()Lio/explico/model/Operator;
+	public final fun getRight ()Lio/explico/model/Operand;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Condition$Every : io/explico/model/Condition {
+	public fun <init> (Ljava/lang/String;Lio/explico/model/Operand;Ljava/util/List;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/explico/model/Operand;Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/explico/model/Operand;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Lio/explico/model/Operand;Ljava/util/List;Ljava/lang/String;)Lio/explico/model/Condition$Every;
+	public static synthetic fun copy$default (Lio/explico/model/Condition$Every;Ljava/lang/String;Lio/explico/model/Operand;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/Condition$Every;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBody ()Ljava/util/List;
+	public final fun getCollection ()Lio/explico/model/Operand;
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getVariable ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Condition$FunctionCall : io/explico/model/Condition {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Z)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Z)Lio/explico/model/Condition$FunctionCall;
+	public static synthetic fun copy$default (Lio/explico/model/Condition$FunctionCall;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ZILjava/lang/Object;)Lio/explico/model/Condition$FunctionCall;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArgs ()Ljava/util/List;
+	public final fun getFunctionName ()Ljava/lang/String;
+	public final fun getNegated ()Z
+	public final fun getPackagePath ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Condition$Membership : io/explico/model/Condition {
+	public fun <init> (ZLio/explico/model/Operand;Lio/explico/model/Operand;)V
+	public final fun component1 ()Z
+	public final fun component2 ()Lio/explico/model/Operand;
+	public final fun component3 ()Lio/explico/model/Operand;
+	public final fun copy (ZLio/explico/model/Operand;Lio/explico/model/Operand;)Lio/explico/model/Condition$Membership;
+	public static synthetic fun copy$default (Lio/explico/model/Condition$Membership;ZLio/explico/model/Operand;Lio/explico/model/Operand;ILjava/lang/Object;)Lio/explico/model/Condition$Membership;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCollection ()Lio/explico/model/Operand;
+	public final fun getMember ()Lio/explico/model/Operand;
+	public final fun getNegated ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Condition$RuleReference : io/explico/model/Condition {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Z)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Z)Lio/explico/model/Condition$RuleReference;
+	public static synthetic fun copy$default (Lio/explico/model/Condition$RuleReference;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lio/explico/model/Condition$RuleReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNegated ()Z
+	public final fun getPackagePath ()Ljava/lang/String;
+	public final fun getRuleName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Condition$SomeIn : io/explico/model/Condition {
+	public fun <init> (Ljava/lang/String;Lio/explico/model/Operand;)V
+	public fun <init> (Ljava/lang/String;Lio/explico/model/Operand;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Lio/explico/model/Operand;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/explico/model/Operand;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/explico/model/Operand;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Lio/explico/model/Operand;Ljava/lang/String;Ljava/lang/String;)Lio/explico/model/Condition$SomeIn;
+	public static synthetic fun copy$default (Lio/explico/model/Condition$SomeIn;Ljava/lang/String;Lio/explico/model/Operand;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/Condition$SomeIn;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCollection ()Lio/explico/model/Operand;
+	public final fun getDefaultValue ()Ljava/lang/String;
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getVariable ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Condition$SomeKey : io/explico/model/Condition {
+	public fun <init> (Ljava/lang/String;Lio/explico/model/Operand$Path;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/explico/model/Operand$Path;
+	public final fun copy (Ljava/lang/String;Lio/explico/model/Operand$Path;)Lio/explico/model/Condition$SomeKey;
+	public static synthetic fun copy$default (Lio/explico/model/Condition$SomeKey;Ljava/lang/String;Lio/explico/model/Operand$Path;ILjava/lang/Object;)Lio/explico/model/Condition$SomeKey;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCollection ()Lio/explico/model/Operand$Path;
+	public final fun getVariable ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Condition$Truthy : io/explico/model/Condition {
+	public fun <init> (Lio/explico/model/Operand;Z)V
+	public final fun component1 ()Lio/explico/model/Operand;
+	public final fun component2 ()Z
+	public final fun copy (Lio/explico/model/Operand;Z)Lio/explico/model/Condition$Truthy;
+	public static synthetic fun copy$default (Lio/explico/model/Condition$Truthy;Lio/explico/model/Operand;ZILjava/lang/Object;)Lio/explico/model/Condition$Truthy;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getNegated ()Z
+	public final fun getOperand ()Lio/explico/model/Operand;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Condition$Unrendered : io/explico/model/Condition {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/Integer;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;)Lio/explico/model/Condition$Unrendered;
+	public static synthetic fun copy$default (Lio/explico/model/Condition$Unrendered;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;ILjava/lang/Object;)Lio/explico/model/Condition$Unrendered;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getReason ()Ljava/lang/String;
+	public final fun getRow ()Ljava/lang/Integer;
+	public final fun getSourceText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/ConstantValue {
+	public fun <init> (Ljava/lang/String;Lio/explico/model/SourceRef;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/explico/model/SourceRef;
+	public final fun copy (Ljava/lang/String;Lio/explico/model/SourceRef;)Lio/explico/model/ConstantValue;
+	public static synthetic fun copy$default (Lio/explico/model/ConstantValue;Ljava/lang/String;Lio/explico/model/SourceRef;ILjava/lang/Object;)Lio/explico/model/ConstantValue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRendered ()Ljava/lang/String;
+	public final fun getSourceLocation ()Lio/explico/model/SourceRef;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/DeclaredProjection {
+	public fun <init> ()V
+	public fun <init> (Lio/explico/model/VerdictProjection;)V
+	public fun <init> (Lio/explico/model/VerdictProjection;Lio/explico/model/ActionsProjection;)V
+	public fun <init> (Lio/explico/model/VerdictProjection;Lio/explico/model/ActionsProjection;Lio/explico/model/AnnotationsProjection;)V
+	public fun <init> (Lio/explico/model/VerdictProjection;Lio/explico/model/ActionsProjection;Lio/explico/model/AnnotationsProjection;Lio/explico/model/TimingProjection;)V
+	public fun <init> (Lio/explico/model/VerdictProjection;Lio/explico/model/ActionsProjection;Lio/explico/model/AnnotationsProjection;Lio/explico/model/TimingProjection;Ljava/util/List;)V
+	public fun <init> (Lio/explico/model/VerdictProjection;Lio/explico/model/ActionsProjection;Lio/explico/model/AnnotationsProjection;Lio/explico/model/TimingProjection;Ljava/util/List;Ljava/lang/String;)V
+	public synthetic fun <init> (Lio/explico/model/VerdictProjection;Lio/explico/model/ActionsProjection;Lio/explico/model/AnnotationsProjection;Lio/explico/model/TimingProjection;Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/explico/model/VerdictProjection;
+	public final fun component2 ()Lio/explico/model/ActionsProjection;
+	public final fun component3 ()Lio/explico/model/AnnotationsProjection;
+	public final fun component4 ()Lio/explico/model/TimingProjection;
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Lio/explico/model/VerdictProjection;Lio/explico/model/ActionsProjection;Lio/explico/model/AnnotationsProjection;Lio/explico/model/TimingProjection;Ljava/util/List;Ljava/lang/String;)Lio/explico/model/DeclaredProjection;
+	public static synthetic fun copy$default (Lio/explico/model/DeclaredProjection;Lio/explico/model/VerdictProjection;Lio/explico/model/ActionsProjection;Lio/explico/model/AnnotationsProjection;Lio/explico/model/TimingProjection;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/DeclaredProjection;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getActions ()Lio/explico/model/ActionsProjection;
+	public final fun getAnnotations ()Lio/explico/model/AnnotationsProjection;
+	public final fun getMask ()Ljava/util/List;
+	public final fun getMaskProblem ()Ljava/lang/String;
+	public final fun getTiming ()Lio/explico/model/TimingProjection;
+	public final fun getVerdict ()Lio/explico/model/VerdictProjection;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/DefaultValue {
+	public fun <init> (Ljava/lang/String;Lio/explico/model/SourceRef;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/explico/model/SourceRef;
+	public final fun copy (Ljava/lang/String;Lio/explico/model/SourceRef;)Lio/explico/model/DefaultValue;
+	public static synthetic fun copy$default (Lio/explico/model/DefaultValue;Ljava/lang/String;Lio/explico/model/SourceRef;ILjava/lang/Object;)Lio/explico/model/DefaultValue;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRendered ()Ljava/lang/String;
+	public final fun getSourceLocation ()Lio/explico/model/SourceRef;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/ElseBranch {
+	public fun <init> (Ljava/util/List;Lio/explico/model/Operand;Lio/explico/model/SourceRef;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Lio/explico/model/Operand;
+	public final fun component3 ()Lio/explico/model/SourceRef;
+	public final fun copy (Ljava/util/List;Lio/explico/model/Operand;Lio/explico/model/SourceRef;)Lio/explico/model/ElseBranch;
+	public static synthetic fun copy$default (Lio/explico/model/ElseBranch;Ljava/util/List;Lio/explico/model/Operand;Lio/explico/model/SourceRef;ILjava/lang/Object;)Lio/explico/model/ElseBranch;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConditions ()Ljava/util/List;
+	public final fun getSourceLocation ()Lio/explico/model/SourceRef;
+	public final fun getYieldsValue ()Lio/explico/model/Operand;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/LiteralCollection : java/lang/Enum {
+	public static final field ARRAY Lio/explico/model/LiteralCollection;
+	public static final field SET Lio/explico/model/LiteralCollection;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/explico/model/LiteralCollection;
+	public static fun values ()[Lio/explico/model/LiteralCollection;
+}
+
+public abstract interface class io/explico/model/Operand {
+}
+
+public final class io/explico/model/Operand$BuiltinCall : io/explico/model/Operand {
+	public fun <init> (Ljava/lang/String;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/util/List;)Lio/explico/model/Operand$BuiltinCall;
+	public static synthetic fun copy$default (Lio/explico/model/Operand$BuiltinCall;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lio/explico/model/Operand$BuiltinCall;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArgs ()Ljava/util/List;
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Operand$Comprehension : io/explico/model/Operand {
+	public fun <init> (Lio/explico/model/ComprehensionKind;Lio/explico/model/Operand;Lio/explico/model/Operand;Ljava/util/List;)V
+	public final fun component1 ()Lio/explico/model/ComprehensionKind;
+	public final fun component2 ()Lio/explico/model/Operand;
+	public final fun component3 ()Lio/explico/model/Operand;
+	public final fun component4 ()Ljava/util/List;
+	public final fun copy (Lio/explico/model/ComprehensionKind;Lio/explico/model/Operand;Lio/explico/model/Operand;Ljava/util/List;)Lio/explico/model/Operand$Comprehension;
+	public static synthetic fun copy$default (Lio/explico/model/Operand$Comprehension;Lio/explico/model/ComprehensionKind;Lio/explico/model/Operand;Lio/explico/model/Operand;Ljava/util/List;ILjava/lang/Object;)Lio/explico/model/Operand$Comprehension;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBody ()Ljava/util/List;
+	public final fun getKind ()Lio/explico/model/ComprehensionKind;
+	public final fun getTerm ()Lio/explico/model/Operand;
+	public final fun getValueTerm ()Lio/explico/model/Operand;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Operand$FunctionCall : io/explico/model/Operand {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)Lio/explico/model/Operand$FunctionCall;
+	public static synthetic fun copy$default (Lio/explico/model/Operand$FunctionCall;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lio/explico/model/Operand$FunctionCall;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getArgs ()Ljava/util/List;
+	public final fun getFunctionName ()Ljava/lang/String;
+	public final fun getPackagePath ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Operand$Literal : io/explico/model/Operand {
+	public fun <init> (Ljava/lang/String;Lio/explico/model/LiteralCollection;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/explico/model/LiteralCollection;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/explico/model/LiteralCollection;
+	public final fun copy (Ljava/lang/String;Lio/explico/model/LiteralCollection;)Lio/explico/model/Operand$Literal;
+	public static synthetic fun copy$default (Lio/explico/model/Operand$Literal;Ljava/lang/String;Lio/explico/model/LiteralCollection;ILjava/lang/Object;)Lio/explico/model/Operand$Literal;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCollection ()Lio/explico/model/LiteralCollection;
+	public final fun getRendered ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Operand$Parameter : io/explico/model/Operand {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/explico/model/Operand$Parameter;
+	public static synthetic fun copy$default (Lio/explico/model/Operand$Parameter;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/Operand$Parameter;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Operand$ParameterPath : io/explico/model/Operand {
+	public fun <init> (Ljava/lang/String;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/util/List;)Lio/explico/model/Operand$ParameterPath;
+	public static synthetic fun copy$default (Lio/explico/model/Operand$ParameterPath;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lio/explico/model/Operand$ParameterPath;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public final fun getSegments ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Operand$Path : io/explico/model/Operand {
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lio/explico/model/Operand$Path;
+	public static synthetic fun copy$default (Lio/explico/model/Operand$Path;Ljava/util/List;ILjava/lang/Object;)Lio/explico/model/Operand$Path;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getSegments ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Operand$RuleValueReference : io/explico/model/Operand {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/explico/model/Operand$RuleValueReference;
+	public static synthetic fun copy$default (Lio/explico/model/Operand$RuleValueReference;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/Operand$RuleValueReference;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPackagePath ()Ljava/lang/String;
+	public final fun getRuleName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Operand$Unrendered : io/explico/model/Operand {
+	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/Integer;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Integer;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Integer;)Lio/explico/model/Operand$Unrendered;
+	public static synthetic fun copy$default (Lio/explico/model/Operand$Unrendered;Ljava/lang/String;Ljava/lang/Integer;ILjava/lang/Object;)Lio/explico/model/Operand$Unrendered;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRow ()Ljava/lang/Integer;
+	public final fun getSourceText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Operand$Variable : io/explico/model/Operand {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/explico/model/Operand$Variable;
+	public static synthetic fun copy$default (Lio/explico/model/Operand$Variable;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/Operand$Variable;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/Operator : java/lang/Enum {
+	public static final field EQ Lio/explico/model/Operator;
+	public static final field GT Lio/explico/model/Operator;
+	public static final field GTE Lio/explico/model/Operator;
+	public static final field LT Lio/explico/model/Operator;
+	public static final field LTE Lio/explico/model/Operator;
+	public static final field NEQ Lio/explico/model/Operator;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/explico/model/Operator;
+	public static fun values ()[Lio/explico/model/Operator;
+}
+
+public final class io/explico/model/PackageMetadata {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/Map;)Lio/explico/model/PackageMetadata;
+	public static synthetic fun copy$default (Lio/explico/model/PackageMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/Map;ILjava/lang/Object;)Lio/explico/model/PackageMetadata;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAuthors ()Ljava/util/List;
+	public final fun getCustomFields ()Ljava/util/Map;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getRelatedResources ()Ljava/util/List;
+	public final fun getTitle ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/explico/model/PathSegment {
+}
+
+public final class io/explico/model/PathSegment$AnyIndex : io/explico/model/PathSegment {
+	public static final field INSTANCE Lio/explico/model/PathSegment$AnyIndex;
+}
+
+public final class io/explico/model/PathSegment$Field : io/explico/model/PathSegment {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/explico/model/PathSegment$Field;
+	public static synthetic fun copy$default (Lio/explico/model/PathSegment$Field;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/PathSegment$Field;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/PathSegment$KeyLiteral : io/explico/model/PathSegment {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/explico/model/PathSegment$KeyLiteral;
+	public static synthetic fun copy$default (Lio/explico/model/PathSegment$KeyLiteral;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/PathSegment$KeyLiteral;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getKey ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/PathSegment$KeyPath : io/explico/model/PathSegment {
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lio/explico/model/PathSegment$KeyPath;
+	public static synthetic fun copy$default (Lio/explico/model/PathSegment$KeyPath;Ljava/util/List;ILjava/lang/Object;)Lio/explico/model/PathSegment$KeyPath;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getSegments ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/PathSegment$VarIndex : io/explico/model/PathSegment {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/explico/model/PathSegment$VarIndex;
+	public static synthetic fun copy$default (Lio/explico/model/PathSegment$VarIndex;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/PathSegment$VarIndex;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/PolicyPackage {
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lio/explico/model/PackageMetadata;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lio/explico/model/PackageMetadata;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lio/explico/model/PackageMetadata;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/util/List;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()Lio/explico/model/PackageMetadata;
+	public final fun component5 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lio/explico/model/PackageMetadata;Ljava/util/List;)Lio/explico/model/PolicyPackage;
+	public static synthetic fun copy$default (Lio/explico/model/PolicyPackage;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lio/explico/model/PackageMetadata;Ljava/util/List;ILjava/lang/Object;)Lio/explico/model/PolicyPackage;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMetadata ()Lio/explico/model/PackageMetadata;
+	public final fun getPath ()Ljava/lang/String;
+	public final fun getRules ()Ljava/util/List;
+	public final fun getSourceFiles ()Ljava/util/List;
+	public final fun getUnpublishedComments ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/PolicySet {
+	public fun <init> (Ljava/util/List;)V
+	public fun <init> (Ljava/util/List;Lio/explico/model/RegoVersion;)V
+	public fun <init> (Ljava/util/List;Lio/explico/model/RegoVersion;Ljava/nio/file/Path;)V
+	public synthetic fun <init> (Ljava/util/List;Lio/explico/model/RegoVersion;Ljava/nio/file/Path;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Lio/explico/model/RegoVersion;
+	public final fun component3 ()Ljava/nio/file/Path;
+	public final fun copy (Ljava/util/List;Lio/explico/model/RegoVersion;Ljava/nio/file/Path;)Lio/explico/model/PolicySet;
+	public static synthetic fun copy$default (Lio/explico/model/PolicySet;Ljava/util/List;Lio/explico/model/RegoVersion;Ljava/nio/file/Path;ILjava/lang/Object;)Lio/explico/model/PolicySet;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPackages ()Ljava/util/List;
+	public final fun getRegoVersion ()Lio/explico/model/RegoVersion;
+	public final fun getSourceDir ()Ljava/nio/file/Path;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/RegoVersion : java/lang/Enum {
+	public static final field V0 Lio/explico/model/RegoVersion;
+	public static final field V1 Lio/explico/model/RegoVersion;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/explico/model/RegoVersion;
+	public static fun values ()[Lio/explico/model/RegoVersion;
+}
+
+public final class io/explico/model/RelatedResource {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/explico/model/RelatedResource;
+	public static synthetic fun copy$default (Lio/explico/model/RelatedResource;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/RelatedResource;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getRef ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/RuleBody {
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lio/explico/model/SourceRef;Ljava/lang/String;)V
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lio/explico/model/SourceRef;Ljava/lang/String;Lio/explico/model/Operand;)V
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lio/explico/model/SourceRef;Ljava/lang/String;Lio/explico/model/Operand;Ljava/util/List;)V
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lio/explico/model/SourceRef;Ljava/lang/String;Lio/explico/model/Operand;Ljava/util/List;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lio/explico/model/SourceRef;Ljava/lang/String;Lio/explico/model/Operand;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Lio/explico/model/SourceRef;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Lio/explico/model/Operand;
+	public final fun component7 ()Ljava/util/List;
+	public final fun component8 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lio/explico/model/SourceRef;Ljava/lang/String;Lio/explico/model/Operand;Ljava/util/List;Ljava/util/List;)Lio/explico/model/RuleBody;
+	public static synthetic fun copy$default (Lio/explico/model/RuleBody;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lio/explico/model/SourceRef;Ljava/lang/String;Lio/explico/model/Operand;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lio/explico/model/RuleBody;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConditions ()Ljava/util/List;
+	public final fun getElseBranches ()Ljava/util/List;
+	public final fun getMessageArguments ()Ljava/util/List;
+	public final fun getMessageTemplate ()Ljava/lang/String;
+	public final fun getProducesValue ()Ljava/lang/String;
+	public final fun getSourceLocation ()Lio/explico/model/SourceRef;
+	public final fun getSourceText ()Ljava/lang/String;
+	public final fun getYieldsValue ()Lio/explico/model/Operand;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/RuleGroup {
+	public fun <init> (Ljava/lang/String;Lio/explico/model/RuleMetadata;Lio/explico/model/DefaultValue;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;Lio/explico/model/RuleMetadata;Lio/explico/model/DefaultValue;Ljava/util/List;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;Lio/explico/model/RuleMetadata;Lio/explico/model/DefaultValue;Ljava/util/List;Ljava/util/List;Z)V
+	public fun <init> (Ljava/lang/String;Lio/explico/model/RuleMetadata;Lio/explico/model/DefaultValue;Ljava/util/List;Ljava/util/List;ZLio/explico/model/ConstantValue;)V
+	public fun <init> (Ljava/lang/String;Lio/explico/model/RuleMetadata;Lio/explico/model/DefaultValue;Ljava/util/List;Ljava/util/List;ZLio/explico/model/ConstantValue;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/explico/model/RuleMetadata;Lio/explico/model/DefaultValue;Ljava/util/List;Ljava/util/List;ZLio/explico/model/ConstantValue;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lio/explico/model/RuleMetadata;
+	public final fun component3 ()Lio/explico/model/DefaultValue;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Z
+	public final fun component7 ()Lio/explico/model/ConstantValue;
+	public final fun component8 ()Z
+	public final fun copy (Ljava/lang/String;Lio/explico/model/RuleMetadata;Lio/explico/model/DefaultValue;Ljava/util/List;Ljava/util/List;ZLio/explico/model/ConstantValue;Z)Lio/explico/model/RuleGroup;
+	public static synthetic fun copy$default (Lio/explico/model/RuleGroup;Ljava/lang/String;Lio/explico/model/RuleMetadata;Lio/explico/model/DefaultValue;Ljava/util/List;Ljava/util/List;ZLio/explico/model/ConstantValue;ZILjava/lang/Object;)Lio/explico/model/RuleGroup;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBodies ()Ljava/util/List;
+	public final fun getConstantValue ()Lio/explico/model/ConstantValue;
+	public final fun getDefault ()Lio/explico/model/DefaultValue;
+	public final fun getMetadata ()Lio/explico/model/RuleMetadata;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getParameters ()Ljava/util/List;
+	public fun hashCode ()I
+	public final fun isReferenced ()Z
+	public final fun isSplitDefaultEntry ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/RuleMetadata {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/Map;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/Map;Lio/explico/model/DeclaredProjection;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/Map;Lio/explico/model/DeclaredProjection;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/Map;Lio/explico/model/DeclaredProjection;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Ljava/util/List;
+	public final fun component7 ()Ljava/util/Map;
+	public final fun component8 ()Lio/explico/model/DeclaredProjection;
+	public final fun component9 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/Map;Lio/explico/model/DeclaredProjection;Ljava/lang/String;)Lio/explico/model/RuleMetadata;
+	public static synthetic fun copy$default (Lio/explico/model/RuleMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/Map;Lio/explico/model/DeclaredProjection;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/RuleMetadata;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAuthors ()Ljava/util/List;
+	public final fun getControlId ()Ljava/lang/String;
+	public final fun getControlIdDerivedFrom ()Ljava/lang/String;
+	public final fun getCustomFields ()Ljava/util/Map;
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getFrameworks ()Ljava/util/List;
+	public final fun getProjection ()Lio/explico/model/DeclaredProjection;
+	public final fun getRelatedResources ()Ljava/util/List;
+	public final fun getTitle ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/SourceRef {
+	public fun <init> (Ljava/lang/String;I)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()I
+	public final fun copy (Ljava/lang/String;I)Lio/explico/model/SourceRef;
+	public static synthetic fun copy$default (Lio/explico/model/SourceRef;Ljava/lang/String;IILjava/lang/Object;)Lio/explico/model/SourceRef;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFile ()Ljava/lang/String;
+	public final fun getRow ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/TimingProjection {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/explico/model/TimingProjection;
+	public static synthetic fun copy$default (Lio/explico/model/TimingProjection;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/TimingProjection;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDueBy ()Ljava/lang/String;
+	public final fun getStartBefore ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/model/VerdictProjection {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lio/explico/model/VerdictProjection;
+	public static synthetic fun copy$default (Lio/explico/model/VerdictProjection;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/explico/model/VerdictProjection;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getOutcome ()Ljava/lang/String;
+	public final fun getReason ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/render/CoverageSummary {
+	public fun <init> (II)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun copy (II)Lio/explico/render/CoverageSummary;
+	public static synthetic fun copy$default (Lio/explico/render/CoverageSummary;IIILjava/lang/Object;)Lio/explico/render/CoverageSummary;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPercent ()I
+	public final fun getRendered ()I
+	public final fun getTotal ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/render/DuplicateFixtureNameException : io/explico/ExplicoException {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getName ()Ljava/lang/String;
+}
+
+public final class io/explico/render/ExampleSet {
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lio/explico/render/ExampleSet;
+	public static synthetic fun copy$default (Lio/explico/render/ExampleSet;Ljava/util/List;ILjava/lang/Object;)Lio/explico/render/ExampleSet;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFixtures ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/explico/render/Fixture {
+	public static final field Companion Lio/explico/render/Fixture$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Lkotlinx/serialization/json/JsonObject;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lio/explico/render/Fixture;
+	public static synthetic fun copy$default (Lio/explico/render/Fixture;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lio/explico/render/Fixture;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDescription ()Ljava/lang/String;
+	public final fun getInput ()Lkotlinx/serialization/json/JsonObject;
+	public final fun getName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/explico/render/Fixture$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/explico/render/Fixture$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/explico/render/Fixture;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/explico/render/Fixture;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/explico/render/Fixture$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/explico/render/InvalidMaskException : io/explico/ExplicoException {
+	public fun <init> (Ljava/lang/String;)V
+}
+

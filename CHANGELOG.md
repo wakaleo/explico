@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Added: committed API and CLI baselines, and a compatibility page.** `api/explico.api` lists every public type and member of the library and `api/explico.cli` every command, option and exit code; the build fails (`check`) when the code drifts from either, so a change to the public surface is always a visible, reviewed diff. [`docs/compatibility.md`](docs/compatibility.md) says what is promised stable in 1.x (the facade and options, the result types, the exceptions, the CLI commands and exit codes, the two JSON schemas), what is not (the Markdown wording and layout, the opt-in structural model, stderr text, generated file names other than `index.md`, `explico.json` and `controls/`), that a new diff fact kind is a new schema version, and that a removal is preceded by one minor release of warnings. **Changed:** `io.explico.cli.MainKt.main` is no longer public API (it is the launcher; the jar's `Main-Class` and `java -cp ... io.explico.cli.MainKt` still work), and the build enables Kotlin's `explicitApi()`. No output changed.
+
 - **BREAKING (CLI): four flags renamed or removed, with no aliases.** The old spellings are now unknown options (exit `1`).
 
   | Before | Now |

@@ -1765,3 +1765,11 @@ the call site as plain `unrenderedAt(loc, "reason")` calls, not an inline `if`).
 
 The renames are COMPLETE, no aliases: the old spellings are unknown options (exit 1). `diff --json` is a flag writing `<out>.json` (appended, never swapped); `render --must-have` (was `--require`); `diff --fail-on EXAMPLE_CHANGES` (was `--fail-on-example-changes`); `diff --force` is gone. `Gates.parseFailOn` returns `Gates.FailOn(categories, exampleChanges)`: `EXAMPLE_CHANGES` is not a `DiffCategory`, so the category gate runs only when `categories` is non-empty and prints only its own names, the example gate when `exampleChanges`, category gate first.
 - `CliFlagFreeze*ProcessTest` pin the new behaviour and help. A new CLI flag needs a row in `docs/user-guide.md`, a process test, and (step 6) the committed CLI baseline.
+
+## API and CLI baselines (spec §14.80 step 6)
+
+The public surface is frozen by two COMMITTED files, checked on every build: `api/explico.api` (Kotlin's built-in ABI validation: `./gradlew updateKotlinAbi` rewrites it, `checkKotlinAbi` is part of `check`) and `api/explico.cli` (`CliSurface.dump()` over `explicoCommandTree()`: `-Dexplico.updateCli=true` rewrites it). Regenerating either is a deliberate, REVIEWED act, like the goldens: read the diff, it is what consumers see.
+- Adding or removing a public class also needs `ApiBaselineTest`'s class list edited (a new public type is never an accident); adding or renaming a CLI option needs `CliBaselineTest`'s expected text edited. A change to the exit codes edits `CliSurface`, the test and `docs/compatibility.md` together.
+- `explicitApi()` is on: every public declaration says `public` and its return type; `internal` is a Kotlin-visibility decision the ABI dump respects (reflection cannot see it). `main` is `internal`; `explicoCommandTree()` is the one place the command tree is built.
+- `UserGuideOptionsDocsTest` fails when an option in the CLI surface has no row (or opening bullet) in its command's section of `docs/user-guide.md`; it found `diff --rego-version` undocumented when it was written.
+- `docs/compatibility.md` is the human statement of the promise; keep it in step (its tests pin the exit-code meanings, the schema ids, the 15 fact kinds and the strict rule: a new fact kind means a new schema version).

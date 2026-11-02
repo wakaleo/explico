@@ -2,6 +2,7 @@
 package io.explico.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.CoreCliktCommand
 import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.types.restrictTo
 import com.github.ajalt.clikt.parameters.types.int
@@ -44,10 +45,12 @@ import java.nio.file.Path
 /** The exact opa version the demo's guidance recommends (spec §13.2), matching CI's pin (spec §10.2). */
 private const val PINNED_OPA_VERSION = "1.19.0"
 
-fun main(args: Array<String>) {
-    ExplicoCommand()
-        .subcommands(RenderCommand(), DiffCommand(), VersionCommand(), DemoCommand())
-        .main(args)
+/** The one command tree (spec §14.80 step 6): `main` runs it and `CliSurface` dumps it, so the committed CLI baseline cannot describe anything but the real CLI. */
+internal fun explicoCommandTree(): CoreCliktCommand = ExplicoCommand().subcommands(RenderCommand(), DiffCommand(), VersionCommand(), DemoCommand())
+
+/** The CLI entry point. `internal` since the §14.80 freeze: it is the launcher (`Main-Class`, `java -cp ... io.explico.cli.MainKt`), not library API. */
+internal fun main(args: Array<String>) {
+    explicoCommandTree().main(args)
 }
 
 private class ExplicoCommand : NoOpCliktCommand(name = "explico") {

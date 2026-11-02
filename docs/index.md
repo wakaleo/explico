@@ -103,6 +103,7 @@ cost of the example.
 | Understand a card | [Reading a card](concepts/reading-a-card.md) |
 | Improve what the index says is missing | [Policies that document well](guides/policies-that-document-well.md) |
 | Run it in a pipeline | [CI recipes](guides/ci-recipes.md) |
+| Know what you can rely on across versions | [Compatibility](compatibility.md) |
 
 You need a JDK (17 or newer) and the `opa` binary (1.x); explico is one jar and writes Markdown. The worked-example verdicts are evaluated,
 not asserted: a changed outcome shows up in the diff and fails a drift check, but explico does not decide whether it is the outcome you
