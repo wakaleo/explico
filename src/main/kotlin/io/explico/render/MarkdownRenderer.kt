@@ -890,8 +890,25 @@ internal object MarkdownRenderer {
     internal fun ruleLocation(rule: RuleGroup): io.explico.model.SourceRef? =
         rule.bodies.firstOrNull()?.sourceLocation ?: rule.default?.sourceLocation ?: rule.constantValue?.sourceLocation
 
-    /** The `<package-path>.md` file a package's own cards live in (spec §6.1's naming: dots become dashes). */
-    internal fun docFileName(packagePath: String): String = "${packagePath.replace('.', '-')}.md"
+    private val plainPackagePath = Regex("""[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*""")
+    private val windowsDevices = setOf("con", "prn", "aux", "nul") + (1..9).flatMap { listOf("com$it", "lpt$it") }
+
+    /**
+     * The `<package-path>.md` file a package's own cards live in (spec §6.1's naming: dots become dashes). A package name is policy-author text, so the result is always ONE top-level,
+     * portable file name, and different names never share one: an ordinary path (identifiers joined by dots, which cannot contain a dash) is exactly as before, so it cannot collide
+     * with another; anything else (a bracket key holding `/`, `:`, `..`, a dash or a space) is reduced to safe characters and given a short digest of the whole path, so `a.b-c` and
+     * `a["b.c"]` stay apart. A stem that is a Windows device name (`con`, `nul`, `com1`...) gets a suffix. See the security review, INFO on package names.
+     */
+    internal fun docFileName(packagePath: String): String {
+        val stem = if (plainPackagePath.matches(packagePath)) {
+            packagePath.replace('.', '-')
+        } else {
+            val digest = java.security.MessageDigest.getInstance("SHA-256").digest(packagePath.toByteArray(Charsets.UTF_8)).take(4).joinToString("") { "%02x".format(it) }
+            val readable = packagePath.replace(Regex("[^A-Za-z0-9_]+"), "-").trim('-')
+            if (readable.isEmpty()) "package-$digest" else "$readable-$digest"
+        }
+        return if (stem.lowercase() in windowsDevices) "$stem-package.md" else "$stem.md"
+    }
 
     /** One index row's identity, as the "Controls by framework" matrix needs it: nothing about coverage or title. */
     private data class FrameworkRow(val controlId: String?, val ruleName: String, val href: String?, val frameworks: List<String>)

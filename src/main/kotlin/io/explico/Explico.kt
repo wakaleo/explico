@@ -231,7 +231,7 @@ public object Explico {
         // Spec §14.56: null unless asked for; every renderer below treats null as "no grouping", so the output is then exactly what it always was.
         val groups = if (groupByControl) ControlGroups.of(set) else null
         val files = set.packages.associate { pkg ->
-            "${pkg.path.replace('.', '-')}.md" to MarkdownRenderer.renderPackage(
+            MarkdownRenderer.docFileName(pkg.path) to MarkdownRenderer.renderPackage(
                 pkg,
                 set,
                 examplesByPackage[pkg.path] ?: emptyMap(),
