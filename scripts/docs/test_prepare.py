@@ -11,7 +11,7 @@ class RewriteLinks(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
         for rel in ["README.md", "CHANGELOG.md", "CLAUDE.md", "docs/tutorial.md", "docs/showcase/every.md",
-                    "src/main/Foo.kt", "samples/policies/a.rego"]:
+                    "src/main/Foo.kt", "samples/policies/a.rego", "docs/images/card.png"]:
             p = self.root / rel
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text("x")
@@ -35,6 +35,18 @@ class RewriteLinks(unittest.TestCase):
     def test_a_link_to_a_repository_file_outside_the_site_becomes_a_github_blob_url(self):
         self.assertEqual(self.rewrite("docs/tutorial.md", "[k](../src/main/Foo.kt)"), "[k](https://github.com/o/r/blob/main/src/main/Foo.kt)")
         self.assertEqual(self.rewrite("README.md", "[c](CLAUDE.md#a)"), "[c](https://github.com/o/r/blob/main/CLAUDE.md#a)")
+
+    def test_an_image_under_docs_is_part_of_the_site_and_linked_relatively(self):
+        # A GitHub blob URL is an HTML page, not an image, so a screenshot in docs/images must be shipped with the site.
+        self.assertEqual(self.site["docs/images/card.png"], "images/card.png")
+        self.assertEqual(self.rewrite("README.md", "![card](docs/images/card.png)"), "![card](images/card.png)")
+        self.assertEqual(self.rewrite("docs/showcase/every.md", "![card](../images/card.png)"), "![card](../images/card.png)")
+
+    def test_staging_copies_an_image_byte_for_byte(self):
+        (self.root / "docs/images/card.png").write_bytes(bytes(range(256)))
+        out = Path(tempfile.mkdtemp()) / "site-src"
+        prepare.stage(self.root, out, "https://github.com/o/r", "main")
+        self.assertEqual((out / "images/card.png").read_bytes(), bytes(range(256)))
 
     def test_a_link_to_a_directory_becomes_a_tree_url(self):
         self.assertEqual(self.rewrite("docs/tutorial.md", "[s](../samples/policies)"), "[s](https://github.com/o/r/tree/main/samples/policies)")

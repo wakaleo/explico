@@ -18,6 +18,7 @@ import shutil
 import sys
 from pathlib import Path
 
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".svg"}
 ROOT_PAGES = {"README.md": "readme.md", "ARCHITECTURE.md": "architecture.md", "CHANGELOG.md": "changelog.md", "SECURITY.md": "security.md"}
 # One pass per (non-fenced) line: an inline code span of any backtick count is kept verbatim, otherwise a Markdown link target is rewritten.
 INLINE = re.compile(r"(?P<code>(?P<ticks>`+).+?(?P=ticks))|(?P<open>\]\()(?P<target>[^)\s]+)(?P<close>\))")
@@ -33,6 +34,10 @@ def site_map(root: Path) -> dict:
             if p.name == "README.md" and (p.parent / "index.md").is_file():
                 continue
             pages[p.relative_to(root).as_posix()] = p.relative_to(docs).as_posix()
+        # Images are shipped with the site: a GitHub blob URL is an HTML page, which an <img> cannot show.
+        for p in sorted(docs.rglob("*")):
+            if p.is_file() and p.suffix.lower() in IMAGE_SUFFIXES:
+                pages[p.relative_to(root).as_posix()] = p.relative_to(docs).as_posix()
     return pages
 
 
@@ -75,6 +80,9 @@ def stage(root: Path, out: Path, repo_url: str, branch: str) -> None:
     for source, dest in site.items():
         target = out / dest
         target.parent.mkdir(parents=True, exist_ok=True)
+        if Path(source).suffix.lower() in IMAGE_SUFFIXES:
+            shutil.copyfile(root / source, target)
+            continue
         target.write_text(rewrite((root / source).read_text(encoding="utf-8"), source, site, root, repo_url, branch), encoding="utf-8")
 
 

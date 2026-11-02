@@ -64,6 +64,13 @@ What the control owner reads (generated; nothing here was written by hand):
 
 Each verdict above came from running `opa eval` on a small JSON file named "hotfix without change ticket". That file is the whole cost of the example.
 
+The whole card, as a reader sees it once the Markdown is displayed (a screenshot; explico itself writes Markdown):
+
+![The generated card for REL-001 shown as rendered HTML: its description, two situations, four worked examples with real verdicts, and the coverage footer](docs/images/rendered-card.png)
+
+See it live: [the rendered page on the documentation site](https://wakaleo.github.io/explico/sample-output/release-approvals/), or the generated
+[`release-approvals.md`](docs/sample-output/release-approvals.md) as GitHub displays it. Both are the real output, checked against a fresh render in CI.
+
 ## What happens to Rego it does not understand
 
 explico never describes logic it did not check. When it meets a construct it has no faithful template for, it shows the **verbatim Rego**, clearly marked, and counts it
