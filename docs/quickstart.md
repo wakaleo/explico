@@ -5,7 +5,7 @@ You will write one small Rego rule, render it, and read the result. Nothing here
 You need a JDK (17 or newer), the `opa` binary (1.x) on your `PATH`, and the explico jar. [Install and first run](install.md) has the details; this checks them:
 
 ```sh
-java -jar explico.jar version      # explico 0.4.0
+java -jar explico.jar version      # explico 1.0.0
 opa version                        # Version: 1.x.y
 ```
 

@@ -145,7 +145,7 @@ Published to Maven Central as `io.github.wakaleo:explico`, for Kotlin and Java (
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.wakaleo:explico:0.4.0")
+    implementation("io.github.wakaleo:explico:1.0.0")
 }
 ```
 

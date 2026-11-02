@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 1.0.0
+
+The first stable release. From 1.0 the library API, the CLI options and exit codes and the JSON schemas follow semantic versioning, pinned by the committed baselines `api/explico.api` and `api/explico.cli`
+and described in [Compatibility](docs/compatibility.md); the Markdown wording and layout are not part of the promise. Moving from 0.x: the four renamed or removed CLI options and the options objects
+below need action, and the "Upgrading and support" section of the compatibility page lists them in one place. This release also contains the unreleased 0.4.1 fix for a bare `#` comment line crashing `render` and `diff`.
 
 - **Security: `--data` without `--examples` could run a builtin chosen by the policy author.** A bracket-string key in a policy (`data["..."]`) was pasted unquoted into the `opa eval` query, so a crafted key could append a second statement (for example `http.send`) when the data defined the first key. Every segment is now one quoted key, so the query cannot reach a builtin; this also covers `diff --old-data/--new-data`. Found by the pre-1.0 security review.
 - **Fixed: package names that collided or escaped as file names.** A package page's file name is now always one top-level, portable file: an ordinary package path is named exactly as before, while an odd one (a bracket key holding `/`, `:`, `..`, a dash or a space) gets a safe name with a short digest, so `a.b-c` and `a["b.c"]` no longer overwrite each other, nothing is written into a subdirectory, and a Windows device name such as `con` becomes `con-package.md`. The file the page was written to and the links to it were also built in two places that disagreed for such names; both now use one function.

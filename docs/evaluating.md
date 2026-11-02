@@ -72,7 +72,7 @@ Details: [Rego coverage audit](rego-coverage.md), [What explico renders](referen
 | | |
 |---|---|
 | Licence | [Apache 2.0](https://github.com/wakaleo/explico/blob/main/LICENSE) |
-| Current version | 0.4.0 ([changelog](changelog.md)) |
+| Current version | 1.0.0 ([changelog](changelog.md)) |
 | Releases | Signed; fixes go to the latest release only ([security policy](security.md)) |
 | Source and issues | [github.com/wakaleo/explico](https://github.com/wakaleo/explico) |
 | Vulnerabilities | Private report via GitHub's *Security → Report a vulnerability* |
