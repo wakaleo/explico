@@ -92,12 +92,12 @@ internal object OpaRunner {
         // Every segment is ONE quoted key (a JSON string is a valid Rego string): a key taken from a policy's `data["..."]` can never end the reference and append a statement, so this
         // query cannot reach a builtin (security review M1).
         val query = "data" + path.joinToString("") { "[" + JsonPrimitive(it) + "]" }
+        // The query travels on stdin (`--stdin`), not as an argument: Windows strips the double quotes from a process argument, which turned `data["a"]` into `data[a]` (found by CI).
         val args = buildList {
-            add("eval"); add("--format"); add("json")
+            add("eval"); add("--format"); add("json"); add("--stdin")
             dataDirs.forEach { add("--data"); add(dataArgument(it)) }
-            add(query)
         }
-        val stdout = run(*withVersion(regoVersion, *args.toTypedArray()))
+        val stdout = run(*withVersion(regoVersion, *args.toTypedArray()), stdin = query)
         val decoded = opaJson.decodeFromString(OpaEvalResult.serializer(), stdout)
         val expression = decoded.result.firstOrNull()?.expressions?.firstOrNull() ?: return null
         return expression.value ?: JsonNull
@@ -130,7 +130,7 @@ internal object OpaRunner {
     }
 
     /** Invokes `opa` with [args], capturing stdout/stderr separately under a 30s timeout. */
-    private fun run(vararg args: String): String {
+    private fun run(vararg args: String, stdin: String? = null): String {
         val command = listOf(resolveBinary()) + args
         // A binary that cannot even be launched (missing, not executable) is "opa is not available", whatever the library call that needed it.
         val process = try {
@@ -138,6 +138,9 @@ internal object OpaRunner {
         } catch (e: java.io.IOException) {
             throw OpaNotAvailableException(unavailableMessage(), e)
         }
+
+        // The query is small, so writing it before the readers start cannot deadlock on a full pipe.
+        if (stdin != null) process.outputStream.use { it.write(stdin.toByteArray(Charsets.UTF_8)) }
 
         val stdout = StringBuilder()
         val stderr = StringBuilder()

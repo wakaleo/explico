@@ -98,4 +98,16 @@ class OpaRunnerChallengeTest {
         assertThat(withBinary(dir.resolve("no-such-binary")) { OpaRunner.isAvailable() }).isFalse()
         assertThat(withBinary(fakeOpa(dir, "exit 1")) { OpaRunner.isAvailable() }).isFalse()
     }
+
+    @Test
+    @DisplayName("evalDataPath hands opa the query on stdin, never as an argument: Windows drops double quotes from arguments, which turned data[\"a\"] into data[a]")
+    fun dataPathQueryTravelsOnStdin(@TempDir dir: Path) {
+        val args = dir.resolve("args.txt"); val stdin = dir.resolve("stdin.txt")
+        val fake = fakeOpa(dir, "echo \"$*\" > '$args'; cat > '$stdin'; echo '{}'")
+
+        withBinary(fake) { OpaRunner.evalDataPath(listOf(dir), listOf("limits", "a \"b\"")) }
+
+        assertThat(Files.readString(args)).contains("--stdin").doesNotContain("data[").doesNotContain("\"")
+        assertThat(Files.readString(stdin).trim()).isEqualTo("data[\"limits\"][\"a \\\"b\\\"\"]")
+    }
 }
