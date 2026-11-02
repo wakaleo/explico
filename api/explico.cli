@@ -1,0 +1,45 @@
+explico
+
+explico demo
+  --fetch-opa  flag
+
+explico diff <olddir> <newdir>
+  --examples  <path>
+  --fail-on  <value>
+  --group-by-control  flag
+  --json  flag
+  --new-data  <path>
+  --new-label  <text>
+  --old-data  <path>
+  --old-label  <text>
+  --out  required <path>
+  --rego-version  (v1|v0)
+
+explico render <policydir>
+  --companion-label  <value>
+  --companion-url  <value>
+  --control-id-from  <value>
+  --control-id-template  <value>
+  --data  <path>
+  --examples  <path>
+  --fail-on-gaps  flag
+  --fail-under  <int>
+  --force  flag
+  --generate-examples  flag
+  --group-by-control  flag
+  --json  flag
+  --must-have  <text>
+  --out  required <path>
+  --rego-version  (v1|v0)
+  --requirements  <path>
+  --source-url  <value>
+
+explico version
+
+exit codes
+  0  success
+  1  usage or refused output
+  2  opa rejected the input
+  3  opa missing or not 1.x
+  4  duplicate control id or fixture name
+  5  a CI gate failed

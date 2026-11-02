@@ -21,7 +21,7 @@ Library: `Explico.render(policySet, RenderOptions(json = true))` adds `explico.j
   non-matching and says `Showing M of N examples` when it omits some, where N is the length of this array), and `referenceData.value` is the *full* resolved value (the card cuts long arrays after 5).
 - **Deterministic:** keys are written in the order below, two-space indented, one trailing newline; the same input is byte-identical.
 - **Versioned:** `schema` is `explico/render/1` or `explico/diff/1`. A breaking change gets a new number; fields may be *added* to a
-  version, so tolerate unknown keys.
+  version, so tolerate unknown keys. What is promised stable, and how a change is announced, is in [Compatibility](compatibility.md).
 
 ## `explico/render/1`
 
