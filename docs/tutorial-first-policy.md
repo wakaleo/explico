@@ -118,9 +118,36 @@ A card says what a rule tests. Examples show what it does. Create `examples/` wi
 }
 ```
 
-Make four files in the same shape (`01-no-backups.json`, `02-short-retention.json`, `03-compliant.json`, `04-retired-engine.json`) covering a
-denied production database, a short retention, a compliant one and a retired engine. Name each scenario by what it is, not by its data.
-Then:
+That is `examples/01-no-backups.json`. Add three more in the same shape, so the examples below match what you see:
+
+```json
+{
+  "name": "production database keeping backups for a week",
+  "input": { "database": { "name": "billing", "environment": "production", "engine": "postgres-16", "backup": { "enabled": true, "retention_days": 7 } } }
+}
+```
+
+(`02-short-retention.json`)
+
+```json
+{
+  "name": "production database backed up for 35 days",
+  "input": { "database": { "name": "ledger", "environment": "production", "engine": "postgres-16", "backup": { "enabled": true, "retention_days": 35 } } }
+}
+```
+
+(`03-compliant.json`)
+
+```json
+{
+  "name": "production database on a retired engine",
+  "input": { "database": { "name": "archive", "environment": "production", "engine": "mysql-5", "backup": { "enabled": true, "retention_days": 120 } } }
+}
+```
+
+(`04-retired-engine.json`)
+
+Name each scenario by what it is, not by its data. Then:
 
 ```sh
 explico render policies --examples examples --out policy-docs
@@ -182,9 +209,19 @@ cp -r policies policies-next
 explico diff policies policies-next --out change.md --examples examples
 ```
 
-stdout shows the summary and the first two sections of the report:
+stdout shows the summary table and the first two sections of the report:
 
 ```markdown
+## Summary
+
+| Category | Count |
+|---|---|
+| REMOVED | 0 |
+| ADDED | 0 |
+| LOGIC_CHANGED | 1 |
+| DOCS_CHANGED | 0 |
+| UNCHANGED | 1 |
+
 ## What changed
 
 - [DB-001 — Production databases are backed up](#db-001) — logic changed
