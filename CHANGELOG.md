@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.0
 
 From the TDIE-18035 feature requests (a policy that builds its decision object with helper functions). All additive; the Markdown wording of the cards it touches changes, which the compatibility page does not promise.
 

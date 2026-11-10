@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    implementation("io.github.wakaleo:explico:1.0.0")
+    implementation("io.github.wakaleo:explico:1.1.0")
 }
 ```
 
@@ -23,7 +23,7 @@ dependencies {
 <dependency>
   <groupId>io.github.wakaleo</groupId>
   <artifactId>explico</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
 </dependency>
 ```
 
