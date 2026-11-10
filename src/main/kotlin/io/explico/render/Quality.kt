@@ -143,7 +143,7 @@ internal object Quality {
         // The SAME outcomes the cards and the index's "Example coverage" column use (so a name shared by several cards, whose examples cannot be attributed, has none).
         fun outcomesOf(pkg: PolicyPackage, rule: RuleGroup) = WorkedExamples.forGroup(rule, pkg, examplesByPackage?.get(pkg.path)?.get(rule.name) ?: emptyList())
         // A function is not matched by an input and has no examples (spec §14.62): never a finding of these two kinds.
-        val ofRules = controls.filter { supplied && it.members.any { (_, rule) -> rule.parameters.isEmpty() } }
+        val ofRules = controls.filter { supplied && it.members.any { (_, rule) -> rule.parameters.isEmpty() && !WorkedExamples.isLiteralConstant(rule) } }
         return Findings(
             missingTitle = controls.filter { it.title.isNullOrBlank() }.map { it.ref },
             unpublishedComments = policySet.packages.flatMap { it.unpublishedComments }.sortedWith(compareBy({ it.file }, { it.row })),

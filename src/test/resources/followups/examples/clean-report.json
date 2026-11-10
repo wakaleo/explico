@@ -1,0 +1,1 @@
+{"name": "clean report", "input": {"subject": "app-1", "report": {"standards": [{"code": "STANDARD5", "status": "ok"}]}, "signoffs": [], "owner": "alice"}}

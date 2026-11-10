@@ -97,6 +97,18 @@ internal object WorkedExamples {
     }
 
     /**
+     * True for a rule that is a bodiless constant whose value is written as a plain JSON-style literal (`code := "X"`, `limits := {"max": 3}`): it reads nothing, so a fixture
+     * says nothing about it. A bodiless rule whose value is an expression (`board := [s | some s in input.signoffs]`) is NOT a literal: it reads the input and keeps its examples.
+     */
+    fun isLiteralConstant(rule: RuleGroup): Boolean {
+        val rendered = rule.constantValue?.rendered?.trim() ?: return false
+        if (rendered in setOf("true", "false", "null")) return true
+        if (rendered.firstOrNull()?.let { it == '"' || it == '[' || it == '{' || it == '-' || it.isDigit() } != true) return false
+        // Looks like a JSON literal; it must also BE one (a comprehension also starts with `[`).
+        return try { kotlinx.serialization.json.Json.parseToJsonElement(rendered); true } catch (e: kotlinx.serialization.SerializationException) { false }
+    }
+
+    /**
      * Scopes the name-level [outcomes] to one card. A name shared by several cards (same rule name,
      * different METADATA) is evaluated once, so its verdict and messages belong to the whole name;
      * showing them on every card would credit a card with messages its bodies never produced. Each
@@ -109,6 +121,8 @@ internal object WorkedExamples {
     fun forGroup(rule: RuleGroup, pkg: PolicyPackage, outcomes: List<WorkedExample>): List<WorkedExample> {
         // Spec §14.62: a function takes arguments, so an input does not "match" it -- the verdict would be a meaningless "not matched".
         if (rule.parameters.isNotEmpty()) return emptyList()
+        // Spec §14.81: a constant that is a plain literal (`code := "X"`) cannot read the input, so every fixture would give it the same "matched" and the same value.
+        if (isLiteralConstant(rule)) return emptyList()
         val siblings = pkg.rules.filter { it.name == rule.name && !it.isSplitDefaultEntry }
         if (rule.isSplitDefaultEntry && siblings.size > 1) return emptyList()
         if (siblings.size <= 1) return outcomes
@@ -179,6 +193,8 @@ internal object WorkedExamples {
             is Operand.Path -> if (operand.segments.firstOrNull() == PathSegment.Field("input")) into.add(operand)
             is Operand.BuiltinCall -> operand.args.forEach { collectInputPaths(it, into) }
             is Operand.FunctionCall -> operand.args.forEach { collectInputPaths(it, into) }
+            is Operand.Formatted -> operand.args.forEach { collectInputPaths(it, into) }
+            is Operand.InlinedObject -> operand.fields.forEach { f -> f.value?.let { collectInputPaths(it, into) }; f.items?.forEach { collectInputPaths(it, into) } }
             else -> {}
         }
     }
@@ -237,6 +253,8 @@ internal object WorkedExamples {
             value is JsonObject && value.values.all { it == JsonPrimitive(true) } ->
                 value.isNotEmpty() to value.keys.map { key -> messageOf(parseOrString(key)) }
             value is JsonPrimitive && value.booleanOrNull != null -> value.jsonPrimitive.booleanOrNull!! to emptyList()
+            // A string value is its own text: shown through `toString()` it would carry JSON quotes and read `""abc""` once the card quotes it.
+            value is JsonPrimitive && value.isString -> true to listOf(value.content)
             // Any other value type (spec §6.7): render verbatim. Unexercised by the acceptance pack
             // (every pack rule is a set rule or a boolean rule) -- a minimal, disclosed simplification.
             else -> true to listOf(value.toString())

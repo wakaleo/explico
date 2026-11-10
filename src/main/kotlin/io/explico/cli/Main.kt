@@ -109,6 +109,10 @@ private class RenderCommand : CliktCommand(name = "render") {
         "--group-by-control",
         help = "Give every control id shared by two or more rules ONE page, controls/<id>.md, instead of scattering its cards over the package pages (the index lists it once)",
     ).flag()
+    private val emitSituations by option(
+        "--emit-situations",
+        help = "Also write situations/<policy file>.rego: for each rule explico numbers into situations, a companion Rego rule (<name>__situation) saying which one applied, built from the rule's own statements, for an application that evaluates the policy itself (e.g. compiled to WebAssembly); needs Rego v1; write --out outside the policy directory",
+    ).flag()
     private val companionUrl by option(
         "--companion-url",
         help = "A second URL template linking each card (and package page) to the module that owns the policy, with {file}, {package} (the Rego package) and {line}; needs {file} or {package}, e.g. https://host/modules/{package}/{file}#L{line}",
@@ -154,7 +158,7 @@ private class RenderCommand : CliktCommand(name = "render") {
                     examples = examples, dataDir = dataDir, generateExamples = generateExamples, json = json,
                     requirements = requirementsFile?.let { file -> reading(file) { parseRequirements(Files.readString(file)) } } ?: emptyList(), sourceUrl = sourceUrl,
                     controlId = controlIdFrom?.let { ControlIdOptions(it, controlIdTemplate ?: ControlIdFromFilename.DEFAULT_TEMPLATE) },
-                    groupByControl = groupByControl, companion = companionUrl?.let { CompanionLink(it, companionLabel ?: "module") }, required = required,
+                    groupByControl = groupByControl, companion = companionUrl?.let { CompanionLink(it, companionLabel ?: "module") }, required = required, emitSituations = emitSituations,
                 ),
             )
             writing(out) { rendered.writeTo(out, force, inputs) }

@@ -19,7 +19,7 @@ internal object PolicyDigest {
     fun of(policyDir: Path): String {
         val digest = MessageDigest.getInstance("SHA-256")
         val files = Files.walk(policyDir).use { paths ->
-            paths.filter { it.toString().endsWith(".rego") }.collect(Collectors.toList())
+            paths.filter { it.toString().endsWith(".rego") && !io.explico.generate.SituationCompanion.isGeneratedFile(it) }.collect(Collectors.toList())
         }
         // Sorted by '/'-separated RELATIVE path, not disk order: the digest must be the same regardless of which
         // order the filesystem happens to list files in, and the same on Windows (which uses '\') as on POSIX.

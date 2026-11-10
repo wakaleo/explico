@@ -4390,8 +4390,36 @@ class AstMapperTest {
         }
 
         @Test
-        @DisplayName("an unrenderable head value (e.g. a bare sprintf call) falls back to verbatim Operand.Unrendered, never a guess")
+        @DisplayName("an unrenderable head value (e.g. a sprintf with a %d verb) falls back to verbatim Operand.Unrendered, never a guess")
         fun anUnrenderableHeadValueFallsBackToVerbatimUnrendered() {
+            // `label := sprintf("%d-x", [input.name]) if input.named`.
+            val module = moduleOf(
+                """
+                {
+                  "package": {"path": [{"type":"var","value":"data"},{"type":"string","value":"scratch"}]},
+                  "rules": [
+                    {
+                      "head": {"name": "label", "value": {"type":"call","location":{"text":"${b64("sprintf(\"%d-x\", [input.name])")}"},"value":[
+                        {"type":"ref","value":[{"type":"var","value":"sprintf"}]},
+                        {"type":"string","value":"%d-x"},
+                        {"type":"array","value":[{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"name"}]}]}
+                      ]}},
+                      "body": [
+                        {"index":0,"location":{"row":1,"text":"${b64("input.named")}"},"terms":{"type":"ref","value":[{"type":"var","value":"input"},{"type":"string","value":"named"}]}}
+                      ]
+                    }
+                  ]
+                }
+                """.trimIndent()
+            )
+            val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "label" }.bodies.single()
+            val fallback = body.yieldsValue as Operand.Unrendered
+            assertThat(fallback.sourceText).isEqualTo("sprintf(\"%d-x\", [input.name])")
+        }
+
+        @Test
+        @DisplayName("a sprintf head value with understood verbs becomes Operand.Formatted (spec §14.81)")
+        fun aUnderstoodSprintfHeadValueIsFormatted() {
             // `label := sprintf("%v-x", [input.name]) if input.named`.
             val module = moduleOf(
                 """
@@ -4413,8 +4441,8 @@ class AstMapperTest {
                 """.trimIndent()
             )
             val body = AstMapper.mapPolicySet(listOf(ParsedFile("scratch.rego", module))).packages[0].rules.first { it.name == "label" }.bodies.single()
-            val fallback = body.yieldsValue as Operand.Unrendered
-            assertThat(fallback.sourceText).isEqualTo("sprintf(\"%v-x\", [input.name])")
+            assertThat(body.yieldsValue).isInstanceOf(Operand.Formatted::class.java)
+            assertThat((body.yieldsValue as Operand.Formatted).format).isEqualTo("%v-x")
         }
 
         @Test

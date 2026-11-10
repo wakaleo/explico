@@ -52,6 +52,7 @@ import io.explico.model.DeclaredProjection
 import io.explico.model.DefaultValue
 import io.explico.model.ElseBranch
 import io.explico.model.LiteralCollection
+import io.explico.model.ObjectField
 import io.explico.model.Operand
 import io.explico.model.Operator
 import io.explico.model.PackageMetadata
@@ -71,6 +72,7 @@ import io.explico.opa.OpaRuleHead
 import io.explico.opa.OpaTerm
 import io.explico.opa.opaJson
 import io.explico.render.Coverage
+import io.explico.render.MessageFormat
 import io.explico.render.PathHumanizer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonArray
@@ -196,6 +198,7 @@ internal object AstMapper {
         val partialRegistry = buildPartialRuleRegistry(files)
         val refHeadRegistry = buildRefHeadRuleRegistry(files)
         val functionRegistry = buildFunctionRegistry(files)
+        val functionRules = buildFunctionRules(files)
         val metadataIndex = buildMetadataIndex(inspectResult, files)
         // Spec §14.68: every rule some OTHER rule uses, from opa's own AST (one pass over the files, so it stays linear on a large corpus).
         val used = mutableSetOf<Pair<String, String>>()
@@ -205,7 +208,7 @@ internal object AstMapper {
             .map { (path, filesInPackage) ->
                 val orderedFiles = filesInPackage.sortedBy { it.sourceFile }
                 val rules = orderedFiles
-                    .flatMap { mapRuleGroups(it, registry, partialRegistry, refHeadRegistry, functionRegistry, metadataIndex) }
+                    .flatMap { mapRuleGroups(it, registry, partialRegistry, refHeadRegistry, functionRegistry, functionRules, metadataIndex) }
                     .sortedBy { it.name }
                     .map { rule -> if ((path to rule.name) in used) rule else rule.copy(isReferenced = false) }
                 PolicyPackage(
@@ -443,6 +446,19 @@ internal object AstMapper {
                 byName
             }
 
+    /** Every definition of every function, by package and name (spec §14.81: inlining needs the body, not just the parameter names). */
+    private fun buildFunctionRules(files: List<ParsedFile>): Map<String, Map<String, List<OpaRule>>> =
+        files.groupBy({ packagePath(it.module) }, { it.module })
+            .mapValues { (_, modules) ->
+                val byName = mutableMapOf<String, MutableList<OpaRule>>()
+                for (module in modules) for (rule in module.rules) {
+                    val name = rule.head.name ?: continue
+                    if (rule.head.args == null) continue
+                    byName.getOrPut(name) { mutableListOf() }.add(rule)
+                }
+                byName
+            }
+
     /** One real-opa-rule statement paired with its resolved name and per-rule metadata (review items 1/2/3). */
     private data class NamedRule(val rule: OpaRule, val name: String, val metadata: RuleMetadata?)
 
@@ -452,6 +468,7 @@ internal object AstMapper {
         partialRegistry: Map<String, Set<String>>,
         refHeadRegistry: Map<String, Set<String>>,
         functionRegistry: Map<String, Map<String, List<String>>>,
+        functionRules: Map<String, Map<String, List<OpaRule>>>,
         metadataIndex: Map<Pair<String, Int>, RuleMetadata>,
     ): List<RuleGroup> {
         val currentPackage = packagePath(file.module)
@@ -462,6 +479,7 @@ internal object AstMapper {
             partialRegistry = partialRegistry,
             refHeadRegistry = refHeadRegistry,
             functionRegistry = functionRegistry,
+            functionRules = functionRules,
             sourceFile = file.sourceFile,
         )
         val named = file.module.rules.mapNotNull { rule ->
@@ -497,7 +515,7 @@ internal object AstMapper {
                     // review item 8: a function's own declared parameters, for its card's own
                     // "Parameters" line. `head.args` is consistent across a function's overloaded
                     // bodies (same arity/names), so the first is as good as any.
-                    parameters = orderedRules.first().head.args?.map { parameterNameOf(it) } ?: emptyList(),
+                    parameters = parameterNamesOf(orderedRules),
                     constantValue = constant,
                 )
             }
@@ -579,7 +597,28 @@ internal object AstMapper {
      * verbatim source, never guessed; only its position (arity) matters for call resolution.
      */
     private fun parameterNameOf(arg: OpaTerm): String =
-        if (arg.type == "var") stringValueOf(arg) else sourceText(arg.location)
+        if (arg.type == "var") (if (sourceText(arg.location) == "_") "_" else stringValueOf(arg)) else sourceText(arg.location)
+
+    /**
+     * A function's parameter names for its card (spec §14.81): per position, the name from the FIRST definition that names it with a plain variable --
+     * `f(_, 0) := 0` followed by `f(violations, total) := ...` reads `violations`, `total`, not `$0`, `0`. A position no definition names keeps the
+     * first definition's own source (`_`, a literal).
+     */
+    private fun parameterNamesOf(definitions: List<OpaRule>): List<String> {
+        val all = definitions.mapNotNull { it.head.args }
+        val first = all.firstOrNull() ?: return emptyList()
+        return first.indices.map { i ->
+            all.firstNotNullOfOrNull { args -> args.getOrNull(i)?.takeIf { it.type == "var" && sourceText(it.location) != "_" } }
+                ?.let { stringValueOf(it) } ?: parameterNameOf(first[i])
+        }
+    }
+
+    /** The head arguments as written (`_, 0`) when any of them is a PATTERN (not a plain variable or `_`), else null. */
+    private fun argumentPatternOf(rule: OpaRule): String? {
+        val args = rule.head.args ?: return null
+        if (args.all { it.type == "var" }) return null
+        return args.joinToString(", ") { sourceText(it.location) }
+    }
 
     /**
      * Failure isolation boundary for ONE rule body (found by benchmarking against real-world Rego
@@ -663,6 +702,7 @@ internal object AstMapper {
             // item 10).
             yieldsValue = if (consumedValueMessage) null else yieldsValueOrNull(rule, symbolTable, ctx.copy(freeKeys = null)),
             messageArguments = messageArguments,
+            argumentPattern = argumentPatternOf(rule),
         )
     }
 
@@ -700,6 +740,7 @@ internal object AstMapper {
             sourceText = sourceText(rule.location),
             yieldsValue = first.value,
             elseBranches = mapped.drop(1).map { ElseBranch(it!!.conditions, it.value, SourceRef(ctx.sourceFile, it.row)) },
+            argumentPattern = argumentPatternOf(rule),
         )
     }
 
@@ -832,7 +873,7 @@ internal object AstMapper {
         if (rule.head.key != null) return null
         val value = rule.head.value ?: return null
         if (value.location == null) return null
-        return when (val result = mapOperand(value, symbolTable, ctx)) {
+        return when (val result = mapOperand(value, symbolTable, ctx.copy(formatting = true, inlining = true))) {
             is ConstructResult.Ok -> result.operand
             is ConstructResult.Unsupported -> unrenderedOperandAt(value.location)
         }
@@ -964,7 +1005,7 @@ internal object AstMapper {
         val local = symbolTable.toMutableMap()
         val conditions = mutableListOf<Condition>()
         // A free index is never BOUND inside a comprehension (its scope would leak into the enclosing rule); a single-use one is still `_`.
-        val inner = ctx.copy(freeKeys = null)
+        val inner = ctx.copy(freeKeys = null, formatting = false, inlining = false)
         for (expr in bodyExprs) mapBodyExpr(expr, local, inner, conditions)
         val renderable = conditions.all { c ->
             c !is Condition.Unrendered && c !is Condition.RuleReference && c !is Condition.FunctionCall &&
@@ -1671,7 +1712,10 @@ internal object AstMapper {
      */
     private fun mapCallOperand(term: OpaTerm, symbolTable: Map<String, VarBinding>, ctx: MappingContext): ConstructResult {
         val (name, args) = decodeCallShape(decodeTermList(term.value)) ?: return ConstructResult.Ok(unrenderedOperandAt(term.location))
-        val mapped = args.map { mapOperand(it, symbolTable, ctx) }
+        val inlineHere = ctx.inlining
+        val argCtx = if (inlineHere) ctx.copy(inlining = false) else ctx
+        if (ctx.formatting && name == "sprintf") return mapFormatted(term, args, symbolTable, argCtx)
+        val mapped = args.map { mapOperand(it, symbolTable, argCtx) }
         val unsupported = mapped.filterIsInstance<ConstructResult.Unsupported>().firstOrNull()
         if (unsupported != null) return unsupported
         val operands = mapped.map { (it as ConstructResult.Ok).operand }
@@ -1697,9 +1741,114 @@ internal object AstMapper {
         // Operand.Unrendered stays wrapped inside the call (like BuiltinCall), so the footer still
         // counts it; an Unsupported one already returned above.
         resolveFunctionCall(name, args.size, ctx)?.let { (packagePath, functionName) ->
+            if (inlineHere) inlineObjectFunction(packagePath, functionName, args, operands, symbolTable, argCtx)?.let { return ConstructResult.Ok(it) }
             return ConstructResult.Ok(Operand.FunctionCall(packagePath, functionName, operands))
         }
         return ConstructResult.Ok(unrenderedOperandAt(term.location))
+    }
+
+    /**
+     * `sprintf("text %v", [a, b])` in a value position (spec §14.81): the existing *Produces* rule applied to an operand -- only `%v`/`%s`/`%%`, the
+     * verbs matching the arguments exactly, every argument a plain path or a function parameter. Anything else is the ordinary operand fallback,
+     * so a `%d` can never misalign the arguments that follow it.
+     */
+    private fun mapFormatted(term: OpaTerm, args: List<OpaTerm>, symbolTable: Map<String, VarBinding>, ctx: MappingContext): ConstructResult {
+        val fallback = ConstructResult.Ok(unrenderedOperandAt(term.location))
+        if (args.size != 2 || args[0].type != "string" || args[1].type != "array") return fallback
+        val format = stringValueOf(args[0])
+        val verbs = MessageFormat.verbCount(format) ?: return fallback
+        val elements = decodeTermList(args[1].value)
+        if (verbs != elements.size) return fallback
+        val operands = elements.map { (mapOperand(it, symbolTable, ctx) as? ConstructResult.Ok)?.operand ?: return fallback }
+        if (operands.any { MessageFormat.placeholderOf(it) == null }) return fallback
+        return ConstructResult.Ok(Operand.Formatted(format, operands))
+    }
+
+    /**
+     * A call, in a rule's value position, to a function whose ONLY definition has no conditions and an OBJECT LITERAL as its value (spec §14.81).
+     * Returns the object's fields read through the call's arguments, or null -- the call then stays an ordinary [Operand.FunctionCall].
+     * Deliberately narrow, all-or-nothing: every parameter a plain variable; every field value a literal, a parameter, or the one
+     * list-building comprehension shape (`[{"k": a, ...} | some a in param]`) whose parameter is bound to an argument. Anything else (a rule or
+     * import used in a value, a nested object, a condition) makes the whole call stay as it is -- the function body is defined in another
+     * package, so nothing here is resolved against the CALLER's scope.
+     */
+    private fun inlineObjectFunction(
+        packagePath: String,
+        functionName: String,
+        argTerms: List<OpaTerm>,
+        argOperands: List<Operand>,
+        symbolTable: Map<String, VarBinding>,
+        ctx: MappingContext,
+    ): Operand.InlinedObject? {
+        val rule = ctx.functionRules[packagePath]?.get(functionName)?.singleOrNull() ?: return null
+        if (rule.elseBranch != null || rule.head.key != null || !isBodilessValue(rule)) return null
+        val params = rule.head.args ?: return null
+        if (params.size != argTerms.size || params.any { it.type != "var" }) return null
+        val value = rule.head.value?.takeIf { it.type == "object" } ?: return null
+        val paramNames = params.map { stringValueOf(it) }
+        if (paramNames.toSet().size != paramNames.size) return null
+        val pairs = opaJson.decodeFromJsonElement(ListSerializer(ListSerializer(OpaTerm.serializer())), value.value ?: JsonArray(emptyList()))
+        val fields = mutableListOf<ObjectField>()
+        for (pair in pairs) {
+            if (pair.size != 2 || pair[0].type != "string") return null
+            val key = stringValueOf(pair[0])
+            val fieldTerm = pair[1]
+            val field = when (fieldTerm.type) {
+                "string", "number", "boolean", "null" ->
+                    ObjectField(key, (mapOperand(fieldTerm, emptyMap(), ctx) as? ConstructResult.Ok)?.operand ?: return null)
+                "var" -> {
+                    val index = paramNames.indexOf(stringValueOf(fieldTerm)).takeIf { it >= 0 } ?: return null
+                    val operand = argOperands[index].takeIf { isFullyRendered(it) } ?: return null
+                    ObjectField(key, operand)
+                }
+                "arraycomprehension" -> {
+                    val (wrapKey, paramIndex) = wrappedListShape(fieldTerm, paramNames) ?: return null
+                    val argTerm = argTerms[paramIndex]
+                    if (argTerm.type == "array") {
+                        val items = decodeTermList(argTerm.value).map { (mapOperand(it, symbolTable, ctx) as? ConstructResult.Ok)?.operand ?: return null }
+                        ObjectField(key, null, wrapKey, items)
+                    } else {
+                        ObjectField(key, argOperands[paramIndex].takeIf { isFullyRendered(it) } ?: return null, wrapKey, null)
+                    }
+                }
+                else -> return null
+            }
+            fields += field
+        }
+        if (fields.isEmpty()) return null
+        return Operand.InlinedObject(packagePath, functionName, fields)
+    }
+
+    /**
+     * `[{"action": a, ...} | some a in param]` -> (the key `a` is put under, the index of `param` among [paramNames]); null for any other
+     * comprehension. Read from opa's own AST: one head object holding a pair whose value is the iteration variable, one body statement
+     * `some a in param` and nothing else.
+     */
+    private fun wrappedListShape(term: OpaTerm, paramNames: List<String>): Pair<String, Int>? {
+        val parts = term.value as? JsonObject ?: return null
+        val head = parts["term"]?.let { opaJson.decodeFromJsonElement(OpaTerm.serializer(), it) }?.takeIf { it.type == "object" } ?: return null
+        val body = (parts["body"] as? JsonArray)?.let { opaJson.decodeFromJsonElement(ListSerializer(OpaExpr.serializer()), it) } ?: return null
+        val only = body.singleOrNull()?.takeIf { !it.negated && it.with == null } ?: return null
+        val symbols = (only.terms as? JsonObject)?.get("symbols") as? JsonArray ?: return null
+        val symbol = decodeTermList(symbols).singleOrNull()?.takeIf { it.type == "call" } ?: return null
+        val (operator, operands) = decodeCallShape(decodeTermList(symbol.value)) ?: return null
+        if (operator != "internal.member_2" || operands.size != 2 || operands[0].type != "var" || operands[1].type != "var") return null
+        val iterationVar = stringValueOf(operands[0])
+        val paramIndex = paramNames.indexOf(stringValueOf(operands[1])).takeIf { it >= 0 } ?: return null
+        val headPairs = opaJson.decodeFromJsonElement(ListSerializer(ListSerializer(OpaTerm.serializer())), head.value ?: JsonArray(emptyList()))
+        val wrapped = headPairs.filter { it.size == 2 && it[0].type == "string" && it[1].type == "var" && stringValueOf(it[1]) == iterationVar }
+        val key = wrapped.singleOrNull()?.let { stringValueOf(it[0]) } ?: return null
+        return key to paramIndex
+    }
+
+    /** A function/rule with no `if`: opa gives it one synthetic `true` statement whose source text is the VALUE's own (see [constantValueOrNull]). */
+    internal fun isBodilessValue(rule: OpaRule): Boolean {
+        val value = rule.head.value ?: return false
+        val onlyExpr = rule.body.singleOrNull() ?: return false
+        val terms = onlyExpr.terms as? JsonObject ?: return false
+        if ("type" !in terms) return false
+        if (opaJson.decodeFromJsonElement(OpaTerm.serializer(), terms).type != "boolean") return false
+        return sourceText(onlyExpr.location) == sourceText(value.location)
     }
 
     /**
@@ -1871,11 +2020,16 @@ private data class MappingContext(
     val partialRegistry: Map<String, Set<String>>,
     val refHeadRegistry: Map<String, Set<String>>,
     val functionRegistry: Map<String, Map<String, List<String>>>,
+    val functionRules: Map<String, Map<String, List<OpaRule>>> = emptyMap(),
     val sourceFile: String,
     /** How many times each variable name occurs in the rule being mapped (declare-only `some` excluded): 1 means a free index is just `_` (spec §14.51). */
     val varCounts: Map<String, Int> = emptyMap(),
     /** Free index/key bindings of the rule body being mapped; null where binding is not allowed (comprehension, `every`, message/value operands). */
     val freeKeys: FreeKeys? = null,
+    /** True while mapping a rule's or branch's VALUE (and the arguments of a call there): a `sprintf` message is formatted (spec §14.81). */
+    val formatting: Boolean = false,
+    /** True only for the VALUE term itself, never its arguments: a call there to an object-literal function is inlined (spec §14.81). */
+    val inlining: Boolean = false,
 )
 
 /**

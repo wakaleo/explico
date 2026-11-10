@@ -239,6 +239,13 @@ internal object ExpressionRenderer {
             "parameter `${operand.name}` ▸ ${tail.rendered}" to tail.hasAnyIndex
         }
         is Operand.BuiltinCall -> renderOperandBuiltinCall(operand, ruleValueAnchorFor)
+        // Spec §14.81: the message with its arguments as bracketed placeholders, in one code span so none of its characters is read as Markdown.
+        is Operand.Formatted -> MarkdownText.codeSpan("\"${MessageFormat.text(operand.format, operand.args)}\"") to false
+        // Spec §14.81: the one-line form of an inlined object (the card's own *Then:*/*Value:* lines list the fields instead, see ThenLines).
+        is Operand.InlinedObject -> {
+            val rendered = operand.fields.map { f -> ThenLines.fieldPhrase(f) { renderOperand(it, ruleValueAnchorFor).first } }
+            "an object, as returned by function `${operand.functionName}`, with ${rendered.joinToString("; ")}" to false
+        }
         // Review item 10: a link to the referenced rule's own card, the same "rule [`name`](anchor)"
         // convention regardless of whether the source spelled it bare, via an import alias, or as
         // a full data path -- all three resolve to the identical shape by the time AstMapper hands

@@ -70,6 +70,8 @@ internal object Coverage {
         is Operand.Unrendered -> listOf(operand)
         is Operand.BuiltinCall -> operand.args.flatMap { unrenderedIn(it) }
         is Operand.FunctionCall -> operand.args.flatMap { unrenderedIn(it) }
+        is Operand.Formatted -> operand.args.flatMap { unrenderedIn(it) }
+        is Operand.InlinedObject -> operand.fields.flatMap { f -> (f.value?.let { unrenderedIn(it) } ?: emptyList()) + (f.items ?: emptyList()).flatMap { unrenderedIn(it) } }
         // A comprehension is only built when fully rendered, so this is empty in practice; traversed anyway
         // so the footer can never undercount if that invariant is ever relaxed.
         is Operand.Comprehension -> unrenderedIn(operand.term) + (operand.valueTerm?.let { unrenderedIn(it) } ?: emptyList()) +

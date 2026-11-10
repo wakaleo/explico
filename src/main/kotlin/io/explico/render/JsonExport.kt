@@ -240,12 +240,12 @@ internal object JsonExport {
         put("constantValue", nullable(rule.constantValue?.rendered))
         put("isSplitDefaultEntry", rule.isSplitDefaultEntry)
         put("coverage", coverage(Coverage.of(rule)))
-        put("bodies", buildJsonArray { rule.bodies.forEach { add(bodyObject(it)) } })
+        put("bodies", buildJsonArray { rule.bodies.forEach { add(bodyObject(it, rule.metadata?.projection)) } })
         put("referenceData", buildJsonArray {
             if (dataValues != null) ReferenceData.referencedDataPaths(rule, policySet).forEach { add(referenceDatum(it, dataValues[it])) }
         })
         // Spec §14.62: a function is not matched by an input, so it has no key at all (an ordinary rule with no fixtures has an empty list).
-        if (rule.parameters.isEmpty()) put("workedExamples", buildJsonArray { examples.forEach { add(exampleObject(rule, it.fixture.name, it, generated = false)) } })
+        if (rule.parameters.isEmpty() && !WorkedExamples.isLiteralConstant(rule)) put("workedExamples", buildJsonArray { examples.forEach { add(exampleObject(rule, it.fixture.name, it, generated = false)) } })
         put("generatedExamples", buildJsonArray {
             generated?.let { g ->
                 (g.matching + g.nearMisses).forEach { entry ->
@@ -259,10 +259,11 @@ internal object JsonExport {
     private fun phrase(condition: Condition): String =
         ExpressionRenderer.render(condition, { null }, { null }, { null })
 
-    private fun bodyObject(body: RuleBody): JsonObject = buildJsonObject {
+    private fun bodyObject(body: RuleBody, projection: io.explico.model.DeclaredProjection?): JsonObject = buildJsonObject {
         put("conditions", buildJsonArray { body.conditions.forEach { add(conditionObject(it)) } })
         put("produces", nullable(body.producesValue))
         put("yields", nullable(body.yieldsValue?.let { ExpressionRenderer.renderValue(it) { null } }))
+        yieldsStructure(body.yieldsValue, projection)?.let { put("yieldsStructure", it) }
         // Spec §14.52: present only for an `else` chain (so every other export is unchanged). `conditions`/`yields` above are the chain's first
         // branch; these are the ones after it, in order. An empty `conditions` is the closing "Otherwise" branch.
         if (body.elseBranches.isNotEmpty()) {
@@ -271,10 +272,43 @@ internal object JsonExport {
                     add(buildJsonObject {
                         put("conditions", buildJsonArray { branch.conditions.forEach { add(conditionObject(it)) } })
                         put("yields", ExpressionRenderer.renderValue(branch.yieldsValue) { null })
+                        yieldsStructure(branch.yieldsValue, projection)?.let { put("yieldsStructure", it) }
                         put("sourceLine", branch.sourceLocation.row)
                     })
                 }
             })
+        }
+    }
+
+    /**
+     * Spec §14.81: the structure behind a yielded value that is an inlined object-literal function, beside the rendered `yields` text -- present only then.
+     * With a declared verdict that reads statically: `verdict` (`outcome` boolean, `text`), `reason` (the card's text) and `remediation` (the card's items, `[]` for
+     * none, absent when not shown). Otherwise `fields`: one `{name, text}` per field. Every string is the card's own wording, never recomputed.
+     */
+    private fun yieldsStructure(value: Operand?, projection: io.explico.model.DeclaredProjection?): JsonObject? {
+        val inlined = value as? Operand.InlinedObject ?: return null
+        fun text(operand: Operand) = ExpressionRenderer.renderValue(operand) { null }
+        return buildJsonObject {
+            put("function", inlined.functionName)
+            put("package", inlined.packagePath)
+            val verdict = ThenLines.staticVerdict(inlined, projection)
+            if (verdict != null) {
+                put("verdict", buildJsonObject {
+                    put("outcome", verdict.outcome)
+                    put("text", verdict.text)
+                })
+                verdict.reason?.let { put("reason", text(it)) }
+                verdict.remediation?.let { items -> put("remediation", buildJsonArray { items.forEach { add(JsonPrimitive(text(it))) } }) }
+            } else {
+                put("fields", buildJsonArray {
+                    inlined.fields.forEach { f ->
+                        add(buildJsonObject {
+                            put("name", f.key)
+                            put("text", ThenLines.fieldPhrase(f, ::text).removePrefix("`${f.key}`: "))
+                        })
+                    }
+                })
+            }
         }
     }
 

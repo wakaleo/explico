@@ -42,6 +42,8 @@ internal object ReferenceData {
             is Operand.Path -> if (operand.segments.firstOrNull() == PathSegment.Field("data")) into.add(plainPrefix(operand))
             is Operand.BuiltinCall -> operand.args.forEach { collectDataPaths(it, into) }
             is Operand.FunctionCall -> operand.args.forEach { collectDataPaths(it, into) }
+            is Operand.Formatted -> operand.args.forEach { collectDataPaths(it, into) }
+            is Operand.InlinedObject -> operand.fields.forEach { f -> f.value?.let { collectDataPaths(it, into) }; f.items?.forEach { collectDataPaths(it, into) } }
             // CHALLENGE edge case: a comprehension's own body can reference data too (`count({x | some x in
             // data.allowlist; ...})`) -- same recursion shape Coverage.countUnrendered already uses for it.
             is Operand.Comprehension -> {

@@ -49,6 +49,7 @@ class CliBaselineTest {
         "  --control-id-from  <value>",
         "  --control-id-template  <value>",
         "  --data  <path>",
+        "  --emit-situations  flag",
         "  --examples  <path>",
         "  --fail-on-gaps  flag",
         "  --fail-under  <int>",

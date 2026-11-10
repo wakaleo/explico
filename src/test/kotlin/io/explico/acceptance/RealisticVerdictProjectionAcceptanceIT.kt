@@ -212,7 +212,13 @@ class RealisticVerdictProjectionAcceptanceIT {
 
         @Test
         @DisplayName("the value is not an object at all -> raw, as today")
-        fun scalarValue() = assertRaw(bullet(b, "scalar value"), "\"just a string\"")
+        fun scalarValue() {
+            // Spec §14.81 repin: a string value is its own text. The raw JSON `"just a string"` used to be quoted AGAIN by the card (`*""just a string""*`), which is the
+            // doubled-quote defect fixed there; it is shown once, still raw (no verdict, no glyph).
+            val lines = bullet(b, "scalar value")
+            assertThat(lines[0]).endsWith("— matched")
+            assertThat(lines.joinToString("\n")).contains("*\"just a string\"*").doesNotContain("\"\"just a string").doesNotContain("✅").doesNotContain("❌")
+        }
 
         private fun assertRaw(lines: List<String>, rawJson: String) {
             assertThat(lines[0]).endsWith("— matched")

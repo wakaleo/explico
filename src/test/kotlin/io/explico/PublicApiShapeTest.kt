@@ -35,7 +35,7 @@ class PublicApiShapeTest {
         fun fields(c: Class<*>) = c.declaredFields.filter { !Modifier.isStatic(it.modifiers) }.map { it.name }
 
         assertThat(fields(RenderOptions::class.java)).containsExactly(
-            "examples", "dataDir", "generateExamples", "json", "requirements", "sourceUrl", "controlId", "groupByControl", "companion", "required",
+            "examples", "dataDir", "generateExamples", "json", "requirements", "sourceUrl", "controlId", "groupByControl", "companion", "required", "emitSituations",
         )
         assertThat(fields(DiffOptions::class.java)).containsExactly("groupByControl", "data", "examples", "labels", "digests")
         assertThat(fields(ControlIdOptions::class.java)).containsExactly("from", "template")
@@ -62,10 +62,10 @@ class PublicApiShapeTest {
     fun builders() {
         val examples = ExampleSet(emptyList())
         val built = RenderOptions.builder().examples(examples).dataDir(Path.of("d")).generateExamples(true).json(true).requirements(listOf("r"))
-            .sourceUrl("https://h/{file}").controlId(ControlIdOptions("x(?<id>1)")).groupByControl(true).companion(CompanionLink("https://h/{file}")).required(listOf("title")).build()
+            .sourceUrl("https://h/{file}").controlId(ControlIdOptions("x(?<id>1)")).groupByControl(true).companion(CompanionLink("https://h/{file}")).required(listOf("title")).emitSituations(true).build()
 
         assertThat(built).isEqualTo(
-            RenderOptions(examples, Path.of("d"), true, true, listOf("r"), "https://h/{file}", ControlIdOptions("x(?<id>1)"), true, CompanionLink("https://h/{file}"), listOf("title")),
+            RenderOptions(examples, Path.of("d"), true, true, listOf("r"), "https://h/{file}", ControlIdOptions("x(?<id>1)"), true, CompanionLink("https://h/{file}"), listOf("title"), true),
         )
         assertThat(RenderOptions.builder().build()).isEqualTo(RenderOptions())
 

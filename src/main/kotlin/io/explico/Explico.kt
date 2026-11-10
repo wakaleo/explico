@@ -12,6 +12,7 @@ import io.explico.diff.ExampleChanges
 import io.explico.diff.PolicyDiff
 import io.explico.generate.ExampleGenerator
 import io.explico.generate.GenerationResult
+import io.explico.generate.SituationCompanion
 import io.explico.model.Operand
 import io.explico.model.PolicySet
 import io.explico.model.RegoVersion
@@ -128,7 +129,7 @@ public object Explico {
     @JvmOverloads
     public fun load(policyDir: Path, regoVersion: RegoVersion = RegoVersion.V1): PolicySet {
         val regoFiles = Files.walk(policyDir).use { paths ->
-            paths.filter { it.toString().endsWith(".rego") }.sorted().toList()
+            paths.filter { it.toString().endsWith(".rego") && !SituationCompanion.isGeneratedFile(it) }.sorted().toList()
         }
         val parsedFiles = regoFiles.map { file ->
             val relativePath = policyDir.relativize(file).toString().replace(java.io.File.separatorChar, '/')
@@ -178,7 +179,7 @@ public object Explico {
         return renderPolicies(
             policies, policyDir, options.examples, options.dataDir, options.generateExamples, options.json, options.requirements, options.sourceUrl,
             options.controlId?.from, options.controlId?.template ?: ControlIdFromFilename.DEFAULT_TEMPLATE, options.groupByControl,
-            options.companion?.url, options.companion?.label ?: "module", options.required,
+            options.companion?.url, options.companion?.label ?: "module", options.required, options.emitSituations,
         )
     }
 
@@ -204,7 +205,10 @@ public object Explico {
         companionUrl: String?,
         companionLabel: String,
         required: List<String>?,
+        emitSituations: Boolean,
     ): RenderedDocs {
+        // Spec §14.81: the generated rules use `if`, which is Rego v1 syntax -- refused before any opa work rather than producing a file that does not compile.
+        require(!emitSituations || policySet.regoVersion == RegoVersion.V1) { "emitSituations generates Rego v1 (`if`) rules, but these policies are Rego v0" }
         // Validate the URL template before any (slow) opa work: a template without {file} is the caller's mistake.
         val sourceLinks = SourceLinks.of(sourceUrl)
         // Spec §14.61: a malformed custom.mask is refused, never ignored (it would show the values it was written to hide) -- before any opa work.
@@ -245,6 +249,7 @@ public object Explico {
         } + groups?.groups.orEmpty().associate { group ->
             group.page to MarkdownRenderer.renderControlPage(group, set, groups!!, examplesByPackage, generated?.byPackage ?: emptyMap(), policyDigest, dataValues, sourceLinks, companion)
         } + ("index.md" to MarkdownRenderer.renderIndex(set, examplesByPackage, policyDigest, requirements, sourceLinks, groups)) +
+            (if (emitSituations) SituationCompanion.generate(set) else emptyMap()) +
             (if (json) mapOf("explico.json" to JsonExport.render(set, policyDigest, examplesByPackage, generated?.byPackage ?: emptyMap(), dataValues, requirements, sourceLinks, groups, companion, requiredSet)) else emptyMap())
 
         val packageCoverages = set.packages.map { Coverage.of(it) }

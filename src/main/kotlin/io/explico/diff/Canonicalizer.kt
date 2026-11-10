@@ -63,6 +63,8 @@ internal object Canonicalizer {
                     }
                 })
             }
+            // Spec §14.81: a literal argument pattern changes which calls the body applies to -- logic. Emitted only when present (every existing hash is unchanged).
+            body.argumentPattern?.let { put("argumentPattern", JsonPrimitive(it)) }
             put("messageArguments", buildJsonArray { body.messageArguments.forEach { add(canonicalOperand(it, aliases)) } })
             put("messageTemplate", body.messageTemplate?.let { JsonPrimitive(it) } ?: JsonNull)
             // Follow-up to review item 10: the value a conditional rule's body yields is part of
@@ -179,6 +181,26 @@ internal object Canonicalizer {
             put("functionName", JsonPrimitive(operand.functionName))
             put("packagePath", JsonPrimitive(operand.packagePath))
             put("type", JsonPrimitive("FunctionCall"))
+        }
+        is Operand.Formatted -> buildJsonObject {
+            put("args", buildJsonArray { operand.args.forEach { add(canonicalOperand(it, aliases)) } })
+            put("format", JsonPrimitive(operand.format))
+            put("type", JsonPrimitive("Formatted"))
+        }
+        is Operand.InlinedObject -> buildJsonObject {
+            put("fields", buildJsonArray {
+                operand.fields.forEach { f ->
+                    add(buildJsonObject {
+                        put("items", f.items?.let { items -> buildJsonArray { items.forEach { add(canonicalOperand(it, aliases)) } } } ?: JsonNull)
+                        put("key", JsonPrimitive(f.key))
+                        put("value", f.value?.let { canonicalOperand(it, aliases) } ?: JsonNull)
+                        put("wrapKey", f.wrapKey?.let { JsonPrimitive(it) } ?: JsonNull)
+                    })
+                }
+            })
+            put("functionName", JsonPrimitive(operand.functionName))
+            put("packagePath", JsonPrimitive(operand.packagePath))
+            put("type", JsonPrimitive("InlinedObject"))
         }
         is Operand.Comprehension -> buildJsonObject {
             // Keys are inserted alphabetically; variables are aliased in that traversal order (body

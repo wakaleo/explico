@@ -3,7 +3,7 @@
  * it -- reflection cannot tell, internal compiles to JVM-public), `./gradlew updateKotlinAbi` rewrites it as a deliberate, reviewed act, and `checkKotlinAbi` (part of `check`) fails on any drift.
  * This test is the readable half: it pins WHAT is public so a change to the surface is a conscious edit of this list, not an accident. No opa; it reads the committed file and does not run Gradle.
  *
- * Pinned (from a throwaway dump on 2026-11-01, then the operator's 2026-11-02 decisions): the 82 public classes below; exactly seven `Explico` entry points (plus `INSTANCE`; `$default` synthetics
+ * Pinned (from a throwaway dump on 2026-11-01, then the operator's 2026-11-02 decisions): the 85 public classes below; exactly seven `Explico` entry points (plus `INSTANCE`; `$default` synthetics
  * ignored); no internal type. `io/explico/cli/MainKt` was in the first dump because `fun main` was implicitly public; it was made `internal` (the launcher is not library API), which is why there is no
  * `io/explico/cli/` class here. `io/explico/render/Fixture$$serializer` (kotlinx-serialization machinery of a public data class) stays blessed. The experimental opt-in `ExperimentalAbiValidation` is part
  * of the Kotlin Gradle plugin already in use, pinned by its version: no new dependency.
@@ -67,10 +67,13 @@ class ApiBaselineTest {
         "io/explico/model/DefaultValue",
         "io/explico/model/ElseBranch",
         "io/explico/model/LiteralCollection",
+        "io/explico/model/ObjectField",
         "io/explico/model/Operand",
         "io/explico/model/Operand\$BuiltinCall",
         "io/explico/model/Operand\$Comprehension",
+        "io/explico/model/Operand\$Formatted",
         "io/explico/model/Operand\$FunctionCall",
+        "io/explico/model/Operand\$InlinedObject",
         "io/explico/model/Operand\$Literal",
         "io/explico/model/Operand\$Parameter",
         "io/explico/model/Operand\$ParameterPath",
@@ -135,10 +138,10 @@ class ApiBaselineTest {
     }
 
     @Test
-    @DisplayName("the public classes are exactly the 82 blessed ones: a new, removed or renamed public type is a conscious edit of this list")
+    @DisplayName("the public classes are exactly the 85 blessed ones: a new, removed or renamed public type is a conscious edit of this list")
     fun theBlessedSurface() {
         assertThat(classNames()).containsExactlyInAnyOrderElementsOf(publicClasses)
-        assertThat(publicClasses).hasSize(82)
+        assertThat(publicClasses).hasSize(85)
     }
 
     @Test

@@ -29,6 +29,11 @@ public data class RenderOptions @JvmOverloads constructor(
     val companion: CompanionLink? = null,
     /** The documentation properties a control must have, for [RenderedDocs.gaps] (`title`, `description`, `frameworks`, `fixture`, `verdict`); null = the default (`description`, `frameworks`). */
     val required: List<String>? = null,
+    /**
+     * Also write `situations/<policy file>`: for each rendered rule that can be numbered, a companion Rego rule (`<name>__situation`, or `<name>__situations` for several OR-ed
+     * definitions) saying which situation of the card applied, built only from the rule's own statements, for an application that evaluates the policy itself. Needs Rego v1.
+     */
+    val emitSituations: Boolean = false,
 ) {
     public companion object {
         /** A builder for Java callers: `RenderOptions.builder().json(true).build()`. */
@@ -60,6 +65,8 @@ public data class RenderOptions @JvmOverloads constructor(
         public fun companion(value: CompanionLink?): Builder = apply { options = options.copy(companion = value) }
         /** Sets [RenderOptions.required]. */
         public fun required(value: List<String>?): Builder = apply { options = options.copy(required = value) }
+        /** Sets [RenderOptions.emitSituations]. */
+        public fun emitSituations(value: Boolean): Builder = apply { options = options.copy(emitSituations = value) }
         /** The [RenderOptions] these calls described. */
         public fun build(): RenderOptions = options
     }

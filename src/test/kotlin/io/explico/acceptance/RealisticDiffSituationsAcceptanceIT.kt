@@ -88,7 +88,9 @@ class RealisticDiffSituationsAcceptanceIT {
         @DisplayName("SIT-2: the commentary string inside situation 2's function call changed -> 'situation 2: value changed from ... to ...', worded as the card words the value")
         fun commentary() {
             assertThat(details("SIT-2")).containsExactly(
-                "situation 2: value changed from result of function `verdict` for `\"Attestation has expired\"` to result of function `verdict` for `\"Attestation has lapsed\"`",
+                // Spec §14.81 repin: the card now words this call as the object the function returns, and the sentence is worded as the card words it.
+                "situation 2: value changed from an object, as returned by function `verdict`, with `commentary`: `\"Attestation has expired\"`; `compliant`: `false` " +
+                    "to an object, as returned by function `verdict`, with `commentary`: `\"Attestation has lapsed\"`; `compliant`: `false`",
             )
         }
 

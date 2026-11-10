@@ -257,7 +257,21 @@ public data class RuleBody @JvmOverloads constructor(
      * Inside a chain [yieldsValue] is never null: an implicit `true` head value is stated as `Literal("true")`.
      */
     val elseBranches: List<ElseBranch> = emptyList(),
+    /**
+     * For a function body whose head arguments include a PATTERN (a literal, or anything other than a plain variable or `_`): the arguments as the
+     * author wrote them (`_, 0`), so a situation that holds only for those arguments says so (spec §14.81). Null when every argument is a plain
+     * variable, and for every rule that is not a function.
+     */
+    val argumentPattern: String? = null,
 )
+
+/**
+ * One field of an [Operand.InlinedObject] (spec §14.81). [value] is the field's value read through the call's arguments; null for a LIST BUILT
+ * from an argument (`[{"action": a, ...} | some a in actions]`), where [items] are the elements of that argument and [wrapKey] the field each
+ * one is put under (`action`). [items] is empty for an argument that is an empty array literal, null for a field that is not such a list.
+ */
+@ExplicoStructuralModel
+public data class ObjectField(val key: String, val value: Operand?, val wrapKey: String? = null, val items: List<Operand>? = null)
 
 /**
  * One later branch of an `else` chain (spec §14.52). An empty [conditions] list means the branch always applies
@@ -423,6 +437,21 @@ public sealed interface Operand {
         val valueTerm: Operand?,
         val body: List<Condition>,
     ) : Operand
+
+    /**
+     * A `sprintf("text %v text", [args])` message used as a rule's (or an `else` branch's) VALUE, or inside a call there (spec §14.81): [format]
+     * is the format string verbatim and [args] one operand per verb, each of which reads as a bracketed placeholder
+     * (`[parameter label]`, `[deployment id]`). Only built when every verb is `%v`/`%s`/`%%`, the verbs match the arguments exactly and every
+     * argument is a plain path or a function parameter -- anything else stays [Unrendered], never a misaligned message.
+     */
+    public data class Formatted(val format: String, val args: List<Operand>) : Operand
+
+    /**
+     * A call, in a rule's VALUE position, to a user function whose single definition has NO conditions and whose value is an OBJECT LITERAL
+     * (spec §14.81), with the call's arguments put in place of its parameters. The call's own fields are listed in [fields] in source order.
+     * Nothing is evaluated: this is the object literal as the author wrote it, read through the arguments they passed.
+     */
+    public data class InlinedObject(val packagePath: String, val functionName: String, val fields: List<ObjectField>) : Operand
 
     /** An operand the mapper cannot classify, e.g. an unrecognised operand-position builtin call. */
     public data class Unrendered @JvmOverloads constructor(

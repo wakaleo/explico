@@ -2,7 +2,7 @@
  * Which part of the public model is promised stable and which is the opt-in structural model (spec §14.80 step 4), read by reflection from the compiled classes and, where the compiler
  * hides it from reflection, from the source. No opa.
  *
- * - STRUCTURAL = carries `@ExplicoStructuralModel` at class level: the 22 model types below `RegoVersion`/`PolicySet`/`PolicyPackage`, and `DiffEntry`. The scan below fails when a
+ * - STRUCTURAL = carries `@ExplicoStructuralModel` at class level: the 23 model types below `RegoVersion`/`PolicySet`/`PolicyPackage`, and `DiffEntry`. The scan below fails when a
  *   top-level class is added to `io.explico.model` without being classified here, so the decision is made consciously.
  * - STABLE = not annotated: everything else public. A stable class that exposes a structural type through a PROPERTY is annotated on that property (`PolicyPackage.rules`,
  *   `.metadata`, `.unpublishedComments`, `DiffReport.entries`), so Kotlin callers touching it get the warning while `PolicyPackage.path`, `sourceFiles` and `PolicySet.packages` stay clean.
@@ -34,7 +34,7 @@ import java.nio.file.Path
 class StructuralModelAnnotationTest {
 
     private val structural = listOf(
-        "RuleGroup", "RuleBody", "ElseBranch", "ConstantValue", "DefaultValue", "Condition", "Operand", "PathSegment", "Operator", "ComprehensionKind", "LiteralCollection",
+        "RuleGroup", "RuleBody", "ElseBranch", "ConstantValue", "DefaultValue", "Condition", "Operand", "PathSegment", "Operator", "ComprehensionKind", "LiteralCollection", "ObjectField",
         "SourceRef", "CommentBlock", "RuleMetadata", "PackageMetadata", "DeclaredProjection", "VerdictProjection", "ActionsProjection", "AnnotationsProjection", "TimingProjection",
         "Author", "RelatedResource",
     ).map { "io.explico.model.$it" } + "io.explico.diff.DiffEntry"
@@ -72,7 +72,7 @@ class StructuralModelAnnotationTest {
     }
 
     @Test
-    @DisplayName("exactly the 22 model types (and DiffEntry) listed carry the marker at class level, and nothing else in the library does")
+    @DisplayName("exactly the 23 model types (and DiffEntry) listed carry the marker at class level, and nothing else in the library does")
     fun theStructuralSetIsExact() {
         val marked = topLevelClasses().filter { it.isAnnotationPresent(ExplicoStructuralModel::class.java) }.map { it.name }
 

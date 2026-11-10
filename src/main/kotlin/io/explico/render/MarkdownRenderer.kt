@@ -224,9 +224,9 @@ internal object MarkdownRenderer {
             rule.bodies.isEmpty() -> Unit
             // Spec §14.52: an `else` chain is only ever mapped as the SOLE definition of its name, so a group of one body is all that can carry it.
             rule.bodies.size == 1 && rule.bodies.single().elseBranches.isNotEmpty() ->
-                appendElseChain(sb, rule.bodies.single(), anchorFor, functionAnchorFor, ruleValueAnchorFor)
+                appendElseChain(sb, rule.bodies.single(), rule.metadata?.projection, anchorFor, functionAnchorFor, ruleValueAnchorFor)
             rule.bodies.size > 1 -> appendMultiBodySituations(sb, rule, anchorFor, functionAnchorFor, ruleValueAnchorFor)
-            else -> appendSingleBody(sb, rule.bodies.single(), anchorFor, functionAnchorFor, ruleValueAnchorFor)
+            else -> appendSingleBody(sb, rule.bodies.single(), rule.metadata?.projection, anchorFor, functionAnchorFor, ruleValueAnchorFor)
         }
 
         appendReferenceData(sb, rule, policySet, dataValues)
@@ -349,11 +349,13 @@ internal object MarkdownRenderer {
         sb.appendLine("**The rule matches when ANY of the following situations applies:**")
         sb.appendLine()
         rule.bodies.forEachIndexed { index, body ->
-            sb.appendLine("### Situation ${index + 1} — all of the following are true")
+            sb.appendLine("### Situation ${index + 1} — ${situationClause(body)}")
             sb.appendLine()
-            appendConditions(sb, body.conditions, anchorFor, functionAnchorFor, ruleValueAnchorFor)
-            sb.appendLine()
-            if (body.yieldsValue != null) appendYieldsValueLine(sb, body.yieldsValue, ruleValueAnchorFor)
+            if (body.conditions.isNotEmpty()) {
+                appendConditions(sb, body.conditions, anchorFor, functionAnchorFor, ruleValueAnchorFor)
+                sb.appendLine()
+            }
+            if (body.yieldsValue != null) appendYieldsValueLine(sb, body.yieldsValue, rule.metadata?.projection, ruleValueAnchorFor)
             if (body.producesValue != null) {
                 sb.appendLine("*Produces:* \"${body.producesValue}\"")
                 sb.appendLine()
@@ -370,6 +372,7 @@ internal object MarkdownRenderer {
     private fun appendElseChain(
         sb: StringBuilder,
         body: RuleBody,
+        projection: io.explico.model.DeclaredProjection?,
         anchorFor: (Condition.RuleReference) -> String?,
         functionAnchorFor: (Condition.FunctionCall) -> String?,
         ruleValueAnchorFor: (Operand.RuleValueReference) -> String?,
@@ -391,7 +394,7 @@ internal object MarkdownRenderer {
                 appendConditions(sb, conditions, anchorFor, functionAnchorFor, ruleValueAnchorFor)
                 sb.appendLine()
             }
-            sb.appendLine("*Then:* ${ExpressionRenderer.renderValue(value, ruleValueAnchorFor)}")
+            ThenLines.lines("*Then:*", value, projection, ruleValueAnchorFor).forEach { sb.appendLine(it) }
             sb.appendLine()
         }
     }
@@ -399,6 +402,7 @@ internal object MarkdownRenderer {
     private fun appendSingleBody(
         sb: StringBuilder,
         body: RuleBody,
+        projection: io.explico.model.DeclaredProjection?,
         anchorFor: (Condition.RuleReference) -> String?,
         functionAnchorFor: (Condition.FunctionCall) -> String?,
         ruleValueAnchorFor: (Operand.RuleValueReference) -> String?,
@@ -413,11 +417,26 @@ internal object MarkdownRenderer {
         }
         appendConditions(sb, body.conditions, anchorFor, functionAnchorFor, ruleValueAnchorFor)
         if (body.conditions.isNotEmpty()) sb.appendLine()
-        if (body.yieldsValue != null) appendYieldsValueLine(sb, body.yieldsValue, ruleValueAnchorFor)
+        if (body.conditions.isEmpty() && body.argumentPattern != null) {
+            sb.appendLine("*Applies when called with arguments matching ${MarkdownText.codeSpan("(${body.argumentPattern})")}.*")
+            sb.appendLine()
+        }
+        if (body.yieldsValue != null) appendYieldsValueLine(sb, body.yieldsValue, projection, ruleValueAnchorFor)
         if (body.producesValue != null) {
             sb.appendLine("*Produces:* \"${body.producesValue}\"")
             sb.appendLine()
         }
+    }
+
+    /**
+     * The heading clause of one situation of an OR-ed rule (spec §14.81). A body with no conditions is never headed "all of the following are true"
+     * over nothing: a function written with a literal argument (`f(_, 0) := 0`) applies only to those arguments, which is said, and anything else
+     * simply has no condition.
+     */
+    private fun situationClause(body: RuleBody): String = when {
+        body.conditions.isNotEmpty() -> "all of the following are true"
+        body.argumentPattern != null -> "when called with arguments matching ${MarkdownText.codeSpan("(${body.argumentPattern})")}"
+        else -> "no conditions"
     }
 
     /** A complete rule's unconditional constant value (review item 10, finding 4) -- no conditions, no Situations, just the value it is. */
@@ -427,8 +446,8 @@ internal object MarkdownRenderer {
     }
 
     /** The value a CONDITIONAL complete rule's body yields (follow-up to review item 10) -- see [RuleBody.yieldsValue]'s own KDoc. */
-    private fun appendYieldsValueLine(sb: StringBuilder, value: Operand, ruleValueAnchorFor: (Operand.RuleValueReference) -> String?) {
-        sb.appendLine("**Value:** ${ExpressionRenderer.renderValue(value, ruleValueAnchorFor)}")
+    private fun appendYieldsValueLine(sb: StringBuilder, value: Operand, projection: io.explico.model.DeclaredProjection?, ruleValueAnchorFor: (Operand.RuleValueReference) -> String?) {
+        ThenLines.lines("**Value:**", value, projection, ruleValueAnchorFor).forEach { sb.appendLine(it) }
         sb.appendLine()
     }
 
